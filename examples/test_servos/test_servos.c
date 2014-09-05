@@ -1,0 +1,124 @@
+/*
+Copyright (c) 2014, James Strawson
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer. 
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies, 
+either expressed or implied, of the FreeBSD Project.
+*/
+
+/*
+	test_servos.c
+	
+	demonstrates use of pru to control servos or ESCs with pulse widths
+	note that this library purposefully sends only a single pulse for
+	each call to send_servo_pulse_us(). This allows the user to send
+	pulses immediately after calculating a control input and at any
+	arbitrary frequency to suit specific hardware. For example a user can
+	send a 50hz signal to control a servo on one channel and a 200hz signal
+	on another channel for controlling high-performance brushless ESCs
+*/
+
+#include <robotics_cape.h>
+
+
+int initialize_pru_servos();
+int send_servo_pulse_us(int ch, float us);
+//int send_servo_pulse_normalized(int ch, float input);
+
+static unsigned int *prusharedMem_32int_ptr;
+
+
+int initialize_pru_servos(){
+	// start pru
+    prussdrv_init();
+
+    // Open PRU Interrupt
+    if (prussdrv_open(PRU_EVTOUT_0)){
+        printf("prussdrv_open open failed\n");
+        return -1;
+    }
+
+    // Get the interrupt initialized
+	tpruss_intc_initdata pruss_intc_initdata = PRUSS_INTC_INITDATA;
+    prussdrv_pruintc_init(&pruss_intc_initdata);
+	
+	// launch servo binary
+	prussdrv_exec_program(PRU_NUM, PRU_BIN_LOCATION);
+
+	// get pointer to PRU shared memory
+	void* sharedMem = NULL;
+    prussdrv_map_prumem(PRUSS0_SHARED_DATARAM, &sharedMem);
+    prusharedMem_32int_ptr = (unsigned int*) sharedMem;
+
+    return(0);
+}
+
+int send_servo_pulse_us(int ch, float us){
+	// Sanity Checks
+	if(ch<1 || ch>SERVO_CHANNELS){
+		printf("ERROR: Servo Channel must be between 1 & %d \n", SERVO_CHANNELS);
+		return -1;
+	}
+	if(prusharedMem_32int_ptr == NULL){
+		printf("ERROR: PRU servo Controller not initialized\n");
+		return -1;
+	}
+
+	// PRU runs at 200Mhz. find #loops needed
+	unsigned int num_loops = 2+ ((us*200)/PRU_LOOP_INSTRUCTIONS); 
+	
+	// write to PRU shared memory
+	prusharedMem_32int_ptr[ch-1] = num_loops;
+	return 0;
+}
+
+int main(){
+    printf("Initializing PRU Servo Controller\n");
+    if(initialize_pru_servos()){
+		printf("failed to init pru\n");
+		return -1;
+	}
+
+	int j = SERVO_MIN_US;
+	int i;
+   while(1){
+		send_servo_pulse_us(1,1000);		
+		send_servo_pulse_us(8,20000);
+		usleep(50000);
+		// send_servo_pulse_us(1,j);
+		
+		// j += 10;
+		// if(j>SERVO_MAX_US){
+			// j=SERVO_MIN_US;
+		// }
+		// usleep(5000);
+   }
+    
+    prussdrv_pru_disable(PRU_NUM);
+    prussdrv_exit();
+
+
+    return(0);
+}
+
