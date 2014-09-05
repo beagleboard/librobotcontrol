@@ -45,20 +45,17 @@
 #define SELECT_BTN 69	//gpio2.6 P8_9
 
 //// motor direction and led output pins
-#define MDIR1A    20	//gpio0.20
-#define MDIR1B    112	//gpio3.16
-#define MDIR2A    113	//gpio3.17
-#define MDIR2B    61	//gpio1.29
-#define MDIR3A    49	//gpio1.17
-#define MDIR3B    48	//gpio1.16
-#define MDIR4A    65	//gpio2.1 
-#define MDIR4B    27	//gpio0.27 
-#define MDIR5A    26	//gpio0.26
-#define MDIR5B    68	//gpio1.28
-#define MDIR6A    68	//gpio2.4
-#define MDIR6B    66	//gpio2.2
-#define GRN_LED 47	// gpio1.15 "P8_15"
-#define RED_LED 46	// gpio1.14 "P8_16"
+#define MDIR1A    55	//gpio1.19 P8.20
+#define MDIR1B    52	//gpio1.16
+#define MDIR2A    114	//gpio3.18
+#define MDIR2B    31	//gpio0.31
+#define MDIR3A    70	//gpio2.6
+#define MDIR3B    71	//gpio2.7
+#define MDIR4A    72	//gpio2.8
+#define MDIR4B    73	//gpio2.9
+
+#define GRN_LED   66	// gpio2.2
+#define RED_LED   67	// gpio2.3
 
 //// Spektrum UART4 RX must be remuxed to gpio output temporarily for pairing
 #define PAIRING_PIN 30 //P9.11 gpio0.30
@@ -87,8 +84,9 @@
 //// Mavlink UDP
 #define MAV_BUF_LEN 512 
 
-//// SPI0
-#define SPI0_SS0_GPIO_PIN 5   // P9.17
+//// SPI1
+#define SPI1_SS1_GPIO_PIN 113  // P9.28 gpio3.17
+#define SPI1_SS2_GPIO_PIN 49   // P9.23 gpio1.17
 #define ARRAY_SIZE(array) sizeof(array)/sizeof(array[0]) 
 
 //// PRU Servo Control
@@ -143,7 +141,7 @@ void* imu_interrupt_handler(void* ptr);
 int set_imu_interrupt_func(int (*func)(void));
 
 //// DSM2 Spektrum RC radio functions
-int initialize_dsm2();
+int initialize_dsm2
 float get_dsm2_ch_normalized(int channel);
 int get_dsm2_ch_raw(int channel);
 int is_new_dsm2_data();

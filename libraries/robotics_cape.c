@@ -21,8 +21,7 @@ int set_state(enum state_t new_state){
 
 // gpio stuff
 unsigned int out_gpio_pins[] = {MDIR1A, MDIR1B, MDIR2A, MDIR2B, 
-								 MDIR3A, MDIR3B, MDIR4A, MDIR4B, 
-								 MDIR5A, MDIR5B, MDIR5A, MDIR5B,
+								 MDIR3A, MDIR3B, MDIR4A, MDIR4B,
 								 GRN_LED, RED_LED, PAIRING_PIN};
 								 
 // buttons
@@ -65,10 +64,8 @@ int get_select_button(){
 
 
 // pwm stuff
-char pwm_files[][MAX_BUF] = {"/sys/devices/ocp.3/pwm_test_P9_31.12/",
-							 "/sys/devices/ocp.3/pwm_test_P9_29.13/",
-							 "/sys/devices/ocp.3/pwm_test_P9_14.15/",
-							 "/sys/devices/ocp.3/pwm_test_P9_16.14/",
+char pwm_files[][MAX_BUF] = {"/sys/devices/ocp.3/pwm_test_P8_34.12/",
+							 "/sys/devices/ocp.3/pwm_test_P8_36.13/",
 							 "/sys/devices/ocp.3/pwm_test_P8_19.16/",
 							 "/sys/devices/ocp.3/pwm_test_P8_13.17/"
 };
@@ -105,7 +102,7 @@ int initialize_cape(){
 	//Set up PWM
 	printf("Initializing PWM\n");
 	i=0;
-	for(i=0; i<6; i++){
+	for(i=0; i<4; i++){
 		strcpy(path, pwm_files[i]);
 		strcat(path, "polarity");
 		fd = fopen(path, "a");
@@ -120,7 +117,7 @@ int initialize_cape(){
 	}
 	
 	//leave duty cycle file open for future writes
-	for(i=0; i<6; i++){
+	for(i=0; i<4; i++){
 		strcpy(path, pwm_files[i]);
 		strcat(path, "duty");
 		pwm_duty_pointers[i] = fopen(path, "a");
