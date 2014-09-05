@@ -1,0 +1,503 @@
+/*
+ * Device Tree Overlay for Robotics Cape SD-101B
+ * Strawson Design 2013
+ *
+ */
+ 
+/dts-v1/;
+/plugin/; 
+
+/ {
+    compatible = "ti,beaglebone-black";
+
+    /* identification */
+    part-number = "SD-101B";
+
+    /* version */
+    version = "00A0";
+	
+	exclusive-use =
+		"P9.31",  /*PWM0A Motor 1*/
+		"P9.29",  /*PWM0B Motor 2*/
+		"P9.14",  /*PWM1A Motor 3*/
+		"P9.16",  /*PWM1B Motor 4*/
+		"P8.19",  /*PWM2A Motor 5*/
+		"P8.13",  /*PWM2B Motor 6*/
+		"ehrpwm0A",
+		"ehrpwm0B", 
+		"ehrpwm1A",
+		"ehrpwm1B",
+		"ehrpwm2A", 
+		"ehrpwm2B", 		
+
+		"eqep0", /* Encoders */
+		"eqep1", 
+		"eqep2", 
+		
+		"P9.35", /* AIN6 */
+		"tscadc",
+		
+		"P9.24",	/* uart1_txd */
+		"P9.26",	/* uart1_rxd */
+		"uart1",
+		"P9.21",	/* uart2_txd */
+		"P9.22",	/* uart2_rxd */
+		"uart2",
+		"P9.13",	/* uart4_txd */
+		"P9.11",	/* uart4_rxd */
+		"uart4",
+		
+		"P9.18",	/* i2c1_sda */
+		"P9.17",	/* i2c1_scl */
+		"i2c1",
+		
+		"P8.8",		/*START_BTN*/
+		"P8.9",		/*SELECT_BTN*/
+		"P9.25",	/*MPU-9150 INTERRUPT*/
+		
+		"P8.7",		/*MDIR6B*/
+		"P8.10",	/*MDIR6A */
+		"P8.14",	/*MDIR5A */
+		"P8.15",	/*GRN LED*/
+		"P8.16",	/*RED LED*/
+		"P8.17",	/*mDIR4B*/
+		"P8.18",	/*mDIR4A*/
+		"P8.26",	/*mDIR2B*/
+		"P9.12",	/*mDIR5B*/
+		"P9.15",	/*MDIR3B*/
+		"P9.23",	/*MDIR3A */
+		"P9.28",	/*MDIR2A*/
+		"P9.30",	/*mDIR1B*/
+		"P9.41";	/*mDIR1A*/
+		
+		
+	
+    fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			pwm_P9_31: pinmux_pwm_P9_31_pins {
+				pinctrl-single,pins = <0x190  0x1>; /* P9_31 (ZCZ ball A13) | MODE 1 */
+			};
+			pwm_P9_29: pinmux_pwm_P9_29_pins {
+				pinctrl-single,pins = <0x194  0x1>; /* P9_29 (ZCZ ball B13) | MODE 1 */
+			};
+			pwm_P9_14: pinmux_pwm_P9_14_pins {
+				pinctrl-single,pins = <0x048  0x6>; /* P9_14 (ZCZ ball U14) | MODE 6 */
+			};
+			pwm_P9_16: pinmux_pwm_P9_16_pins {
+				pinctrl-single,pins = <0x04c  0x6>; /* P9_16 (ZCZ ball T14) | MODE 6 */
+			};
+			pwm_P8_19: pinmux_pwm_P8_19_pins {
+				pinctrl-single,pins = <0x020  0x4>; /* P8_19 (ZCZ ball U10) | MODE 4 */
+			};
+			pwm_P8_13: pinmux_pwm_P8_13_pins {
+				pinctrl-single,pins = <0x024  0x4>; /* P8_13 (ZCZ ball T10) | MODE 4 */
+			};
+
+			pinctrl_eqep0: pinctrl_eqep0_pins {
+        		pinctrl-single,pins = < 
+                        0x1A0 0x31  /* P9_42 = GPIO3_18 = EQEP0A_in, MODE1 */       
+                        0x1A4 0x31  /* P9_27 = GPIO3_19 = EQEP0B_in, MODE1 */       
+        		>;
+        	};
+			pinctrl_eqep1: pinctrl_eqep1_pins {
+                pinctrl-single,pins = <					 				   
+                        0x0D4 0x32  /* P8_33 = GPIO0_9 = EQEP1B_in, MODE2 */
+                        0x0D0 0x32  /* P8_35 = GPIO0_8 = EQEP1A_in, MODE2 */
+                >;
+            };	
+			pinctrl_eqep2: pinctrl_eqep2_pins {
+                pinctrl-single,pins = <					 				   
+                        0x030 0x3C  /* P8_12 = EQEP2A_in, MODE4 */
+                        0x034 0x3C  /* P8_11 = EQEP2B_in, MODE4 */
+                >;
+            };
+			
+			bb_uart1_pins: pinmux_bb_uart1_pins {
+				pinctrl-single,pins = <
+					0x184 0x20 /* P9.24 uart1_txd.uart1_txd  OUTPUT  */
+					0x180 0x20 /* P9.26 uart1_rxd.uart1_rxd  INPUT  */
+				>;
+			};
+			bb_uart2_pins: pinmux_bb_uart2_pins {
+				pinctrl-single,pins = <
+					0x150 0x21	/* spi0_sclk.uart2_rxd | MODE1 */
+					0x154 0x01	/* spi0_d0.uart2_txd | MODE1 */
+				>;
+			};
+			bb_uart4_pins: pinmux_bb_uart4_pins {
+				pinctrl-single,pins = <
+					0x070 0x26	/* gpmc_wait0.uart4_rxd | MODE6 */
+					0x074 0x06	/* gpmc_wpn.uart4_txd | MODE6 */
+				>;
+			};
+			
+			bb_i2c1_pins: pinmux_bb_i2c1_pins {
+				pinctrl-single,pins = <
+					0x158 0x72	/* spi0_d1.i2c1_sda, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2 */
+					0x15c 0x72	/* spi0_cs0.i2c1_scl, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2 */
+				>;
+			};
+		};
+		
+		interrupt_pins: pinmux_interrupt_pins{
+                pinctrl-single,pins = <
+					0x094 0x37 	/*P8.8 START BUTTON IN*/
+					0x09c 0x37	/*P8.9 SELECT BUTTON IN*/
+					0x1AC 0x37	/*P9.25 MPU-9150 INTERRUPT IN*/
+					
+                >;
+		};
+		
+		gpio_helper_pins: pinmux_gpio_helper_pins {
+				pinctrl-single,pins = <
+						0x090 0x0F	/*P8.7 MODE7 | OUTPUT*/
+						0x098 0x0F	/*P8.10*/
+						0x028 0x0F	/*P8.14*/
+						0x03C 0x0F	/*P8.15*/
+						0x038 0x0F	/*P8.16*/
+						0x02C 0x0F	/*P8.17*/
+						0x08C 0x0F	/*P8.18*/
+						0x07C 0x0F	/*P8.26*/
+						0x078 0x0F	/*P9.12*/
+						0x048 0x0F	/*P9.15*/
+						0x044 0x0F	/*P9.23 */
+						0x19C 0x0F	/*P9.28*/
+						0x198 0x0F	/*P9.30*/
+						0x1B4 0x0F	/*P9.41*/
+				>;
+		};
+		
+		
+	};
+
+
+	
+	fragment@1 {
+		target = <&epwmss0>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@2 {
+		target = <&ehrpwm0>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@3 {
+		target = <&ecap0>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@4 {
+		target = <&epwmss1>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@5 {
+		target = <&ehrpwm1>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@6 {
+		target = <&epwmss2>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@7 {
+		target = <&ehrpwm2>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@8 {
+		target = <&ecap2>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+	
+	
+	fragment@9 {
+		target = <&ocp>;
+		__overlay__ {
+			pwm_test_P9_31 {
+				compatible	= "pwm_test";
+				pwms 		= <&ehrpwm0 0 0 1>;
+				pwm-names 	= "PWM_P9_31";
+			    pinctrl-names	= "default";
+			    pinctrl-0	= <&pwm_P9_31>;
+				enabled		= <0>;
+				duty		= <0>;
+				status 		= "okay";
+			};
+		};
+	};
+	
+	fragment@10 {
+		target = <&ocp>;
+		__overlay__ {
+			pwm_test_P9_29 {
+				compatible	= "pwm_test";
+				pwms 		= <&ehrpwm0 1 0 1>;
+				pwm-names 	= "PWM_P9_29";
+			    pinctrl-names	= "default";
+			    pinctrl-0	= <&pwm_P9_29>;
+				enabled		= <0>;
+				duty		= <0>;
+				status 		= "okay";
+			};
+		};
+	};
+	fragment@11 {
+		target = <&ocp>;
+		__overlay__ {
+			pwm_test_P9_16 {
+				compatible	= "pwm_test";
+				pwms 		= <&ehrpwm1 1 0 1>;
+				pwm-names 	= "PWM_P9_16";
+			    pinctrl-names	= "default";
+			    pinctrl-0	= <&pwm_P9_16>;
+				enabled		= <0>;
+				duty		= <0>;
+				status 		= "okay";
+			};
+		};
+	};
+	fragment@12 {
+		target = <&ocp>;
+		__overlay__ {
+			pwm_test_P9_14 {
+				compatible	= "pwm_test";
+				pwms 		= <&ehrpwm1 0 0 1>;
+				pwm-names 	= "PWM_P9_14";
+			    pinctrl-names	= "default";
+			    pinctrl-0	= <&pwm_P9_14>;
+				enabled		= <0>;
+				duty		= <0>;
+				status 		= "okay";
+			};
+		};
+	};
+	
+	fragment@13 {
+		target = <&ocp>;
+		__overlay__ {
+			pwm_test_P8_19 {
+				compatible	= "pwm_test";
+				pwms 		= <&ehrpwm2 0 0 1>;
+				pwm-names 	= "PWM_P8_19";
+
+				pinctrl-names	= "default";
+				pinctrl-0	= <&pwm_P8_19>;
+
+				enabled		= <0>;
+				duty		= <0>;
+				status 		= "okay";
+			};
+		};
+	};
+	
+	fragment@14 {
+		target = <&ocp>;
+		__overlay__ {
+			pwm_test_P8_13 {
+				compatible	= "pwm_test";
+				pwms 		= <&ehrpwm2 1 0 1>;
+				pwm-names 	= "PWM_P8_13";
+
+				pinctrl-names	= "default";
+				pinctrl-0	= <&pwm_P8_13>;
+
+				enabled		= <0>;
+				duty		= <0>;
+				status 		= "okay";
+			};
+		};
+	};
+	
+
+	
+	fragment@15 {
+    	target = <&eqep0>;
+    	__overlay__ {
+            pinctrl-names = "default";
+            pinctrl-0 = <&pinctrl_eqep0>;
+            
+            count_mode = <0>;  /* 0 - Quadrature mode, normal 90 phase offset cha & chb.  1 - Direction mode.  cha input = clock, chb input = direction */
+            swap_inputs = <0>; /* Are channel A and channel B swapped? (0 - no, 1 - yes) */
+            invert_qa = <1>;   /* Should we invert the channel A input?  */
+            invert_qb = <1>;   /* Should we invert the channel B input? I invert these because my encoder outputs drive transistors that pull down the pins */
+            invert_qi = <0>;   /* Should we invert the index input? */
+            invert_qs = <0>;   /* Should we invert the strobe input? */
+            
+	        status = "okay";
+    	};
+    };
+	
+
+    
+    fragment@16 {
+    	target = <&eqep1>;
+    	__overlay__ {
+            pinctrl-names = "default";
+            pinctrl-0 = <&pinctrl_eqep1>;
+            
+            count_mode = <0>;  /* 0 - Quadrature mode, normal 90 phase offset cha & chb.  1 - Direction mode.  cha input = clock, chb input = direction */
+            swap_inputs = <0>; /* Are channel A and channel B swapped? (0 - no, 1 - yes) */
+            invert_qa = <1>;   /* Should we invert the channel A input?  */
+            invert_qb = <1>;   /* Should we invert the channel B input? I invert these because my encoder outputs drive transistors that pull down the pins */
+            invert_qi = <0>;   /* Should we invert the index input? */
+            invert_qs = <0>;   /* Should we invert the strobe input? */
+            
+	        status = "okay";
+    	};
+    };
+
+    fragment@17 {
+    	target = <&eqep2>;
+    	__overlay__ {
+            pinctrl-names = "default";
+            pinctrl-0 = <&pinctrl_eqep2>;
+            
+            count_mode = <0>;  /* 0 - Quadrature mode, normal 90 phase offset cha & chb.  1 - Direction mode.  cha input = clock, chb input = direction */
+            swap_inputs = <0>; /* Are channel A and channel B swapped? (0 - no, 1 - yes) */
+            invert_qa = <1>;   /* Should we invert the channel A input?  */
+            invert_qb = <1>;   /* Should we invert the channel B input? I invert these because my encoder outputs drive transistors that pull down the pins */
+            invert_qi = <0>;   /* Should we invert the index input? */
+            invert_qs = <0>;   /* Should we invert the strobe input? */
+            
+	        status = "okay";
+    	};
+    };
+	
+	fragment@18 {
+		target = <&ocp>;
+		__overlay__ {
+			/* avoid stupid warning */
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			tscadc {
+				compatible = "ti,ti-tscadc";
+				reg = <0x44e0d000 0x1000>;
+
+				interrupt-parent = <&intc>;
+				interrupts = <16>;
+				ti,hwmods = "adc_tsc";
+				status = "okay";
+
+				adc {
+					ti,adc-channels = <0 1 2 3 4 5 6 7>;
+				};
+			};
+
+			test_helper: helper {
+				compatible = "bone-iio-helper";
+				vsense-name  = "AIN0", "AIN1", "AIN2", "AIN3", "AIN4", "AIN5", "AIN6", "AIN7";
+				vsense-scale = <100     100     100     100     100     100     100     100>;
+				status = "okay";
+			};
+		};
+	};
+	
+	fragment@19 {
+		target = <&uart2>;	/* really uart1 */
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_uart1_pins>;
+		};
+	};
+	fragment@20 {
+		target = <&uart3>;	/* really uart2 */
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_uart2_pins>;
+		};
+	};
+	
+	fragment@21 {
+		target = <&uart5>;	/* really uart4 */
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_uart4_pins>;
+		};
+	};
+	
+	fragment@22 {
+		target = <&i2c1>;	/* i2c1 is numbered correctly */
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_i2c1_pins>;
+
+			/* this is the configuration part */
+			clock-frequency = <100000>;	
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			/* add any i2c devices on the bus here */
+
+			
+			 MPU9150@68 {
+				compatible = "inv_mpu6050";
+				reg = <0x68>;
+			 };
+		};
+	};
+	
+	fragment@23 {
+        target = <&ocp>;
+        __overlay__ {            
+            #address-cells = <1>;
+            #size-cells = <1>;                            
+
+            gpio_keys {
+                compatible = "gpio-keys";
+                pinctrl-names = "default";
+                pinctrl-0 = <&interrupt_pins>;
+                #address-cells = <1>;
+                #size-cells = <0>;
+
+                switch_x1 {
+                    label = "START_BTN";
+                    debounce_interval = <50>;
+                    linux,code = <1>;
+                    gpios = <&gpio3 3 0x5>; /* really gpio_2[3] */
+                    gpio-key,wakeup;
+                };                
+                switch_x2 {
+                    label = "SELECT_BTN";
+                    debounce_interval = <50>;
+                    linux,code = <2>;
+                    gpios = <&gpio3 5 0x5>; /*really gpio_2[5]*/
+                    gpio-key,wakeup;
+                };
+                switch_y1 {
+                    label = "MPU_9150_INTERRUPT";
+                    debounce_interval = <50>;
+                    linux,code = <3>;
+                    gpios = <&gpio4 21 0x5>; /*really gpio_3[21]*/
+                    gpio-key,wakeup;
+                };        
+            };
+        };
+    };
+	
+};
