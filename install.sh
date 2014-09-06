@@ -66,6 +66,7 @@ select bfn in "balance" "blink" "none"; do
     case $bfn in
         balance ) echo "balance &" >> $INSTALL_DIR/$BOOTSCRIPT; break;;
 		blink ) echo "blink &" >> $INSTALL_DIR/$BOOTSCRIPT; break;;
+		fly ) echo "fly &" >> $INSTALL_DIR/$BOOTSCRIPT; break;;
 		none ) exit;;
     esac
 done
