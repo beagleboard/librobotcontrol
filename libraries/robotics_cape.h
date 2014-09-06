@@ -1,3 +1,33 @@
+/*
+Copyright (c) 2014, James Strawson
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer. 
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies, 
+either expressed or implied, of the FreeBSD Project.
+*/
+
+
 #ifndef ROBOTICS_CAPE
 #define ROBOTICS_CAPE
 
@@ -39,64 +69,26 @@
 #define PI				3.141592653
 #define MAX_BUF 64
 
-//// Button pins
-// gpio # for gpio_a.b = (32*a)+b
-#define START_BTN 67	//gpio2.3 P8_8
-#define SELECT_BTN 69	//gpio2.6 P8_9
-
-//// motor direction and led output pins
-#define MDIR1A    55	//gpio1.19 P8.20
-#define MDIR1B    52	//gpio1.16
-#define MDIR2A    114	//gpio3.18
-#define MDIR2B    31	//gpio0.31
-#define MDIR3A    70	//gpio2.6
-#define MDIR3B    71	//gpio2.7
-#define MDIR4A    72	//gpio2.8
-#define MDIR4B    73	//gpio2.9
-
-#define GRN_LED   66	// gpio2.2
-#define RED_LED   67	// gpio2.3
-
-//// Spektrum UART4 RX must be remuxed to gpio output temporarily for pairing
-#define PAIRING_PIN 30 //P9.11 gpio0.30
-#define NUM_OUT_PINS 15
-
-//// eQep and pwmss registers, more in tipwmss.h
-#define PWM0_BASE   0x48300000
-#define PWM1_BASE   0x48302000
-#define PWM2_BASE   0x48304000
-#define EQEP_OFFSET  0x180
 
 //// MPU9150 IMU
 #define ORIENTATION_UPRIGHT {0,0,1, 0,1,0,-1,0,0} // Ethernet pointing up for BeagleMIP
 #define ORIENTATION_FLAT    {1,0,0, 0,1,0, 0,0,1} // BB flat on table for BealgeQuad
-#define MPU_ADDR 0x68
-#define GYRO_CAL_FILE "/root/cape_calibration/gyro.cal"
-#define POLL_TIMEOUT (3 * 1000) /* 3 seconds */
-#define INTERRUPT_PIN 117  //gpio3.21 P9.25
-
 
 //// Spektrum DSM2 RC Radio
 #define RC_CHANNELS 9
-#define UART4_PATH "/dev/ttyO4"
-#define DSM2_CAL_FILE "/root/cape_calibration/DSM2.cal"
 
-//// Mavlink UDP
+// Calibration File Locations
+#define DSM2_CAL_FILE "/root/cape_calibration/DSM2.cal"
+#define GYRO_CAL_FILE "/root/cape_calibration/gyro.cal"
+
+//// Mavlink UDP input buffer size
 #define MAV_BUF_LEN 512 
 
-//// SPI1
-#define SPI1_SS1_GPIO_PIN 113  // P9.28 gpio3.17
-#define SPI1_SS2_GPIO_PIN 49   // P9.23 gpio1.17
-#define ARRAY_SIZE(array) sizeof(array)/sizeof(array[0]) 
-
 //// PRU Servo Control
-#define PRU_NUM 	 1
-#define PRUSS0_SHARED_DATARAM   4
-#define PRU_BIN_LOCATION "/usr/bin/pru_servo.bin"
 #define SERVO_CHANNELS			8
 #define SERVO_MIN_US 			1000	// min pulse to send to servos	in microseconds
 #define SERVO_MAX_US 			2000	// max pulse to send to servos in microseconds
-#define PRU_LOOP_INSTRUCTIONS	48		// instructions per PRU servo timer loop
+
 
 //// Initialization function must call at beginning of main()
 int initialize_cape();
@@ -112,20 +104,22 @@ int set_esc(int esc, float normalized_duty);
 int kill_pwm();
 int set_all_esc(float duty);
 int set_pwm_period_ns(int period);
+int enable_motors();
+int disable_motors();
 
 //// eQep encoder counter
 long int get_encoder_pos(int ch);
 int set_encoder_pos(int ch, long value);
 
-/// Buttons LEDS BLFNAR interrupt functions///
+//// Buttons LEDS BLFNAR interrupt functions///
 int setGRN(PIN_VALUE i);
 int setRED(PIN_VALUE i);
-int set_start_pressed_func(int (*func)(void));
-int set_start_unpressed_func(int (*func)(void));
-int set_select_pressed_func(int (*func)(void));
-int set_select_unpressed_func(int (*func)(void));
-int get_start_button();
-int get_select_button();
+int set_pause_pressed_func(int (*func)(void));
+int set_pause_unpressed_func(int (*func)(void));
+int set_mode_pressed_func(int (*func)(void));
+int set_mode_unpressed_func(int (*func)(void));
+int get_pause_button_state();
+int get_mode_button_state();
 void* read_events(void* ptr); //background thread for polling inputs
 
 //// Battery
@@ -141,7 +135,7 @@ void* imu_interrupt_handler(void* ptr);
 int set_imu_interrupt_func(int (*func)(void));
 
 //// DSM2 Spektrum RC radio functions
-int initialize_dsm2
+int initialize_dsm2();
 float get_dsm2_ch_normalized(int channel);
 int get_dsm2_ch_raw(int channel);
 int is_new_dsm2_data();
@@ -157,11 +151,16 @@ uint64_t microsSinceEpoch();
 //// Mavlink easy setup on udp port
 struct sockaddr_in initialize_mavlink_udp(char gc_ip_addr[],  int *udp_sock);
 
-//// SPI0  use ioctl.h
+//// SPI1  use ioctl.h
 // returns a file descriptor to spi device
-int initialize_spi0();
-int select_spi0_slave(int slave);
-int deselect_spi0_slave(int slave);	
+int initialize_spi1();
+int select_spi1_slave(int slave);
+int deselect_spi1_slave(int slave);	
+
+//// PRU Servo Control Functions
+int initialize_pru_servos();
+int send_servo_pulse_us(int ch, float us);
+int send_servo_pulse_normalized(int ch, float input);
 
 //// Cleanup and Shutdown
 void ctrl_c(int signo); // signal catcher

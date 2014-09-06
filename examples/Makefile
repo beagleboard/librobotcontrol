@@ -5,6 +5,7 @@ all:
 	cd bind_dsm2; $(MAKE)
 	cd blink; $(MAKE)
 	cd calibrate_dsm2; $(MAKE)
+	cd calibrate_escs; $(MAKE)
 	cd calibrate_gyro; $(MAKE)
 	cd complementary_filter; $(MAKE)
 	cd mmap_eqep; $(MAKE)
@@ -13,6 +14,7 @@ all:
 	cd test_imu; $(MAKE)
 	cd test_mavlink; $(MAKE)
 	cd test_motors; $(MAKE)
+	cd test_servos; $(MAKE)
 	
 
 clean:
@@ -22,6 +24,7 @@ clean:
 	cd bind_dsm2; $(MAKE) clean
 	cd blink; $(MAKE) clean
 	cd calibrate_dsm2; $(MAKE) clean
+	cd calibrate_escs; $(MAKE) clean
 	cd calibrate_gyro; $(MAKE) clean
 	cd complementary_filter; $(MAKE) clean
 	cd mmap_eqep; $(MAKE) clean
@@ -30,6 +33,7 @@ clean:
 	cd test_imu; $(MAKE) clean
 	cd test_mavlink; $(MAKE) clean
 	cd test_motors; $(MAKE) clean
+	cd test_servos; $(MAKE) clean
 	
 install:
 	cd balance; $(MAKE) install
@@ -38,6 +42,7 @@ install:
 	cd bind_dsm2; $(MAKE) install
 	cd blink; $(MAKE) install
 	cd calibrate_dsm2; $(MAKE) install
+	cd calibrate_escs; $(MAKE) install
 	cd calibrate_gyro; $(MAKE) install
 	cd complementary_filter; $(MAKE) install
 	cd mmap_eqep; $(MAKE) install
@@ -46,3 +51,4 @@ install:
 	cd test_imu; $(MAKE) install
 	cd test_mavlink; $(MAKE) install
 	cd test_motors; $(MAKE) install
+	cd test_servos; $(MAKE) install

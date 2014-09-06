@@ -68,41 +68,49 @@ CH1:
 		QBEQ	CLR1, r0, 0						// If timer is 0, jump to clear channel
 		SET		CH1BIT							// If non-zero turn on the corresponding channel
 		SUB		r0, r0, 1						// Subtract one from timer
+		MOV		r9, 0x00000000					// waste a cycle for timing
 		SBCO	r9, CONST_PRUSHAREDRAM, 0, 4	// write 0 to shared memory
 CH2:
 		QBEQ	CLR2, r1, 0					
 		SET		CH2BIT						
 		SUB		r1, r1, 1
+		MOV		r9, 0x00000000					
 		SBCO	r9, CONST_PRUSHAREDRAM, 4, 4
 CH3:
 		QBEQ	CLR3, r2, 0					
 		SET		CH3BIT						
 		SUB		r2, r2, 1
+		MOV		r9, 0x00000000
 		SBCO	r9, CONST_PRUSHAREDRAM, 8, 4
 CH4:
 		QBEQ	CLR4, r3, 0					
 		SET		CH4BIT						
 		SUB		r3, r3, 1
+		MOV		r9, 0x00000000
 		SBCO	r9, CONST_PRUSHAREDRAM, 12, 4
 CH5:
 		QBEQ	CLR5, r4, 0					
 		SET		CH5BIT					
 		SUB		r4, r4, 1
+		MOV		r9, 0x00000000
 		SBCO	r9, CONST_PRUSHAREDRAM, 16, 4
 CH6:
 		QBEQ	CLR6, r5, 0					
 		SET		CH6BIT						
 		SUB		r5, r5, 1
+		MOV		r9, 0x00000000
 		SBCO	r9, CONST_PRUSHAREDRAM, 20, 4
 CH7:
 		QBEQ	CLR7, r6, 0					
 		SET		CH7BIT						
 		SUB		r6, r6, 1
+		MOV		r9, 0x00000000
 		SBCO	r9, CONST_PRUSHAREDRAM, 24, 4
 CH8:
 		QBEQ	CLR8, r7, 0					
 		SET		CH8BIT						
 		SUB		r7, r7, 1
+		MOV		r9, 0x00000000
 		SBCO	r9, CONST_PRUSHAREDRAM, 28, 4
 		QBA		CH1								// return to beginning of loop
 

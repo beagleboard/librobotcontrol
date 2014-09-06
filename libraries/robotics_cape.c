@@ -1,9 +1,87 @@
 /*
+Copyright (c) 2014, James Strawson
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer. 
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies, 
+either expressed or implied, of the FreeBSD Project.
+*/
+
+
+/*
 Supporting library for Robotics Cape Features
 Strawson Design - 2013
 */
 
 #include "robotics_cape.h"
+
+//// Button pins
+// gpio # for gpio_a.b = (32*a)+b
+#define PAUSE_BTN 69 	//gpio2.5 P8.9
+#define MODE_BTN  68	//gpio2.4 P8.10
+
+
+//// gpio output pins 
+#define MDIR1A    60	//gpio1.28  P9.12
+#define MDIR1B    31	//gpio0.31	P9.13
+#define MDIR2A    38	//gpio1.16  P9.15
+#define MDIR2B    79	//gpio2.15  P8.38
+#define MDIR3A    70	//gpio2.6   P8.45
+#define MDIR3B    71	//gpio2.7   P8.46
+#define MDIR4A    72	//gpio2.8   P8.43
+#define MDIR4B    73	//gpio2.9   P8.44
+#define MOT_STBY  20	//gpio0.20  P9.41
+#define GRN_LED   66	//gpio2.2
+#define RED_LED   67	//gpio2.3
+#define PAIRING_PIN 30  //gpio0.30 P9.11
+#define SPI1_SS1_GPIO_PIN 113  // P9.28 gpio3.17
+#define SPI1_SS2_GPIO_PIN 49   // P9.23 gpio1.17
+#define NUM_OUT_PINS 14			// must update this when adding new pins!!!!
+
+// motor direction pins MUST be first in the list!!!!
+unsigned int out_gpio_pins[] = {MDIR1A, MDIR1B, MDIR2A, MDIR2B, 
+								 MDIR3A, MDIR3B, MDIR4A, MDIR4B,
+								 MOT_STBY, GRN_LED, RED_LED, 
+								 PAIRING_PIN, SPI1_SS1_GPIO_PIN,
+								 SPI1_SS2_GPIO_PIN};
+
+								 
+//// eQep and pwmss registers, more in tipwmss.h
+#define PWM0_BASE   0x48300000
+#define PWM1_BASE   0x48302000
+#define PWM2_BASE   0x48304000
+#define EQEP_OFFSET  0x180
+
+//// MPU-9150 defs
+#define MPU_ADDR 0x68
+
+#define POLL_TIMEOUT (3 * 1000) /* 3 seconds */
+#define INTERRUPT_PIN 117  //gpio3.21 P9.25
+
+#define UART4_PATH "/dev/ttyO4"
+
+
+#define ARRAY_SIZE(array) sizeof(array)/sizeof(array[0]) 
 
 // state variable for loop and thread control
 enum state_t state = UNINITIALIZED;
@@ -19,18 +97,15 @@ int set_state(enum state_t new_state){
 
 
 
-// gpio stuff
-unsigned int out_gpio_pins[] = {MDIR1A, MDIR1B, MDIR2A, MDIR2B, 
-								 MDIR3A, MDIR3B, MDIR4A, MDIR4B,
-								 GRN_LED, RED_LED, PAIRING_PIN};
+
 								 
 // buttons
-int start_btn_state, select_btn_state;
+int pause_btn_state, mode_btn_state;
 int (*imu_interrupt_func)();
-int (*start_unpressed_func)();
-int (*start_pressed_func)();
-int (*select_unpressed_func)();
-int (*select_pressed_func)();
+int (*pause_unpressed_func)();
+int (*pause_pressed_func)();
+int (*mode_unpressed_func)();
+int (*mode_pressed_func)();
 
 //function pointers for events initialized to null_func()
 //instead of containing a null pointer
@@ -38,36 +113,38 @@ int null_func(){
 	return 0;
 }
 
-int set_start_pressed_func(int (*func)(void)){
-	start_pressed_func = func;
+int set_pause_pressed_func(int (*func)(void)){
+	pause_pressed_func = func;
 	return 0;
 }
-int set_start_unpressed_func(int (*func)(void)){
-	start_unpressed_func = func;
+int set_pause_unpressed_func(int (*func)(void)){
+	pause_unpressed_func = func;
 	return 0;
 }
-int set_select_pressed_func(int (*func)(void)){
-	select_pressed_func = func;
+int set_mode_pressed_func(int (*func)(void)){
+	mode_pressed_func = func;
 	return 0;
 }
-int set_select_unpressed_func(int (*func)(void)){
-	select_unpressed_func = func;
+int set_mode_unpressed_func(int (*func)(void)){
+	mode_unpressed_func = func;
 	return 0;
 }
 
-int get_start_button(){
-	return start_btn_state;
+int get_pause_button_state(){
+	return pause_btn_state;
 }
-int get_select_button(){
-	return select_btn_state;
+
+int get_mode_button_state(){
+	return mode_btn_state;
 }
 
 
 // pwm stuff
-char pwm_files[][MAX_BUF] = {"/sys/devices/ocp.3/pwm_test_P8_34.12/",
-							 "/sys/devices/ocp.3/pwm_test_P8_36.13/",
-							 "/sys/devices/ocp.3/pwm_test_P8_19.16/",
-							 "/sys/devices/ocp.3/pwm_test_P8_13.17/"
+// motors 1-4 driven by pwm 1A, 1B, 2A, 2B respectively
+char pwm_files[][MAX_BUF] = {"/sys/devices/ocp.3/pwm_test_P8_19.14/",
+							 "/sys/devices/ocp.3/pwm_test_P8_13.15/",
+							 "/sys/devices/ocp.3/pwm_test_P8_34.12/",
+							 "/sys/devices/ocp.3/pwm_test_P8_36.13/"
 };
 FILE *pwm_duty_pointers[6]; //store pointers to 6 pwm channels for frequent writes
 int pwm_period_ns=0; //stores current pwm period in nanoseconds
@@ -87,6 +164,11 @@ int rc_mins[RC_CHANNELS];
 int tty4_fd;
 int new_dsm2_flag;
 
+// PRU Servo Control shared memory pointer
+#define PRU_NUM 	 1
+#define PRU_BIN_LOCATION "/usr/bin/pru_servo.bin"
+#define PRU_LOOP_INSTRUCTIONS	48		// instructions per PRU servo timer loop
+static unsigned int *prusharedMem_32int_ptr;
 
 int initialize_cape(){
 	FILE *fd; 			// opened and closed for each file
@@ -95,9 +177,18 @@ int initialize_cape(){
 	
 	printf("\nInitializing GPIO\n");
 	for(i=0; i<NUM_OUT_PINS; i++){
-		gpio_export(out_gpio_pins[i]);
+		if(gpio_export(out_gpio_pins[i])){
+			printf("failed to export gpio %d", out_gpio_pins[i]);
+			return -1;
+		};
 		gpio_set_dir(out_gpio_pins[i], OUTPUT_PIN);
 	}
+	
+	// set up default values for some gpio
+	disable_motors();
+	deselect_spi1_slave(1);	
+	deselect_spi1_slave(2);	
+	
 
 	//Set up PWM
 	printf("Initializing PWM\n");
@@ -161,15 +252,21 @@ int initialize_cape(){
 	}
 	
 	//set up function pointers for button press events
-	set_start_pressed_func(&null_func);
-	set_start_unpressed_func(&null_func);
-	set_select_pressed_func(&null_func);
-	set_select_unpressed_func(&null_func);
+	set_pause_pressed_func(&null_func);
+	set_pause_unpressed_func(&null_func);
+	set_mode_pressed_func(&null_func);
+	set_mode_unpressed_func(&null_func);
 	
 	//event handler thread for buttons
 	printf("Starting Event Handler\n");
 	pthread_t event_thread;
 	pthread_create(&event_thread, NULL, read_events, (void*) NULL);
+	
+	// Load binary into PRU
+	printf("Starting PRU servo controller\n");
+	if(initialize_pru_servos()){
+		printf("WARNING: PRU init FAILED");
+	}
 	
 	// Print current battery voltage
 	printf("Battery Voltage = %fV\n", getBattVoltage());
@@ -186,7 +283,7 @@ int initialize_cape(){
 }
 
 // set a motor direction and power
-// motor is from 1 to 6
+// motor is from 1 to 4
 // duty is from -1 to +1
 int set_motor(int motor, float duty){
 	PIN_VALUE a;
@@ -194,8 +291,8 @@ int set_motor(int motor, float duty){
 	if(state == UNINITIALIZED){
 		initialize_cape();
 	}
-	if(motor>6 || motor<1){
-		printf("enter a motor value between 1 and 6\n");
+	if(motor>4 || motor<1){
+		printf("enter a motor value between 1 and 4\n");
 		return -1;
 	}
 	//check that the duty cycle is within +-1
@@ -224,13 +321,20 @@ int set_motor(int motor, float duty){
 
 int kill_pwm(){
 	int ch;
-	for(ch=0;ch<6;ch++){
+	for(ch=0;ch<4;ch++){
 		fprintf(pwm_duty_pointers[ch], "%d", 0);	
 		fflush(pwm_duty_pointers[ch]);
 	}
 	return 0;
 }
 
+int enable_motors(){
+	return gpio_set_value(MOT_STBY, HIGH);
+}
+
+int disable_motors(){
+	return gpio_set_value(MOT_STBY, LOW);
+}
 
 //// eQep Encoder read/write
 long int get_encoder_pos(int ch){
@@ -264,7 +368,7 @@ int setRED(PIN_VALUE i){
 float getBattVoltage(){
 	int raw_adc;
 	FILE *AIN6_fd;
-	AIN6_fd = fopen("/sys/devices/ocp.3/helper.18/AIN6", "r");
+	AIN6_fd = fopen("/sys/devices/ocp.3/helper.16/AIN6", "r");
 	if(AIN6_fd < 0){
 		printf("error reading adc\n");
 		return -1;
@@ -286,26 +390,26 @@ void* read_events(void* ptr){
 		// printf("type %i key %i state %i\n", ev.type, ev.code, ev.value); 
         if(ev.type == 1){ //only new data
 			switch(ev.code){
-				//start button
+				//pause button
 				case 1:
 					if(ev.value == 1){
-						start_btn_state = 0; //unpressed
-						(*start_unpressed_func)();
+						pause_btn_state = 0; //unpressed
+						(*pause_unpressed_func)();
 					}
 					else{
-						start_btn_state = 1; //pressed
-						(*start_pressed_func)();
+						pause_btn_state = 1; //pressed
+						(*pause_pressed_func)();
 					}
 				break;
-				//select button
+				//mode button
 				case 2:	
 					if(ev.value == 1){
-						select_btn_state = 0; //unpressed
-						(*select_unpressed_func)();
+						mode_btn_state = 0; //unpressed
+						(*mode_unpressed_func)();
 					}
 					else{
-						select_btn_state = 1; //pressed
-						(*select_pressed_func)();
+						mode_btn_state = 1; //pressed
+						(*mode_pressed_func)();
 					}
 				break;
 			}
@@ -589,6 +693,63 @@ void* imu_interrupt_handler(void* ptr){
 	return 0;
 }
 
+//// PRU Servo Control
+int initialize_pru_servos(){
+	// start pru
+    prussdrv_init();
+
+    // Open PRU Interrupt
+    if (prussdrv_open(PRU_EVTOUT_0)){
+        printf("prussdrv_open open failed\n");
+        return -1;
+    }
+
+    // Get the interrupt initialized
+	tpruss_intc_initdata pruss_intc_initdata = PRUSS_INTC_INITDATA;
+    prussdrv_pruintc_init(&pruss_intc_initdata);
+	
+	// launch servo binary
+	prussdrv_exec_program(PRU_NUM, PRU_BIN_LOCATION);
+
+	// get pointer to PRU shared memory
+	void* sharedMem = NULL;
+    prussdrv_map_prumem(PRUSS0_SHARED_DATARAM, &sharedMem);
+    prusharedMem_32int_ptr = (unsigned int*) sharedMem;
+
+    return(0);
+}
+
+int send_servo_pulse_us(int ch, float us){
+	// Sanity Checks
+	if(ch<1 || ch>SERVO_CHANNELS){
+		printf("ERROR: Servo Channel must be between 1 & %d \n", SERVO_CHANNELS);
+		return -1;
+	}
+	if(prusharedMem_32int_ptr == NULL){
+		printf("ERROR: PRU servo Controller not initialized\n");
+		return -1;
+	}
+
+	// PRU runs at 200Mhz. find #loops needed
+	unsigned int num_loops = ((us*200)/PRU_LOOP_INSTRUCTIONS); 
+	
+	// write to PRU shared memory
+	prusharedMem_32int_ptr[ch-1] = num_loops;
+	return 0;
+}
+
+int send_servo_pulse_normalized(int ch, float input){
+	if(ch<1 || ch>SERVO_CHANNELS){
+		printf("ERROR: Servo Channel must be between 1 & %d \n", SERVO_CHANNELS);
+		return -1;
+	}
+	if(input<0 || input>1){
+		printf("ERROR: normalized input must be between 0 & 1");
+		return -1;
+	}
+	float micros = SERVO_MIN_US + (input*(SERVO_MAX_US-SERVO_MIN_US));
+	return send_servo_pulse_us(ch, micros);
+}
 
 
 //// helpful functions
@@ -660,29 +821,49 @@ struct sockaddr_in initialize_mavlink_udp(char gc_ip_addr[],  int *udp_sock){
 }
 
 
-//// SPI0   see test_adns9800 example
-int initialize_spi0(){ // returns a file descriptor to spi device
-	int spi0_fd;
-	spi0_fd = open("/dev/spidev1.0", O_RDWR); // actually spi0
-    if (spi0_fd<=0) {  
-        printf("/dev/spidev1.0 not found\n"); 
+//// SPI1   see test_adns9800 example
+int initialize_spi1(){ // returns a file descriptor to spi device
+	int spi1_fd;
+	spi1_fd = open("/dev/spidev2.0", O_RDWR); // actually spi1
+    if (spi1_fd<=0) {  
+        printf("/dev/spidev2.0 not found\n"); 
         return -1; 
     } 
-	if(gpio_export(SPI0_SS0_GPIO_PIN)){
+	if(gpio_export(SPI1_SS1_GPIO_PIN)){
 		printf("failed to export gpio0[5] p9.17\n"); 
         return -1; 
 	}
-	gpio_set_dir(SPI0_SS0_GPIO_PIN, OUTPUT_PIN);
-	gpio_set_value(SPI0_SS0_GPIO_PIN, HIGH);
+	gpio_set_dir(SPI1_SS1_GPIO_PIN, OUTPUT_PIN);
+	gpio_set_value(SPI1_SS1_GPIO_PIN, HIGH);
+	gpio_set_dir(SPI1_SS2_GPIO_PIN, OUTPUT_PIN);
+	gpio_set_value(SPI1_SS2_GPIO_PIN, HIGH);
 	
-	return spi0_fd;
+	return spi1_fd;
 }
-// TODO: support multiple slaves
-int select_spi0_slave(int slave){
-	return gpio_set_value(SPI0_SS0_GPIO_PIN, LOW);
+
+int select_spi1_slave(int slave){
+	switch(slave){
+		case 1:
+			gpio_set_value(SPI1_SS2_GPIO_PIN, HIGH);
+			return gpio_set_value(SPI1_SS1_GPIO_PIN, LOW);
+		case 2:
+			gpio_set_value(SPI1_SS1_GPIO_PIN, HIGH);
+			return gpio_set_value(SPI1_SS2_GPIO_PIN, LOW);
+		default:
+			printf("SPI slave number must be 1 or 2\n");
+			return -1;
+	}
 }	
-int deselect_spi0_slave(int slave){
-	return gpio_set_value(SPI0_SS0_GPIO_PIN, HIGH);
+int deselect_spi1_slave(int slave){
+	switch(slave){
+		case 1:
+			return gpio_set_value(SPI1_SS1_GPIO_PIN, HIGH);
+		case 2:
+			return gpio_set_value(SPI1_SS2_GPIO_PIN, HIGH);
+		default:
+			printf("SPI slave number must be 1 or 2\n");
+			return -1;
+	}
 }	
 
 // catch Ctrl-C signal and change system state
@@ -700,6 +881,11 @@ int cleanup_cape(){
 	setGRN(0);
 	setRED(0);	
 	kill_pwm();
+	disable_motors();
+	deselect_spi1_slave(1);	
+	deselect_spi1_slave(2);	
+	prussdrv_pru_disable(PRU_NUM);
+    prussdrv_exit();
 	printf("\nExiting Cleanly\n");
 	return 0;
 }

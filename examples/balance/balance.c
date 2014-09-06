@@ -224,12 +224,12 @@ void* slow_loop_func(void* ptr){
 }
 
 
-// If the user holds the start button for a second, exit cleanly
-int on_start_press(){
+// If the user holds the pause button for a second, exit cleanly
+int on_pause_press(){
 	int i=0;
 	do{
 		usleep(100000);
-		if(get_start_button() == LOW){
+		if(get_pause_button_state() == LOW){
 			return 0; //user let go before time-out
 		}
 		i++;
@@ -339,7 +339,7 @@ int main(int argc, char* argv[]){
 	initialize_imu(SAMPLE_RATE_HZ, orientation);
 	
 	// time the start button to see if a user wants to exit
-	set_start_pressed_func(&on_start_press);
+	set_pause_pressed_func(&on_pause_press);
 	
 	// start slow state management thread
 	pthread_t  slow_thread;

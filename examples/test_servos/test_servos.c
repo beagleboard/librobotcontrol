@@ -41,84 +41,32 @@ either expressed or implied, of the FreeBSD Project.
 
 #include <robotics_cape.h>
 
-
-int initialize_pru_servos();
-int send_servo_pulse_us(int ch, float us);
-//int send_servo_pulse_normalized(int ch, float input);
-
-static unsigned int *prusharedMem_32int_ptr;
-
-
-int initialize_pru_servos(){
-	// start pru
-    prussdrv_init();
-
-    // Open PRU Interrupt
-    if (prussdrv_open(PRU_EVTOUT_0)){
-        printf("prussdrv_open open failed\n");
-        return -1;
-    }
-
-    // Get the interrupt initialized
-	tpruss_intc_initdata pruss_intc_initdata = PRUSS_INTC_INITDATA;
-    prussdrv_pruintc_init(&pruss_intc_initdata);
-	
-	// launch servo binary
-	prussdrv_exec_program(PRU_NUM, PRU_BIN_LOCATION);
-
-	// get pointer to PRU shared memory
-	void* sharedMem = NULL;
-    prussdrv_map_prumem(PRUSS0_SHARED_DATARAM, &sharedMem);
-    prusharedMem_32int_ptr = (unsigned int*) sharedMem;
-
-    return(0);
-}
-
-int send_servo_pulse_us(int ch, float us){
-	// Sanity Checks
-	if(ch<1 || ch>SERVO_CHANNELS){
-		printf("ERROR: Servo Channel must be between 1 & %d \n", SERVO_CHANNELS);
-		return -1;
-	}
-	if(prusharedMem_32int_ptr == NULL){
-		printf("ERROR: PRU servo Controller not initialized\n");
-		return -1;
-	}
-
-	// PRU runs at 200Mhz. find #loops needed
-	unsigned int num_loops = 2+ ((us*200)/PRU_LOOP_INSTRUCTIONS); 
-	
-	// write to PRU shared memory
-	prusharedMem_32int_ptr[ch-1] = num_loops;
-	return 0;
-}
-
 int main(){
-    printf("Initializing PRU Servo Controller\n");
-    if(initialize_pru_servos()){
-		printf("failed to init pru\n");
-		return -1;
-	}
-
-	int j = SERVO_MIN_US;
-	int i;
-   while(1){
-		send_servo_pulse_us(1,1000);		
-		send_servo_pulse_us(8,20000);
-		usleep(50000);
-		// send_servo_pulse_us(1,j);
-		
-		// j += 10;
-		// if(j>SERVO_MAX_US){
-			// j=SERVO_MIN_US;
-		// }
-		// usleep(5000);
-   }
+    initialize_cape();
     
-    prussdrv_pru_disable(PRU_NUM);
-    prussdrv_exit();
+	int i;
+	int micros = SERVO_MIN_US;
 
-
-    return(0);
+	while(get_state()!=EXITING){
+	
+		// send single pulse to each servo
+		for(i=0; i<SERVO_CHANNELS; i++){
+			send_servo_pulse_us(i+1,micros);
+		}
+		
+		// increase # of microseconds each loop 
+		micros += 10;
+		
+		// reset pulse width at end of sweep
+		if(micros>SERVO_MAX_US){
+			micros=SERVO_MIN_US;
+		}
+		
+		// Send pulses at roughly 50hz
+		usleep(20000); 
+	}
+    
+	cleanup_cape();
+    return 0;
 }
 

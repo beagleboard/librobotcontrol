@@ -27,77 +27,58 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-// Button and LED tester for the Robotics Cape
-// Pressing either button makes an LED blink
-// Hold the start button or ctrl-c to exit cleanly
-// James Strawson - 2013
-
 #include <robotics_cape.h>
 
-// If the user holds the start button , exit cleanly
-int on_pause_press(){
-	printf("pressed start\n");
-	setGRN(HIGH);
-	int i=0;
-	do{
-		usleep(100000);
-		if(get_pause_button_state() == LOW){
-			return 0; //user let go before time-out
+int sending;
+void *send_pulses(void *params){
+	int i;
+	while(sending && (get_state()!=EXITING)){
+		for(i=0; i<SERVO_CHANNELS; i++){
+			send_servo_pulse_us(i+1, SERVO_MAX_US);
 		}
-		i++;
-	}while(i<20);
-	//user held the button down long enough, exit cleanly
-	set_state(EXITING);
+		usleep(20000);
+	}
 	return 0;
 }
-
-int on_pause_release(){
-	printf("released start\n");
-	setGRN(LOW);
-	return 0;
-}
-int on_mode_press(){
-	printf("pressed select\n");
-	setRED(HIGH);
-	return 0;
-}
-int on_mode_release(){
-	setRED(LOW);
-	printf("released select\n");
-	return 0;
-}
-
 
 int main(){
+	int i, j;
+	
 	initialize_cape();
 	
-	printf("\nPress buttons to toggle lights\n");
-	printf("Press both buttons to exit cleanly\n");
+	printf("\nDISCONNECT PROPELLERS FROM MOTORS\n");
+	printf("DISCONNECT POWER FROM ESCS\n");
+	printf("press enter to continue\n");
 	
-	//Assign your own functions to be called when events occur
-	set_pause_pressed_func(&on_pause_press);
-	set_pause_unpressed_func(&on_pause_release);
-	set_mode_pressed_func(&on_mode_press);
-	set_mode_unpressed_func(&on_mode_release);
+	// wait for the user to power off escs
+	while(getchar() != '\n');
 	
-	//run forever till the program state changes
-	while(get_state() != EXITING){
-		setGRN(HIGH);
-		if(get_pause_button_state() == LOW){
-			setRED(LOW);
+	
+	printf("\n");
+	printf("Now reapply power to the ESCs.\n");
+	printf("Press enter again after the ESCs chirp\n");
+	setGRN(HIGH);
+	fflush(stdin);
+	
+	//Send full throttle until the user hits enter
+	sending = 1;
+	pthread_t  send_pulse_thread;
+	pthread_create(&send_pulse_thread, NULL, send_pulses, (void*) NULL);
+	while( getchar() != '\n' );
+	sending = 0; //stop sending thread
+	setGRN(LOW);
+	usleep(20000);
+	
+	//set throttle to 0 for a second to define lower bound
+	for(j=1; j<=50; j++){
+		for(i=0; i<SERVO_CHANNELS; i++){
+			send_servo_pulse_us(i+1, SERVO_MIN_US);
 		}
-		usleep(500000);
-		
-		if(get_mode_button_state() == LOW){
-			setGRN(LOW);
-		}
-		setRED(HIGH);
-		usleep(500000);
+		usleep(20000);
 	}
 	
+	printf("\nCalibration complete, check with test_servos\n");
+
 	cleanup_cape();
 	return 0;
 }
-
-
-

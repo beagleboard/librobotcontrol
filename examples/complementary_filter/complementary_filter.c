@@ -67,12 +67,12 @@ void* slow_loop_func(void* ptr){
 	return NULL;
 }
 
-// If the user holds the start button for a second, exit cleanly
-int on_start_press(){
+// If the user holds the pause button for a second, exit cleanly
+int on_pause_press(){
 	int i=0;
 	do{
 		usleep(100000);
-		if(get_start_button() == LOW){
+		if(get_pause_button_state() == LOW){
 			return 0; //user let go before time-out
 		}
 		i++;
@@ -84,7 +84,7 @@ int on_start_press(){
 
 int main(){
 	initialize_cape();
-	set_start_pressed_func(&on_start_press);
+	set_pause_pressed_func(&on_pause_press);
 	signed char orientation[9] = ORIENTATION_UPRIGHT; //could also use ORIENTATION_FLAT
 	initialize_imu(SAMPLE_RATE_HZ, orientation);
 	

@@ -1,10 +1,9 @@
-#project name change to match your main c file
-TARGET = test_servos
+# project name 
+# change to match your main c file
+TARGET = calibrate_escs
 
 
 
-
- 
 
 TOUCH 	 := $(shell touch *)
 CC	:= gcc
@@ -13,7 +12,7 @@ CFLAGS	:= -c -Wall -g
 LFLAGS	:= -lm -lrt -lpthread -lrobotics_cape
 
 SOURCES  := $(wildcard *.c)
-INCLUDES := $(wildcard *.h)reboot
+INCLUDES := $(wildcard *.h)
 OBJECTS  := $(SOURCES:$%.c=$%.o)
 RM := rm -f
 
