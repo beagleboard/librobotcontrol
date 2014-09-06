@@ -8,6 +8,7 @@ all:
 	cd calibrate_escs; $(MAKE)
 	cd calibrate_gyro; $(MAKE)
 	cd complementary_filter; $(MAKE)
+	cd fly; $(MAKE)
 	cd mmap_eqep; $(MAKE)
 	cd test_dsm2; $(MAKE)
 	cd test_encoders; $(MAKE)
@@ -27,6 +28,7 @@ clean:
 	cd calibrate_escs; $(MAKE) clean
 	cd calibrate_gyro; $(MAKE) clean
 	cd complementary_filter; $(MAKE) clean
+	cd fly; $(MAKE) clean
 	cd mmap_eqep; $(MAKE) clean
 	cd test_dsm2; $(MAKE) clean
 	cd test_encoders; $(MAKE) clean
@@ -45,6 +47,7 @@ install:
 	cd calibrate_escs; $(MAKE) install
 	cd calibrate_gyro; $(MAKE) install
 	cd complementary_filter; $(MAKE) install
+	cd fly; $(MAKE) install
 	cd mmap_eqep; $(MAKE) install
 	cd test_dsm2; $(MAKE) install
 	cd test_encoders; $(MAKE) install

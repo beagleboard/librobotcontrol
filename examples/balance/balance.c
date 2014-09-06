@@ -52,13 +52,6 @@ float thetaTrim = 0;
 #define VNOMINAL 7.4 //tune controller assuming 7.4v battery
 float vBatt=VNOMINAL; //battery voltage for scaling motor inputs.
 
-// Mavlink
-#define DEFAULT_MAV_ADDRESS "192.168.7.1"
-int sock;
-struct sockaddr_in gcAddr;
-
-// IMU
-mpudata_t mpu; //struct to read IMU data into
 
 // discrete-time balance controller
 int control_func(){
@@ -262,7 +255,6 @@ void* dsm2_listener(void* ptr){
 	}
 	return 0;
 }
-	
 	
 // listen for RC mavlink packets for driving around
 void* mavlink_listener(void* ptr){

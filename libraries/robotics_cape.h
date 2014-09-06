@@ -126,6 +126,7 @@ void* read_events(void* ptr); //background thread for polling inputs
 float getBattVoltage();
 
 //// MPU9150 IMU DMP
+mpudata_t mpu; //struct to read IMU data into
 int initialize_imu(int sample_rate, signed char orientation[9]);
 int setXGyroOffset(int16_t offset);
 int setYGyroOffset(int16_t offset);
@@ -141,14 +142,10 @@ int get_dsm2_ch_raw(int channel);
 int is_new_dsm2_data();
 void* uart4_checker(void *ptr); //background thread
 
-//// General use Functions
-int null_func();	// good for making interrupt handlers do nothing
-char *byte_to_binary(unsigned char x); // for diagnostic prints
-typedef struct timespec	timespec;
-timespec diff(timespec start, timespec end); // subtract timespec structs for nanosleep()
-uint64_t microsSinceEpoch();
-
-//// Mavlink easy setup on udp port
+//// Mavlink 
+#define DEFAULT_MAV_ADDRESS "192.168.7.1"
+int sock;
+struct sockaddr_in gcAddr;
 struct sockaddr_in initialize_mavlink_udp(char gc_ip_addr[],  int *udp_sock);
 
 //// SPI1  use ioctl.h
@@ -161,6 +158,13 @@ int deselect_spi1_slave(int slave);
 int initialize_pru_servos();
 int send_servo_pulse_us(int ch, float us);
 int send_servo_pulse_normalized(int ch, float input);
+
+//// General use Functions
+int null_func();	// good for making interrupt handlers do nothing
+char *byte_to_binary(unsigned char x); // for diagnostic prints
+typedef struct timespec	timespec;
+timespec diff(timespec start, timespec end); // subtract timespec structs for nanosleep()
+uint64_t microsSinceEpoch();
 
 //// Cleanup and Shutdown
 void ctrl_c(int signo); // signal catcher
