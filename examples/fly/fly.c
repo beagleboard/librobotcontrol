@@ -45,13 +45,11 @@ either expressed or implied, of the FreeBSD Project.
 #define INT_CUTOFF_TH 		0.1		// prevent integrators from running unless flying
 
 // Flight Stack Constants
-#define KILL_SWITCH_CHANNEL 6 		// reading a normalize value >0.9 should disarm
-#define TIP_THRESHOLD 		1.0		// Kill propellers if it rolls or pitches past this
+#define TIP_THRESHOLD 		1.2		// Kill propellers if it rolls or pitches past this
 #define DSM2_LAND_TIMEOUT	0.3 	// seconds before going into emergency land mode
 #define DSM2_DISARM_TIMEOUT	5.0		// seconds before disarming motors completely 
-#define EMERGENCY_LAND_THROTTLE 0.2	// throttle to hold at when emergency landing
-#define ESC_IDLE_SPEED 0.1			// esc idle input when throttle is at zero
-									// set to 0 to disable idle, 0.1 for slow spin
+#define EMERGENCY_LAND_THR  0.2		// throttle to hold at when emergency landing
+#define ESC_IDLE_SPEED 		0.1		// normalized esc idle input when throttle is zero
 
 /************************************************************************
 * 	Function declarations				
@@ -525,7 +523,7 @@ void* flight_stack(void* ptr){
 			// TODO: gently lower altitude till landing detected 
 			case EMERGENCY_LAND:
 				core_setpoint.core_mode = ATTITUDE;
-				core_setpoint.throttle  = EMERGENCY_LAND_THROTTLE;
+				core_setpoint.throttle  = EMERGENCY_LAND_THR;
 				core_setpoint.roll		= 0;
 				core_setpoint.pitch		= 0;
 				core_setpoint.yaw_rate	= 0;
@@ -598,6 +596,8 @@ int wait_for_arming_sequence(){
 int disarm(){
 	memset(&core_setpoint, 0, sizeof(core_setpoint));
 	core_setpoint.core_mode = DISARMED;
+	setRED(1);
+	setGRN(0);
 	return 0;
 }
 
@@ -853,12 +853,18 @@ void* printf_thread_func(void* ptr){
 
 // Main only serves to initialize hardware and spawn threads
 int main(int argc, char* argv[]){
-	load_default_settings();
+	// initialize cape hardware
 	initialize_cape();
+	
+	// always start disarmed
+	disarm();
+	
+	// start with default settings. 
+	// TODO: load from disk
+	load_default_settings();
+	
+	// listen to pause button for disarm and exit commands
 	set_pause_pressed_func(&on_pause_press); 
-	setRED(1);
-	setGRN(0);
-	set_state(PAUSED);
 	
 	// see if the user gave an IP address as argument
 	char target_ip[100];
@@ -885,6 +891,14 @@ int main(int argc, char* argv[]){
 	pthread_t safety_thread;
 	pthread_create(&safety_thread, NULL, safety_thread_func, (void*) NULL);
 	
+	// start printing information to console
+	pthread_t printf_thread;
+	pthread_create(&printf_thread, NULL, printf_thread_funct, (void*) NULL);
+	
+	// start listening to DSM2 radio
+	pthread_t DSM2_watcher_thread;
+	pthread_create(&DSM2_watcher_thread, NULL, DSM2_watcher, (void*) NULL);
+	
 	// Begin flight Stack
 	pthread_t flight_stack_thread;
 	pthread_create(&flight_stack_thread, NULL, flight_stack, (void*) NULL);
@@ -898,7 +912,9 @@ int main(int argc, char* argv[]){
 	while(get_state()!=EXITING){
 		usleep(100000);
 	}
-	close(sock); //close network socket
-	cleanup_cape();
+	
+	// cleanup before closing
+	close(sock); 	// mavlink UDP socket
+	cleanup_cape();	// de-initialize cape hardware
 	return 0;
 }
