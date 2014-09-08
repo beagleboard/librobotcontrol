@@ -59,7 +59,7 @@ int wait_for_arming_sequence();
 int disarm();
 int load_default_core_config();
 int on_pause_press();
-int print_flight_mode(flight_mode_t mode);
+int print_flight_mode(flight_mosde_t mode);
 
 //threads
 void* flight_stack(void* ptr);
@@ -167,7 +167,7 @@ typedef struct core_config_t{
 	
 	// rough starting estimate of throttle needed to hover
 	// this updates automatically by low-passing throttle inputs
-	float hover_input = 0.3;
+	float hover_input;
 	
 	// 3rd order discrete controller gains placeholder for when we replace PID
 	// float pitch_num_K[4];		
@@ -718,7 +718,7 @@ void* DSM2_watcher(void* ptr){
 				user_interface.user_flight_mode = USER_ATTITUDE;
 			}
 			else{
-				user_interface.user_flight_mode = ATTITUDE;
+				user_interface.user_flight_mode = USER_ATTITUDE;
 			}
 			
 			// user hit the kill switch, emergency disarm
@@ -793,26 +793,27 @@ void* led_manager(void* ptr){
 ************************************************************************/
 int print_flight_mode(flight_mode_t mode){
 	switch(mode){
+	printf("flight_mode: ");
 	case EMERGENCY_KILL:
-		printf("flight_mode: EMERGENCY_KILL\n");
+		printf("EMERGENCY_KILL\n");
 		break;
 	case EMERGENCY_LAND:
-		printf("flight_mode: EMERGENCY_LAND\n");
+		printf("EMERGENCY_LAND\n");
 		break;
 	case USER_ATTITUDE:
-		printf("flight_mode: USER_ATTITUDE\n");
+		printf("USER_ATTITUDE\n");
 		break;
 	case USER_LOITER:
-		printf("flight_mode: USER_LOITER\n");
+		printf("USER_LOITER\n");
 		break;
 	case USER_POSITION_CARTESIAN:
-		printf("flight_mode: USER_POSITION_CARTESIAN\n");
+		printf("USER_POSITION_CARTESIAN\n");
 		break;
 	case USER_POSITION_RADIAL;
-		printf("flight_mode: USER_POSITION_RADIAL\n");
+		printf("USER_POSITION_RADIAL\n");
 		break;
 	case DEFAULT:
-		printf("ERROR: unknown flight_mode\n");
+		printf("unknown\n");
 		break;
 	}
 }
