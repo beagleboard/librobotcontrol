@@ -59,7 +59,7 @@ int wait_for_arming_sequence();
 int disarm();
 int load_default_core_config();
 int on_pause_press();
-int print_flight_mode(flight_mosde_t mode);
+int print_flight_mode(flight_mode_t mode);
 
 //threads
 void* flight_stack(void* ptr);
