@@ -81,20 +81,22 @@ int flight_core();
 /************************************************************************
 * 	flight_mode_t
 *	
-*	Very similar to flight_core_mode.
-*	flight_mode determines how flight_core_setpoint is modulated.
+*	user_interface.flight_mode determines how the flight stack behaves
 *
-*	ATTITUDE: gives the user direct joystick control of the inner-loop
+*	EMERGENCY_KILL: kill motors and reset the flight core controllers
+*
+*	EMERGENCY_LAND: slowly decrease altitude in place until touchdown
+*	
+*	USER_ATTITUDE: gives the user direct joystick control of the inner-loop
 *	throttle, yaw rate, and roll/pitch attitude
 *
-
+*
 *	TODO: future modes
-
+*
 *	LOITER: sets the flight_core to position mode and updates the position
 *	setpoint based on user inputs such that the user joystick controls 
 *	velocity from the perspective of the UAV. This would be the most_useful
 *	mode when flying First-Person view.
-*	Centering all joysticks holds quadrotor still.
 *	
 *	USER_POSITION_CARTESIAN: Similar to jog mode on a CNC mill. The user 
 *	controls the global position setpoint using the ARMING location as
@@ -103,7 +105,6 @@ int flight_core();
 *	USER_POSITION_RADIAL: Left/Right forward/back are from the perspective 
 *	of the pilot at takeoff location.
 *
-*	EMERGENCY_LAND: slowly decrease altitude in place until touchdown
 ************************************************************************/
 typedef enum flight_mode_t{
 	EMERGENCY_KILL;
@@ -112,6 +113,8 @@ typedef enum flight_mode_t{
 	USER_LOITER;
 	USER_POSITION_CARTESIAN;
 	USER_POSITION_RADIAL;
+	TARGET_HOLD;
+	
 }flight_mode_t;
 
 /************************************************************************
@@ -792,8 +795,9 @@ void* led_manager(void* ptr){
 *	print a flight mode to console
 ************************************************************************/
 int print_flight_mode(flight_mode_t mode){
+	fflush(stdout);
+	printf("\nflight_mode: ");
 	switch(mode){
-	printf("flight_mode: ");
 	case EMERGENCY_KILL:
 		printf("EMERGENCY_KILL\n");
 		break;
@@ -816,6 +820,8 @@ int print_flight_mode(flight_mode_t mode){
 		printf("unknown\n");
 		break;
 	}
+	fflush(stdout);
+	return 0;
 }
 
 /************************************************************************
