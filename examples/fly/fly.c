@@ -821,15 +821,31 @@ int print_flight_mode(flight_mode_t mode){
 *	print stuff to the console
 ************************************************************************/
 void* printf_thread_func(void* ptr){
+	int i;
 	while(get_state()!=EXITING){	
-		printf("RC: "); 
+		printf("\r");
+		
+		// print user inputs
+		printf("user inputs: ");
+		printf("thr %0.1f ", user_interface.throttle_stick); 
+		printf("roll %0.1f ", user_interface.roll_stick); 
+		printf("pitch %0.1f ", user_interface.pitch_stick); 
+		printf("yaw %0.1f ", user_interface.yaw_stick); 
+		printf("kill %d ", user_interface.kill_switch); 
+		
+		// print setpoints
+		printf("setpoints: ");
+		printf("roll %0.1f ", core_setpoint.roll); 
+		printf("pitch %0.1f ", core_setpoint.pitch); 
+		printf("yaw: %0.1f ", core_setpoint.yaw); 
+		
+		// print outputs to motors
+		printf("esc: ");
 		for(i=0; i<4; i++){
-			printf("%0.2f ", get_dsm2_ch_normalized(i));
+			printf("%0.2f ", core_state.esc[i]);
 		}
-		printf(" u: ");//print control outputs u
-		for(i=0; i<4; i++){
-			printf("%0.2f ", u[i]);
-		}
+		
+		
 		fflush(stdout);	
 		usleep(200000); // print at ~5hz
 	}
