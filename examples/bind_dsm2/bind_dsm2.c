@@ -6,7 +6,7 @@
 
 // satellite receiver communication pin is P9.11 gpio_0[30]
 #define GPIO_PIN 30
-#define PINMUX_PATH "/sys/devices/ocp.3/P9_11_pinmux.20/state"
+#define PINMUX_PATH "/sys/devices/ocp.3/P9_11_pinmux.18/state"
 #define PAUSE 115	//microseconds
 
 

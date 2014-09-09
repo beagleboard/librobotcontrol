@@ -884,8 +884,8 @@ int cleanup_cape(){
 	disable_motors();
 	deselect_spi1_slave(1);	
 	deselect_spi1_slave(2);	
-	prussdrv_pru_disable(PRU_NUM);
-    prussdrv_exit();
+	// prussdrv_pru_disable(PRU_NUM);
+    // prussdrv_exit();
 	printf("\nExiting Cleanly\n");
 	return 0;
 }

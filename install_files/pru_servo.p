@@ -63,6 +63,17 @@ START:
 	SBBO    r0, r1, 0, 4				// has arbitrary 2048 offset
 	MOV		r9, 0x00000000				// erase r9 to use to use later
 	
+	CLR		CH1BIT	
+	CLR		CH2BIT	
+	CLR		CH3BIT	
+	CLR		CH4BIT	
+	CLR		CH5BIT	
+	CLR		CH6BIT	
+	CLR		CH7BIT	
+	CLR		CH8BIT
+	SBCO	r9, CONST_PRUSHAREDRAM, 0, 32	// write 0 to shared memory
+	
+	
 // Beginning of loop, should always take 48 instructions to complete
 CH1:			
 		QBEQ	CLR1, r0, 0						// If timer is 0, jump to clear channel

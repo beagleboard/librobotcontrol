@@ -66,8 +66,9 @@ int main(){
 	pthread_create(&send_pulse_thread, NULL, send_pulses, (void*) NULL);
 	while( getchar() != '\n' );
 	sending = 0; //stop sending thread
+	pthread_join(send_pulse_thread, NULL);
+	usleep(5000); // wait 5ms before next pulse
 	setGRN(LOW);
-	usleep(20000);
 	
 	//set throttle to 0 for a second to define lower bound
 	for(j=1; j<=50; j++){
