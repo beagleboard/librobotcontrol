@@ -114,7 +114,6 @@ typedef enum flight_mode_t{
 	USER_POSITION_CARTESIAN;
 	USER_POSITION_RADIAL;
 	TARGET_HOLD;
-	
 }flight_mode_t;
 
 /************************************************************************
@@ -147,12 +146,12 @@ typedef enum flight_core_mode_t{
 ************************************************************************/
 typedef struct core_config_t{
 	// PID Control Gains
-	float altitude_K_PID[3];		// PID gains for roll rate
+	float altitude_K_PID[3];	// absolute altitude
 	float pitch_rate_per_rad;	// rad/s per rad pitch error
-	float pitch_rate_K_PID[3];		// PID gains for pitch rate
+	float pitch_rate_K_PID[3];	// PID gains for pitch rate control
 	float roll_rate_per_rad;	// rad/s per rad roll error
-	float roll_rate_K_PID[3];		// PID gains for roll rate
-	float yaw_K_PID[3];		// PID gains for roll rate
+	float roll_rate_K_PID[3];	// PID gains for roll rate
+	float yaw_K_PID[3];			// absolute yaw control
 	
 	// Limits of user input
 	float max_throttle;			// .8 is reasonable, set to 1 for max
@@ -212,20 +211,28 @@ typedef struct core_state_t{
 	float current_roll;				// current roll angle (rad)
 	float current_pitch;			// current pitch angle (rad)
 	float current_yaw;				// current yaw angle (rad)
+	
 	float altitude[STATE_LEN];  	// current and previous altitudes
 	float roll[STATE_LEN];  		// current and previous roll angles
 	float pitch[STATE_LEN]; 		// current and previous pitch angles
 	float yaw[STATE_LEN];  			// current and previous yaw angles
-	float alt_err[STATE_LEN]; 		// current and previous altitudes error
-	float roll_rate_err[STATE_LEN]; // current and previous roll error
-	float pitch_rate_err[STATE_LEN];// current and previous pitch error
-	float yaw_err[STATE_LEN];   	// current and previous yaw error
+	
 	float dAltitude;				// first derivative of altitude (m/s)
 	float dRoll;					// first derivative of roll (rad/s)
 	float dPitch;					// first derivative of pitch (rad/s)
 	float dYaw;						// first derivative of yaw (rad/s)
 	float positionX;				// estimate of X displacement from takeoff (m)
 	float positionY;				// estimate of Y displacement from takeoff (m)
+	
+	float alt_err[STATE_LEN]; 		// current and previous altitudes error
+	float dRoll_err[STATE_LEN]; // current and previous roll error
+	float dPitch_rate_err[STATE_LEN];// current and previous pitch error
+	float yaw_err[STATE_LEN];   	// current and previous yaw error
+	
+	float alt_err_integrator; 		// current and previous altitudes error
+	float dRoll_err_integrator; 	// current and previous roll error
+	float dPitch_err_integrator;	// current and previous pitch error
+	float yaw_err_integrator;   	// current and previous yaw error
 	float esc_out[4];				// normalized (0-1) outputs to 4 motors
 	int num_yaw_spins; 				// remember number of spins around Z
 	float yaw_on_takeoff;			// raw yaw value read on takeoff
@@ -297,15 +304,26 @@ int flight_core(){
 			core_state.pitch[i] = core_state.pitch[i-1];
 			core_state.yaw[i] = core_state.yaw[i-1];
 			core_state.alt_err[i] = core_state.alt_err[i-1];
-			core_state.roll_rate_err[i] = core_state.roll_rate_err[i-1];
-			core_state.pitch_rate_err[i] = core_state.pitch_rate_err[i-1];
+			core_state.dRoll_err[i] = core_state.dRoll_err[i-1];
+			core_state.dPitch_err[i] = core_state.dPitch_err[i-1];
 			core_state.yaw_err[i] = core_state.yaw_err[i-1];
 		}
 		// collect new IMU roll/pitch data
-		core_state.current_roll = mpu.fusedEuler[VEC3_Y] - core_config.imu_roll_err;
+		// positive roll right according to right hand rule
+		// MPU9150 driver has unnecessary minus sign on Y axis, correct for it here
+		core_state.current_roll = -(mpu.fusedEuler[VEC3_Y] - core_config.imu_roll_err);
 		core_state.roll[0] = core_state.current_roll;
-		core_state.current_pitch = mpu.fusedEuler[VEC3_Y]- core_config.imu_pitch_err;
+		
+		// positive pitch backwards according to right hand rule
+		core_state.current_pitch = mpu.fusedEuler[VEC3_X]- core_config.imu_pitch_err;
 		core_state.pitch[0] = core_state.current_pitch;
+		
+		// current roll/pitch/yaw rates straight from gyro 
+		// converted to rad/s with default FUll scale range
+		// raw gyro matches sign on MPU9150 coordinate system
+		core_state.dRoll  = mpu.rawGyro[VEC3_Y] * GYRO_FSR * DEGREE_TO_RAD / 32767.0;
+		core_state.dPitch = mpu.rawGyro[VEC3_X] * GYRO_FSR * DEGREE_TO_RAD / 32767.0;
+		core_state.dYaw	  = mpu.rawGyro[VEC3_Z] * GYRO_FSR * DEGREE_TO_RAD / 32767.0;
 		
 		// if this is the first loop since being armed, reset yaw trim
 		if(previous_core_mode == DISARMED && 
@@ -355,6 +373,8 @@ int flight_core(){
 			*	if disarmed, reset controllers and return
 			************************************************************************/
 			case DISARMED:
+				core_state.dRoll_err_integrator  = 0;
+				core_state.dPitch_err_integrator = 0;
 				return 0;
 				break;		//should never get here
 				
@@ -392,20 +412,32 @@ int flight_core(){
 		/************************************************************************
 		*	Roll & Pitch Controllers
 		************************************************************************/
-		for(i=1;i<=2;i++){
-			state_error[i][0]=set_point[i]-x[i][0];
-			if(u[0] > INT_CUTOFF_TH){
-				integrator[i]=DT*state_error[i][0] + integrator[i];}
-			derivative[i]=(state_error[i][0]-state_error[i][1])/DT;
-			u[i]=K[i][0]*(state_error[i][0]+K[i][1]*integrator[i]+K[i][2]*derivative[i]);
-		}
+		float dRoll_setpoint = (core_setpoint.roll - core_state.current_roll) *
+														core_config.roll_rate_per_rad;
+		float dPitch_setpoint = (core_setpoint.pitch - core_state.current_pitch) *
+														core_config.pitch_rate_per_rad;
+		core_state.dRoll_err[0]  = dRoll_setpoint  - core_state.dRoll;
+		core_state.dpitch_err[0] = dPitch_setpoint - core_state.dPitch;
 		
-			
+		core_state.dRoll_err_integrator  += core_state.dRoll_err  * DT;
+		core_state.dPitch_err_integrator += core_state.dPitch_err * DT;
+		
+		// parallel PID
+		// TODO: replace with similar discrete-time filter and use my filter lib
+		u[1] = (core_config.roll_rate_K_PID[0] * core_state.dRoll_err[0]) +
+				(core_config.roll_rate_K_PID[1] * dPitch_err_integrator) +
+				(core_config.roll_rate_K_PID[2] * (dRoll_err[0]-dRoll_err[1])/DT);
+				
+		u[2] = (core_config.pitch_rate_K_PID[0] * core_state.dPitch_err[0]) +
+				(core_config.pitch_rate_K_PID[1] * dPitch_err_integrator) +
+				(core_config.pitch_rate_K_PID[2] * (dPitch_err[0]-dPitch_err[1])/DT);
+		
+		
 		/************************************************************************
 		*  Mixing for arducopter/pixhawk X-quadrator layout
-		*  CW 3	  1 CCW
-		* 	   \ /
-		*	   / \
+		*  CW 3	  1 CCW			
+		* 	   \ /				Y
+		*	   / \            	|_ X
 		* CCW 2	  4 CW
 		************************************************************************/
 		new_esc[0]=u[0]-u[1]-u[2]-u[3];
@@ -816,6 +848,9 @@ int print_flight_mode(flight_mode_t mode){
 	case USER_POSITION_RADIAL;
 		printf("USER_POSITION_RADIAL\n");
 		break;
+	case TARGET_HOLD;
+		printf("TARGET_HOLD\n");
+		break;
 	case DEFAULT:
 		printf("unknown\n");
 		break;
@@ -851,7 +886,6 @@ void* printf_thread_func(void* ptr){
 		for(i=0; i<4; i++){
 			printf("%0.2f ", core_state.esc[i]);
 		}
-		
 		
 		fflush(stdout);	
 		usleep(200000); // print at ~5hz

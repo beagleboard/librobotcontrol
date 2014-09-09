@@ -73,6 +73,8 @@ either expressed or implied, of the FreeBSD Project.
 //// MPU9150 IMU
 #define ORIENTATION_UPRIGHT {0,0,1, 0,1,0,-1,0,0} // Ethernet pointing up for BeagleMIP
 #define ORIENTATION_FLAT    {1,0,0, 0,1,0, 0,0,1} // BB flat on table for BealgeQuad
+#define GYRO_FSR			2000				  // default full scale range (deg/s)
+#define ACCEL_FSR			2					  // default full scale range  (g)
 
 //// Spektrum DSM2 RC Radio
 #define RC_CHANNELS 9
