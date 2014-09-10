@@ -41,17 +41,36 @@ either expressed or implied, of the FreeBSD Project.
 
 #include <robotics_cape.h>
 
-int main(){
+int main(int argc, char *argv[]){
     initialize_cape();
     
 	int i;
 	int micros = SERVO_MIN_US;
+	int ch = 0;
+	int all = 0;
 
+	if (argc==1){
+		all = 1;
+    }
+	else{
+		ch = atoi(argv[1]);
+		all = 0;
+		if(ch>SERVO_CHANNELS || ch<1){
+			printf("choose a channel between 1 and %d\n", SERVO_CHANNELS);
+			return -1;
+		}
+	}
+	
 	while(get_state()!=EXITING){
 	
-		// send single pulse to each servo
-		for(i=0; i<SERVO_CHANNELS; i++){
-			send_servo_pulse_us(i+1,micros);
+		if(all){
+			// send single pulse to each servo
+			for(i=0; i<SERVO_CHANNELS; i++){
+				send_servo_pulse_us(i+1,micros);
+			}
+		}
+		else{
+			send_servo_pulse_us(ch,micros);
 		}
 		
 		// increase # of microseconds each loop 
