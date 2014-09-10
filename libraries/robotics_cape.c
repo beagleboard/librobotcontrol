@@ -707,14 +707,15 @@ int initialize_pru_servos(){
     // Get the interrupt initialized
 	tpruss_intc_initdata pruss_intc_initdata = PRUSS_INTC_INITDATA;
     prussdrv_pruintc_init(&pruss_intc_initdata);
-	
-	// launch servo binary
-	prussdrv_exec_program(PRU_NUM, PRU_BIN_LOCATION);
 
 	// get pointer to PRU shared memory
 	void* sharedMem = NULL;
     prussdrv_map_prumem(PRUSS0_SHARED_DATARAM, &sharedMem);
     prusharedMem_32int_ptr = (unsigned int*) sharedMem;
+	memset(prusharedMem_32int_ptr, 0, SERVO_CHANNELS*4);
+	
+	// launch servo binary
+	prussdrv_exec_program(PRU_NUM, PRU_BIN_LOCATION);
 
     return(0);
 }
@@ -884,8 +885,8 @@ int cleanup_cape(){
 	disable_motors();
 	deselect_spi1_slave(1);	
 	deselect_spi1_slave(2);	
-	// prussdrv_pru_disable(PRU_NUM);
-    // prussdrv_exit();
+	prussdrv_pru_disable(PRU_NUM);
+    prussdrv_exit();
 	printf("\nExiting Cleanly\n");
 	return 0;
 }
