@@ -14,7 +14,7 @@ dtc -O dtb -o /lib/firmware/SD-101C-00A0.dtbo -b 0 -@ install_files/SD-101C-00A0
 
 echo "modifying uEnv.txt to Disable HDMI"
 cp /boot/uboot/uEnv.txt /boot/uboot/uEnv.txt.old
-echo "cape_disable=capemgr.disable_partno=BB-BONELT-HDMI,BB-BONELT-HDMIN" >> /boot/uboot/uEnv.txt
+echo "optargs=capemgr.disable_partno=BB-BONELT-HDMI,BB-BONELT-HDMIN" >> /boot/uboot/uEnv.txt
 
 echo "Copying am335x-boneblack.dtb to change i2c bus speed"
 cp /boot/uboot/dtbs/am335x-boneblack.dtb /boot/uboot/dtbs/am335x-boneblack.dtb.old
