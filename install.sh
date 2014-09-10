@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Bash script to install supporting software for the Robotics Cape
-# tested on beagleboard.org Debian release 4/23/2014
+# tested on beagleboard.org Debian release 9/05/2014
 
 INSTALL_DIR="/root"
 BOOTSCRIPT="Auto_Run_Script.sh"
@@ -24,12 +24,10 @@ echo "Setting Capemgr to Load Robotics Overlay by Default"
 echo "CAPE=SD-101C" > /etc/default/capemgr
 
 echo "Installing Supporting Libraries"
-#echo "/usr/lib/robotics" >> /etc/ld.so.conf
 cd libraries
 make clean > /dev/null
 make install > /dev/null
 make clean
-#ldconfig
 cd ../
 
 echo "Installing PRU Binaries and Assembler"
@@ -44,7 +42,6 @@ make clean > /dev/null
 make install > /dev/null
 make clean > /dev/null
 cd ../
-# chmod 755 /usr/bin/*
 
 
 echo "Installing Default Calibration Files"
@@ -62,10 +59,10 @@ update-rc.d $BOOTSCRIPT defaults
 echo " "
 echo "which program should run on boot?"
 echo "type 1-4 then enter"
-select bfn in "balance" "blink" "none"; do
+select bfn in "blink" "balance" "fly" "none"; do
     case $bfn in
-        balance ) echo "balance &" >> $INSTALL_DIR/$BOOTSCRIPT; break;;
 		blink ) echo "blink &" >> $INSTALL_DIR/$BOOTSCRIPT; break;;
+        balance ) echo "balance &" >> $INSTALL_DIR/$BOOTSCRIPT; break;;
 		fly ) echo "fly &" >> $INSTALL_DIR/$BOOTSCRIPT; break;;
 		none ) exit;;
     esac
