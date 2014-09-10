@@ -40,7 +40,7 @@ either expressed or implied, of the FreeBSD Project.
 // Flight Core Constants
 #define CONTROL_HZ 			200		// Run the main control loop at this rate
 #define DT 				   .005		// timestep seconds MUST MATCH CONTROL_HZ
-#define	SATE_LEN 			32		// number of timesteps to retain data
+#define	STATE_LEN 			32		// number of timesteps to retain data
 #define MAX_YAW_COMPONENT	0.2 	// Max control delta the yaw controller can apply
 #define INT_CUTOFF_TH 		0.1		// prevent integrators from running unless flying
 
@@ -50,28 +50,6 @@ either expressed or implied, of the FreeBSD Project.
 #define DSM2_DISARM_TIMEOUT	5.0		// seconds before disarming motors completely 
 #define EMERGENCY_LAND_THR  0.2		// throttle to hold at when emergency landing
 #define ESC_IDLE_SPEED 		0.07	// normalized esc idle input when throttle is zero
-
-/************************************************************************
-* 	Function declarations				
-************************************************************************/
-// regular functions
-int wait_for_arming_sequence();
-int disarm();
-int load_default_core_config();
-int on_pause_press();
-int print_flight_mode(flight_mode_t mode);
-
-//threads
-void* flight_stack(void* ptr);
-void* mavlink_sender(void* ptr);
-void* safety_thread_func(void* ptr);
-void* DSM2_watcher(void* ptr);
-void* led_manager(void* ptr);
-void* printf_thread_func(void* ptr);
-
-// hardware interrupt routines
-int flight_core();
-
 
 
 /************************************************************************
@@ -107,17 +85,17 @@ int flight_core();
 *
 ************************************************************************/
 typedef enum flight_mode_t{
-	EMERGENCY_KILL;
-	EMERGENCY_LAND;
-	USER_ATTITUDE;
-	USER_LOITER;
-	USER_POSITION_CARTESIAN;
-	USER_POSITION_RADIAL;
-	TARGET_HOLD;
+	EMERGENCY_KILL,
+	EMERGENCY_LAND,
+	USER_ATTITUDE,
+	USER_LOITER,
+	USER_POSITION_CARTESIAN,
+	USER_POSITION_RADIAL,
+	TARGET_HOLD,
 }flight_mode_t;
 
 /************************************************************************
-* 	flight_core_mode_t
+* 	core_mode_t
 *	
 *	DISARMED: no signal will ever go to ESCs
 *
@@ -132,11 +110,11 @@ typedef enum flight_mode_t{
 *	successive loop closure. This means the continuously changing attitude
 *	setpoint can be read back by other threads.
 ************************************************************************/
-typedef enum flight_core_mode_t{
-	DISARMED;
-	ATTITUDE;
-	POSITION;
-}flight_core_mode_t;
+typedef enum core_mode_t{
+	DISARMED,
+	ATTITUDE,
+	POSITION,
+}core_mode_t;
 
 /************************************************************************
 * 	core_config_t
@@ -226,7 +204,7 @@ typedef struct core_state_t{
 	
 	float alt_err[STATE_LEN]; 		// current and previous altitudes error
 	float dRoll_err[STATE_LEN]; 	// current and previous roll error
-	float dPitch_rate_err[STATE_LEN];// current and previous pitch error
+	float dPitch_err[STATE_LEN];// current and previous pitch error
 	float yaw_err[STATE_LEN];   	// current and previous yaw error
 	
 	float alt_err_integrator; 		// current and previous altitudes error
@@ -235,7 +213,7 @@ typedef struct core_state_t{
 	float yaw_err_integrator;   	// current and previous yaw error
 	float esc_out[4];				// normalized (0-1) outputs to 4 motors
 	int num_yaw_spins; 				// remember number of spins around Z
-	float yaw_on_takeoff;			// raw yaw value read on takeoff
+	float imu_yaw_on_takeoff;		// raw yaw value read on takeoff
 }core_state_t;
 
 /************************************************************************
@@ -247,7 +225,7 @@ typedef struct user_interface_t{
 	// this is the user commanded flight_mode. 
 	// flight stack reads this into flight_mode except in the
 	// case of loss of communication or emergency landing
-	flight_mode_t user_flight_mode;  
+	flight_mode_t flight_mode;  
 	
 	// All sticks scaled from -1 to 1
 	float throttle_stick; 	// positive up
@@ -260,6 +238,28 @@ typedef struct user_interface_t{
 	int kill_switch;
 
 }user_interface_t;
+
+/************************************************************************
+* 	Function declarations				
+************************************************************************/
+// regular functions
+int wait_for_arming_sequence();
+int disarm();
+int load_default_core_config();
+int on_pause_press();
+int print_flight_mode(flight_mode_t mode);
+
+//threads
+void* flight_stack(void* ptr);
+void* mavlink_sender(void* ptr);
+void* safety_thread_func(void* ptr);
+void* DSM2_watcher(void* ptr);
+void* led_manager(void* ptr);
+void* printf_thread_func(void* ptr);
+
+// hardware interrupt routines
+int flight_core();
+
 
 /************************************************************************
 * 	Global Variables				
@@ -282,7 +282,7 @@ user_interface_t		user_interface;
 ************************************************************************/
 int flight_core(){
 	// remember previous core_mode to detect transition from DISARMED
-	static flight_core_mode_t previous_core_mode;
+	static core_mode_t previous_core_mode;
 	int i;	// general purpose
 	
 	/************************************************************************
@@ -325,19 +325,23 @@ int flight_core(){
 		if(previous_core_mode == DISARMED && 
 			core_setpoint.core_mode != DISARMED)
 		{	
-			flight_core_state.num_yaw_spins = 0;
-			flight_core_state.imu_yaw_on_takeoff = mpu.fusedEuler[VEC3_Z];
+			core_state.num_yaw_spins = 0;
+			core_state.imu_yaw_on_takeoff = mpu.fusedEuler[VEC3_Z];
 		}
-		float new_yaw = (mpu.fusedEuler[VEC3_Z] - imu_yaw_on_takeoff) +
-													num_yaw_spins*2*PI);
+		float new_yaw = (mpu.fusedEuler[VEC3_Z] - core_state.imu_yaw_on_takeoff) + (
+													core_state.num_yaw_spins*2*PI);
 		
 		// detect the crossover point at Z = +-PI
-		if(new_yaw - new_yaw-core_state.yaw[1] > 6)num_yaw_spins -= 1;
-		else if(new_yaw - new_yaw-core_state.yaw[1] < 6)num_yaw_spins += 1;
+		if(new_yaw - core_state.yaw[1] > 6){
+			core_state.num_yaw_spins -= 1;
+		}
+		else if(new_yaw - new_yaw-core_state.yaw[1] < 6){
+			core_state.num_yaw_spins += 1;
+		}
 		
 		// record new yaw compensating for full rotation
-		core_state.current_yaw = (mpu.fusedEuler[VEC3_Z] - imu_yaw_on_takeoff) +
-															(num_yaw_spins*2*PI);
+		core_state.current_yaw = (mpu.fusedEuler[VEC3_Z] - core_state.imu_yaw_on_takeoff) +
+															(core_state.num_yaw_spins*2*PI);
 		core_state.yaw[0] = core_state.current_yaw;
 		
 		// TODO: read barometer for altitude and inertial position estimate
@@ -372,11 +376,11 @@ int flight_core(){
 			case DISARMED:
 				core_state.dRoll_err_integrator  = 0;
 				core_state.dPitch_err_integrator = 0;
-				previous_arm_state = DISARMED;
+				previous_core_mode = DISARMED;
 				return 0;
 				break;		//should never get here
 				
-			case default:
+			default:
 				break;		//should never get here
 		}
 		
@@ -403,37 +407,44 @@ int flight_core(){
 		float dPitch_setpoint = (core_setpoint.pitch - core_state.current_pitch) *
 														core_config.pitch_rate_per_rad;
 		core_state.dRoll_err[0]  = dRoll_setpoint  - core_state.dRoll;
-		core_state.dpitch_err[0] = dPitch_setpoint - core_state.dPitch;
+		core_state.dPitch_err[0] = dPitch_setpoint - core_state.dPitch;
 		
 		// only run integrator if airborne 
 		// TODO: proper landing/takeoff detection
 		if(u[0] > INT_CUTOFF_TH){
-			core_state.dRoll_err_integrator  += core_state.dRoll_err  * DT;
-			core_state.dPitch_err_integrator += core_state.dPitch_err * DT;
+			core_state.dRoll_err_integrator  += core_state.dRoll_err[0]  * DT;
+			core_state.dPitch_err_integrator += core_state.dPitch_err[0] * DT;
 		}
+		
+		float roll_D  = (core_state.dRoll_err[0]-core_state.dRoll_err[1])/DT;
+		float pitch_D = (core_state.dPitch_err[0]-core_state.dPitch_err[1])/DT;
 		
 		// parallel PID
 		// TODO: replace with similar discrete-time filter and use my filter lib
 		u[1] = (core_config.roll_rate_K_PID[0] * core_state.dRoll_err[0]) +
 				(core_config.roll_rate_K_PID[1] * core_state.dPitch_err_integrator) +
-				(core_config.roll_rate_K_PID[2] * (dRoll_err[0]-dRoll_err[1])/DT);
+				(core_config.roll_rate_K_PID[2] * roll_D);
 				
 		u[2] = (core_config.pitch_rate_K_PID[0] * core_state.dPitch_err[0]) +
 				(core_config.pitch_rate_K_PID[1] * core_state.dPitch_err_integrator) +
-				(core_config.pitch_rate_K_PID[2] * (dPitch_err[0]-dPitch_err[1])/DT);
+				(core_config.pitch_rate_K_PID[2] * pitch_D);
 		
 		/************************************************************************
 		*	Yaw Controller
 		************************************************************************/
-		core_state.yaw_err = core_setpoint.yaw - core_state.current_yaw;
+		core_state.yaw_err[0] = core_setpoint.yaw - core_state.current_yaw;
 		
 		// only run integrator if airborne 
 		if(u[0] > INT_CUTOFF_TH){
-			core_state.yaw_err_integrator += core_state.yaw_err * DT;
+			core_state.yaw_err_integrator += core_state.yaw_err[0] * DT;
 		}
+		
+		float yaw_D  = (core_state.yaw_err[0]-core_state.yaw_err[1])/DT;
+		
+		// parallel PID
 		u[3] = (core_config.yaw_K_PID[0] * core_state.yaw_err[0]) +
 				(core_config.yaw_K_PID[1] * core_state.yaw_err_integrator) +
-				(core_config.yaw_K_PID[2] * (yaw_err[0]-yaw_err[1])/DT);
+				(core_config.yaw_K_PID[2] * yaw_D);
 				
 		// limit yaw control input such that two motors don't run away
 		if(u[3]>MAX_YAW_COMPONENT){
@@ -461,17 +472,15 @@ int flight_core(){
 		*	outputs evenly such that the largest doesn't exceed 1
 		************************************************************************/
 		// find control output limits 
-		int largest_index, smallest_index;
 		float largest_value = 0;
 		float smallest_value = 1;
 		for(i=0;i<4;i++){
-			if(new_new_new_esc[i]>largest_value){
+			if(new_esc[i]>largest_value){
 				largest_value = new_esc[i];
-				largest_index = i;
+
 			}
 			if(new_esc[i]<smallest_value){
 				smallest_value=new_esc[i];
-				smallest_index = i;
 			}
 		}
 		// if upper saturation would have occurred, reduce all outputs evenly
@@ -497,11 +506,11 @@ int flight_core(){
 		************************************************************************/
 		for(i=0;i<4;i++){
 			send_servo_pulse_normalized(i+1,new_esc[i]);
-			core_state.esc_out[i] - new_esc[i];
+			core_state.esc_out[i] = new_esc[i];
 		}
 			
 		//remember the last state to detect transition from DISARMED to ARMED
-		previous_arm_state = core_setpoint.arm_state;
+		previous_core_mode = core_setpoint.core_mode;
 	}
 	return 0;
 }
@@ -529,7 +538,7 @@ void* flight_stack(void* ptr){
 		}
 		
 		// shutdown core on emergency kill mode or kill switch
-		if(user_interface.user_flight_mode == EMERGENCY_KILL ||
+		if(user_interface.flight_mode == EMERGENCY_KILL ||
 		   user_interface.kill_switch != 0)
 		{
 			disarm();
@@ -551,14 +560,14 @@ void* flight_stack(void* ptr){
 				core_setpoint.core_mode = ATTITUDE;
 				
 				// translate throttle stick (-1,1) to throttle (0,1)
-				float user_throttle  = (user_interface.throttle_stick + 1)/2f;
+				float user_throttle  = (user_interface.throttle_stick + 1.0)/2.0;
 				//compensate for idle speed
 				core_setpoint.throttle = (user_throttle + ESC_IDLE_SPEED)/
 														(1+ESC_IDLE_SPEED);
 				// scale roll and pitch angle by max setpoint in rad
-				core_setpoint.roll		= user_interface.roll *
+				core_setpoint.roll		= user_interface.roll_stick *
 											core_config.max_roll_setpoint;
-				core_setpoint.pitch		= user_interface.pitch *
+				core_setpoint.pitch		= user_interface.pitch_stick *
 											core_config.max_pitch_setpoint;
 				// scale yaw_rate by max yaw rate in rad/s
 				core_setpoint.yaw_rate	= user_interface.yaw_stick *
@@ -580,11 +589,11 @@ void* flight_stack(void* ptr){
 				break;
 			case USER_POSITION_CARTESIAN:
 				break;
-			case USER_POSITION_CARTESIAN:
+			case USER_POSITION_RADIAL:
 				break;
-			case USER_POSITION_RADIAL;
+			case TARGET_HOLD:
 				break;
-			case DEFAULT:
+			default:
 				break;
 			}
 		}
@@ -623,6 +632,7 @@ int wait_for_arming_sequence(){
 		if(get_state()==EXITING) break;}
 	
 	// chirp ESCs
+	int i;
 	for(i=0;i<4;i++){send_servo_pulse_normalized(i+1,0);}
 	setGRN(HIGH);
 	
@@ -632,6 +642,7 @@ int wait_for_arming_sequence(){
 	}
 	printf("ARMED!!\n\n");
 	setRED(LOW);
+	return 0;
 }
 
 /************************************************************************
@@ -652,12 +663,24 @@ int disarm(){
 *	populate core_config with default parameters
 ************************************************************************/
 int load_default_core_config(){
-	core_config.altitude_K_PID 		= {0,0,0};
+	core_config.altitude_K_PID[0]	= 0;
+	core_config.altitude_K_PID[1]	= 0;
+	core_config.altitude_K_PID[2]	= 0;
+	
 	core_config.pitch_rate_per_rad 	= 6;
+	core_config.pitch_rate_K_PID[0] = 0.1;
+	core_config.pitch_rate_K_PID[1] = 0.0;
+	core_config.pitch_rate_K_PID[2] = 0.004;
+	
 	core_config.roll_rate_per_rad	= 6;
-	core_config.pitch_rate_K_PID 	= {.0,  .1,  .004};
-	core_config.roll_rate_K_PID 	= {.0,  .05, .002};	
-	core_config.yaw_K_PID 			= {.2,   1,  .4};
+	core_config.roll_rate_K_PID[0] 	= 0.05;	
+	core_config.roll_rate_K_PID[1] 	= 0.0;	
+	core_config.roll_rate_K_PID[2] 	= 0.002;	
+	
+	core_config.yaw_K_PID[0]		= 0.2;
+	core_config.yaw_K_PID[1]		= 1.0;
+	core_config.yaw_K_PID[2]		= 0.4;
+	
 	core_config.max_throttle 		= 0.8;	
 	core_config.max_yaw_rate 		= 3;
 	core_config.max_roll_setpoint	= 0.4;
@@ -745,13 +768,13 @@ void* safety_thread_func(void* ptr){
 * 	after DSM2_DISARM_TIMEOUT disarm the motors completely 
 ************************************************************************/
 void* DSM2_watcher(void* ptr){
-	timespec last_dsm2_time;
+	timespec last_dsm2_time, current_time;
 	
 	while(get_state()!=EXITING){
 		switch (is_new_dsm2_data()){
 		case 1:	
 			// record time and process new data
-			clock_gettime(CLOCK_MONOTONIC, &last_DSM2_time);
+			clock_gettime(CLOCK_MONOTONIC, &last_dsm2_time);
 			
 			// user hit the kill switch, emergency disarm
 			float kill_switch_position = get_dsm2_ch_normalized(6);
@@ -777,22 +800,24 @@ void* DSM2_watcher(void* ptr){
 				
 				// only use ATTITUDE for now
 				if(get_dsm2_ch_normalized(5)>0){
-					user_interface.user_flight_mode = USER_ATTITUDE;
+					user_interface.flight_mode = USER_ATTITUDE;
 				}
 				else{
-					user_interface.user_flight_mode = USER_ATTITUDE;
+					user_interface.flight_mode = USER_ATTITUDE;
 				}
 			}
 			break;
 			
 		// No new data, check for time-outs
 		case 0:
-			float timeout_secs = diff(current_time,last_DSM2_time) * 1000000000f;
+			clock_gettime(CLOCK_MONOTONIC,&current_time);
+			timespec timeout = diff(current_time,last_dsm2_time);
+			float timeout_secs = timeout.tv_sec + (timeout.tv_nsec/1000000000);
 			
 			// if core is armed and timeout met, disarm the core
-			if(core_setpoint.core_state != DISARMED &&
+			if(core_setpoint.core_mode != DISARMED &&
 				timeout_secs > DSM2_DISARM_TIMEOUT){
-				printf("lost DSM2 communication for %d seconds\n", DSM2_DISARM_TIMEOUT);
+				printf("lost DSM2 communication for %f seconds\n", DSM2_DISARM_TIMEOUT);
 				disarm();
 			}
 			
@@ -806,7 +831,7 @@ void* DSM2_watcher(void* ptr){
 			}
 			break;
 		
-		case default:
+		default:
 			break;  // should never get here
 		}
 		
@@ -821,7 +846,7 @@ void* DSM2_watcher(void* ptr){
 void* led_manager(void* ptr){
 	int toggle;
 	while (get_state()!=EXITING){
-		if(core_setpoint.core_state == DISARMED){
+		if(core_setpoint.core_mode == DISARMED){
 			if(toggle){
 				setRED(LOW);
 				toggle = 1;
@@ -838,6 +863,7 @@ void* led_manager(void* ptr){
 		}
 		usleep(500000); //toggle LED every half second
 	}
+	return NULL;
 }
 
 /************************************************************************
@@ -862,13 +888,13 @@ int print_flight_mode(flight_mode_t mode){
 	case USER_POSITION_CARTESIAN:
 		printf("USER_POSITION_CARTESIAN\n");
 		break;
-	case USER_POSITION_RADIAL;
+	case USER_POSITION_RADIAL:
 		printf("USER_POSITION_RADIAL\n");
 		break;
-	case TARGET_HOLD;
+	case TARGET_HOLD:
 		printf("TARGET_HOLD\n");
 		break;
-	case DEFAULT:
+	default:
 		printf("unknown\n");
 		break;
 	}
@@ -881,32 +907,35 @@ int print_flight_mode(flight_mode_t mode){
 ************************************************************************/
 void* printf_thread_func(void* ptr){
 	int i;
-	while(get_state()!=EXITING){	
-		printf("\r");
-		
-		// print user inputs
-		printf("user inputs: ");
-		printf("thr %0.1f ", user_interface.throttle_stick); 
-		printf("roll %0.1f ", user_interface.roll_stick); 
-		printf("pitch %0.1f ", user_interface.pitch_stick); 
-		printf("yaw %0.1f ", user_interface.yaw_stick); 
-		printf("kill %d ", user_interface.kill_switch); 
-		
-		// print setpoints
-		printf("setpoints: ");
-		printf("roll %0.1f ", core_setpoint.roll); 
-		printf("pitch %0.1f ", core_setpoint.pitch); 
-		printf("yaw: %0.1f ", core_setpoint.yaw); 
-		
-		// print outputs to motors
-		printf("esc: ");
-		for(i=0; i<4; i++){
-			printf("%0.2f ", core_state.esc[i]);
+	while(get_state()!=EXITING){
+		if(core_setpoint.core_mode != DISARMED){
+			printf("\r");
+			
+			// print user inputs
+			printf("user inputs: ");
+			printf("thr %0.1f ", user_interface.throttle_stick); 
+			printf("roll %0.1f ", user_interface.roll_stick); 
+			printf("pitch %0.1f ", user_interface.pitch_stick); 
+			printf("yaw %0.1f ", user_interface.yaw_stick); 
+			printf("kill %d ", user_interface.kill_switch); 
+			
+			// print setpoints
+			printf("setpoints: ");
+			printf("roll %0.1f ", core_setpoint.roll); 
+			printf("pitch %0.1f ", core_setpoint.pitch); 
+			printf("yaw: %0.1f ", core_setpoint.yaw); 
+			
+			// print outputs to motors
+			printf("esc: ");
+			for(i=0; i<4; i++){
+				printf("%0.2f ", core_state.esc_out[i]);
+			}
+			
+			fflush(stdout);	
 		}
-		
-		fflush(stdout);	
 		usleep(200000); // print at ~5hz
 	}
+	return NULL;
 }
 
 // Main only serves to initialize hardware and spawn threads
@@ -919,7 +948,7 @@ int main(int argc, char* argv[]){
 	
 	// start with default settings. 
 	// TODO: load from disk
-	load_default_settings();
+	load_default_core_config();
 	
 	// listen to pause button for disarm and exit commands
 	set_pause_pressed_func(&on_pause_press); 
@@ -951,20 +980,21 @@ int main(int argc, char* argv[]){
 	
 	// start printing information to console
 	pthread_t printf_thread;
-	pthread_create(&printf_thread, NULL, printf_thread_funct, (void*) NULL);
-	
-	// start listening to DSM2 radio
-	pthread_t DSM2_watcher_thread;
-	pthread_create(&DSM2_watcher_thread, NULL, DSM2_watcher, (void*) NULL);
+	pthread_create(&printf_thread, NULL, printf_thread_func, (void*) NULL);
 	
 	// Begin flight Stack
 	pthread_t flight_stack_thread;
 	pthread_create(&flight_stack_thread, NULL, flight_stack, (void*) NULL);
 
-	// Finally start the real-time interrupt driven control thread
+	// Start the real-time interrupt driven control thread
 	signed char orientation[9] = ORIENTATION_FLAT;
-	initialize_imu(SAMPLE_RATE_HZ, orientation);
+	initialize_imu(CONTROL_HZ, orientation);
 	set_imu_interrupt_func(&flight_core);
+	
+	// start listening to DSM2 radio
+	pthread_t DSM2_watcher_thread;
+	pthread_create(&DSM2_watcher_thread, NULL, DSM2_watcher, (void*) NULL);
+	
 	
 	//chill until something exits the program
 	while(get_state()!=EXITING){
