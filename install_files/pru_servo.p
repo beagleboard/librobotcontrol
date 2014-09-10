@@ -71,10 +71,7 @@ START:
 	MOV 	r5, 0x00000000
 	MOV 	r6, 0x00000000
 	MOV 	r7, 0x00000000
-	
-	
 	MOV 	r30, 0x00000000				// turn off GPIO outputs
-	SBCO	r9, CONST_PRUSHAREDRAM, 0, 32	// write 0 to shared memory
 	
 	
 // Beginning of loop, should always take 48 instructions to complete

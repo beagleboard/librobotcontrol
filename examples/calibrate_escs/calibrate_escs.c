@@ -30,11 +30,13 @@ either expressed or implied, of the FreeBSD Project.
 #include <robotics_cape.h>
 
 int sending;
+float width;
+
 void *send_pulses(void *params){
 	int i;
 	while(sending && (get_state()!=EXITING)){
 		for(i=0; i<SERVO_CHANNELS; i++){
-			send_servo_pulse_us(i+1, SERVO_MAX_US);
+			send_servo_pulse_us(i+1, width);
 		}
 		usleep(20000);
 	}
@@ -42,44 +44,38 @@ void *send_pulses(void *params){
 }
 
 int main(){
-	int i, j;
-	
 	initialize_cape();
 	
 	printf("\nDISCONNECT PROPELLERS FROM MOTORS\n");
 	printf("DISCONNECT POWER FROM ESCS\n");
-	printf("press enter to continue\n");
-	
-	// wait for the user to power off escs
+	printf("press enter to start sending max pulse width\n");
 	while(getchar() != '\n');
 	
 	
-	printf("\n");
-	printf("Now reapply power to the ESCs.\n");
-	printf("Press enter again after the ESCs chirp\n");
-	setGRN(HIGH);
-	fflush(stdin);
-	
 	//Send full throttle until the user hits enter
 	sending = 1;
+	width = SERVO_MAX_US;
 	pthread_t  send_pulse_thread;
 	pthread_create(&send_pulse_thread, NULL, send_pulses, (void*) NULL);
+	
+	printf("\n");
+	printf("Now reapply power to the ESCs.\n");
+	printf("Press enter again after the ESCs finish chirping\n");
+	setGRN(HIGH);
+	fflush(stdin);
 	while( getchar() != '\n' );
-	sending = 0; //stop sending thread
-	pthread_join(send_pulse_thread, NULL);
-	usleep(5000); // wait 5ms before next pulse
-	setGRN(LOW);
 	
-	//set throttle to 0 for a second to define lower bound
-	for(j=1; j<=50; j++){
-		for(i=0; i<SERVO_CHANNELS; i++){
-			send_servo_pulse_us(i+1, SERVO_MIN_US);
-		}
-		usleep(20000);
-	}
-	
-	printf("\nCalibration complete, check with test_servos\n");
+	printf("\n");
+	printf("Sending minimum width pulses\n");
+	printf("Press enter again after the ESCs chirping to finish calibration\n");
+	width = SERVO_MIN_US;
+	while( getchar() != '\n' );
 
+	// cleanup and close
+	printf("\nCalibration complete, check with test_servos\n");
+	sending = 0;
+	pthread_join(send_pulse_thread, NULL);
+	
 	cleanup_cape();
 	return 0;
 }
