@@ -490,8 +490,8 @@ int flight_core(){
 		// }
 		// // if upper saturation would have occurred, reduce all outputs evenly
 		// if(largest_value>1){
-			// float offset = largest_value - 1;
 			// for(i=0;i<4;i++){
+			// float offset = largest_value - 1;
 				// new_esc[i]-=offset;
 			// }
 		// }
@@ -514,7 +514,7 @@ int flight_core(){
 			core_state.esc_out[i] = new_esc[i];
 			core_state.control_u[i] = u[i];		
 		}
-			
+			 
 		//remember the last state to detect transition from DISARMED to ARMED
 		previous_core_mode = core_setpoint.core_mode;
 	}
@@ -618,35 +618,39 @@ void* flight_stack(void* ptr){
 *	kill_switch and toggled the throttle stick up and down
 ************************************************************************/
 int wait_for_arming_sequence(){
-	printf("\nTurn your transmitter kill switch UP\n");
-	printf("Then move throttle UP then DOWN to arm\n");
-	
 	
 	while(user_interface.kill_switch){ 
 		usleep(100000);
-		if(get_state()==EXITING) break;}
+		if(get_state()==EXITING)return 0;} 
 	
 	//wait for throttle down
 	while(user_interface.throttle_stick > -0.9){ 
 		usleep(100000);
-		if(get_state()==EXITING) break;}
+		if(get_state()==EXITING)return 0;}
 	
 	//wait for throttle up
 	while(user_interface.throttle_stick<.9){ 
 		usleep(100000);
-		if(get_state()==EXITING) break;}
+		if(get_state()==EXITING)return 0;}
 	
-	// wake up ESCs
-	int i;
-	for(i=0;i<4;i++){send_servo_pulse_normalized(i+1,0);}
-	setGRN(HIGH);
-	
-	while(user_interface.throttle_stick > -0.9){ //wait for throttle down
+	//wait for throttle down
+	while(user_interface.throttle_stick > -0.9){ 
 		usleep(100000);
-		if(get_state()==EXITING)break;
+		if(get_state()==EXITING)return 0;
 	}
+	
+	// wake ESCs up at minimum throttle to avoid calibration mode
+	int i;
+	for(i=0; i<10; i++){
+		send_servo_pulse_normalized(1,0);
+		send_servo_pulse_normalized(2,0);
+		send_servo_pulse_normalized(3,0);
+		send_servo_pulse_normalized(4,0);
+		usleep(5000);
+	}
+		
 	core_setpoint.core_mode = ATTITUDE;
-	printf("ARMED!!\n\n");
+	printf("\n\nARMED!!\n");
 	setRED(LOW);
 	return 0;
 }
@@ -657,10 +661,12 @@ int wait_for_arming_sequence(){
 *	emergency disarm mode
 ************************************************************************/
 int disarm(){
-	//memset(&core_setpoint, 0, sizeof(core_setpoint));
+	if(core_setpoint.core_mode != DISARMED){
+		printf("\n\nDISARMED\n");
+	}
 	core_setpoint.core_mode = DISARMED;
 	setRED(1);
-	setGRN(0);
+	setGRN(0); 
 	return 0;
 }
 
@@ -756,11 +762,13 @@ void* mavlink_sender(void* ptr){
 void* safety_thread_func(void* ptr){
 	while(get_state()!=EXITING){
 		// check for tipover
-		if(	fabs(core_state.current_roll)>TIP_THRESHOLD ||
-			fabs(core_state.current_pitch)>TIP_THRESHOLD)
-		{
-			printf("TIP DETECTED\n");
-			disarm();
+		if(core_setpoint.core_mode != DISARMED){
+			if(	fabs(core_state.current_roll)>TIP_THRESHOLD ||
+				fabs(core_state.current_pitch)>TIP_THRESHOLD)
+			{
+				printf("\nTIP DETECTED\n");
+				disarm();
+			}
 		}
 		usleep(50000); // check at ~20hz
 	}
@@ -776,12 +784,20 @@ void* safety_thread_func(void* ptr){
 void* DSM2_watcher(void* ptr){
 	timespec last_dsm2_time, current_time;
 	
+	// toggle using_dsm2 to 1 when first packet arrives
+	// only check timeouts if this is true
+	int using_dsm2; 
+	
 	while(get_state()!=EXITING){
+		// record time and process new data
+		clock_gettime(CLOCK_MONOTONIC, &current_time);
+		
 		switch (is_new_dsm2_data()){
 		case 1:	
+			using_dsm2 = 1;
+			
 			// record time and process new data
 			clock_gettime(CLOCK_MONOTONIC, &last_dsm2_time);
-			
 			// user hit the kill switch, emergency disarm
 			if(get_dsm2_ch_normalized(6)>0){
 				user_interface.kill_switch = 1;
@@ -808,34 +824,37 @@ void* DSM2_watcher(void* ptr){
 					user_interface.flight_mode = USER_ATTITUDE;
 				}
 				else{
-					user_interface.flight_mode = USER_ATTITUDE;
+					user_interface.flight_mode = EMERGENCY_LAND;
 				}
 			}
 			break;
 			
 		// No new data, check for time-outs
 		case 0:
-			clock_gettime(CLOCK_MONOTONIC,&current_time);
-			timespec timeout = diff(last_dsm2_time, current_time);
-			float timeout_secs = timeout.tv_sec + (timeout.tv_nsec/1000000000);
-			
-			// if core is armed and timeout met, disarm the core
-			if(core_setpoint.core_mode != DISARMED &&
-				timeout_secs > DSM2_DISARM_TIMEOUT){
-				printf("lost DSM2 communication for %f seconds\n", DSM2_DISARM_TIMEOUT);
-				disarm();
+			if(using_dsm2){
+				timespec timeout = diff(last_dsm2_time, current_time);
+				float timeout_secs = timeout.tv_sec + (timeout.tv_nsec/1000000000.0);
+				
+				// if core is armed and timeout met, disarm the core
+				if(core_setpoint.core_mode != DISARMED &&
+					timeout_secs > DSM2_DISARM_TIMEOUT){
+					printf("\n\nlost DSM2 communication for %0.1f seconds", timeout_secs);
+					disarm();
+				}
+				
+				// start landing the the cutout is still short
+				else if(user_interface.flight_mode != EMERGENCY_LAND &&
+							timeout_secs > DSM2_LAND_TIMEOUT){
+					printf("\n\nlost DSM2 communication for %0.1f seconds\n", timeout_secs);
+					printf("EMERGENCY LANDING\n");
+					user_interface.flight_mode = EMERGENCY_LAND;
+					user_interface.throttle_stick 	= -1;
+					user_interface.roll_stick 		= 0;
+					user_interface.pitch_stick 		= 0;
+					user_interface.yaw_stick 		= 0;
+				}
+				break;
 			}
-			
-			// start landing the the cutout is still short
-			else if(timeout_secs > DSM2_LAND_TIMEOUT){
-				user_interface.flight_mode = EMERGENCY_LAND;
-				user_interface.throttle_stick 	= -1;
-				user_interface.roll_stick 		= 0;
-				user_interface.pitch_stick 		= 0;
-				user_interface.yaw_stick 		= 0;
-			}
-			break;
-		
 		default:
 			break;  // should never get here
 		}
@@ -912,14 +931,18 @@ int print_flight_mode(flight_mode_t mode){
 ************************************************************************/
 void* printf_thread_func(void* ptr){
 	int i;
+	
+	printf("\nTurn your transmitter kill switch UP\n");
+	printf("Then move throttle UP then DOWN to arm\n");
+	
 	while(get_state()!=EXITING){
 		//if(core_setpoint.core_mode != DISARMED){
 			printf("\r");
 			
-			// // print core_state
-			// printf("roll %0.1f ", core_state.current_roll); 
-			// printf("pitch %0.1f ", core_state.current_pitch); 
-			// printf("yaw %0.1f ", core_state.current_yaw); 
+			// print core_state
+			printf("roll %0.1f ", core_state.current_roll); 
+			printf("pitch %0.1f ", core_state.current_pitch); 
+			printf("yaw %0.1f ", core_state.current_yaw); 
 			
 			// printf("dRoll %0.1f ", core_state.dRoll); 
 			// printf("dPitch %0.1f ", core_state.dPitch); 
@@ -939,11 +962,11 @@ void* printf_thread_func(void* ptr){
 			// printf("pitch %0.1f ", core_setpoint.pitch); 
 			// printf("yaw: %0.1f ", core_setpoint.yaw); 
 			
-			// print outputs to motors
-			printf("u: ");
-			for(i=0; i<4; i++){
-				printf("%0.2f ", core_state.control_u[i]);
-			}
+			// // print outputs to motors
+			// printf("u: ");
+			// for(i=0; i<4; i++){
+				// printf("%0.2f ", core_state.control_u[i]);
+			// }
 			
 			// print outputs to motors
 			printf("esc: ");
@@ -998,10 +1021,6 @@ int main(int argc, char* argv[]){
 	pthread_t safety_thread;
 	pthread_create(&safety_thread, NULL, safety_thread_func, (void*) NULL);
 	
-	// start printing information to console
-	pthread_t printf_thread;
-	pthread_create(&printf_thread, NULL, printf_thread_func, (void*) NULL);
-	
 	// Begin flight Stack
 	pthread_t flight_stack_thread;
 	pthread_create(&flight_stack_thread, NULL, flight_stack, (void*) NULL);
@@ -1011,12 +1030,14 @@ int main(int argc, char* argv[]){
 	pthread_t DSM2_watcher_thread;
 	pthread_create(&DSM2_watcher_thread, NULL, DSM2_watcher, (void*) NULL);
 	
-
 	// Start the real-time interrupt driven control thread
 	signed char orientation[9] = ORIENTATION_FLAT;
 	initialize_imu(CONTROL_HZ, orientation);
 	set_imu_interrupt_func(&flight_core);
 	
+	// start printing information to console
+	pthread_t printf_thread;
+	pthread_create(&printf_thread, NULL, printf_thread_func, (void*) NULL);
 	
 	
 	//chill until something exits the program
