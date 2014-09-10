@@ -42,14 +42,14 @@ either expressed or implied, of the FreeBSD Project.
 #define DT 				   .005		// timestep seconds MUST MATCH CONTROL_HZ
 #define	STATE_LEN 			32		// number of timesteps to retain data
 #define MAX_YAW_COMPONENT	0.2 	// Max control delta the yaw controller can apply
-#define INT_CUTOFF_TH 		0.1		// prevent integrators from running unless flying
+#define INT_CUTOFF_TH 		0.3		// prevent integrators from running unless flying
 
 // Flight Stack Constants
 #define TIP_THRESHOLD 		1.2		// Kill propellers if it rolls or pitches past this
 #define DSM2_LAND_TIMEOUT	0.3 	// seconds before going into emergency land mode
 #define DSM2_DISARM_TIMEOUT	5.0		// seconds before disarming motors completely 
 #define EMERGENCY_LAND_THR  0.2		// throttle to hold at when emergency landing
-#define ESC_IDLE_SPEED 		0.07	// normalized esc idle input when throttle is zero
+#define ESC_IDLE_SPEED 		0.12	// normalized esc idle input when throttle is zero
 
 
 /************************************************************************
@@ -211,6 +211,7 @@ typedef struct core_state_t{
 	float dRoll_err_integrator; 	// current and previous roll error
 	float dPitch_err_integrator;	// current and previous pitch error
 	float yaw_err_integrator;   	// current and previous yaw error
+	float control_u[4];				// control outputs  alt,roll,pitch,yaw
 	float esc_out[4];				// normalized (0-1) outputs to 4 motors
 	int num_yaw_spins; 				// remember number of spins around Z
 	float imu_yaw_on_takeoff;		// raw yaw value read on takeoff
@@ -328,19 +329,19 @@ int flight_core(){
 			core_state.num_yaw_spins = 0;
 			core_state.imu_yaw_on_takeoff = mpu.fusedEuler[VEC3_Z];
 		}
-		float new_yaw = (mpu.fusedEuler[VEC3_Z] - core_state.imu_yaw_on_takeoff) + (
-													core_state.num_yaw_spins*2*PI);
+		// float new_yaw = -(mpu.fusedEuler[VEC3_Z] - core_state.imu_yaw_on_takeoff) + (
+													// core_state.num_yaw_spins*2*PI);
 		
-		// detect the crossover point at Z = +-PI
-		if(new_yaw - core_state.yaw[1] > 6){
-			core_state.num_yaw_spins -= 1;
-		}
-		else if(new_yaw - new_yaw-core_state.yaw[1] < 6){
-			core_state.num_yaw_spins += 1;
-		}
+		// // detect the crossover point at Z = +-PI
+		// if(new_yaw - core_state.yaw[1] > 6){
+			// core_state.num_yaw_spins += 1;
+		// }
+		// else if(new_yaw - core_state.yaw[1] < 6){
+			// core_state.num_yaw_spins -= 1;
+		// }
 		
 		// record new yaw compensating for full rotation
-		core_state.current_yaw = (mpu.fusedEuler[VEC3_Z] - core_state.imu_yaw_on_takeoff) +
+		core_state.current_yaw = -(mpu.fusedEuler[VEC3_Z] - core_state.imu_yaw_on_takeoff) +
 															(core_state.num_yaw_spins*2*PI);
 		core_state.yaw[0] = core_state.current_yaw;
 		
@@ -376,6 +377,8 @@ int flight_core(){
 			case DISARMED:
 				core_state.dRoll_err_integrator  = 0;
 				core_state.dPitch_err_integrator = 0;
+				core_state.yaw_err_integrator = 0;
+				memset(&core_state.esc_out,0,16);
 				previous_core_mode = DISARMED;
 				return 0;
 				break;		//should never get here
@@ -422,7 +425,7 @@ int flight_core(){
 		// parallel PID
 		// TODO: replace with similar discrete-time filter and use my filter lib
 		u[1] = (core_config.roll_rate_K_PID[0] * core_state.dRoll_err[0]) +
-				(core_config.roll_rate_K_PID[1] * core_state.dPitch_err_integrator) +
+				(core_config.roll_rate_K_PID[1] * core_state.dRoll_err_integrator) +
 				(core_config.roll_rate_K_PID[2] * roll_D);
 				
 		u[2] = (core_config.pitch_rate_K_PID[0] * core_state.dPitch_err[0]) +
@@ -454,6 +457,7 @@ int flight_core(){
 			u[3] = -MAX_YAW_COMPONENT;
 		}
 		
+		
 		/************************************************************************
 		*  Mixing for arducopter/pixhawk X-quadrator layout
 		*  CW 3	  1 CCW			
@@ -462,42 +466,43 @@ int flight_core(){
 		* CCW 2	  4 CW
 		************************************************************************/
 		float new_esc[4];
-		new_esc[0]=u[0]-u[1]-u[2]-u[3];
-		new_esc[1]=u[0]+u[1]-u[2]+u[3];
-		new_esc[2]=u[0]+u[1]+u[2]-u[3];
-		new_esc[3]=u[0]-u[1]+u[2]+u[3];
+		
+		new_esc[0]=u[0]-u[1]+u[2]-u[3];
+		new_esc[1]=u[0]+u[1]-u[2]-u[3];
+		new_esc[2]=u[0]+u[1]+u[2]+u[3];
+		new_esc[3]=u[0]-u[1]-u[2]+u[3];	
 		
 		/************************************************************************
 		*	Prevent saturation under heavy vertical acceleration by reducing all
 		*	outputs evenly such that the largest doesn't exceed 1
 		************************************************************************/
-		// find control output limits 
-		float largest_value = 0;
-		float smallest_value = 1;
-		for(i=0;i<4;i++){
-			if(new_esc[i]>largest_value){
-				largest_value = new_esc[i];
+		// // find control output limits 
+		// float largest_value = 0;
+		// float smallest_value = 1;
+		// for(i=0;i<4;i++){
+			// if(new_esc[i]>largest_value){
+				// largest_value = new_esc[i];
 
-			}
-			if(new_esc[i]<smallest_value){
-				smallest_value=new_esc[i];
-			}
-		}
-		// if upper saturation would have occurred, reduce all outputs evenly
-		if(largest_value>1){
-			float offset = largest_value - 1;
-			for(i=0;i<4;i++){
-				new_esc[i]-=offset;
-			}
-		}
-		// if lower saturation would have occurred and the throttle input is low
-		// reduce all outputs evenly
-		else if(smallest_value<1 && u[0]<0.3){
-			float offset = smallest_value;
-			for(i=0;i<4;i++){
-				new_esc[i]+=offset;
-			}
-		}
+			// }
+			// if(new_esc[i]<smallest_value){
+				// smallest_value=new_esc[i];
+			// }
+		// }
+		// // if upper saturation would have occurred, reduce all outputs evenly
+		// if(largest_value>1){
+			// float offset = largest_value - 1;
+			// for(i=0;i<4;i++){
+				// new_esc[i]-=offset;
+			// }
+		// }
+		// // if lower saturation would have occurred and the throttle input is low
+		// // reduce all outputs evenly
+		// else if(smallest_value<1 && u[0]<0.3){
+			// float offset = smallest_value;
+			// for(i=0;i<4;i++){
+				// new_esc[i]+=offset;
+			// }
+		// }
 			
 		/************************************************************************
 		*	Send a servo pulse immediately at the end of the control loop.
@@ -507,6 +512,7 @@ int flight_core(){
 		for(i=0;i<4;i++){
 			send_servo_pulse_normalized(i+1,new_esc[i]);
 			core_state.esc_out[i] = new_esc[i];
+			core_state.control_u[i] = u[i];		
 		}
 			
 		//remember the last state to detect transition from DISARMED to ARMED
@@ -614,32 +620,32 @@ void* flight_stack(void* ptr){
 int wait_for_arming_sequence(){
 	printf("\nTurn your transmitter kill switch UP\n");
 	printf("Then move throttle UP then DOWN to arm\n");
-	while(user_interface.kill_switch!=0){ //wait for radio connection
+	
+	
+	while(user_interface.kill_switch){ 
 		usleep(100000);
 		if(get_state()==EXITING) break;}
-	//wait for kill switch up
-	while(get_dsm2_ch_normalized(6)>-0.9){ 
-		usleep(100000);
-		if(get_state()==EXITING) break;}
+	
 	//wait for throttle down
-	while(get_dsm2_ch_normalized(1)>-.9){ 
+	while(user_interface.throttle_stick > -0.9){ 
 		usleep(100000);
 		if(get_state()==EXITING) break;}
 	
 	//wait for throttle up
-	while(get_dsm2_ch_normalized(1)<.9){ 
+	while(user_interface.throttle_stick<.9){ 
 		usleep(100000);
 		if(get_state()==EXITING) break;}
 	
-	// chirp ESCs
+	// wake up ESCs
 	int i;
 	for(i=0;i<4;i++){send_servo_pulse_normalized(i+1,0);}
 	setGRN(HIGH);
 	
-	while(get_dsm2_ch_normalized(1)>-.9){ //wait for throttle down
+	while(user_interface.throttle_stick > -0.9){ //wait for throttle down
 		usleep(100000);
 		if(get_state()==EXITING)break;
 	}
+	core_setpoint.core_mode = ATTITUDE;
 	printf("ARMED!!\n\n");
 	setRED(LOW);
 	return 0;
@@ -651,7 +657,7 @@ int wait_for_arming_sequence(){
 *	emergency disarm mode
 ************************************************************************/
 int disarm(){
-	memset(&core_setpoint, 0, sizeof(core_setpoint));
+	//memset(&core_setpoint, 0, sizeof(core_setpoint));
 	core_setpoint.core_mode = DISARMED;
 	setRED(1);
 	setGRN(0);
@@ -777,8 +783,7 @@ void* DSM2_watcher(void* ptr){
 			clock_gettime(CLOCK_MONOTONIC, &last_dsm2_time);
 			
 			// user hit the kill switch, emergency disarm
-			float kill_switch_position = get_dsm2_ch_normalized(6);
-			if(kill_switch_position>0){
+			if(get_dsm2_ch_normalized(6)>0){
 				user_interface.kill_switch = 1;
 				
 				// it is not strictly necessary to call disarm here
@@ -792,11 +797,11 @@ void* DSM2_watcher(void* ptr){
 				// configure your radio switch layout here
 				user_interface.throttle_stick = get_dsm2_ch_normalized(1);
 				// positive roll means tipping right
-				user_interface.roll_stick 	= get_dsm2_ch_normalized(2);
+				user_interface.roll_stick 	= -get_dsm2_ch_normalized(2);
 				// positive pitch means tipping backwards
 				user_interface.pitch_stick 	= -get_dsm2_ch_normalized(3);
 				// positive yaw means turning left
-				user_interface.yaw_stick 	= -get_dsm2_ch_normalized(4);
+				user_interface.yaw_stick 	= get_dsm2_ch_normalized(4);
 				
 				// only use ATTITUDE for now
 				if(get_dsm2_ch_normalized(5)>0){
@@ -908,22 +913,37 @@ int print_flight_mode(flight_mode_t mode){
 void* printf_thread_func(void* ptr){
 	int i;
 	while(get_state()!=EXITING){
-		if(core_setpoint.core_mode != DISARMED){
+		//if(core_setpoint.core_mode != DISARMED){
 			printf("\r");
 			
-			// print user inputs
-			printf("user inputs: ");
-			printf("thr %0.1f ", user_interface.throttle_stick); 
-			printf("roll %0.1f ", user_interface.roll_stick); 
-			printf("pitch %0.1f ", user_interface.pitch_stick); 
-			printf("yaw %0.1f ", user_interface.yaw_stick); 
-			printf("kill %d ", user_interface.kill_switch); 
+			// // print core_state
+			// printf("roll %0.1f ", core_state.current_roll); 
+			// printf("pitch %0.1f ", core_state.current_pitch); 
+			// printf("yaw %0.1f ", core_state.current_yaw); 
 			
-			// print setpoints
-			printf("setpoints: ");
-			printf("roll %0.1f ", core_setpoint.roll); 
-			printf("pitch %0.1f ", core_setpoint.pitch); 
-			printf("yaw: %0.1f ", core_setpoint.yaw); 
+			// printf("dRoll %0.1f ", core_state.dRoll); 
+			// printf("dPitch %0.1f ", core_state.dPitch); 
+			// printf("dYaw %0.1f ", core_state.dYaw); 
+			
+			// // print user inputs
+			// printf("user inputs: ");
+			// printf("thr %0.1f ", user_interface.throttle_stick); 
+			// printf("roll %0.1f ", user_interface.roll_stick); 
+			// printf("pitch %0.1f ", user_interface.pitch_stick); 
+			// printf("yaw %0.1f ", user_interface.yaw_stick); 
+			// printf("kill %d ", user_interface.kill_switch); 
+			
+			// // print setpoints
+			// printf("setpoints: ");
+			// printf("roll %0.1f ", core_setpoint.roll); 
+			// printf("pitch %0.1f ", core_setpoint.pitch); 
+			// printf("yaw: %0.1f ", core_setpoint.yaw); 
+			
+			// print outputs to motors
+			printf("u: ");
+			for(i=0; i<4; i++){
+				printf("%0.2f ", core_state.control_u[i]);
+			}
 			
 			// print outputs to motors
 			printf("esc: ");
@@ -932,7 +952,7 @@ void* printf_thread_func(void* ptr){
 			}
 			
 			fflush(stdout);	
-		}
+		//}
 		usleep(200000); // print at ~5hz
 	}
 	return NULL;
@@ -985,15 +1005,18 @@ int main(int argc, char* argv[]){
 	// Begin flight Stack
 	pthread_t flight_stack_thread;
 	pthread_create(&flight_stack_thread, NULL, flight_stack, (void*) NULL);
+	
+	// start listening to DSM2 radio
+	initialize_dsm2();
+	pthread_t DSM2_watcher_thread;
+	pthread_create(&DSM2_watcher_thread, NULL, DSM2_watcher, (void*) NULL);
+	
 
 	// Start the real-time interrupt driven control thread
 	signed char orientation[9] = ORIENTATION_FLAT;
 	initialize_imu(CONTROL_HZ, orientation);
 	set_imu_interrupt_func(&flight_core);
 	
-	// start listening to DSM2 radio
-	pthread_t DSM2_watcher_thread;
-	pthread_create(&DSM2_watcher_thread, NULL, DSM2_watcher, (void*) NULL);
 	
 	
 	//chill until something exits the program
