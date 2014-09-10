@@ -49,7 +49,7 @@ either expressed or implied, of the FreeBSD Project.
 #define DSM2_LAND_TIMEOUT	0.3 	// seconds before going into emergency land mode
 #define DSM2_DISARM_TIMEOUT	5.0		// seconds before disarming motors completely 
 #define EMERGENCY_LAND_THR  0.2		// throttle to hold at when emergency landing
-#define ESC_IDLE_SPEED 		0.1		// normalized esc idle input when throttle is zero
+#define ESC_IDLE_SPEED 		0.07	// normalized esc idle input when throttle is zero
 
 /************************************************************************
 * 	Function declarations				
@@ -225,7 +225,7 @@ typedef struct core_state_t{
 	float positionY;				// estimate of Y displacement from takeoff (m)
 	
 	float alt_err[STATE_LEN]; 		// current and previous altitudes error
-	float dRoll_err[STATE_LEN]; // current and previous roll error
+	float dRoll_err[STATE_LEN]; 	// current and previous roll error
 	float dPitch_rate_err[STATE_LEN];// current and previous pitch error
 	float yaw_err[STATE_LEN];   	// current and previous yaw error
 	
@@ -281,13 +281,9 @@ user_interface_t		user_interface;
 *	- calculate and send ESC commands
 ************************************************************************/
 int flight_core(){
-	static float error_integrator[4];
-	float derivative[4];
-	float u[4];		// normalized throttle, roll, pitch, yaw control components 
-	float new_esc[4];			// normalized inputs to escs after mixing
-	static core_state_t previous_core_state;
+	// remember previous core_mode to detect transition from DISARMED
+	static flight_core_mode_t previous_core_mode;
 	int i;	// general purpose
-	
 	
 	/************************************************************************
 	*	Begin control loop if there was a valid interrupt with new IMU data
@@ -308,19 +304,19 @@ int flight_core(){
 			core_state.dPitch_err[i] = core_state.dPitch_err[i-1];
 			core_state.yaw_err[i] = core_state.yaw_err[i-1];
 		}
+		
 		// collect new IMU roll/pitch data
 		// positive roll right according to right hand rule
-		// MPU9150 driver has unnecessary minus sign on Y axis, correct for it here
-		core_state.current_roll = -(mpu.fusedEuler[VEC3_Y] - core_config.imu_roll_err);
-		core_state.roll[0] = core_state.current_roll;
-		
+		// MPU9150 driver has incorrect minus sign on Y axis, correct for it here
 		// positive pitch backwards according to right hand rule
-		core_state.current_pitch = mpu.fusedEuler[VEC3_X]- core_config.imu_pitch_err;
+		core_state.current_roll  = -(mpu.fusedEuler[VEC3_Y] - core_config.imu_roll_err);
+		core_state.current_pitch =   mpu.fusedEuler[VEC3_X] - core_config.imu_pitch_err;
+		core_state.roll[0] 	= core_state.current_roll;
 		core_state.pitch[0] = core_state.current_pitch;
 		
 		// current roll/pitch/yaw rates straight from gyro 
 		// converted to rad/s with default FUll scale range
-		// raw gyro matches sign on MPU9150 coordinate system
+		// raw gyro matches sign on MPU9150 coordinate system, unlike Euler angle
 		core_state.dRoll  = mpu.rawGyro[VEC3_Y] * GYRO_FSR * DEGREE_TO_RAD / 32767.0;
 		core_state.dPitch = mpu.rawGyro[VEC3_X] * GYRO_FSR * DEGREE_TO_RAD / 32767.0;
 		core_state.dYaw	  = mpu.rawGyro[VEC3_Z] * GYRO_FSR * DEGREE_TO_RAD / 32767.0;
@@ -334,6 +330,7 @@ int flight_core(){
 		}
 		float new_yaw = (mpu.fusedEuler[VEC3_Z] - imu_yaw_on_takeoff) +
 													num_yaw_spins*2*PI);
+		
 		// detect the crossover point at Z = +-PI
 		if(new_yaw - new_yaw-core_state.yaw[1] > 6)num_yaw_spins -= 1;
 		else if(new_yaw - new_yaw-core_state.yaw[1] < 6)num_yaw_spins += 1;
@@ -375,6 +372,7 @@ int flight_core(){
 			case DISARMED:
 				core_state.dRoll_err_integrator  = 0;
 				core_state.dPitch_err_integrator = 0;
+				previous_arm_state = DISARMED;
 				return 0;
 				break;		//should never get here
 				
@@ -386,6 +384,7 @@ int flight_core(){
 		/************************************************************************
 		* 	Finally run the attitude feedback controllers
 		************************************************************************/
+		float u[4];		// normalized throttle, roll, pitch, yaw control components 
 		
 		/************************************************************************
 		*	Throttle Controller
@@ -397,19 +396,6 @@ int flight_core(){
 		u[0] = throttle_compensation * core_setpoint.throttle;
 		
 		/************************************************************************
-		*	Yaw Controller
-		************************************************************************/
-	
-		state_error[3][0]=set_point[3]-x[3][0];
-		// only run integrator if airborne 
-		if(u[0] > INT_CUTOFF_TH){
-			integrator[3]=DT*state_error[i][0] + integrator[i];
-		}
-		derivative[i]=(state_error[i][0]-state_error[i][1])/DT;
-		u[i]=K[i][0]*(state_error[i][0]+K[i][1]*integrator[i]+K[i][2]*derivative[i]);
-		MAX_YAW_COMPONENT
-		
-		/************************************************************************
 		*	Roll & Pitch Controllers
 		************************************************************************/
 		float dRoll_setpoint = (core_setpoint.roll - core_state.current_roll) *
@@ -419,19 +405,43 @@ int flight_core(){
 		core_state.dRoll_err[0]  = dRoll_setpoint  - core_state.dRoll;
 		core_state.dpitch_err[0] = dPitch_setpoint - core_state.dPitch;
 		
-		core_state.dRoll_err_integrator  += core_state.dRoll_err  * DT;
-		core_state.dPitch_err_integrator += core_state.dPitch_err * DT;
+		// only run integrator if airborne 
+		// TODO: proper landing/takeoff detection
+		if(u[0] > INT_CUTOFF_TH){
+			core_state.dRoll_err_integrator  += core_state.dRoll_err  * DT;
+			core_state.dPitch_err_integrator += core_state.dPitch_err * DT;
+		}
 		
 		// parallel PID
 		// TODO: replace with similar discrete-time filter and use my filter lib
 		u[1] = (core_config.roll_rate_K_PID[0] * core_state.dRoll_err[0]) +
-				(core_config.roll_rate_K_PID[1] * dPitch_err_integrator) +
+				(core_config.roll_rate_K_PID[1] * core_state.dPitch_err_integrator) +
 				(core_config.roll_rate_K_PID[2] * (dRoll_err[0]-dRoll_err[1])/DT);
 				
 		u[2] = (core_config.pitch_rate_K_PID[0] * core_state.dPitch_err[0]) +
-				(core_config.pitch_rate_K_PID[1] * dPitch_err_integrator) +
+				(core_config.pitch_rate_K_PID[1] * core_state.dPitch_err_integrator) +
 				(core_config.pitch_rate_K_PID[2] * (dPitch_err[0]-dPitch_err[1])/DT);
 		
+		/************************************************************************
+		*	Yaw Controller
+		************************************************************************/
+		core_state.yaw_err = core_setpoint.yaw - core_state.current_yaw;
+		
+		// only run integrator if airborne 
+		if(u[0] > INT_CUTOFF_TH){
+			core_state.yaw_err_integrator += core_state.yaw_err * DT;
+		}
+		u[3] = (core_config.yaw_K_PID[0] * core_state.yaw_err[0]) +
+				(core_config.yaw_K_PID[1] * core_state.yaw_err_integrator) +
+				(core_config.yaw_K_PID[2] * (yaw_err[0]-yaw_err[1])/DT);
+				
+		// limit yaw control input such that two motors don't run away
+		if(u[3]>MAX_YAW_COMPONENT){
+			u[3] = MAX_YAW_COMPONENT;
+		}
+		else if(u[3]<(-MAX_YAW_COMPONENT)){
+			u[3] = -MAX_YAW_COMPONENT;
+		}
 		
 		/************************************************************************
 		*  Mixing for arducopter/pixhawk X-quadrator layout
@@ -440,6 +450,7 @@ int flight_core(){
 		*	   / \            	|_ X
 		* CCW 2	  4 CW
 		************************************************************************/
+		float new_esc[4];
 		new_esc[0]=u[0]-u[1]-u[2]-u[3];
 		new_esc[1]=u[0]+u[1]-u[2]+u[3];
 		new_esc[2]=u[0]+u[1]+u[2]-u[3];
@@ -738,23 +749,9 @@ void* DSM2_watcher(void* ptr){
 	
 	while(get_state()!=EXITING){
 		switch (is_new_dsm2_data()){
-			
-		case 1:	// record time and process new data
+		case 1:	
+			// record time and process new data
 			clock_gettime(CLOCK_MONOTONIC, &last_DSM2_time);
-			
-			// configure your radio switch layout here
-			user_interface.throttle_stick = get_dsm2_ch_normalized(1);
-			user_interface.roll_stick 	= get_dsm2_ch_normalized(2);
-			user_interface.pitch_stick 	= get_dsm2_ch_normalized(3);
-			user_interface.yaw_stick 		= get_dsm2_ch_normalized(4);
-			
-			// only use ATTITUDE for now
-			if(get_dsm2_ch_normalized(5)>0){
-				user_interface.user_flight_mode = USER_ATTITUDE;
-			}
-			else{
-				user_interface.user_flight_mode = USER_ATTITUDE;
-			}
 			
 			// user hit the kill switch, emergency disarm
 			float kill_switch_position = get_dsm2_ch_normalized(6);
@@ -766,9 +763,29 @@ void* DSM2_watcher(void* ptr){
 				// event of a flight_stack crash this will disarm anyway
 				disarm(); 
 			}
+			else{	
+				// user hasn't hit kill switch
+				user_interface.kill_switch = 0;
+				// configure your radio switch layout here
+				user_interface.throttle_stick = get_dsm2_ch_normalized(1);
+				// positive roll means tipping right
+				user_interface.roll_stick 	= get_dsm2_ch_normalized(2);
+				// positive pitch means tipping backwards
+				user_interface.pitch_stick 	= -get_dsm2_ch_normalized(3);
+				// positive yaw means turning left
+				user_interface.yaw_stick 	= -get_dsm2_ch_normalized(4);
+				
+				// only use ATTITUDE for now
+				if(get_dsm2_ch_normalized(5)>0){
+					user_interface.user_flight_mode = USER_ATTITUDE;
+				}
+				else{
+					user_interface.user_flight_mode = USER_ATTITUDE;
+				}
+			}
 			break;
 			
-		// No new data, check for timeouts
+		// No new data, check for time-outs
 		case 0:
 			float timeout_secs = diff(current_time,last_DSM2_time) * 1000000000f;
 			
@@ -782,7 +799,7 @@ void* DSM2_watcher(void* ptr){
 			// start landing the the cutout is still short
 			else if(timeout_secs > DSM2_LAND_TIMEOUT){
 				user_interface.flight_mode = EMERGENCY_LAND;
-				user_interface.throttle_stick 	= 0;
+				user_interface.throttle_stick 	= -1;
 				user_interface.roll_stick 		= 0;
 				user_interface.pitch_stick 		= 0;
 				user_interface.yaw_stick 		= 0;
@@ -951,7 +968,7 @@ int main(int argc, char* argv[]){
 	
 	//chill until something exits the program
 	while(get_state()!=EXITING){
-		usleep(100000);
+		usleep(500000);
 	}
 	
 	// cleanup before closing
