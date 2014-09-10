@@ -816,7 +816,7 @@ void* DSM2_watcher(void* ptr){
 		// No new data, check for time-outs
 		case 0:
 			clock_gettime(CLOCK_MONOTONIC,&current_time);
-			timespec timeout = diff(current_time,last_dsm2_time);
+			timespec timeout = diff(last_dsm2_time, current_time);
 			float timeout_secs = timeout.tv_sec + (timeout.tv_nsec/1000000000);
 			
 			// if core is armed and timeout met, disarm the core
