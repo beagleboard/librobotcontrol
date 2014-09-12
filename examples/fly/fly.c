@@ -799,7 +799,7 @@ void* DSM2_watcher(void* ptr){
 			// record time and process new data
 			clock_gettime(CLOCK_MONOTONIC, &last_dsm2_time);
 			// user hit the kill switch, emergency disarm
-			if(get_dsm2_ch_normalized(6)>0){
+			if(get_dsm2_ch_normalized(5)<0){
 				user_interface.kill_switch = 1;
 				
 				// it is not strictly necessary to call disarm here
@@ -820,11 +820,11 @@ void* DSM2_watcher(void* ptr){
 				user_interface.yaw_stick 	= get_dsm2_ch_normalized(4);
 				
 				// only use ATTITUDE for now
-				if(get_dsm2_ch_normalized(5)>0){
+				if(get_dsm2_ch_normalized(6)>0){
 					user_interface.flight_mode = USER_ATTITUDE;
 				}
 				else{
-					user_interface.flight_mode = EMERGENCY_LAND;
+					user_interface.flight_mode = USER_ATTITUDE;
 				}
 			}
 			break;
