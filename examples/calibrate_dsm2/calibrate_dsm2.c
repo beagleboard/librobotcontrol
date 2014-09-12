@@ -24,7 +24,16 @@ int main(){
 	printf("Raw min/max positions will display below.\n");
 	printf("Press Ctrl-C to save and exit.\n");
 
-	printf("Ch: current min max\n");
+	printf("1 Thr   ");
+	printf("2 Roll  ");
+	printf("3 Pitch ");
+	printf("4 Yaw   ");
+	printf("5 Kill  ");
+	printf("6 Mode  ");
+	printf("7 Aux1  ");
+	printf("8 Aux2  ");
+	printf("9 Aux3  ");
+	printf("\n");
 	
 	//wait for data to start
 	while(!is_new_dsm2_data()){
@@ -51,11 +60,11 @@ int main(){
 					else if(get_dsm2_ch_raw(j+1)<rc_mins[j]){
 						rc_mins[j]=get_dsm2_ch_raw(j+1);
 					}
-					printf("ch%d %d %d ", j+1, rc_mins[j], rc_maxes[j]);
+					printf(" %d   ",get_dsm2_ch_raw(j+1));
 				}
 			}
 		}
-		usleep(100000); 
+		usleep(5000); 
 	}
 	
 	//if it looks like new data came in, write calibration file

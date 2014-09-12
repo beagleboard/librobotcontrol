@@ -80,7 +80,7 @@ either expressed or implied, of the FreeBSD Project.
 #define RC_CHANNELS 9
 
 // Calibration File Locations
-#define DSM2_CAL_FILE "/root/cape_calibration/DSM2.cal"
+#define DSM2_CAL_FILE "/root/cape_calibration/dsm2.cal"
 #define GYRO_CAL_FILE "/root/cape_calibration/gyro.cal"
 
 //// Mavlink UDP input buffer size

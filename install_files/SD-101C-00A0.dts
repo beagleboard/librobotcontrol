@@ -144,7 +144,7 @@ Bit 0 /
 			/* only pin that swaps between GPIO&UART*/
 			/****************************************/
             P9_11_default_pin: pinmux_P9_11_default_pin {
-                pinctrl-single,pins = <0x070  0x26>; };     /* Mode 6 uart */
+                pinctrl-single,pins = <0x070  0x36>; };     /* Mode 6 uart */
             P9_11_gpio_pin: pinmux_P9_11_gpio_pin {
                 pinctrl-single,pins = <0x070  0x2F>; };     /* Mode 7, RxActive */
             P9_11_gpio_pu_pin: pinmux_P9_11_gpio_pu_pin {
@@ -152,7 +152,7 @@ Bit 0 /
             P9_11_gpio_pd_pin: pinmux_P9_11_gpio_pd_pin {
                 pinctrl-single,pins = <0x070  0x27>; };     /* Mode 7, Pull-Down, RxActive */
             P9_11_uart_pin: pinmux_P9_11_uart_pin {
-                pinctrl-single,pins = <0x070  0x26>; };     /* Mode 6, uart */
+                pinctrl-single,pins = <0x070  0x36>; };     /* Mode 6, uart */
 
 			/****************************************/
 			/* 			eQEP pinmux					*/
