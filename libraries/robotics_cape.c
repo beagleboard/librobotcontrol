@@ -835,8 +835,8 @@ int send_servo_pulse_normalized(int ch, float input){
 		printf("ERROR: Servo Channel must be between 1 & %d \n", SERVO_CHANNELS);
 		return -1;
 	}
-	if(input<0 || input>1){
-		printf("ERROR: normalized input must be between 0 & 1");
+	if(input<0.0 || input>1.0){
+		printf("ERROR: normalized input must be between 0 & 1\n");
 		return -1;
 	}
 	float micros = SERVO_MIN_US + (input*(SERVO_MAX_US-SERVO_MIN_US));

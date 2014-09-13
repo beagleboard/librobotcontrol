@@ -43,6 +43,7 @@ either expressed or implied, of the FreeBSD Project.
 #define	STATE_LEN 			32		// number of timesteps to retain data
 #define MAX_YAW_COMPONENT	0.2 	// Max control delta the yaw controller can apply
 #define INT_CUTOFF_TH 		0.3		// prevent integrators from running unless flying
+#define YAW_CUTOFF_TH 		0.25	// prevent yaw from changing when grounded
 
 // Flight Stack Constants
 #define TIP_THRESHOLD 		1.2		// Kill propellers if it rolls or pitches past this
@@ -368,7 +369,11 @@ int flight_core(){
 			*	user-commanded yaw_rate
 			************************************************************************/
 			case ATTITUDE:
-				core_setpoint.yaw += DT*core_setpoint.yaw_rate;
+				// only when flying, update the yaw setpoint
+				if(core_setpoint.throttle > YAW_CUTOFF_TH){
+					core_setpoint.yaw += DT*core_setpoint.yaw_rate;
+				}
+				
 				break;
 				
 			/************************************************************************
@@ -378,6 +383,7 @@ int flight_core(){
 				core_state.dRoll_err_integrator  = 0;
 				core_state.dPitch_err_integrator = 0;
 				core_state.yaw_err_integrator = 0;
+				core_setpoint.yaw=0;
 				memset(&core_state.esc_out,0,16);
 				previous_core_mode = DISARMED;
 				return 0;
@@ -476,25 +482,25 @@ int flight_core(){
 		*	Prevent saturation under heavy vertical acceleration by reducing all
 		*	outputs evenly such that the largest doesn't exceed 1
 		************************************************************************/
-		// // find control output limits 
-		// float largest_value = 0;
-		// float smallest_value = 1;
-		// for(i=0;i<4;i++){
-			// if(new_esc[i]>largest_value){
-				// largest_value = new_esc[i];
+		// find control output limits 
+		float largest_value = 0;
+		float smallest_value = 1;
+		for(i=0;i<4;i++){
+			if(new_esc[i]>largest_value){
+				largest_value = new_esc[i];
 
-			// }
-			// if(new_esc[i]<smallest_value){
-				// smallest_value=new_esc[i];
-			// }
-		// }
-		// // if upper saturation would have occurred, reduce all outputs evenly
-		// if(largest_value>1){
-			// for(i=0;i<4;i++){
-			// float offset = largest_value - 1;
-				// new_esc[i]-=offset;
-			// }
-		// }
+			}
+			if(new_esc[i]<smallest_value){
+				smallest_value=new_esc[i];
+			}
+		}
+		// if upper saturation would have occurred, reduce all outputs evenly
+		if(largest_value>1){
+			for(i=0;i<4;i++){
+			float offset = largest_value - 1;
+				new_esc[i]-=offset;
+			}
+		}
 		// // if lower saturation would have occurred and the throttle input is low
 		// // reduce all outputs evenly
 		// else if(smallest_value<1 && u[0]<0.3){
@@ -510,6 +516,12 @@ int flight_core(){
 		*	also record this action to core_state.new_esc_out[] for telemetry
 		************************************************************************/
 		for(i=0;i<4;i++){
+			if(new_esc[i]>1.0){
+				new_esc[i]=1.0;
+			}
+			else if(new_esc[i]<0.0){
+				new_esc[i]=0.0;
+			}
 			send_servo_pulse_normalized(i+1,new_esc[i]);
 			core_state.esc_out[i] = new_esc[i];
 			core_state.control_u[i] = u[i];		
