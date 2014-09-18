@@ -1074,11 +1074,11 @@ void* printf_thread_func(void* ptr){
 		// printf("pitch %0.1f ", core_setpoint.pitch); 
 		// printf("yaw: %0.1f ", core_setpoint.yaw); 
 		
-		// print outputs to motors
-		printf("u: ");
-		for(i=0; i<4; i++){
-			printf("%0.2f ", core_state.control_u[i]);
-		}
+		// // print control outputs
+		// printf("u: ");
+		// for(i=0; i<4; i++){
+			// printf("%0.2f ", core_state.control_u[i]);
+		// }
 		
 		// print outputs to motors
 		printf("esc: ");
