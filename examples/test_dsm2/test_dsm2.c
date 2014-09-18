@@ -13,6 +13,16 @@ int main(){
 		printf("run calibrate_dsm2 first\n");
 		return -1;
 	}
+	printf("1:Thr  ");
+	printf("2:Roll ");
+	printf("3:Pitch ");
+	printf("4:Yaw  ");
+	printf("5:Kill  ");
+	printf("6:Mode ");
+	printf("7:Aux1 ");
+	printf("8:Aux2 ");
+	printf("9:Aux3");
+	printf("\n");
 	
 	int i;
 	while(get_state()!=EXITING){
@@ -20,7 +30,7 @@ int main(){
 			//print all channels
 			printf("\r");
 			for(i=0;i<RC_CHANNELS;i++){
-				printf("ch%d %0.2f  ", i+1, get_dsm2_ch_normalized(i+1));
+				printf("%0.2f   ", get_dsm2_ch_normalized(i+1));
 			}
 			fflush(stdout);
 		}
@@ -28,7 +38,7 @@ int main(){
 			printf("\rNo New Radio Packets ");
 		}
 		fflush(stdout);
-		usleep(100000);
+		usleep(10000);
 	}
 	cleanup_cape();
 	return 0;

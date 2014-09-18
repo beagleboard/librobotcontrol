@@ -47,11 +47,10 @@ void *listen_func(void *params){
 					printf(" %d   ",get_dsm2_ch_raw(j+1));
 				}
 			}
+			fflush(stdout);
 		}
-		fflush(stdout);
-		usleep(5000); 
+		usleep(10000); 
 	}
-	
 	return 0;
 }
 
@@ -84,11 +83,6 @@ int main(){
 	
 	// wait for user to hit enter
 	while(getchar() != '\n'){
-		if(get_state()==EXITING){
-			listening = 0;
-			goto END;
-		}
-		else usleep(100000);
 	}
 	
 	//stop listening
@@ -114,7 +108,6 @@ int main(){
 		printf("\nNew calibration file written\n");
 	}
 	
-END:
 	cleanup_cape();
 	return 0;
 }
