@@ -36,6 +36,7 @@ either expressed or implied, of the FreeBSD Project.
 *********************************************/
 // Includes
 #include <robotics_cape.h>
+#include <ctype.h>
 
 // Flight Core Constants
 #define CONTROL_HZ 			200		// Run the main control loop at this rate
@@ -44,17 +45,17 @@ either expressed or implied, of the FreeBSD Project.
 #define MAX_YAW_COMPONENT	0.2 	// Max control delta the yaw controller can apply
 #define INT_CUTOFF_TH 		0.3		// prevent integrators from running unless flying
 #define YAW_CUTOFF_TH 		0.25	// prevent yaw from changing when grounded
+#define ARM_TIP_THRESHOLD	0.2		// radians from level to allow arming sequence 
 
 // Flight Stack Constants
 #define TIP_THRESHOLD 		1.2		// Kill propellers if it rolls or pitches past this
 #define DSM2_LAND_TIMEOUT	0.3 	// seconds before going into emergency land mode
 #define DSM2_DISARM_TIMEOUT	5.0		// seconds before disarming motors completely 
 #define EMERGENCY_LAND_THR  0.2		// throttle to hold at when emergency landing
-#define ESC_IDLE_SPEED 		0.12	// normalized esc idle input when throttle is zero
 
 
 /************************************************************************
-*	Type Definitions
+*	Type Definitions 
 *************************************************************************/
 
 /************************************************************************
@@ -131,6 +132,9 @@ typedef struct core_config_t{
 	float roll_rate_per_rad;	// rad/s per rad roll error
 	float roll_rate_K_PID[3];	// PID gains for roll rate
 	float yaw_K_PID[3];			// absolute yaw control
+	
+	float idle_speed; 			// normalized esc idle input when throttle is zero
+	
 	
 	// Limits of user input
 	float max_throttle;			// .8 is reasonable, set to 1 for max
@@ -241,6 +245,21 @@ typedef struct user_interface_t{
 
 }user_interface_t;
 
+
+/************************************************************************
+* 	options_t
+*	holds user enabled options from command line arguments
+*	ints are non-zero if feature is enabled
+************************************************************************/
+typedef struct options_t{
+	int logging; // enable saving a log file for each flight
+	int mavlink; // enable mavlink over UDP
+	char ground_ip[24]; 
+	int mode_0;	 // mode to use for DSM2 ch6 mode switch
+	int mode_1;  // mode to use when switch is in position 1
+	int quiet;	 // enable quiet mode (disable printf thread)
+}options_t;
+
 /************************************************************************
 * 	Function declarations				
 ************************************************************************/
@@ -266,10 +285,84 @@ int flight_core();
 /************************************************************************
 * 	Global Variables				
 ************************************************************************/
+options_t 				options;
 core_config_t 			core_config;
 core_setpoint_t 		core_setpoint;
 core_state_t 			core_state;
 user_interface_t		user_interface;
+
+/************************************************************************
+*	load_F450_config()
+*	Set up Controller for DJI F450 Flamewheel-style frame
+*	3S Battery with 1000kV 2830/11 Motors SimonK 30A ESCs
+*	10"x4.5" propellers
+************************************************************************/
+int load_F450_config(){
+	
+	core_config.altitude_K_PID[0]	= 0;
+	core_config.altitude_K_PID[1]	= 0;
+	core_config.altitude_K_PID[2]	= 0;
+	
+	core_config.pitch_rate_per_rad 	= 6;
+	core_config.pitch_rate_K_PID[0] = 0.03;
+	core_config.pitch_rate_K_PID[1] = 0.0;
+	core_config.pitch_rate_K_PID[2] = 0.001;
+	
+	core_config.roll_rate_per_rad	= 6;
+	core_config.roll_rate_K_PID[0] 	= 0.03;	
+	core_config.roll_rate_K_PID[1] 	= 0.0;	
+	core_config.roll_rate_K_PID[2] 	= 0.001;	
+	
+	core_config.yaw_K_PID[0]		= 0.2;
+	core_config.yaw_K_PID[1]		= 1.0;
+	core_config.yaw_K_PID[2]		= 0.4;
+	
+	core_config.idle_speed			= 0.0;
+	core_config.max_throttle 		= 0.5;	
+	core_config.max_yaw_rate 		= 3;
+	core_config.max_roll_setpoint	= 0.4;
+	core_config.max_pitch_setpoint  = 0.4;
+	core_config.max_vert_velocity 	= 2;
+	core_config.max_horizontal_velocity = 2;
+	core_config.imu_roll_err 		= 0;			
+	core_config.imu_pitch_err 		= 0;
+	return 0;
+}
+
+/************************************************************************
+*	load_iris_config()
+*	populate core_config with parameters for 3DR Iris Frame
+************************************************************************/
+int load_iris_config(){
+	core_config.altitude_K_PID[0]	= 0;
+	core_config.altitude_K_PID[1]	= 0;
+	core_config.altitude_K_PID[2]	= 0;
+	
+	core_config.pitch_rate_per_rad 	= 6;
+	core_config.pitch_rate_K_PID[0] = 0.1;
+	core_config.pitch_rate_K_PID[1] = 0.0;
+	core_config.pitch_rate_K_PID[2] = 0.004;
+	
+	core_config.roll_rate_per_rad	= 6;
+	core_config.roll_rate_K_PID[0] 	= 0.05;	
+	core_config.roll_rate_K_PID[1] 	= 0.0;	
+	core_config.roll_rate_K_PID[2] 	= 0.002;	
+	
+	core_config.yaw_K_PID[0]		= 0.2;
+	core_config.yaw_K_PID[1]		= 1.0;
+	core_config.yaw_K_PID[2]		= 0.4;
+	
+	core_config.idle_speed			= 0.11;
+	core_config.max_throttle 		= 0.8;	
+	core_config.max_yaw_rate 		= 3;
+	core_config.max_roll_setpoint	= 0.4;
+	core_config.max_pitch_setpoint  = 0.4;
+	core_config.max_vert_velocity 	= 2;
+	core_config.max_horizontal_velocity = 2;
+	core_config.imu_roll_err 		= 0;			
+	core_config.imu_pitch_err 		= 0;
+	return 0;
+}
 
 
 /************************************************************************
@@ -330,16 +423,16 @@ int flight_core(){
 			core_state.num_yaw_spins = 0;
 			core_state.imu_yaw_on_takeoff = mpu.fusedEuler[VEC3_Z];
 		}
-		// float new_yaw = -(mpu.fusedEuler[VEC3_Z] - core_state.imu_yaw_on_takeoff) + (
-													// core_state.num_yaw_spins*2*PI);
+		float new_yaw = -(mpu.fusedEuler[VEC3_Z] - core_state.imu_yaw_on_takeoff) + (
+													core_state.num_yaw_spins*2*PI);
 		
-		// // detect the crossover point at Z = +-PI
-		// if(new_yaw - core_state.yaw[1] > 6){
-			// core_state.num_yaw_spins += 1;
-		// }
-		// else if(new_yaw - core_state.yaw[1] < 6){
-			// core_state.num_yaw_spins -= 1;
-		// }
+		// detect the crossover point at Z = +-PI
+		if(new_yaw - core_state.yaw[1] > 6){
+			core_state.num_yaw_spins -= 1;
+		}
+		else if(new_yaw - core_state.yaw[1] < -6){
+			core_state.num_yaw_spins += 1;
+		}
 		
 		// record new yaw compensating for full rotation
 		core_state.current_yaw = -(mpu.fusedEuler[VEC3_Z] - core_state.imu_yaw_on_takeoff) +
@@ -418,6 +511,13 @@ int flight_core(){
 		core_state.dRoll_err[0]  = dRoll_setpoint  - core_state.dRoll;
 		core_state.dPitch_err[0] = dPitch_setpoint - core_state.dPitch;
 		
+		// if last state was DISARMED, then errors will all be 0.
+		// to stop D from running away, make the previous error the same
+		if(previous_core_mode == DISARMED){
+			core_state.dRoll_err[1]=core_state.dRoll_err[0];
+			core_state.dPitch_err[1]=core_state.dPitch_err[0];
+		}
+		
 		// only run integrator if airborne 
 		// TODO: proper landing/takeoff detection
 		if(u[0] > INT_CUTOFF_TH){
@@ -442,6 +542,12 @@ int flight_core(){
 		*	Yaw Controller
 		************************************************************************/
 		core_state.yaw_err[0] = core_setpoint.yaw - core_state.current_yaw;
+		
+		// if last state was DISARMED, then errors will all be 0.
+		// to stop D from running away, make the previous error the same
+		if(previous_core_mode == DISARMED){
+			core_state.yaw_err[1]=core_state.yaw_err[0];
+		}
 		
 		// only run integrator if airborne 
 		if(u[0] > INT_CUTOFF_TH){
@@ -515,18 +621,29 @@ int flight_core(){
 		*	Intended to update ESCs exactly once per control timestep
 		*	also record this action to core_state.new_esc_out[] for telemetry
 		************************************************************************/
-		for(i=0;i<4;i++){
-			if(new_esc[i]>1.0){
-				new_esc[i]=1.0;
+		
+		// if this is the first time armed, make sure to send minimum 
+		// pulse width to prevent ESCs from going into calibration
+		
+		if(previous_core_mode == DISARMED){
+			for(i=0;i<4;i++){
+				send_servo_pulse_normalized(i+1,0);
 			}
-			else if(new_esc[i]<0.0){
-				new_esc[i]=0.0;
-			}
-			send_servo_pulse_normalized(i+1,new_esc[i]);
-			core_state.esc_out[i] = new_esc[i];
-			core_state.control_u[i] = u[i];		
 		}
-			 
+		else{
+			for(i=0;i<4;i++){
+				if(new_esc[i]>1.0){
+					new_esc[i]=1.0;
+				}
+				else if(new_esc[i]<core_config.idle_speed){
+					new_esc[i]=core_config.idle_speed;
+				}
+				send_servo_pulse_normalized(i+1,new_esc[i]);
+				core_state.esc_out[i] = new_esc[i];
+				core_state.control_u[i] = u[i];		
+			}
+		}
+		
 		//remember the last state to detect transition from DISARMED to ARMED
 		previous_core_mode = core_setpoint.core_mode;
 	}
@@ -578,10 +695,8 @@ void* flight_stack(void* ptr){
 				core_setpoint.core_mode = ATTITUDE;
 				
 				// translate throttle stick (-1,1) to throttle (0,1)
-				float user_throttle  = (user_interface.throttle_stick + 1.0)/2.0;
-				//compensate for idle speed
-				core_setpoint.throttle = (user_throttle + ESC_IDLE_SPEED)/
-														(1+ESC_IDLE_SPEED);
+				core_setpoint.throttle = (user_interface.throttle_stick + 1.0)/2.0;
+				
 				// scale roll and pitch angle by max setpoint in rad
 				core_setpoint.roll		= user_interface.roll_stick *
 											core_config.max_roll_setpoint;
@@ -608,7 +723,7 @@ void* flight_stack(void* ptr){
 			case USER_POSITION_CARTESIAN:
 				break;
 			case USER_POSITION_RADIAL:
-				break;
+				break; 
 			case TARGET_HOLD:
 				break;
 			default:
@@ -630,11 +745,20 @@ void* flight_stack(void* ptr){
 *	kill_switch and toggled the throttle stick up and down
 ************************************************************************/
 int wait_for_arming_sequence(){
+	int i;
+START:
+	// wait for level MAV before starting
+	while(fabs(core_state.current_roll)>ARM_TIP_THRESHOLD ||
+		fabs(core_state.current_pitch)>ARM_TIP_THRESHOLD){
+		usleep(100000);
+		if(get_state()==EXITING)return 0;
+	} 	  
 	
 	while(user_interface.kill_switch){ 
 		usleep(100000);
-		if(get_state()==EXITING)return 0;} 
-	
+		if(get_state()==EXITING)return 0;
+	}
+ 	
 	//wait for throttle down
 	while(user_interface.throttle_stick > -0.9){ 
 		usleep(100000);
@@ -651,11 +775,17 @@ int wait_for_arming_sequence(){
 		if(get_state()==EXITING)return 0;
 	}
 	
+	if(fabs(core_state.current_roll)>ARM_TIP_THRESHOLD ||
+		fabs(core_state.current_pitch)>ARM_TIP_THRESHOLD){
+		printf("\nRestart arming sequence with level MAV\n");
+		goto START;
+	} 
+	
 	// wake ESCs up at minimum throttle to avoid calibration mode
-	int i;
+	// flight_core also sends one minimum pulse at first when armed
 	for(i=0; i<10; i++){
 		send_servo_pulse_normalized(1,0);
-		send_servo_pulse_normalized(2,0);
+		send_servo_pulse_normalized(2,0); 
 		send_servo_pulse_normalized(3,0);
 		send_servo_pulse_normalized(4,0);
 		usleep(5000);
@@ -682,41 +812,10 @@ int disarm(){
 	return 0;
 }
 
-/************************************************************************
-*	load_default_core_config()
-*	populate core_config with default parameters
-************************************************************************/
-int load_default_core_config(){
-	core_config.altitude_K_PID[0]	= 0;
-	core_config.altitude_K_PID[1]	= 0;
-	core_config.altitude_K_PID[2]	= 0;
-	
-	core_config.pitch_rate_per_rad 	= 6;
-	core_config.pitch_rate_K_PID[0] = 0.1;
-	core_config.pitch_rate_K_PID[1] = 0.0;
-	core_config.pitch_rate_K_PID[2] = 0.004;
-	
-	core_config.roll_rate_per_rad	= 6;
-	core_config.roll_rate_K_PID[0] 	= 0.05;	
-	core_config.roll_rate_K_PID[1] 	= 0.0;	
-	core_config.roll_rate_K_PID[2] 	= 0.002;	
-	
-	core_config.yaw_K_PID[0]		= 0.2;
-	core_config.yaw_K_PID[1]		= 1.0;
-	core_config.yaw_K_PID[2]		= 0.4;
-	
-	core_config.max_throttle 		= 0.8;	
-	core_config.max_yaw_rate 		= 3;
-	core_config.max_roll_setpoint	= 0.4;
-	core_config.max_pitch_setpoint  = 0.4;
-	core_config.max_vert_velocity 	= 2;
-	core_config.max_horizontal_velocity = 2;
-	core_config.imu_roll_err 		= 0;			
-	core_config.imu_pitch_err 		= 0;
-	return 0;
-}
+
 
 /************************************************************************
+*	on_pause_press
 *	If the user holds the pause button for a second, exit cleanly
 *	disarm on momentary press
 ************************************************************************/
@@ -736,6 +835,7 @@ int on_pause_press(){
 }
 
 /************************************************************************
+*	mavlink_sender
 *	send mavlink heartbeat and IMU attitude packets
 ************************************************************************/
 void* mavlink_sender(void* ptr){
@@ -768,7 +868,8 @@ void* mavlink_sender(void* ptr){
 }
 
 /************************************************************************
-*	Safety thread exists to check for rollover, 
+*	Safety thread 
+*	check for rollover 
 *	TODO: check for low battery too
 ************************************************************************/
 void* safety_thread_func(void* ptr){
@@ -948,98 +1049,158 @@ void* printf_thread_func(void* ptr){
 	printf("Then move throttle UP then DOWN to arm\n");
 	
 	while(get_state()!=EXITING){
-		//if(core_setpoint.core_mode != DISARMED){
-			printf("\r");
+		printf("\r");
+		
+		// print core_state
+		printf("roll %0.1f ", core_state.current_roll); 
+		printf("pitch %0.1f ", core_state.current_pitch); 
+		printf("yaw %0.1f ", core_state.current_yaw); 
+		
+		// printf("dRoll %0.1f ", core_state.dRoll); 
+		// printf("dPitch %0.1f ", core_state.dPitch); 
+		// printf("dYaw %0.1f ", core_state.dYaw); 
+		
+		// // print user inputs
+		// printf("user inputs: ");
+		// printf("thr %0.1f ", user_interface.throttle_stick); 
+		// printf("roll %0.1f ", user_interface.roll_stick); 
+		// printf("pitch %0.1f ", user_interface.pitch_stick); 
+		// printf("yaw %0.1f ", user_interface.yaw_stick); 
+		// printf("kill %d ", user_interface.kill_switch); 
+		
+		// // print setpoints
+		// printf("setpoints: ");
+		// printf("roll %0.1f ", core_setpoint.roll); 
+		// printf("pitch %0.1f ", core_setpoint.pitch); 
+		// printf("yaw: %0.1f ", core_setpoint.yaw); 
+		
+		// print outputs to motors
+		printf("u: ");
+		for(i=0; i<4; i++){
+			printf("%0.2f ", core_state.control_u[i]);
+		}
+		
+		// print outputs to motors
+		printf("esc: ");
+		for(i=0; i<4; i++){
+			printf("%0.2f ", core_state.esc_out[i]);
+		}
 			
-			// print core_state
-			printf("roll %0.1f ", core_state.current_roll); 
-			printf("pitch %0.1f ", core_state.current_pitch); 
-			printf("yaw %0.1f ", core_state.current_yaw); 
-			
-			// printf("dRoll %0.1f ", core_state.dRoll); 
-			// printf("dPitch %0.1f ", core_state.dPitch); 
-			// printf("dYaw %0.1f ", core_state.dYaw); 
-			
-			// // print user inputs
-			// printf("user inputs: ");
-			// printf("thr %0.1f ", user_interface.throttle_stick); 
-			// printf("roll %0.1f ", user_interface.roll_stick); 
-			// printf("pitch %0.1f ", user_interface.pitch_stick); 
-			// printf("yaw %0.1f ", user_interface.yaw_stick); 
-			// printf("kill %d ", user_interface.kill_switch); 
-			
-			// // print setpoints
-			// printf("setpoints: ");
-			// printf("roll %0.1f ", core_setpoint.roll); 
-			// printf("pitch %0.1f ", core_setpoint.pitch); 
-			// printf("yaw: %0.1f ", core_setpoint.yaw); 
-			
-			// // print outputs to motors
-			// printf("u: ");
-			// for(i=0; i<4; i++){
-				// printf("%0.2f ", core_state.control_u[i]);
-			// }
-			
-			// print outputs to motors
-			printf("esc: ");
-			for(i=0; i<4; i++){
-				printf("%0.2f ", core_state.esc_out[i]);
-			}
-			
-			fflush(stdout);	
-		//}
+		fflush(stdout);	
 		usleep(200000); // print at ~5hz
 	}
 	return NULL;
 }
 
+// Turn features on/off base don user options
+int parse_arguments(int argc, char* argv[]){
+	int c,i;
+	
+	while ((c = getopt (argc, argv, "lqm")) != -1){
+		switch (c){
+		case 'l':
+			printf("logging enabled\n");
+			options.logging=1;
+			break;
+		case 'q':
+			printf("starting in quiet mode\n");
+			options.quiet=1;
+			break;
+		case 'm':
+			options.mavlink = 1;
+			printf("sending mavlink data\n");
+			// see if the user gave an IP address as argument
+			strcpy(options.ground_ip, optarg);
+			break;
+		case '?':
+			if (optopt == 'c'){
+				//send to default mav address if no or bad ip argument provided
+				strcpy(options.ground_ip, DEFAULT_MAV_ADDRESS);
+			}
+			else if (isprint(optopt)){
+				printf("Unknown option `-%c'.\n", optopt);
+				return -1;
+			}
+			else{
+				printf("Unknown option character `\\x%x'.\n",optopt);
+				return -1;
+			}
+		return 0;
+		
+		default:
+			return -1;
+		}
+    }
+	
+	// print any non option arguments
+	for (i = optind; i < argc; i++){	
+		printf ("Non-option argument %s\n", argv[i]);
+		return -1;
+	}
+	// // return -1 after printing problems
+	// if(i) return -1;
+	
+	return 0;
+}
+
 // Main only serves to initialize hardware and spawn threads
 int main(int argc, char* argv[]){
-	// initialize cape hardware
-	initialize_cape();
+	// not all threads may begin depending on user options
+	pthread_t  mav_send_thread;
+	pthread_t led_thread;
+	pthread_t safety_thread;
+	pthread_t flight_stack_thread;
+	pthread_t DSM2_watcher_thread;
+	pthread_t printf_thread;
 	
+	// first check for user options
+	if(parse_arguments(argc, argv)<0){
+		return -1;
+	}
+
 	// always start disarmed
 	disarm();
 	
-	// start with default settings. 
-	// TODO: load from disk
-	load_default_core_config();
+	// initialize cape hardware
+	if(initialize_cape()<0){
+		return -1;
+	}
 	
 	// listen to pause button for disarm and exit commands
+	// do this after hardware initialization so the user 
+	// can quit the program in case of crash
 	set_pause_pressed_func(&on_pause_press); 
 	
-	// see if the user gave an IP address as argument
-	char target_ip[100];
-	if (argc == 2){
-		strcpy(target_ip, argv[1]);
-    }
-	else{ //otherwise use default address 
-		strcpy(target_ip, DEFAULT_MAV_ADDRESS);
+	// start uart4 thread in robotics cape library
+	if(initialize_dsm2()<0){
+		return -1;
 	}
-	// open a udp port for mavlink
-	// sock and gcAddr are global variables needed to send and receive
-	gcAddr = initialize_mavlink_udp(target_ip, &sock);
 	
-	// Start thread sending heartbeat and IMU attitude packets
-	pthread_t  mav_send_thread;
-	pthread_create(&mav_send_thread, NULL, mavlink_sender, (void*) NULL);
-	printf("Sending Heartbeat Packets\n");
+	// start with default settings. 
+	// TODO: load from disk
+	load_F450_config();
+	
+	// start mavlink thread if enabled by user
+	if(options.mavlink){
+		// open a udp port for mavlink
+		// sock and gcAddr are global variables needed to send and receive
+		gcAddr = initialize_mavlink_udp(options.ground_ip, &sock);
+		
+		// Start thread sending heartbeat and IMU attitude packets
+		pthread_create(&mav_send_thread, NULL, mavlink_sender, (void*) NULL);
+		printf("Sending Heartbeat Packets\n");
+	}
 
 	// Start LED Flasher Thread
-	pthread_t led_thread;
 	pthread_create(&led_thread, NULL, led_manager, (void*) NULL);
 	
-	// Start Safety and Disarming thread
-	pthread_t safety_thread;
+	// Start Safety checking thread
 	pthread_create(&safety_thread, NULL, safety_thread_func, (void*) NULL);
 	
 	// Begin flight Stack
-	pthread_t flight_stack_thread;
 	pthread_create(&flight_stack_thread, NULL, flight_stack, (void*) NULL);
 	
-	// start listening to DSM2 radio
-	initialize_dsm2();
-	pthread_t DSM2_watcher_thread;
+	// start interpreting dsm2 packets
 	pthread_create(&DSM2_watcher_thread, NULL, DSM2_watcher, (void*) NULL);
 	
 	// Start the real-time interrupt driven control thread
@@ -1047,10 +1208,10 @@ int main(int argc, char* argv[]){
 	initialize_imu(CONTROL_HZ, orientation);
 	set_imu_interrupt_func(&flight_core);
 	
-	// start printing information to console
-	pthread_t printf_thread;
-	pthread_create(&printf_thread, NULL, printf_thread_func, (void*) NULL);
-	
+	// if the user didn't specify quiet mode, start printing
+	if(options.quiet == 0){
+		pthread_create(&printf_thread, NULL, printf_thread_func, (void*) NULL);
+	}
 	
 	//chill until something exits the program
 	while(get_state()!=EXITING){
