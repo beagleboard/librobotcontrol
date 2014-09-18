@@ -79,10 +79,9 @@ either expressed or implied, of the FreeBSD Project.
 //// Spektrum DSM2 RC Radio
 #define RC_CHANNELS 9
 
-// Calibration File Location
-#define CONFIG_DIR		/root/cape_configuration
-#define DSM2_CAL_FILE "CONFIG_DIR/dsm2.cal"
-#define GYRO_CAL_FILE "CONFIG_DIR/gyro.cal"
+// Calibration File Locations
+#define DSM2_CAL_FILE "/root/cape_calibration/dsm2.cal"
+#define GYRO_CAL_FILE "/root/cape_calibration/gyro.cal"
 
 //// Mavlink UDP input buffer size
 #define MAV_BUF_LEN 512 
