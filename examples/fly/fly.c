@@ -51,7 +51,7 @@ either expressed or implied, of the FreeBSD Project.
 #define TIP_THRESHOLD 		1.2		// Kill propellers if it rolls or pitches past this
 #define DSM2_LAND_TIMEOUT	0.3 	// seconds before going into emergency land mode
 #define DSM2_DISARM_TIMEOUT	5.0		// seconds before disarming motors completely 
-#define EMERGENCY_LAND_THR  0.2		// throttle to hold at when emergency landing
+#define EMERGENCY_LAND_THR  0.15	// throttle to hold at when emergency landing
 
 
 /************************************************************************
@@ -317,7 +317,7 @@ int load_F450_config(){
 	core_config.yaw_K_PID[1]		= 1.0;
 	core_config.yaw_K_PID[2]		= 0.4;
 	
-	core_config.idle_speed			= 0.0;
+	core_config.idle_speed			= 0.09;
 	core_config.max_throttle 		= 0.5;	
 	core_config.max_yaw_rate 		= 3;
 	core_config.max_roll_setpoint	= 0.4;
