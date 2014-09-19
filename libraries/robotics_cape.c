@@ -42,28 +42,31 @@ Strawson Design - 2013
 
 
 //// gpio output pins 
+#define RED_LED   66	//gpio2.2	P8.7
+#define GRN_LED   67	//gpio2.3	P8.8
+
 #define MDIR1A    60	//gpio1.28  P9.12
 #define MDIR1B    31	//gpio0.31	P9.13
 #define MDIR2A    38	//gpio1.16  P9.15
 #define MDIR2B    79	//gpio2.15  P8.38
-#define MDIR3A    70	//gpio2.6   P8.45
-#define MDIR3B    71	//gpio2.7   P8.46
-#define MDIR4A    72	//gpio2.8   P8.43
-#define MDIR4B    73	//gpio2.9   P8.44
+#define MDIR4A    70	//gpio2.6   P8.45
+#define MDIR4B    71	//gpio2.7   P8.46
+#define MDIR3B    72	//gpio2.8   P8.43
+#define MDIR3A    73	//gpio2.9   P8.44
 #define MOT_STBY  20	//gpio0.20  P9.41
-#define GRN_LED   66	//gpio2.2
-#define RED_LED   67	//gpio2.3
+
 #define PAIRING_PIN 30  //gpio0.30 P9.11
 #define SPI1_SS1_GPIO_PIN 113  // P9.28 gpio3.17
 #define SPI1_SS2_GPIO_PIN 49   // P9.23 gpio1.17
-#define NUM_OUT_PINS 14			// must update this when adding new pins!!!!
+#define NUM_OUT_PINS 14		// update when adding new pins!!!!
 
 // motor direction pins MUST be first in the list!!!!
-unsigned int out_gpio_pins[] = {MDIR1A, MDIR1B, MDIR2A, MDIR2B, 
-								 MDIR3A, MDIR3B, MDIR4A, MDIR4B,
-								 MOT_STBY, GRN_LED, RED_LED, 
-								 PAIRING_PIN, SPI1_SS1_GPIO_PIN,
-								 SPI1_SS2_GPIO_PIN};
+unsigned int out_gpio_pins[] = 
+					{MDIR1A, MDIR1B, MDIR2A, MDIR2B, 
+					 MDIR3A, MDIR3B, MDIR4A, MDIR4B,
+					 MOT_STBY, GRN_LED, RED_LED, 
+					 PAIRING_PIN, SPI1_SS1_GPIO_PIN,
+					 SPI1_SS2_GPIO_PIN};
 
 								 
 //// eQep and pwmss registers, more in tipwmss.h

@@ -19,11 +19,13 @@
 #define SHUTDOWN_WAIT		2		// Seconds votlage must me too low before shutting down
 #define SAMPLES_PER_SECOND	2		//check voltage twice a second, use integers
 
-// gpio number is first digit *32 plus second digit
-#define LED_1	86
-#define LED_2	88
-#define LED_3	87
-#define LED_4	89
+// gpio # for gpio_a.b = (32*a)+b
+#define LED_1	27 // P8.17
+#define LED_2	47 // P8.15
+#define LED_3	46 // P8.16
+#define LED_4	26 // P8.14
+
+#define AIN6_DIR "/sys/devices/ocp.3/helper.16/AIN6"
 
 FILE *AIN6_fd;
 int raw_adc;
@@ -46,7 +48,8 @@ int main(){
 	
 	printf("\n    Pack   Cell\n");
 	while(1){
-		AIN6_fd = fopen("/sys/devices/ocp.3/helper.18/AIN6", "r");
+		printf("opening adc6\n");
+		AIN6_fd = fopen(AIN6_DIR, "r");
 		if(AIN6_fd < 0){
 			printf("error reading adc\n");
 			printf("Check Cape Manager Slots for Robotics Cape\n");
@@ -54,6 +57,8 @@ int main(){
 		}
 		fscanf(AIN6_fd, "%i", &raw_adc);
 		fclose(AIN6_fd);
+		
+		printf("found adc6\n");
 		// times 11 for the voltage divider, divide by 1000 to go from mv to V
 		pack_voltage= (float)raw_adc*11.0/1000.0; 
 		

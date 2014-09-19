@@ -21,14 +21,14 @@ Bit 0 /
     compatible = "ti,beaglebone-black";
 
     /* identification */
-    part-number = "SD-101B";
+    part-number = "SD-101C";
 
     /* version */
     version = "00A0";
 	
 	exclusive-use =
-		"P8.7",		/*LED_GRN*/
-		"P8.8",		/*LED_RED*/
+		"P8.7",		/*LED_RED*/
+		"P8.8",		/*LED_GRN*/
 		"P8.9",		/*PAUSE_BTN*/
 		"P8.10",	/*MODE_BTN*/
 		
@@ -59,29 +59,34 @@ Bit 0 /
 		"P8.33",	/*QEP_1B*/
 		"eqep1", 
 		
-		"P8.34",	/*PWM_1B*/
-		"ehrpwm1B",
-		"P8.36",	/*PWM_1A*/
-		"ehrpwm1A",
+		/*
+		
+		*/
 		
 		"P8.39",	/*SERVO_5*/
 		"P8.40",	/*SERVO_6*/
 		"P8.41",	/*SERVO_7*/
 		"P8.42",	/*SERVO_8*/
 		
-		"P8.43",	/*MDIR_4A*/
-		"P8.44",	/*MDIR_4B*/
-		"P8.45",	/*MDIR_3A*/
-		"P8.46",	/*MDIR_3B*/
+		"P8.43",	/*MDIR_3B*/
+		"P8.44",	/*MDIR_3A*/
+		"P8.45",	/*MDIR_4A*/
+		"P8.46",	/*MDIR_4B*/
 		
 		
 		"P9.11",	/* uart4_rxd */
 		"uart4",
 		 
-		"P9.13",	/*MDIR_2B*/
-		"P9.14",	/*MDIR_2A*/
-		"P9.15",	/*MDIR_1B*/
-		"P9.16",	/*MDIR_1A*/
+		"P9.12",	/*MDIR_1A*/
+		"P9.13",	/*MDIR_1B*/
+				
+		"P9.14",	/*PWM_1A*/
+		"ehrpwm1A",
+		
+		"P9.15",	/*MDIR_2A*/
+		
+		"P9.16",	/*PWM_1B*/
+		"ehrpwm1B",
 		
 		"P9.17",	/*I2C1_SCL*/
 		"P9.18",	/*I2C1_SDA*/
@@ -126,11 +131,11 @@ Bit 0 /
 			/****************************************/
 			/* 			PWM pinmux					*/
 			/****************************************/
-			pwm_P8_34: pinmux_pwm_P8_34_pins {
-				pinctrl-single,pins = <0x0cc  0x2>; /* P8_34 (ZCZ ball U4) | MODE 2 */
+			pwm_P9_14: pinmux_pwm_P9_14_pins {
+				pinctrl-single,pins = <0x048  0x6>; /* P9_14 (ZCZ ball U14) | MODE 6 */
 			};
-			pwm_P8_36: pinmux_pwm_P8_36_pins {
-				pinctrl-single,pins = <0x0c8  0x2>; /* P8_36 (ZCZ ball U3) | MODE 2 */
+			pwm_P9_16: pinmux_pwm_P9_16_pins {
+				pinctrl-single,pins = <0x04c  0x6>; /* P9_16 (ZCZ ball T14) | MODE 6 */
 			};
 			pwm_P8_19: pinmux_pwm_P8_19_pins {
 				pinctrl-single,pins = <0x020  0x4>; /* P8_19 (ZCZ ball U10) | MODE 4 */
@@ -199,18 +204,28 @@ Bit 0 /
 					0x03C 0x0F	/*P8.15*/
 					0x038 0x0F	/*P8.16*/
 					0x02C 0x0F	/*P8.17*/
-								/*P8.43*/
-								/*P8.44*/
-								/*P8.45*/
-								/*P8.46*/
+					0x0c4 0x0F	/*P8.38*/
+					0x0a8 0x0F	/*P8.43*/
+					0x0ac 0x0F	/*P8.44*/
+					0x0a0 0x0F	/*P8.45*/
+					0x0a4 0x0F	/*P8.46*/
 								
+					0x078 0x0F	/*P9.12*/
 					0x074 0x0F	/*P9.13*/
-					0x048 0x0F  /*P9.14*/
 					0x040 0x0F	/*P9.15*/
 					0x04C 0x0F	/*P9.16*/
 					0x044 0x0F	/*P9.23*/
 					0x19C 0x0F	/*P9.28*/
 					0x1b4 0x0F	/*P9.41*/
+				>;
+			};
+			/****************************************/
+			/* 		UART2 GPS PINS		*/
+			/****************************************/
+			bb_uart2_pins: pinmux_bb_uart2_pins {
+				pinctrl-single,pins = <
+					0x150 0x21	/* spi0_sclk.uart2_rxd | MODE1 */
+					0x154 0x01	/* spi0_d0.uart2_txd | MODE1 */
 				>;
 			};
 			
@@ -229,6 +244,19 @@ Bit 0 /
 					0x0b4 0x25	/* lcd_data5.pr1_pru1_pru_r30_5, MODE5 | OUTPUT | PRU */
 				>;
 			};
+			
+			/****************************************/
+			/* 		SPI1 PINMUX		*/
+			/****************************************/
+			bb_spi1_pins: pinmux_bb_spi1_pins {
+				pinctrl-single,pins = <
+					0x190 0x33	/* mcasp0_aclkx.spi1_sclk, INPUT_PULLUP | MODE3 */
+					0x194 0x33	/* mcasp0_fsx.spi1_d0, INPUT_PULLUP | MODE3 */
+					0x198 0x13	/* mcasp0_axr0.spi1_d1, OUTPUT_PULLUP | MODE3 */
+					0x19c 0x0F	/* mcasp0_ahclkr.spi1_cs0, OUTPUT_PULLUP | MODE7 */
+				>;
+			};
+			
 		};
 	};
 
@@ -288,31 +316,31 @@ Bit 0 /
 		};
 	};
 	
-
-	fragment@11 {
+	fragment@9 {
 		target = <&ocp>;
 		__overlay__ {
-			pwm_test_P8_34 {
+			pwm_test_P9_14 {
 				compatible	= "pwm_test";
-				pwms 		= <&ehrpwm1 1 25000 1>;
-				pwm-names 	= "PWM_P8_34";
+				pwms 		= <&ehrpwm1 0 25000 1>;
+				pwm-names 	= "PWM_P9_14";
 			    pinctrl-names	= "default";
-			    pinctrl-0	= <&pwm_P8_34>;
+			    pinctrl-0	= <&pwm_P9_14>;
 				enabled		= <1>;
 				duty		= <0>;
 				status 		= "okay";
 			};
 		};
 	};
-	fragment@12 {
+	
+	fragment@10 {
 		target = <&ocp>;
 		__overlay__ {
-			pwm_test_P8_36 {
+			pwm_test_P9_16 {
 				compatible	= "pwm_test";
-				pwms 		= <&ehrpwm1 0 25000 1>;
-				pwm-names 	= "PWM_P8_36";
+				pwms 		= <&ehrpwm1 1 25000 1>;
+				pwm-names 	= "PWM_P9_16";
 			    pinctrl-names	= "default";
-			    pinctrl-0	= <&pwm_P8_36>;
+			    pinctrl-0	= <&pwm_P9_16>;
 				enabled		= <1>;
 				duty		= <0>;
 				status 		= "okay";
@@ -397,7 +425,14 @@ Bit 0 /
 			pinctrl-0 = <>;
 		};
 	};
-	
+	fragment@22 {
+		target = <&uart3>;	/* really uart2 */
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_uart2_pins>;
+		};
+	};
 	
 	
 	fragment@23 {
