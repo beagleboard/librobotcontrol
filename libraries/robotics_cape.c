@@ -144,10 +144,10 @@ int get_mode_button_state(){
 
 // pwm stuff
 // motors 1-4 driven by pwm 1A, 1B, 2A, 2B respectively
-char pwm_files[][MAX_BUF] = {"/sys/devices/ocp.3/pwm_test_P8_19.14/",
-							 "/sys/devices/ocp.3/pwm_test_P8_13.15/",
-							 "/sys/devices/ocp.3/pwm_test_P8_34.12/",
-							 "/sys/devices/ocp.3/pwm_test_P8_36.13/"
+char pwm_files[][MAX_BUF] = {"/sys/devices/ocp.3/pwm_test_P9_14.12/",
+							 "/sys/devices/ocp.3/pwm_test_P9_16.13/",
+							 "/sys/devices/ocp.3/pwm_test_P8_19.14/",
+							 "/sys/devices/ocp.3/pwm_test_P8_13.15/"
 };
 FILE *pwm_duty_pointers[6]; //store pointers to 6 pwm channels for frequent writes
 int pwm_period_ns=0; //stores current pwm period in nanoseconds
