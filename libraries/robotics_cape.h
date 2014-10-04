@@ -83,6 +83,11 @@ either expressed or implied, of the FreeBSD Project.
 #define DSM2_CAL_FILE "/root/cape_configuration/dsm2.cal"
 #define GYRO_CAL_FILE "/root/cape_configuration/gyro.cal"
 
+// lock file location
+// file created to indicate running process
+// contains pid of current process
+#define LOCKFILE "/tmp/robotics.lock"
+
 //// Mavlink UDP input buffer size
 #define MAV_BUF_LEN 512 
 

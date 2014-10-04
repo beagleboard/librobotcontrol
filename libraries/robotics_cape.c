@@ -178,7 +178,41 @@ int initialize_cape(){
 	char path[MAX_BUF]; // buffer to store file path string
 	int i = 0; 			// general use counter
 	
-	printf("\nInitializing GPIO\n");
+	printf("\n");
+
+	// check if another project was using resources
+	// kill that process cleanly with sigint if so
+	fd = fopen(LOCKFILE, "r");
+	if (fd != NULL) {
+		int old_pid;
+		fscanf(fd,"%d", &old_pid);
+		if(old_pid != 0){
+			printf("warning, shutting down existing robotics project\n");
+			if(kill((pid_t)old_pid, SIGINT)){
+				sleep(2);
+				printf("problem killing old process\n");
+			}
+		}
+		// close and delete the old file
+		fclose(fd);
+		remove(LOCKFILE);
+	}
+	
+	
+	// create new lock file with process id
+	fd = fopen(LOCKFILE, "ab+");
+	if (fd < 0) {
+		printf("\n error opening LOCKFILE for writing\n");
+		return -1;
+	}
+	pid_t current_pid = getpid();
+	printf("Current Process ID: %d\n", (int)current_pid);
+	fprintf(fd,"%d",(int)current_pid);
+	fflush(fd);
+	fclose(fd);
+	
+	// ensure gpios are exported
+	printf("Initializing GPIO\n");
 	for(i=0; i<NUM_OUT_PINS; i++){
 		if(gpio_export(out_gpio_pins[i])){
 			printf("failed to export gpio %d", out_gpio_pins[i]);
@@ -972,6 +1006,7 @@ void ctrl_c(int signo){
 
 // cleanup_cape() should be at the end of every main() function
 int cleanup_cape(){
+	remove(LOCKFILE);
 	set_state(EXITING); 
 	setGRN(0);
 	setRED(0);	
