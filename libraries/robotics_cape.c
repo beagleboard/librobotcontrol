@@ -188,10 +188,8 @@ int initialize_cape(){
 		fscanf(fd,"%d", &old_pid);
 		if(old_pid != 0){
 			printf("warning, shutting down existing robotics project\n");
-			if(kill((pid_t)old_pid, SIGINT)){
-				sleep(2);
-				printf("problem killing old process\n");
-			}
+			kill((pid_t)old_pid, SIGINT);
+			sleep(1);
 		}
 		// close and delete the old file
 		fclose(fd);
@@ -1006,7 +1004,14 @@ void ctrl_c(int signo){
 
 // cleanup_cape() should be at the end of every main() function
 int cleanup_cape(){
-	remove(LOCKFILE);
+	FILE* fd;
+	// clean up the lockfile if it still exists
+	fd = fopen(LOCKFILE, "r");
+	if (fd != NULL) {
+		// close and delete the old file
+		fclose(fd);
+		remove(LOCKFILE);
+	}
 	set_state(EXITING); 
 	setGRN(0);
 	setRED(0);	
