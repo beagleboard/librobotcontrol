@@ -40,7 +40,8 @@ int main(){
 	sleep(1);//sample for a second
 	set_imu_interrupt_func(&null_func); //stop sampling data
 	int fd;
-	fd = open(GYRO_CAL_FILE, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	fd = open(GYRO_CAL_FILE, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | 
+										S_IWUSR | S_IRGRP | S_IROTH);
 	if (fd < 0) {
 		printf("\n error opening gyro calibration file for writing\n");
 		return -1;

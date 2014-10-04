@@ -45,7 +45,7 @@ cd ../
 
 
 echo "Installing Default Calibration Files"
-cp -r cape_calibration/ $INSTALL_DIR
+cp -r cape_configuration/ $INSTALL_DIR
 
 
 echo "Enabling Boot Script"

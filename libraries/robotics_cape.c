@@ -679,7 +679,7 @@ int initialize_imu(int sample_rate, signed char orientation[9]){
 
 	dmp_set_orientation(inv_orientation_matrix_to_scalar(orientation));
   	dmp_enable_feature(DMP_FEATURE_6X_LP_QUAT | DMP_FEATURE_SEND_RAW_ACCEL 
-						| DMP_FEATURE_SEND_CAL_GYRO | DMP_FEATURE_GYRO_CAL);
+						| DMP_FEATURE_SEND_CAL_GYRO);
 
 	dmp_set_fifo_rate(sample_rate);
 	
