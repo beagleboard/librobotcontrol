@@ -30,7 +30,7 @@ clean:
 	cd calibrate_gyro; $(MAKE) clean
 	cd complementary_filter; $(MAKE) clean
 	cd fly; $(MAKE) clean
-	cd kill_robot; $(MAKE)clean
+	cd kill_robot; $(MAKE) clean
 	cd mmap_eqep; $(MAKE) clean
 	cd test_dsm2; $(MAKE) clean
 	cd test_encoders; $(MAKE) clean
