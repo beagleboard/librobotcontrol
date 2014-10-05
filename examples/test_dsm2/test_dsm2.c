@@ -38,7 +38,7 @@ int main(){
 			printf("\rNo New Radio Packets ");
 		}
 		fflush(stdout);
-		usleep(10000);
+		usleep(25000);
 	}
 	cleanup_cape();
 	return 0;
