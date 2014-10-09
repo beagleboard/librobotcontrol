@@ -85,6 +85,9 @@ either expressed or implied, of the FreeBSD Project.
 #define GYRO_CAL_FILE 	"gyro.cal"
 #define IMU_CAL_FILE	"imu.cal"
 
+// log file location
+#define LOG_DIRECTORY "/root/robot_logs/"
+
 // lock file location
 // file created to indicate running process
 // contains pid of current process
