@@ -31,7 +31,6 @@ either expressed or implied, of the FreeBSD Project.
 #ifndef ROBOTICS_CAPE
 #define ROBOTICS_CAPE
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -53,7 +52,8 @@ either expressed or implied, of the FreeBSD Project.
 #include <sys/socket.h>	// mavlink udp socket	
 #include <netinet/in.h> // mavlink udp socket	
 #include <sys/time.h>
-#include <arpa/inet.h> // mavlink udp socket	
+#include <arpa/inet.h>  // mavlink udp socket	
+#include <ctype.h>		// for isprint()
 
 #include "SimpleGPIO.h"
 #include "c_i2c.h"		// i2c lib
@@ -181,5 +181,4 @@ uint64_t microsSinceEpoch();
 //// Cleanup and Shutdown
 void ctrl_c(int signo); // signal catcher
 int cleanup_cape();		// call at the very end of main()
-
 #endif
