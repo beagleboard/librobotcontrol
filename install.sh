@@ -45,7 +45,9 @@ cd ../
 
 
 echo "Installing Default Calibration Files"
-cp -r cape_configuration/ $INSTALL_DIR
+cp -r robot_config/ $INSTALL_DIR
+
+mkdir /root/robot_logs
 
 
 echo "Enabling Boot Script"
