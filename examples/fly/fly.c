@@ -36,19 +36,25 @@ either expressed or implied, of the FreeBSD Project.
 *********************************************/
 // Includes
 #include <robotics_cape.h>
-#include <ctype.h>
+#include "filter_lib.h"				// for discrete filters and controllers
+#include "flight_core_config.h"		// for loading and saving settings
 
 // Flight Core Constants
 #define CONTROL_HZ 			200		// Run the main control loop at this rate
 #define DT 				   .005		// timestep seconds MUST MATCH CONTROL_HZ
 #define	STATE_LEN 			32		// number of timesteps to retain data
-#define MAX_YAW_COMPONENT	0.2 	// Max control delta the yaw controller can apply
+#define MAX_YAW_COMPONENT	0.21 	// Max control delta the controller can apply
+#define MAX_THRUST_COMPONENT 0.8	// upper limit of net thrust input
+#define MAX_ROLL_COMPONENT	0.2 	// Max control delta the controller can apply
+#define MAX_PITCH_COMPONENT	0.2 	// Max control delta the controller can apply
 #define INT_CUTOFF_TH 		0.3		// prevent integrators from running unless flying
-#define YAW_CUTOFF_TH 		0.25	// prevent yaw from changing when grounded
+#define YAW_CUTOFF_TH 		0.1		// prevent yaw from changing when grounded
 #define ARM_TIP_THRESHOLD	0.2		// radians from level to allow arming sequence 
+#define LAND_SATURATION 	0.05	// saturation of roll, yaw, pitch controllers
+									// while landed
 
 // Flight Stack Constants
-#define TIP_THRESHOLD 		1.2		// Kill propellers if it rolls or pitches past this
+#define TIP_THRESHOLD 		1.5		// Kill propellers if it rolls or pitches past this
 #define DSM2_LAND_TIMEOUT	0.3 	// seconds before going into emergency land mode
 #define DSM2_DISARM_TIMEOUT	5.0		// seconds before disarming motors completely 
 #define EMERGENCY_LAND_THR  0.15	// throttle to hold at when emergency landing
@@ -118,48 +124,6 @@ typedef enum core_mode_t{
 	POSITION,
 }core_mode_t;
 
-/************************************************************************
-* 	core_config_t
-*	this contains all configuration data for the flight_core
-*	the global instance core_config is populated before launching 
-*	the flight core. It can be modified while flying, eg to adjust gains
-************************************************************************/
-typedef struct core_config_t{
-	// PID Control Gains
-	float altitude_K_PID[3];	// absolute altitude
-	float pitch_rate_per_rad;	// rad/s per rad pitch error
-	float pitch_rate_K_PID[3];	// PID gains for pitch rate control
-	float roll_rate_per_rad;	// rad/s per rad roll error
-	float roll_rate_K_PID[3];	// PID gains for roll rate
-	float yaw_K_PID[3];			// absolute yaw control
-	
-	float idle_speed; 			// normalized esc idle input when throttle is zero
-	
-	
-	// Limits of user input
-	float max_throttle;			// .8 is reasonable, set to 1 for max
-	float max_yaw_rate;			//
-	float max_roll_setpoint;	//
-	float max_pitch_setpoint;	//
-	float max_vert_velocity;	// fastest the altitude controller will move
-	float max_horizontal_velocity;	// fastest the velocity controller will move
-	
-	// steady state reading of IMU when level. These are read from /root/imu.cal
-	// it is recommended to run calibrate_imu before launching this program.
-	// alternatively you can set or modify these yourself
-	float imu_roll_err;			
-	float imu_pitch_err;	
-	
-	// rough starting estimate of throttle needed to hover
-	// this updates automatically by low-passing throttle inputs
-	float hover_input;
-	
-	// 3rd order discrete controller gains placeholder for when we replace PID
-	// float pitch_num_K[4];		
-	// float pitch_den_K[4];
-	// float roll_num_K[4];
-	// float roll_den_K[4];
-}core_config_t;
 
 /************************************************************************
 * 	core_setpoint_t
@@ -209,12 +173,18 @@ typedef struct core_state_t{
 	
 	float alt_err[STATE_LEN]; 		// current and previous altitudes error
 	float dRoll_err[STATE_LEN]; 	// current and previous roll error
-	float dPitch_err[STATE_LEN];// current and previous pitch error
+	float dPitch_err[STATE_LEN];	// current and previous pitch error
 	float yaw_err[STATE_LEN];   	// current and previous yaw error
+	
+	discrete_filter roll_ctrl;		// feedback controller for angular velocity
+	discrete_filter pitch_ctrl;		// feedback controller for angular velocity
+	discrete_filter yaw_ctrl;		// feedback controller for DMP yaw
 	
 	float alt_err_integrator; 		// current and previous altitudes error
 	float dRoll_err_integrator; 	// current and previous roll error
 	float dPitch_err_integrator;	// current and previous pitch error
+	float imu_roll_err;
+	float imu_pitch_err;
 	float yaw_err_integrator;   	// current and previous yaw error
 	float control_u[4];				// control outputs  alt,roll,pitch,yaw
 	float esc_out[4];				// normalized (0-1) outputs to 4 motors
@@ -264,6 +234,7 @@ typedef struct options_t{
 * 	Function declarations				
 ************************************************************************/
 // regular functions
+int initialize_core();
 int wait_for_arming_sequence();
 int disarm();
 int load_default_core_config();
@@ -291,79 +262,40 @@ core_setpoint_t 		core_setpoint;
 core_state_t 			core_state;
 user_interface_t		user_interface;
 
-/************************************************************************
-*	load_F450_config()
-*	Set up Controller for DJI F450 Flamewheel-style frame
-*	3S Battery with 1000kV 2830/11 Motors SimonK 30A ESCs
-*	10"x4.5" propellers
-************************************************************************/
-int load_F450_config(){
-	
-	core_config.altitude_K_PID[0]	= 0;
-	core_config.altitude_K_PID[1]	= 0;
-	core_config.altitude_K_PID[2]	= 0;
-	
-	core_config.pitch_rate_per_rad 	= 6;
-	core_config.pitch_rate_K_PID[0] = 0.03;
-	core_config.pitch_rate_K_PID[1] = 0.0;
-	core_config.pitch_rate_K_PID[2] = 0.001;
-	
-	core_config.roll_rate_per_rad	= 6;
-	core_config.roll_rate_K_PID[0] 	= 0.03;	
-	core_config.roll_rate_K_PID[1] 	= 0.0;	
-	core_config.roll_rate_K_PID[2] 	= 0.001;	
-	
-	core_config.yaw_K_PID[0]		= 0.2;
-	core_config.yaw_K_PID[1]		= 1.0;
-	core_config.yaw_K_PID[2]		= 0.4;
-	
-	core_config.idle_speed			= 0.09;
-	core_config.max_throttle 		= 0.5;	
-	core_config.max_yaw_rate 		= 3;
-	core_config.max_roll_setpoint	= 0.4;
-	core_config.max_pitch_setpoint  = 0.4;
-	core_config.max_vert_velocity 	= 2;
-	core_config.max_horizontal_velocity = 2;
-	core_config.imu_roll_err 		= 0;			
-	core_config.imu_pitch_err 		= 0;
-	return 0;
-}
 
 /************************************************************************
-*	load_iris_config()
-*	populate core_config with parameters for 3DR Iris Frame
+*	initialize_core()
+*	one-time setup of feedback controllers used in flight core
 ************************************************************************/
-int load_iris_config(){
-	core_config.altitude_K_PID[0]	= 0;
-	core_config.altitude_K_PID[1]	= 0;
-	core_config.altitude_K_PID[2]	= 0;
+int initialize_core(){
+	core_state.roll_ctrl = generatePID(
+							core_config.Droll_KP,
+							core_config.Droll_KI,
+							core_config.Droll_KD,
+							.015,
+							DT);
+							
+	core_state.pitch_ctrl = generatePID(
+							core_config.Dpitch_KP,
+							core_config.Dpitch_KI,
+							core_config.Dpitch_KD,
+							.015,
+							DT);
+	core_state.yaw_ctrl = generatePID(
+							core_config.yaw_KP,
+							core_config.yaw_KI,
+							core_config.yaw_KD,
+							.015,
+							DT);
+	zeroFilter(&core_state.roll_ctrl);
+	zeroFilter(&core_state.pitch_ctrl);
+	zeroFilter(&core_state.yaw_ctrl);
 	
-	core_config.pitch_rate_per_rad 	= 6;
-	core_config.pitch_rate_K_PID[0] = 0.1;
-	core_config.pitch_rate_K_PID[1] = 0.0;
-	core_config.pitch_rate_K_PID[2] = 0.004;
+	printf("using roll filter constants:");
+	printFilterDetails(&core_state.roll_ctrl);
 	
-	core_config.roll_rate_per_rad	= 6;
-	core_config.roll_rate_K_PID[0] 	= 0.05;	
-	core_config.roll_rate_K_PID[1] 	= 0.0;	
-	core_config.roll_rate_K_PID[2] 	= 0.002;	
-	
-	core_config.yaw_K_PID[0]		= 0.2;
-	core_config.yaw_K_PID[1]		= 1.0;
-	core_config.yaw_K_PID[2]		= 0.4;
-	
-	core_config.idle_speed			= 0.11;
-	core_config.max_throttle 		= 0.8;	
-	core_config.max_yaw_rate 		= 3;
-	core_config.max_roll_setpoint	= 0.4;
-	core_config.max_pitch_setpoint  = 0.4;
-	core_config.max_vert_velocity 	= 2;
-	core_config.max_horizontal_velocity = 2;
-	core_config.imu_roll_err 		= 0;			
-	core_config.imu_pitch_err 		= 0;
 	return 0;
 }
-
 
 /************************************************************************
 *	flight_core()
@@ -404,8 +336,8 @@ int flight_core(){
 		// positive roll right according to right hand rule
 		// MPU9150 driver has incorrect minus sign on Y axis, correct for it here
 		// positive pitch backwards according to right hand rule
-		core_state.current_roll  = -(mpu.fusedEuler[VEC3_Y] - core_config.imu_roll_err);
-		core_state.current_pitch =   mpu.fusedEuler[VEC3_X] - core_config.imu_pitch_err;
+		core_state.current_roll  = -(mpu.fusedEuler[VEC3_Y] - core_state.imu_roll_err);
+		core_state.current_pitch =   mpu.fusedEuler[VEC3_X] - core_state.imu_pitch_err;
 		core_state.roll[0] 	= core_state.current_roll;
 		core_state.pitch[0] = core_state.current_pitch;
 		
@@ -476,6 +408,8 @@ int flight_core(){
 				core_state.dRoll_err_integrator  = 0;
 				core_state.dPitch_err_integrator = 0;
 				core_state.yaw_err_integrator = 0;
+				zeroFilter(&core_state.roll_ctrl);
+				zeroFilter(&core_state.pitch_ctrl);
 				core_setpoint.yaw=0;
 				memset(&core_state.esc_out,0,16);
 				previous_core_mode = DISARMED;
@@ -499,7 +433,10 @@ int flight_core(){
 		float throttle_compensation;
 		throttle_compensation = 1 / cos(core_state.current_roll);
 		throttle_compensation *= 1 / cos(core_state.current_pitch);
-		u[0] = throttle_compensation * core_setpoint.throttle;
+		float thr = core_setpoint.throttle*(MAX_THRUST_COMPONENT-core_config.idle_speed)
+						+ core_config.idle_speed;
+		
+		u[0] = throttle_compensation * thr;
 		
 		/************************************************************************
 		*	Roll & Pitch Controllers
@@ -516,6 +453,8 @@ int flight_core(){
 		if(previous_core_mode == DISARMED){
 			core_state.dRoll_err[1]=core_state.dRoll_err[0];
 			core_state.dPitch_err[1]=core_state.dPitch_err[0];
+			//preFillFilter(&core_state.roll_ctrl, core_state.dRoll_err[0]);
+			//preFillFilter(&core_state.pitch_ctrl, core_state.dPitch_err[0]);
 		}
 		
 		// only run integrator if airborne 
@@ -525,18 +464,22 @@ int flight_core(){
 			core_state.dPitch_err_integrator += core_state.dPitch_err[0] * DT;
 		}
 		
-		float roll_D  = (core_state.dRoll_err[0]-core_state.dRoll_err[1])/DT;
-		float pitch_D = (core_state.dPitch_err[0]-core_state.dPitch_err[1])/DT;
-		
-		// parallel PID
-		// TODO: replace with similar discrete-time filter and use my filter lib
-		u[1] = (core_config.roll_rate_K_PID[0] * core_state.dRoll_err[0]) +
-				(core_config.roll_rate_K_PID[1] * core_state.dRoll_err_integrator) +
-				(core_config.roll_rate_K_PID[2] * roll_D);
 				
-		u[2] = (core_config.pitch_rate_K_PID[0] * core_state.dPitch_err[0]) +
-				(core_config.pitch_rate_K_PID[1] * core_state.dPitch_err_integrator) +
-				(core_config.pitch_rate_K_PID[2] * pitch_D);
+		marchFilter(&core_state.roll_ctrl, core_state.dRoll_err[0]);
+		marchFilter(&core_state.pitch_ctrl, core_state.dPitch_err[0]);
+		
+		if(core_setpoint.throttle<0.1){
+			saturateFilter(&core_state.roll_ctrl, -LAND_SATURATION,LAND_SATURATION);
+			saturateFilter(&core_state.pitch_ctrl, -LAND_SATURATION, LAND_SATURATION);
+		}
+		else{
+			saturateFilter(&core_state.roll_ctrl, -MAX_ROLL_COMPONENT, MAX_ROLL_COMPONENT);
+			saturateFilter(&core_state.pitch_ctrl, -MAX_PITCH_COMPONENT, MAX_PITCH_COMPONENT);
+		}
+		
+		u[1] = core_state.roll_ctrl.current_output;
+		u[2] = core_state.pitch_ctrl.current_output;
+		
 		
 		/************************************************************************
 		*	Yaw Controller
@@ -553,22 +496,16 @@ int flight_core(){
 		if(u[0] > INT_CUTOFF_TH){
 			core_state.yaw_err_integrator += core_state.yaw_err[0] * DT;
 		}
+
+		marchFilter(&core_state.yaw_ctrl, core_state.yaw_err[0]);
 		
-		float yaw_D  = (core_state.yaw_err[0]-core_state.yaw_err[1])/DT;
-		
-		// parallel PID
-		u[3] = (core_config.yaw_K_PID[0] * core_state.yaw_err[0]) +
-				(core_config.yaw_K_PID[1] * core_state.yaw_err_integrator) +
-				(core_config.yaw_K_PID[2] * yaw_D);
-				
-		// limit yaw control input such that two motors don't run away
-		if(u[3]>MAX_YAW_COMPONENT){
-			u[3] = MAX_YAW_COMPONENT;
+		if(core_setpoint.throttle<0.1){
+			saturateFilter(&core_state.yaw_ctrl, -LAND_SATURATION,LAND_SATURATION);
 		}
-		else if(u[3]<(-MAX_YAW_COMPONENT)){
-			u[3] = -MAX_YAW_COMPONENT;
+		else{
+			saturateFilter(&core_state.yaw_ctrl, -MAX_YAW_COMPONENT, MAX_YAW_COMPONENT);
 		}
-		
+		u[3] = core_state.yaw_ctrl.current_output;
 		
 		/************************************************************************
 		*  Mixing for arducopter/pixhawk X-quadrator layout
@@ -635,8 +572,8 @@ int flight_core(){
 				if(new_esc[i]>1.0){
 					new_esc[i]=1.0;
 				}
-				else if(new_esc[i]<core_config.idle_speed){
-					new_esc[i]=core_config.idle_speed;
+				else if(new_esc[i]<0){
+					new_esc[i]=0;
 				}
 				send_servo_pulse_normalized(i+1,new_esc[i]);
 				core_state.esc_out[i] = new_esc[i];
@@ -1052,13 +989,17 @@ void* printf_thread_func(void* ptr){
 		printf("\r");
 		
 		// print core_state
-		printf("roll %0.1f ", core_state.current_roll); 
-		printf("pitch %0.1f ", core_state.current_pitch); 
-		printf("yaw %0.1f ", core_state.current_yaw); 
+		printf("roll %0.2f ", core_state.current_roll); 
+		printf("pitch %0.2f ", core_state.current_pitch); 
+		printf("yaw %0.2f ", core_state.current_yaw); 
 		
 		// printf("dRoll %0.1f ", core_state.dRoll); 
 		// printf("dPitch %0.1f ", core_state.dPitch); 
 		// printf("dYaw %0.1f ", core_state.dYaw); 
+		
+		printf("err: R %0.1f ", core_state.dRoll_err[0]); 
+		printf("P %0.1f ", core_state.dPitch_err[0]); 
+		printf("Y %0.1f ", core_state.yaw_err[0]); 
 		
 		// // print user inputs
 		// printf("user inputs: ");
@@ -1074,17 +1015,17 @@ void* printf_thread_func(void* ptr){
 		// printf("pitch %0.1f ", core_setpoint.pitch); 
 		// printf("yaw: %0.1f ", core_setpoint.yaw); 
 		
-		// // print control outputs
-		// printf("u: ");
-		// for(i=0; i<4; i++){
-			// printf("%0.2f ", core_state.control_u[i]);
-		// }
-		
-		// print outputs to motors
-		printf("esc: ");
+		// print control outputs
+		printf("u: ");
 		for(i=0; i<4; i++){
-			printf("%0.2f ", core_state.esc_out[i]);
+			printf("%0.2f ", core_state.control_u[i]);
 		}
+		
+		// // print outputs to motors
+		// printf("esc: ");
+		// for(i=0; i<4; i++){
+			// printf("%0.2f ", core_state.esc_out[i]);
+		// }
 			
 		fflush(stdout);	
 		usleep(200000); // print at ~5hz
@@ -1110,10 +1051,10 @@ int parse_arguments(int argc, char* argv[]){
 			options.mavlink = 1;
 			printf("sending mavlink data\n");
 			// see if the user gave an IP address as argument
-			strcpy(options.ground_ip, optarg);
+			// strcpy(options.ground_ip, optarg);
 			break;
 		case '?':
-			if (optopt == 'c'){
+			if (optopt == 'm'){
 				//send to default mav address if no or bad ip argument provided
 				strcpy(options.ground_ip, DEFAULT_MAV_ADDRESS);
 			}
@@ -1137,9 +1078,8 @@ int parse_arguments(int argc, char* argv[]){
 		printf ("Non-option argument %s\n", argv[i]);
 		return -1;
 	}
-	// // return -1 after printing problems
-	// if(i) return -1;
 	
+	printf("finished parsing arguments\n");
 	return 0;
 }
 
@@ -1166,6 +1106,15 @@ int main(int argc, char* argv[]){
 		return -1;
 	}
 	
+	// load flight_core settings
+	if(load_core_config(&core_config)){
+		printf("WARNING: no configuration file found\n");
+		printf("loading default settings\n");
+		if(create_default_core_config_file(&core_config)){
+			printf("Warning, can't write default core_config file\n");
+		}
+	}
+	
 	// listen to pause button for disarm and exit commands
 	// do this after hardware initialization so the user 
 	// can quit the program in case of crash
@@ -1173,18 +1122,18 @@ int main(int argc, char* argv[]){
 	
 	// start uart4 thread in robotics cape library
 	if(initialize_dsm2()<0){
+		cleanup_cape();
 		return -1;
 	}
 	
-	// start with default settings. 
-	// TODO: load from disk
-	load_F450_config();
+	// start filters after loading parameters
+	initialize_core();
 	
 	// start mavlink thread if enabled by user
 	if(options.mavlink){
 		// open a udp port for mavlink
 		// sock and gcAddr are global variables needed to send and receive
-		gcAddr = initialize_mavlink_udp(options.ground_ip, &sock);
+		gcAddr = initialize_mavlink_udp(DEFAULT_MAV_ADDRESS, &sock);
 		
 		// Start thread sending heartbeat and IMU attitude packets
 		pthread_create(&mav_send_thread, NULL, mavlink_sender, (void*) NULL);
@@ -1205,7 +1154,11 @@ int main(int argc, char* argv[]){
 	
 	// Start the real-time interrupt driven control thread
 	signed char orientation[9] = ORIENTATION_FLAT;
-	initialize_imu(CONTROL_HZ, orientation);
+	if(initialize_imu(CONTROL_HZ, orientation)){
+		printf("IMU initialization failed, please reboot\n");
+		cleanup_cape();
+		return -1;
+	}
 	set_imu_interrupt_func(&flight_core);
 	
 	// if the user didn't specify quiet mode, start printing

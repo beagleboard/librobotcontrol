@@ -1,4 +1,4 @@
 Fly
-James Strawson - 2013
+James Strawson - 2014
 
-work in progress, don't use this code!
+Work in Progress. Use at your own risk. 
