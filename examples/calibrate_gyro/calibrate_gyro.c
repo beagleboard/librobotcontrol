@@ -39,22 +39,35 @@ int main(){
 	set_imu_interrupt_func(&sample_imu_data); //start the interrupt handler
 	sleep(1);//sample for a second
 	set_imu_interrupt_func(&null_func); //stop sampling data
-	int fd;
-	fd = open(GYRO_CAL_FILE, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | 
-										S_IWUSR | S_IRGRP | S_IROTH);
-	if (fd < 0) {
-		printf("\n error opening gyro calibration file for writing\n");
-		return -1;
+
+	// construct a new file path string
+	char file_path[100];
+	strcpy (file_path, CONFIG_DIRECTORY);
+	strcat (file_path, GYRO_CAL_FILE);
+	
+	// open for writing
+	FILE* cal;
+	cal = fopen(file_path, "w");
+	if (cal == 0) {
+		mkdir(CONFIG_DIRECTORY, 0777);
+		cal = fopen(file_path, "w");
+		if (cal == 0){
+			printf("could not open config directory\n");
+			printf(CONFIG_DIRECTORY);
+			printf("\n");
+			return -1;
+		}
 	}
-	char buff[64];
+	
+
 	printf("samples taken: %d\n", samples);
 	int xoffset = (int16_t)round( 2.0*sum_z/samples);//actually x offset, DMP reverses x&z
 	int yoffset = (int16_t)round(-2.0*sum_y/samples);
 	int zoffset = (int16_t)round(-2.0*sum_x/samples);
 	printf("new offsets: X: %d  Y: %d  Z: %d\n", xoffset,yoffset,zoffset);
-	sprintf(buff, "%d\n%d\n%d\n",  xoffset, yoffset, zoffset); 
-	write(fd, buff, strlen(buff));
-	close(fd);
+	fprintf(cal, "%d\n%d\n%d\n",  xoffset, yoffset, zoffset); 
+	fclose(cal);
+	
 	printf("\ngyro calibration file written\n");
 	printf("run test_imu to check performance\n");
 		
