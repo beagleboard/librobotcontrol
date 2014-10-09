@@ -264,10 +264,10 @@ user_interface_t		user_interface;
 
 
 /************************************************************************
-*	initialize_core()
-*	one-time setup of feedback controllers used in flight core
+*	initialize_filters()
+*	setup of feedback controllers used in flight core
 ************************************************************************/
-int initialize_core(){
+int initialize_filters(){
 	core_state.roll_ctrl = generatePID(
 							core_config.Droll_KP,
 							core_config.Droll_KI,
@@ -290,9 +290,6 @@ int initialize_core(){
 	zeroFilter(&core_state.roll_ctrl);
 	zeroFilter(&core_state.pitch_ctrl);
 	zeroFilter(&core_state.yaw_ctrl);
-	
-	printf("using roll filter constants:");
-	printFilterDetails(&core_state.roll_ctrl);
 	
 	return 0;
 }
@@ -727,6 +724,10 @@ START:
 		send_servo_pulse_normalized(4,0);
 		usleep(5000);
 	}
+	
+	// load fresh settings if edited while disarmed
+	load_core_config(&core_config);
+	initialize_filters();
 		
 	core_setpoint.core_mode = ATTITUDE;
 	printf("\n\nARMED!!\n");
@@ -1127,7 +1128,9 @@ int main(int argc, char* argv[]){
 	}
 	
 	// start filters after loading parameters
-	initialize_core();
+	initialize_filters();
+	printf("using roll filter constants:");
+	printFilterDetails(&core_state.roll_ctrl);
 	
 	// start mavlink thread if enabled by user
 	if(options.mavlink){
