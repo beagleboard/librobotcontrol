@@ -80,8 +80,10 @@ either expressed or implied, of the FreeBSD Project.
 #define RC_CHANNELS 9
 
 // Calibration File Locations
-#define DSM2_CAL_FILE "/root/cape_configuration/dsm2.cal"
-#define GYRO_CAL_FILE "/root/cape_configuration/gyro.cal"
+#define CONFIG_DIRECTORY "/root/robot_config/"
+#define DSM2_CAL_FILE	"dsm2.cal"
+#define GYRO_CAL_FILE 	"gyro.cal"
+#define IMU_CAL_FILE	"imu.cal"
 
 // lock file location
 // file created to indicate running process

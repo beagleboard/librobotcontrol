@@ -459,7 +459,15 @@ void* read_events(void* ptr){
 int initialize_dsm2(){
 	//if calibration file exists, load it and start spektrum thread
 	FILE *cal;
-	cal = fopen(DSM2_CAL_FILE, "a+");
+	char file_path[100];
+
+	// construct a new file path string
+	strcpy (file_path, CONFIG_DIRECTORY);
+	strcat (file_path, DSM2_CAL_FILE);
+	
+	// open for reading
+	cal = fopen(file_path, "r");
+
 	if (cal < 0) {
 		printf("\nDSM2 Calibration File Doesn't Exist Yet\n");
 		printf("Use calibrate_dsm2 example to create one\n");
@@ -766,7 +774,14 @@ int setZGyroOffset(int16_t offset) {
 
 int loadGyroCalibration(){
 	FILE *cal;
-	cal = fopen(GYRO_CAL_FILE, "r");
+	char file_path[100];
+
+	// construct a new file path string
+	strcpy (file_path, CONFIG_DIRECTORY);
+	strcat (file_path, GYRO_CAL_FILE);
+	
+	// open for reading
+	cal = fopen(file_path, "r");
 	if (cal == 0) {
 		// calibration file doesn't exist yet
 		return -1;
