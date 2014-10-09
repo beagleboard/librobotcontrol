@@ -90,25 +90,37 @@ int main(){
 	pthread_join(listening_thread, NULL);
 	
 	//if it looks like new data came in, write calibration file
-	if((rc_mins[0]!=0)&&(rc_mins[0]!=rc_maxes[0])){ 
-		int fd;
-		fd = open(DSM2_CAL_FILE, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | 
-											S_IWUSR | S_IRGRP | S_IROTH);
-
-		if (fd < 0) {
-			printf("\n error opening calibration file for writing\n");
+	if((rc_mins[0]==0) || (rc_mins[0]==rc_maxes[0])){ 
+		printf("no new data recieved, exiting\n");
+		return -1;
+	}
+	
+	// construct a new file path string
+	char file_path[100];
+	strcpy (file_path, CONFIG_DIRECTORY);
+	strcat (file_path, DSM2_CAL_FILE);
+	
+	// open for writing
+	FILE* cal;
+	cal = fopen(file_path, "w");
+	if (cal == NULL) {
+		mkdir(CONFIG_DIRECTORY, 0777);
+		cal = fopen(file_path, "w");
+		if (cal == 0){
+			printf("could not open config directory\n");
+			printf(CONFIG_DIRECTORY);
+			printf("\n");
 			return -1;
 		}
-		char buff[64];
-		for(i=0;i<RC_CHANNELS;i++){
-				sprintf(buff, "%d %d\n", rc_mins[i], rc_maxes[i]);
-				write(fd, buff, strlen(buff));
-		}
-		close(fd);
-		printf("\nNew calibration file written\n");
 	}
+
+	for(i=0;i<RC_CHANNELS;i++){
+		fprintf(cal, "%d %d\n", rc_mins[i], rc_maxes[i]);
+	}
+	fclose(cal);
+	printf("New calibration file written\n");
+	printf("use test_dsm2 to confirm\n");
 	
 	cleanup_cape();
 	return 0;
 }
-

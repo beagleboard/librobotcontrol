@@ -468,7 +468,7 @@ int initialize_dsm2(){
 	// open for reading
 	cal = fopen(file_path, "r");
 
-	if (cal < 0) {
+	if (cal == NULL) {
 		printf("\nDSM2 Calibration File Doesn't Exist Yet\n");
 		printf("Use calibrate_dsm2 example to create one\n");
 		return -1;
