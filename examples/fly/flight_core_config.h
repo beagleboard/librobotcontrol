@@ -59,22 +59,47 @@ int print_core_config(core_config_t* config){
 }
 
 /************************************************************************
+* 	create_empty_core_config_file()
+*	creates a new file from the robotics cape library definition for 
+*	config directory and this file's definition for config file name
+************************************************************************/
+FILE* create_empty_core_config_file(){
+	char core_config_path[100];
+	FILE* f;
+	
+	// construct a new file path string
+	strcpy (core_config_path, CONFIG_DIRECTORY);
+	strcat (core_config_path, CORE_CONFIG_FILE_NAME);
+	
+	// open
+	f = fopen(core_config_path, "w");
+	if (f==NULL){
+		printf("could not open config directory\n");
+		printf(CONFIG_DIRECTORY);
+		printf("\n");
+		return NULL;
+	}
+	
+	fprintf(f, "flight_core_config_name: empty");
+	return f;
+}
+
+/************************************************************************
 * 	save_core_config()
 *	write the config struct to disk
+* 	should be called after writing the following header line to the file
+* 	fprintf(f, "flight_core_config_name: your_name");
 ************************************************************************/
 int save_core_config(FILE* f, core_config_t* config){
 	// if the file isn't already open, open it
 	if(f == NULL){
 		f = create_empty_core_config_file();
 	}
-	
 	// if we couldn't open file for writing, abort
 	if(f == NULL){
 		return -1;
 	}
-	
-	// write config from the beginning 
-	rewind(f);
+	// write 
 	#define X(type, fmt, name, default) fprintf(f, "%s," fmt "\n", #name, config->name);
     CORE_CONFIG_TABLE
 	#undef X	
@@ -104,8 +129,15 @@ int load_core_config(core_config_t* config){
 		printf("\n");
 		return -1;
 	}
-
+	// read from beginning
 	rewind(core_config_file);
+	
+	char name[100];
+	fscanf(f, "flight_core_config_name: %s\n", name);
+	printf("using flight_core_config:");
+	printf(name);
+	printf("\n");
+	
 	#define X(type, fmt, name, default) fscanf(f, #name "," fmt"\n", &config->name);
     CORE_CONFIG_TABLE
 	#undef X
@@ -114,29 +146,6 @@ int load_core_config(core_config_t* config){
 	return 0;
 }
 
-/************************************************************************
-* 	create_empty_core_config_file()
-*	creates a new file from the robotics cape library definition for 
-*	config directory and this file's definition for config file name
-************************************************************************/
-FILE* create_empty_core_config_file(){
-	char core_config_path[100];
-	FILE* core_config_file;
-	
-	// construct a new file path string
-	strcpy (core_config_path, CONFIG_DIRECTORY);
-	strcat (core_config_path, CORE_CONFIG_FILE_NAME);
-	
-	// open
-	core_config_file = fopen(core_config_path, "w");
-	if (core_config_file==NULL){
-		printf("could not open config directory\n");
-		printf(CONFIG_DIRECTORY);
-		printf("\n");
-		return NULL;
-	}
-	return core_config_file;
-}
 
 /************************************************************************
 * 	create_default_core_config_file()
@@ -161,6 +170,7 @@ int create_default_core_config_file(core_config_t* config){
 		return -1;
 	}
 	
+	fprintf("flight_core_config_name: default");
 	save_core_config(core_config_file, &defaults);
 
 	printf("created new default core_config file here:\n");
