@@ -7,8 +7,6 @@
 
 #define CONTROL_HZ 50
 
-#define LOG_DIR "/root/robot_logs/"
-
 #define LOG_TABLE \
     X(float,  "%f", roll	) \
     X(float,  "%f", pitch	) \
@@ -130,7 +128,7 @@ int start_log(){
 	
 
 	// construct new logfile name
-	strcpy (logfile_path, LOG_DIR);
+	strcpy (logfile_path, LOG_DIRECTORY);
 	strcat (logfile_path, time_str);
 	strcat (logfile_path, ".csv");
 	printf("starting new logfile\n");
