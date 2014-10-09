@@ -38,6 +38,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <robotics_cape.h>
 #include "filter_lib.h"				// for discrete filters and controllers
 #include "flight_core_config.h"		// for loading and saving settings
+#include "flight_core_logger.h"		// for logging control loop data
 
 // Flight Core Constants
 #define CONTROL_HZ 			200		// Run the main control loop at this rate
@@ -153,28 +154,26 @@ typedef struct core_setpoint_t{
 *	Should only be written to by the flight core after initialization		
 ************************************************************************/
 typedef struct core_state_t{
-	unsigned int control_loops; 	// number of loops since flight core started
-	float current_altitude;			// altitude estimate (m)
-	float current_roll;				// current roll angle (rad)
-	float current_pitch;			// current pitch angle (rad)
-	float current_yaw;				// current yaw angle (rad)
-	
-	float altitude[STATE_LEN];  	// current and previous altitudes
-	float roll[STATE_LEN];  		// current and previous roll angles
-	float pitch[STATE_LEN]; 		// current and previous pitch angles
-	float yaw[STATE_LEN];  			// current and previous yaw angles
+	unsigned long control_loops; 	// number of loops since flight core started
+	float altitude;					// altitude estimate (m)
+	float roll;						// current roll angle (rad)
+	float pitch;					// current pitch angle (rad)
+	float yaw;						// current yaw angle (rad)
+	float last_yaw;					// previous value for crossover detection
 	
 	float dAltitude;				// first derivative of altitude (m/s)
 	float dRoll;					// first derivative of roll (rad/s)
 	float dPitch;					// first derivative of pitch (rad/s)
 	float dYaw;						// first derivative of yaw (rad/s)
+	
+	float v_batt;					// main battery pack voltage
 	float positionX;				// estimate of X displacement from takeoff (m)
 	float positionY;				// estimate of Y displacement from takeoff (m)
 	
-	float alt_err[STATE_LEN]; 		// current and previous altitudes error
-	float dRoll_err[STATE_LEN]; 	// current and previous roll error
-	float dPitch_err[STATE_LEN];	// current and previous pitch error
-	float yaw_err[STATE_LEN];   	// current and previous yaw error
+	float alt_err; 					// current and previous altitudes error
+	float dRoll_err; 				// current and previous roll error
+	float dPitch_err;				// current pitch error
+	float yaw_err;  			 	// current  yaw error
 	
 	discrete_filter roll_ctrl;		// feedback controller for angular velocity
 	discrete_filter pitch_ctrl;		// feedback controller for angular velocity
@@ -261,6 +260,7 @@ core_config_t 			core_config;
 core_setpoint_t 		core_setpoint;
 core_state_t 			core_state;
 user_interface_t		user_interface;
+core_logger_t			core_logger;
 
 
 /************************************************************************
@@ -317,26 +317,25 @@ int flight_core(){
 		/************************************************************************
 		*	Estimate system state if DISARMED or not
 		************************************************************************/
-		// march system state history one step
-		for(i=(STATE_LEN-1);i>0;i--){
-			core_state.altitude[i] = core_state.altitude[i-1];
-			core_state.roll[i] = core_state.roll[i-1];
-			core_state.pitch[i] = core_state.pitch[i-1];
-			core_state.yaw[i] = core_state.yaw[i-1];
-			core_state.alt_err[i] = core_state.alt_err[i-1];
-			core_state.dRoll_err[i] = core_state.dRoll_err[i-1];
-			core_state.dPitch_err[i] = core_state.dPitch_err[i-1];
-			core_state.yaw_err[i] = core_state.yaw_err[i-1];
-		}
+		// // march system state history one step
+		// for(i=(STATE_LEN-1);i>0;i--){
+			// core_state.altitude[i] = core_state.altitude[i-1];
+			// core_state.roll[i] = core_state.roll[i-1];
+			// core_state.pitch[i] = core_state.pitch[i-1];
+			// core_state.yaw[i] = core_state.yaw[i-1];
+			// core_state.alt_err[i] = core_state.alt_err[i-1];
+			// core_state.dRoll_err[i] = core_state.dRoll_err[i-1];
+			// core_state.dPitch_err[i] = core_state.dPitch_err[i-1];
+			// core_state.yaw_err[i] = core_state.yaw_err[i-1];
+		// }
 		
 		// collect new IMU roll/pitch data
 		// positive roll right according to right hand rule
 		// MPU9150 driver has incorrect minus sign on Y axis, correct for it here
 		// positive pitch backwards according to right hand rule
-		core_state.current_roll  = -(mpu.fusedEuler[VEC3_Y] - core_state.imu_roll_err);
-		core_state.current_pitch =   mpu.fusedEuler[VEC3_X] - core_state.imu_pitch_err;
-		core_state.roll[0] 	= core_state.current_roll;
-		core_state.pitch[0] = core_state.current_pitch;
+		core_state.roll  = -(mpu.fusedEuler[VEC3_Y] - core_state.imu_roll_err);
+		core_state.pitch =   mpu.fusedEuler[VEC3_X] - core_state.imu_pitch_err;
+
 		
 		// current roll/pitch/yaw rates straight from gyro 
 		// converted to rad/s with default FUll scale range
@@ -356,22 +355,19 @@ int flight_core(){
 													core_state.num_yaw_spins*2*PI);
 		
 		// detect the crossover point at Z = +-PI
-		if(new_yaw - core_state.yaw[1] > 6){
+		if(new_yaw - core_state.last_yaw > 6){
 			core_state.num_yaw_spins -= 1;
 		}
-		else if(new_yaw - core_state.yaw[1] < -6){
+		else if(new_yaw - core_state.last_yaw < -6){
 			core_state.num_yaw_spins += 1;
 		}
 		
 		// record new yaw compensating for full rotation
-		core_state.current_yaw = -(mpu.fusedEuler[VEC3_Z] - core_state.imu_yaw_on_takeoff) +
-															(core_state.num_yaw_spins*2*PI);
-		core_state.yaw[0] = core_state.current_yaw;
+		core_state.last_yaw = core_state.yaw;
+		core_state.yaw = -(mpu.fusedEuler[VEC3_Z] - core_state.imu_yaw_on_takeoff) +
+												(core_state.num_yaw_spins*2*PI);
 		
-		// TODO: read barometer for altitude and inertial position estimate
-		
-		
-		
+
 		/************************************************************************
 		* 	manage the setpoints based on attitude or position mode
 		************************************************************************/
@@ -428,8 +424,8 @@ int flight_core(){
 		************************************************************************/
 		// compensate for roll/pitch angle to maintain Z thrust
 		float throttle_compensation;
-		throttle_compensation = 1 / cos(core_state.current_roll);
-		throttle_compensation *= 1 / cos(core_state.current_pitch);
+		throttle_compensation = 1 / cos(core_state.roll);
+		throttle_compensation *= 1 / cos(core_state.pitch);
 		float thr = core_setpoint.throttle*(MAX_THRUST_COMPONENT-core_config.idle_speed)
 						+ core_config.idle_speed;
 		
@@ -438,32 +434,30 @@ int flight_core(){
 		/************************************************************************
 		*	Roll & Pitch Controllers
 		************************************************************************/
-		float dRoll_setpoint = (core_setpoint.roll - core_state.current_roll) *
+		float dRoll_setpoint = (core_setpoint.roll - core_state.roll) *
 														core_config.roll_rate_per_rad;
-		float dPitch_setpoint = (core_setpoint.pitch - core_state.current_pitch) *
+		float dPitch_setpoint = (core_setpoint.pitch - core_state.pitch) *
 														core_config.pitch_rate_per_rad;
-		core_state.dRoll_err[0]  = dRoll_setpoint  - core_state.dRoll;
-		core_state.dPitch_err[0] = dPitch_setpoint - core_state.dPitch;
+		core_state.dRoll_err  = dRoll_setpoint  - core_state.dRoll;
+		core_state.dPitch_err = dPitch_setpoint - core_state.dPitch;
 		
-		// if last state was DISARMED, then errors will all be 0.
-		// to stop D from running away, make the previous error the same
-		if(previous_core_mode == DISARMED){
-			core_state.dRoll_err[1]=core_state.dRoll_err[0];
-			core_state.dPitch_err[1]=core_state.dPitch_err[0];
-			//preFillFilter(&core_state.roll_ctrl, core_state.dRoll_err[0]);
-			//preFillFilter(&core_state.pitch_ctrl, core_state.dPitch_err[0]);
-		}
+		// // if last state was DISARMED, then errors will all be 0.
+		// // make the previous error the same
+		// if(previous_core_mode == DISARMED){
+			// preFillFilter(&core_state.roll_ctrl, core_state.dRoll_err);
+			// preFillFilter(&core_state.pitch_ctrl, core_state.dPitch_err);
+		// }
 		
 		// only run integrator if airborne 
 		// TODO: proper landing/takeoff detection
 		if(u[0] > INT_CUTOFF_TH){
-			core_state.dRoll_err_integrator  += core_state.dRoll_err[0]  * DT;
-			core_state.dPitch_err_integrator += core_state.dPitch_err[0] * DT;
+			core_state.dRoll_err_integrator  += core_state.dRoll_err  * DT;
+			core_state.dPitch_err_integrator += core_state.dPitch_err * DT;
 		}
 		
 				
-		marchFilter(&core_state.roll_ctrl, core_state.dRoll_err[0]);
-		marchFilter(&core_state.pitch_ctrl, core_state.dPitch_err[0]);
+		marchFilter(&core_state.roll_ctrl, core_state.dRoll_err);
+		marchFilter(&core_state.pitch_ctrl, core_state.dPitch_err);
 		
 		if(core_setpoint.throttle<0.1){
 			saturateFilter(&core_state.roll_ctrl, -LAND_SATURATION,LAND_SATURATION);
@@ -481,20 +475,14 @@ int flight_core(){
 		/************************************************************************
 		*	Yaw Controller
 		************************************************************************/
-		core_state.yaw_err[0] = core_setpoint.yaw - core_state.current_yaw;
-		
-		// if last state was DISARMED, then errors will all be 0.
-		// to stop D from running away, make the previous error the same
-		if(previous_core_mode == DISARMED){
-			core_state.yaw_err[1]=core_state.yaw_err[0];
-		}
+		core_state.yaw_err = core_setpoint.yaw - core_state.yaw;
 		
 		// only run integrator if airborne 
 		if(u[0] > INT_CUTOFF_TH){
-			core_state.yaw_err_integrator += core_state.yaw_err[0] * DT;
+			core_state.yaw_err_integrator += core_state.yaw_err * DT;
 		}
 
-		marchFilter(&core_state.yaw_ctrl, core_state.yaw_err[0]);
+		marchFilter(&core_state.yaw_ctrl, core_state.yaw_err);
 		
 		if(core_setpoint.throttle<0.1){
 			saturateFilter(&core_state.yaw_ctrl, -LAND_SATURATION,LAND_SATURATION);
@@ -541,14 +529,6 @@ int flight_core(){
 				new_esc[i]-=offset;
 			}
 		}
-		// // if lower saturation would have occurred and the throttle input is low
-		// // reduce all outputs evenly
-		// else if(smallest_value<1 && u[0]<0.3){
-			// float offset = smallest_value;
-			// for(i=0;i<4;i++){
-				// new_esc[i]+=offset;
-			// }
-		// }
 			
 		/************************************************************************
 		*	Send a servo pulse immediately at the end of the control loop.
@@ -576,10 +556,32 @@ int flight_core(){
 				core_state.esc_out[i] = new_esc[i];
 				core_state.control_u[i] = u[i];		
 			}
-		}
+		}	
+		
+		// log some useful data if armed and flying
+		core_log_entry_t new_entry;
+		new_entry.num_loops	= core_state.control_loops;
+		new_entry.roll		= core_state.roll;
+		new_entry.pitch		= core_state.pitch;
+		new_entry.yaw		= core_state.yaw;
+		new_entry.dRoll		= core_state.dRoll;
+		new_entry.dPitch	= core_state.dPitch;
+		new_entry.dYaw		= core_state.dYaw;
+		new_entry.u_0		= core_state.control_u[0];
+		new_entry.u_1		= core_state.control_u[1];
+		new_entry.u_2		= core_state.control_u[2];
+		new_entry.u_3		= core_state.control_u[3];
+		new_entry.esc_1		= core_state.esc_out[0];
+		new_entry.esc_2		= core_state.esc_out[1];
+		new_entry.esc_3		= core_state.esc_out[2];
+		new_entry.esc_4		= core_state.esc_out[3];
+		new_entry.v_batt	= core_state.v_batt;
+			
+		log_core_data(&core_logger, &new_entry);
 		
 		//remember the last state to detect transition from DISARMED to ARMED
 		previous_core_mode = core_setpoint.core_mode;
+		core_state.control_loops++;
 	}
 	return 0;
 }
@@ -682,8 +684,8 @@ int wait_for_arming_sequence(){
 	int i;
 START:
 	// wait for level MAV before starting
-	while(fabs(core_state.current_roll)>ARM_TIP_THRESHOLD ||
-		fabs(core_state.current_pitch)>ARM_TIP_THRESHOLD){
+	while(fabs(core_state.roll)>ARM_TIP_THRESHOLD ||
+		fabs(core_state.pitch)>ARM_TIP_THRESHOLD){
 		usleep(100000);
 		if(get_state()==EXITING)return 0;
 	} 	  
@@ -709,8 +711,8 @@ START:
 		if(get_state()==EXITING)return 0;
 	}
 	
-	if(fabs(core_state.current_roll)>ARM_TIP_THRESHOLD ||
-		fabs(core_state.current_pitch)>ARM_TIP_THRESHOLD){
+	if(fabs(core_state.roll)>ARM_TIP_THRESHOLD ||
+		fabs(core_state.pitch)>ARM_TIP_THRESHOLD){
 		printf("\nRestart arming sequence with level MAV\n");
 		goto START;
 	} 
@@ -791,9 +793,9 @@ void* mavlink_sender(void* ptr){
 		//send attitude
 		memset(buf, 0, MAV_BUF_LEN);
 		mavlink_msg_attitude_pack(1, 200, &msg, microsSinceEpoch(), 
-											core_state.current_roll, 
-											core_state.current_pitch,
-											core_state.current_yaw, 
+											core_state.roll, 
+											core_state.pitch,
+											core_state.yaw, 
 											core_state.dRoll,
 											core_state.dPitch,
 											core_state.dYaw);
@@ -814,8 +816,8 @@ void* safety_thread_func(void* ptr){
 	while(get_state()!=EXITING){
 		// check for tipover
 		if(core_setpoint.core_mode != DISARMED){
-			if(	fabs(core_state.current_roll)>TIP_THRESHOLD ||
-				fabs(core_state.current_pitch)>TIP_THRESHOLD)
+			if(	fabs(core_state.roll)>TIP_THRESHOLD ||
+				fabs(core_state.pitch)>TIP_THRESHOLD)
 			{
 				printf("\nTIP DETECTED\n");
 				disarm();
@@ -990,17 +992,17 @@ void* printf_thread_func(void* ptr){
 		printf("\r");
 		
 		// print core_state
-		printf("roll %0.2f ", core_state.current_roll); 
-		printf("pitch %0.2f ", core_state.current_pitch); 
-		printf("yaw %0.2f ", core_state.current_yaw); 
+		printf("roll %0.2f ", core_state.roll); 
+		printf("pitch %0.2f ", core_state.pitch); 
+		printf("yaw %0.2f ", core_state.yaw); 
 		
 		// printf("dRoll %0.1f ", core_state.dRoll); 
 		// printf("dPitch %0.1f ", core_state.dPitch); 
 		// printf("dYaw %0.1f ", core_state.dYaw); 
 		
-		printf("err: R %0.1f ", core_state.dRoll_err[0]); 
-		printf("P %0.1f ", core_state.dPitch_err[0]); 
-		printf("Y %0.1f ", core_state.yaw_err[0]); 
+		printf("err: R %0.1f ", core_state.dRoll_err); 
+		printf("P %0.1f ", core_state.dPitch_err); 
+		printf("Y %0.1f ", core_state.yaw_err); 
 		
 		// // print user inputs
 		// printf("user inputs: ");
@@ -1087,12 +1089,13 @@ int parse_arguments(int argc, char* argv[]){
 // Main only serves to initialize hardware and spawn threads
 int main(int argc, char* argv[]){
 	// not all threads may begin depending on user options
-	pthread_t  mav_send_thread;
+	pthread_t mav_send_thread;
 	pthread_t led_thread;
 	pthread_t safety_thread;
 	pthread_t flight_stack_thread;
 	pthread_t DSM2_watcher_thread;
 	pthread_t printf_thread;
+	pthread_t core_logging_thread;
 	
 	// first check for user options
 	if(parse_arguments(argc, argv)<0){
@@ -1131,6 +1134,14 @@ int main(int argc, char* argv[]){
 	initialize_filters();
 	printf("using roll filter constants:");
 	printFilterDetails(&core_state.roll_ctrl);
+	
+	// start a core_log and logging thread
+	if(start_core_log(&core_logger)<0){
+		printf("WARNING: failed to open a core_log file\n");
+	}
+	else{
+		pthread_create(&core_logging_thread, NULL, core_log_writer, &core_logger);
+	}
 	
 	// start mavlink thread if enabled by user
 	if(options.mavlink){
@@ -1171,11 +1182,12 @@ int main(int argc, char* argv[]){
 	
 	//chill until something exits the program
 	while(get_state()!=EXITING){
-		usleep(500000);
+		usleep(100000);
 	}
 	
 	// cleanup before closing
 	close(sock); 	// mavlink UDP socket
+	stop_core_log(&core_logger);// finish writing core_log
 	cleanup_cape();	// de-initialize cape hardware
 	return 0;
 }
