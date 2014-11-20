@@ -47,7 +47,7 @@ Strawson Design - 2013
 
 #define MDIR1A    60	//gpio1.28  P9.12
 #define MDIR1B    31	//gpio0.31	P9.13
-#define MDIR2A    38	//gpio1.16  P9.15
+#define MDIR2A    48	//gpio1.16  P9.15
 #define MDIR2B    79	//gpio2.15  P8.38
 #define MDIR4A    70	//gpio2.6   P8.45
 #define MDIR4B    71	//gpio2.7   P8.46
