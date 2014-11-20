@@ -34,36 +34,40 @@ either expressed or implied, of the FreeBSD Project.
 
 #include <robotics_cape.h>
 
-// If the user holds the start button , exit cleanly
+int mode; 	// 0, 1, 2  slow medium fast blink rate
+int paused; // 0 for running, 1 for paused
+int toggle; // toggles between 0&1 for led blink
+
+// Print to the console when buttons are pressed
 int on_pause_press(){
-	printf("pressed start\n");
-	setGRN(HIGH);
-	int i=0;
-	do{
-		usleep(100000);
-		if(get_pause_button_state() == LOW){
-			return 0; //user let go before time-out
-		}
-		i++;
-	}while(i<20);
-	//user held the button down long enough, exit cleanly
-	set_state(EXITING);
+	printf("pressed Pause\n");
+	if(get_mode_button_state() == 1){
+		//both buttons pressed exit cleanly
+		set_state(EXITING);
+	}
 	return 0;
 }
 
-int on_pause_release(){
-	printf("released start\n");
-	setGRN(LOW);
-	return 0;
-}
 int on_mode_press(){
-	printf("pressed select\n");
-	setRED(HIGH);
+	printf("pressed mode\n");
+	if(get_pause_button_state() == 1){
+		//both buttons pressed exit cleanly
+		set_state(EXITING);
+	}
 	return 0;
 }
+
+// toggle paused state when button released
+int on_pause_release(){
+	if(paused) paused=0;
+	else paused=1;
+	return 0;
+}
+
+// increment mode
 int on_mode_release(){
-	setRED(LOW);
-	printf("released select\n");
+	if(mode<2)mode++;
+	else mode=0;
 	return 0;
 }
 
@@ -71,8 +75,8 @@ int on_mode_release(){
 int main(){
 	initialize_cape();
 	
-	printf("\nPress buttons to toggle lights\n");
-	printf("Press both buttons to exit cleanly\n");
+	printf("\nPress mode to change blink rate\n");
+	printf("hold pause to exit\n");
 	
 	//Assign your own functions to be called when events occur
 	set_pause_pressed_func(&on_pause_press);
@@ -80,24 +84,24 @@ int main(){
 	set_mode_pressed_func(&on_mode_press);
 	set_mode_unpressed_func(&on_mode_release);
 	
-	//run forever till the program state changes
+	// start in slow mode
+	mode = 0;
+	
+	//toggle leds till the program state changes
 	while(get_state() != EXITING){
-		setGRN(HIGH);
-		if(get_pause_button_state() == LOW){
-			setRED(LOW);
-		}
-		usleep(500000);
-		
-		if(get_mode_button_state() == LOW){
+		usleep(500000 - (mode*200000));
+		if(!paused && toggle){
 			setGRN(LOW);
+			setRED(HIGH);
+			toggle = 0;
 		}
-		setRED(HIGH);
-		usleep(500000);
+		else if(!paused && !toggle){
+			setGRN(HIGH);
+			setRED(LOW);
+			toggle=1;
+		}
 	}
 	
 	cleanup_cape();
 	return 0;
 }
-
-
-
