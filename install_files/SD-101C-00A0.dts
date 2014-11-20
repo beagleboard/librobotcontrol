@@ -257,6 +257,26 @@ Bit 0 /
 				>;
 			};
 			
+			/****************************************/
+			/* 		I2C1 PINMUX	external connector	*/
+			/****************************************/
+			bb_i2c1_pins: pinmux_bb_i2c1_pins {
+				pinctrl-single,pins = <
+					0x158 0x72	/* spi0_d1.i2c1_sda, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2 */
+					0x15c 0x72	/* spi0_cs0.i2c1_scl, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2 */
+				>;
+			};
+			
+			/****************************************/
+			/* 		DCAN1 PINMUX	*/
+			/****************************************/
+			cbb_serial_dcan1_pins: pinmux_cbb_serial_dcan1_pins {
+			pinctrl-single,pins = <
+				0x180 0x12 /* uart1_rxd - PULLUP | MODE2 (DCAN TX) */
+				0x184 0x32 /* uart1_txd - RX_ENABLED | PULLUP | MODE2 (DCAN1 RX) */
+				>;
+			};
+			
 		};
 	};
 
@@ -543,4 +563,37 @@ Bit 0 /
 			pinctrl-0 = <&pru_pins>;
 		};
 	};
+	
+	fragment@29 {
+		target = <&i2c1>;	/* i2c1 is numbered correctly */
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_i2c1_pins>;
+
+			/* this is the configuration part */
+			clock-frequency = <100000>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			/* add any i2c devices on the bus here */
+
+			/* DS1338 RTC module */
+			rtc@68 {
+				compatible = "maxim,ds1338";
+				reg = <0x68>;
+			};
+		};
+	};
+	
+	fragment@30 {
+		target = <&dcan1>;
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&cbb_serial_dcan1_pins>;
+		};
+	};
+	
 };

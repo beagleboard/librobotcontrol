@@ -428,23 +428,23 @@ void* read_events(void* ptr){
 				//pause button
 				case 1:
 					if(ev.value == 1){
-						pause_btn_state = 0; //unpressed
-						(*pause_unpressed_func)();
+						pause_btn_state = 0; 
+						(*pause_pressed_func)();
 					}
 					else{
 						pause_btn_state = 1; //pressed
-						(*pause_pressed_func)();
+						(*pause_unpressed_func)();
 					}
 				break;
 				//mode button
 				case 2:	
 					if(ev.value == 1){
 						mode_btn_state = 0; //unpressed
-						(*mode_unpressed_func)();
+						(*mode_pressed_func)();
 					}
 					else{
 						mode_btn_state = 1; //pressed
-						(*mode_pressed_func)();
+						(*mode_unpressed_func)();
 					}
 				break;
 			}
