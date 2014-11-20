@@ -596,4 +596,27 @@ Bit 0 /
 		};
 	};
 	
+	fragment@31 {
+		target = <&spi1>;	/* spi1 is numbered correctly */
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_spi1_pins>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			channel@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				compatible = "spidev";
+
+				reg = <0>;
+				spi-max-frequency = <16000000>;
+				spi-cpha;
+			};
+		};
+	};
+	
 };
