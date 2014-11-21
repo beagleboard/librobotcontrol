@@ -17,7 +17,6 @@
 #define VOLTAGE_SHUTDOWN 	3.4		// When to shut down to prevent over discharge.
 #define VOLTAGE_DISCONNECT	2		// Threshold for detecting disconnected battery
 #define SHUTDOWN_WAIT		2		// Seconds votlage must me too low before shutting down
-#define SAMPLES_PER_SECOND	2		//check voltage twice a second, use integers
 
 // gpio # for gpio_a.b = (32*a)+b
 #define LED_1	27 // P8.17
@@ -48,7 +47,7 @@ int main(){
 	
 	printf("\n    Pack   Cell\n");
 	while(1){
-		printf("opening adc6\n");
+		//printf("opening adc6\n");
 		AIN6_fd = fopen(AIN6_DIR, "r");
 		if(AIN6_fd < 0){
 			printf("error reading adc\n");
@@ -58,7 +57,7 @@ int main(){
 		fscanf(AIN6_fd, "%i", &raw_adc);
 		fclose(AIN6_fd);
 		
-		printf("found adc6\n");
+		//printf("found adc6\n");
 		// times 11 for the voltage divider, divide by 1000 to go from mv to V
 		pack_voltage= (float)raw_adc*11.0/1000.0; 
 		
@@ -96,7 +95,7 @@ int main(){
 				//the user left their BBB on
 				//shutdown to protect battery after time period
 				shutdown_counter ++;
-				if(shutdown_counter>SHUTDOWN_WAIT*SAMPLES_PER_SECOND){
+				if(shutdown_counter>SHUTDOWN_WAIT){
 					shutdown_counter = 0;
 					printf("going for shutdown!\n");
 					system("shutdown -P now");
@@ -147,7 +146,7 @@ int main(){
 			fflush(stdout);
 		}
 		//check periodically
-		usleep(1000000/SAMPLES_PER_SECOND);
+		usleep(1000000);
 	}
 	return 0;
 }

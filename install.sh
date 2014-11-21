@@ -51,6 +51,7 @@ mkdir /root/robot_logs
 
 
 echo "Enabling Boot Script"
+cp install_files/led_aging.sh /etc/init.d/
 cp install_files/$BOOTSCRIPT $INSTALL_DIR
 rm -f /etc/init.d/$BOOTSCRIPT
 ln $INSTALL_DIR/$BOOTSCRIPT /etc/init.d/$BOOTSCRIPT 

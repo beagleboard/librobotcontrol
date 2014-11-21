@@ -12,7 +12,7 @@
 
 # wait for for the cape to load
 sleep 5
-
+battery_monitor &
 #anything you want loaded on boot below
 
 
