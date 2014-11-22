@@ -10,11 +10,15 @@
 ### END INIT INFO
 
 
-# wait for for the cape to load
-sleep 5
-battery_monitor &
-#anything you want loaded on boot below
-
-
-
-
+case "$1" in
+	stop)
+		echo "shutting down"
+		 #cleanly exit currently running robot program
+		kill_robot
+    ;;
+	start)
+		# wait for for the cape to load
+		sleep 3
+		battery_monitor &
+		#anything else you want loaded on boot below
+		

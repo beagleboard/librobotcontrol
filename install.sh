@@ -71,6 +71,12 @@ select bfn in "blink" "balance" "fly" "none"; do
     esac
 done
 
+echo " " >> $INSTALL_DIR/$BOOTSCRIPT;
+echo "	;;" >> $INSTALL_DIR/$BOOTSCRIPT;
+echo "esac" >> $INSTALL_DIR/$BOOTSCRIPT;
+echo "exit 0" >> $INSTALL_DIR/$BOOTSCRIPT;
+
+
 
 
 echo
