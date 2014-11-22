@@ -109,24 +109,24 @@ int main(){
 				shutdown_counter = 0;
 			}
 			else if(cell_voltage>VOLTAGE_75){
-				gpio_set_value(LED_1,LOW);
+				gpio_set_value(LED_1,HIGH);
 				gpio_set_value(LED_2,HIGH);
 				gpio_set_value(LED_3,HIGH);
-				gpio_set_value(LED_4,HIGH);
+				gpio_set_value(LED_4,LOW);
 				shutdown_counter = 0;
 			}
 			else if(cell_voltage>VOLTAGE_50){
-				gpio_set_value(LED_1,LOW);
-				gpio_set_value(LED_2,LOW);
-				gpio_set_value(LED_3,HIGH);
-				gpio_set_value(LED_4,HIGH);
+				gpio_set_value(LED_1,HIGH);
+				gpio_set_value(LED_2,HIGH);
+				gpio_set_value(LED_3,LOW);
+				gpio_set_value(LED_4,LOW);
 				shutdown_counter = 0;
 			}
 			else if(cell_voltage>VOLTAGE_25){
-				gpio_set_value(LED_1,LOW);
+				gpio_set_value(LED_1,HIGH);
 				gpio_set_value(LED_2,LOW);
 				gpio_set_value(LED_3,LOW);
-				gpio_set_value(LED_4,HIGH);
+				gpio_set_value(LED_4,LOW);
 				shutdown_counter = 0;
 			}
 			else{
