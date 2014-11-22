@@ -45,7 +45,8 @@ int print_imu_data(){
     
 int main(int argc, char *argv[]){
 	int sample_rate;
-	signed char orientation[9] = ORIENTATION_FLAT; //could also use ORIENTATION_UPRIGHT
+	signed char orientation[9] = ORIENTATION_FLAT; 
+	//signed char orientation[9] = ORIENTATION_UPRIGHT;
 	
 	if (argc==1){
 		sample_rate = DEFAULT_SAMPLE_RATE;
