@@ -10,6 +10,7 @@ int main(){
 	
 	//Keep Running until program state changes
 	while(get_state() != EXITING){
+		usleep(1000000);
 	}
 	
 	cleanup_cape();
