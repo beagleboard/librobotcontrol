@@ -572,7 +572,7 @@ Bit 0 /
 			pinctrl-0 = <&bb_i2c1_pins>;
 
 			/* this is the configuration part */
-			clock-frequency = <100000>;
+			clock-frequency = <400000>;
 
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -613,7 +613,7 @@ Bit 0 /
 				compatible = "spidev";
 
 				reg = <0>;
-				spi-max-frequency = <16000000>;
+				spi-max-frequency = <1000000>;
 				spi-cpha;
 			};
 		};
