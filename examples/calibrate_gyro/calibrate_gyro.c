@@ -29,7 +29,7 @@ int main(){
 	while( getchar() != '\n' );
 	
 	//start up the IMU
-	signed char orientation[9] = ORIENTATION_UPRIGHT; //could also use ORIENTATION_FLAT
+	signed char orientation[9] = ORIENTATION_FLAT;
 	initialize_imu(200,orientation);
 
 	setXGyroOffset(0); //make sure gyro is zero'd first
@@ -61,9 +61,9 @@ int main(){
 	
 
 	printf("samples taken: %d\n", samples);
-	int xoffset = (int16_t)round( 2.0*sum_z/samples);//actually x offset, DMP reverses x&z
+	int xoffset = (int16_t)round(-2.0*sum_x/samples);
 	int yoffset = (int16_t)round(-2.0*sum_y/samples);
-	int zoffset = (int16_t)round(-2.0*sum_x/samples);
+	int zoffset = (int16_t)round(-2.0*sum_z/samples);
 	printf("new offsets: X: %d  Y: %d  Z: %d\n", xoffset,yoffset,zoffset);
 	fprintf(cal, "%d\n%d\n%d\n",  xoffset, yoffset, zoffset); 
 	fclose(cal);
