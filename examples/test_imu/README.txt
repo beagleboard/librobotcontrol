@@ -1,8 +1,7 @@
-Calibrate_Gyro
+test_imu
 James Strawson - 2014
 
-Running this example generates a gyro calibration file in 
-/root/calibration/gyro.cal
+Project Description:
+Tests IMU functionality by displaying Euler angles (roll, pitch, yaw) calculated by the DMP along with raw gyroscope readings. There are many commented lines of code that can be uncommented to display other data available from the IMU.
 
-This calibration file is loaded by initialize_imu() to
-set the gyro offset registers in the MPU6050/9150
+By default, this program samples at the maximum 200hz. If you pass the program an integer between 5-200 as a command line argument, it will accept this as the sample rate.

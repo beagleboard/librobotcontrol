@@ -1,19 +1,7 @@
-Bare Minimum Skeleton for Robotics Cape Projects
-James Strawson - 2013
+test_config_file
+James Strawson - 2014
 
 Project Description:
-This is meant to be a starting point for future projects. 
-There are at least three files inside each project.
+When writing and testing new code, one often sets constants in the C code as #defines. Unfortunately this requires you to recompile each time you change a constant. Alternatively, you can create a config file which is loaded each time your program starts. This example demonstrates how to define a set of configuration values in a struct and load it when the program starts. 
 
-File Structure:
-project_name.c	- This is your main source file containing 
-Makefile        - You must update the first line of this with your new 
-				  project name for make to recognize the new .c file
-README.txt 	    - This is the file you are reading now. You should 
-				  update this with your own project description and 
-				  instructions.
-				  
-Compile Instructions:
-make clean - Removes compiled object and executable files.
-make - Links and compiles your source file into an executable. Run with "./project_name"
-make install - Adds a copy of your executable to /usr/bin. Use this to keep a copy of your stable programs that can be executed from any directory.
+The config file that is created is "/root/robot_config/test_config.txt". For convenience, I suggest keeping your config files in the same place for each project.

@@ -1,19 +1,7 @@
-Bare Minimum Skeleton for Robotics Cape Projects
-James Strawson - 2013
+calibrate_escs
+James Strawson - 2014
 
 Project Description:
-This is meant to be a starting point for future projects. 
-There are at least three files inside each project.
+Typical brushless speed controllers (ESCs) accept a variety of pulse widths, usually from 800-2300 microseconds. Before using them, you must calibrate the ESC so it knows what pulse widths correspond to minimum and maximum throttle. One puts an ESC into calibration mode by applying any pulse width greater than roughly 1000us when it is powered on. Once in calibration mode, one applies max and min pulse widths briefly before turning off the signal to exit calibration mode. This is typically done with the throttle stick on your RC transmitter.
 
-File Structure:
-project_name.c	- This is your main source file containing 
-Makefile        - You must update the first line of this with your new 
-				  project name for make to recognize the new .c file
-README.txt 	    - This is the file you are reading now. You should 
-				  update this with your own project description and 
-				  instructions.
-				  
-Compile Instructions:
-make clean - Removes compiled object and executable files.
-make - Links and compiles your source file into an executable. Run with "./project_name"
-make install - Adds a copy of your executable to /usr/bin. Use this to keep a copy of your stable programs that can be executed from any directory.
+The calibrate_escs example assists you with this process by sending the right pulse widths. Follow the instructions that are displayed in the console when you execute the program.

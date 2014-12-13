@@ -7,7 +7,7 @@
 
 
 
-#define TEST_SAVE_DIR "/root/cape_configuration/test_config.txt"
+#define TEST_SAVE_DIR "/root/robot_config/test_config.txt"
 
 #define CORE_CONFIG_TABLE\
     X(float,  "%f", pitch_kp, 	0.05		) \

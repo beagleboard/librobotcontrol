@@ -1,19 +1,7 @@
-Bare Minimum Skeleton for Robotics Cape Projects
-James Strawson - 2013
+calibrate_gyro
+James Strawson - 2014
 
 Project Description:
-This is meant to be a starting point for future projects. 
-There are at least three files inside each project.
+The IMU's gyroscopes have steady state error from the factory. To zero this out, call the calibrate_gyro function while the beaglebone sits very still on a hard surface. This saves steady state offsets to "/root/robot_config/gyro.cal"
 
-File Structure:
-project_name.c	- This is your main source file containing 
-Makefile        - You must update the first line of this with your new 
-				  project name for make to recognize the new .c file
-README.txt 	    - This is the file you are reading now. You should 
-				  update this with your own project description and 
-				  instructions.
-				  
-Compile Instructions:
-make clean - Removes compiled object and executable files.
-make - Links and compiles your source file into an executable. Run with "./project_name"
-make install - Adds a copy of your executable to /usr/bin. Use this to keep a copy of your stable programs that can be executed from any directory.
+Any time you call initialize_imu() in your robot project, these offsets are loaded into the IMU so you don't have to calibrate your gyro each time your program starts.
