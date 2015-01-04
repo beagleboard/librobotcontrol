@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 
 /*
 Supporting library for Robotics Cape Features
-Strawson Design - 2013
+Strawson Design - 2014
 */
 
 #include "robotics_cape.h"
@@ -85,6 +85,13 @@ unsigned int out_gpio_pins[] =
 
 
 #define ARRAY_SIZE(array) sizeof(array)/sizeof(array[0]) 
+
+// local function declarations
+int initialize_button_handlers();
+void* pause_pressed_handler(void* ptr);
+void* pause_unpressed_handler(void* ptr);
+void* mode_pressed_handler(void* ptr);
+void* mode_unpressed_handler(void* ptr);
 
 // state variable for loop and thread control
 enum state_t state = UNINITIALIZED;
@@ -144,12 +151,12 @@ int get_mode_button_state(){
 
 // pwm stuff
 // motors 1-4 driven by pwm 1A, 1B, 2A, 2B respectively
-char pwm_files[][MAX_BUF] = {"/sys/devices/ocp.3/pwm_test_P9_14.12/",
+char pwm_files[][64] = {"/sys/devices/ocp.3/pwm_test_P9_14.12/",
 							 "/sys/devices/ocp.3/pwm_test_P9_16.13/",
 							 "/sys/devices/ocp.3/pwm_test_P8_19.14/",
 							 "/sys/devices/ocp.3/pwm_test_P8_13.15/"
 };
-FILE *pwm_duty_pointers[6]; //store pointers to 6 pwm channels for frequent writes
+FILE *pwm_duty_pointers[4]; //store pointers to 4 pwm channels for frequent writes
 int pwm_period_ns=0; //stores current pwm period in nanoseconds
 
 
@@ -175,7 +182,7 @@ static unsigned int *prusharedMem_32int_ptr;
 
 int initialize_cape(){
 	FILE *fd; 			// opened and closed for each file
-	char path[MAX_BUF]; // buffer to store file path string
+	char path[128]; // buffer to store file path string
 	int i = 0; 			// general use counter
 	
 	printf("\n");
@@ -287,15 +294,12 @@ int initialize_cape(){
 	}
 	
 	//set up function pointers for button press events
+	printf("starting button interrupts\n");
 	set_pause_pressed_func(&null_func);
 	set_pause_unpressed_func(&null_func);
 	set_mode_pressed_func(&null_func);
 	set_mode_unpressed_func(&null_func);
-	
-	//event handler thread for buttons
-	printf("Starting Event Handler\n");
-	pthread_t event_thread;
-	pthread_create(&event_thread, NULL, read_events, (void*) NULL);
+	initialize_button_handlers();
 	
 	// Load binary into PRU
 	printf("Starting PRU servo controller\n");
@@ -356,6 +360,17 @@ int set_motor(int motor, float duty){
 
 int kill_pwm(){
 	int ch;
+	if(pwm_duty_pointers[0] == NULL){
+		printf("opening pwm duty files\n");
+		char path[128];
+		int i = 0;
+		for(i=0; i<4; i++){
+			strcpy(path, pwm_files[i]);
+			strcat(path, "duty");
+			pwm_duty_pointers[i] = fopen(path, "a");
+		}
+		printf("opened pwm duty files\n");
+	}
 	for(ch=0;ch<4;ch++){
 		fprintf(pwm_duty_pointers[ch], "%d", 0);	
 		fflush(pwm_duty_pointers[ch]);
@@ -364,10 +379,12 @@ int kill_pwm(){
 }
 
 int enable_motors(){
+	kill_pwm();
 	return gpio_set_value(MOT_STBY, HIGH);
 }
 
 int disable_motors(){
+	kill_pwm();
 	return gpio_set_value(MOT_STBY, LOW);
 }
 
@@ -414,42 +431,127 @@ float getBattVoltage(){
 	return (float)raw_adc*11.0/1000.0; 
 }
 
-//// Button event handler thread
-void* read_events(void* ptr){
+/***********************************************************************
+*	int initialize_button_interrups()
+*	start 4 threads to handle 4 interrupt routines for pressing and
+*	releasing the two buttons.
+************************************************************************/
+int initialize_button_handlers(){
+	pthread_t pause_pressed_thread;
+	pthread_t pause_unpressed_thread;
+	pthread_t mode_pressed_thread;
+	pthread_t mode_unpressed_thread;
+	struct sched_param params;
+	
+	params.sched_priority = sched_get_priority_max(SCHED_FIFO)/2;
+	
+	pthread_create(&pause_pressed_thread, NULL,			 \
+				pause_pressed_handler, (void*) NULL);
+	pthread_create(&pause_unpressed_thread, NULL,			 \
+				pause_unpressed_handler, (void*) NULL);
+	pthread_create(&mode_pressed_thread, NULL,			 \
+					mode_pressed_handler, (void*) NULL);
+	pthread_create(&mode_unpressed_thread, NULL,			 \
+					mode_unpressed_handler, (void*) NULL);
+	
+	// apply medium priority to all threads
+	pthread_setschedparam(pause_pressed_thread, SCHED_FIFO, &params);
+	pthread_setschedparam(pause_unpressed_thread, SCHED_FIFO, &params);
+	pthread_setschedparam(mode_pressed_thread, SCHED_FIFO, &params);
+	pthread_setschedparam(mode_unpressed_thread, SCHED_FIFO, &params);
+	 
+	return 0;
+}
+
+/***********************************************************************
+*	void* pause_pressed_handler(void* ptr) 
+*	wait on falling edge of pause button
+************************************************************************/
+void* pause_pressed_handler(void* ptr){
 	int fd;
     fd = open("/dev/input/event1", O_RDONLY);
     struct input_event ev;
-	while (state != EXITING){
+	while (get_state() != EXITING){
         read(fd, &ev, sizeof(struct input_event));
 		// uncomment printf to see how event codes work
 		// printf("type %i key %i state %i\n", ev.type, ev.code, ev.value); 
-        if(ev.type == 1){ //only new data
-			switch(ev.code){
-				//pause button
-				case 1:
-					if(ev.value == 1){
-						pause_btn_state = 1; //pressed
-						(*pause_pressed_func)();
-					}
-					else{
-						pause_btn_state = 0; //unpressed
-						(*pause_unpressed_func)();
-					}
-				break;
-				//mode button
-				case 2:	
-					if(ev.value == 1){
-						mode_btn_state = 1; //pressed
-						(*mode_pressed_func)();
-					}
-					else{
-						mode_btn_state = 0; //unpressed
-						(*mode_unpressed_func)();
-					}
-				break;
+        if(ev.type==1 && ev.code==1){ //only new data
+			if(ev.value == 1){
+				pause_btn_state = PRESSED;
+				(*pause_pressed_func)();
 			}
 		}
-		usleep(5000);
+		usleep(10000); // wait
+    }
+	return NULL;
+}
+
+/***********************************************************************
+*	void* pause_unpressed_handler(void* ptr) 
+*	wait on rising edge of pause button
+************************************************************************/
+void* pause_unpressed_handler(void* ptr){
+	int fd;
+    fd = open("/dev/input/event1", O_RDONLY);
+    struct input_event ev;
+	while (get_state() != EXITING){
+        read(fd, &ev, sizeof(struct input_event));
+		// uncomment printf to see how event codes work
+		// printf("type %i key %i state %i\n", ev.type, ev.code, ev.value); 
+        if(ev.type==1 && ev.code==1){ //only new data
+			if(ev.value == 0){
+			
+				pause_btn_state = UNPRESSED;
+				(*pause_unpressed_func)();
+			}
+		}
+		usleep(10000); // wait
+    }
+	return NULL;
+}
+
+/***********************************************************************
+*	void* mode_pressed_handler(void* ptr) 
+*	wait on falling edge of mode button
+************************************************************************/
+void* mode_pressed_handler(void* ptr){
+	int fd;
+    fd = open("/dev/input/event1", O_RDONLY);
+    struct input_event ev;
+	while (get_state() != EXITING){
+        read(fd, &ev, sizeof(struct input_event));
+		// uncomment printf to see how event codes work
+		// printf("type %i key %i state %i\n", ev.type, ev.code, ev.value); 
+        if(ev.type==1 && ev.code==2){ //only new data
+			if(ev.value == 1){
+				mode_btn_state = PRESSED;
+				(*mode_pressed_func)();
+			}
+		}
+		usleep(10000); // wait
+    }
+	return NULL;
+}
+
+/***********************************************************************
+*	void* mode_unpressed_handler(void* ptr) 
+*	wait on rising edge of mode button
+************************************************************************/
+void* mode_unpressed_handler(void* ptr){
+	int fd;
+    fd = open("/dev/input/event1", O_RDONLY);
+    struct input_event ev;
+	while (get_state() != EXITING){
+        read(fd, &ev, sizeof(struct input_event));
+		// uncomment printf to see how event codes work
+		// printf("type %i key %i state %i\n", ev.type, ev.code, ev.value); 
+        if(ev.type==1 && ev.code==2){ //only new data
+			if(ev.value == 0){
+				mode_btn_state = UNPRESSED; //pressed
+				(*mode_unpressed_func)();
+			}
+		}
+		usleep(10000); // wait
     }
 	return NULL;
 }
@@ -1019,6 +1121,8 @@ void ctrl_c(int signo){
 
 // cleanup_cape() should be at the end of every main() function
 int cleanup_cape(){
+	set_state(EXITING);
+	usleep(500000); // let final threads clean up
 	FILE* fd;
 	// clean up the lockfile if it still exists
 	fd = fopen(LOCKFILE, "r");
@@ -1027,10 +1131,9 @@ int cleanup_cape(){
 		fclose(fd);
 		remove(LOCKFILE);
 	}
-	set_state(EXITING); 
+	 
 	setGRN(0);
 	setRED(0);	
-	kill_pwm();
 	disable_motors();
 	deselect_spi1_slave(1);	
 	deselect_spi1_slave(2);	

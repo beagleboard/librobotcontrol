@@ -101,12 +101,21 @@ either expressed or implied, of the FreeBSD Project.
 #define SERVO_MIN_US 			1000	// min pulse to send to servos	in microseconds
 #define SERVO_MAX_US 			2000	// max pulse to send to servos in microseconds
 
+#define PRESSED 1
+#define UNPRESSED 0
+	
 
 //// Initialization function must call at beginning of main()
 int initialize_cape();
 
 //// Program Flow and State Control ////
-enum state_t {UNINITIALIZED,RUNNING,PAUSED,EXITING};
+typedef enum state_t {
+	UNINITIALIZED,
+	RUNNING,
+	PAUSED,
+	EXITING
+} state_t;
+
 enum state_t get_state();
 int set_state(enum state_t);
 
@@ -115,15 +124,15 @@ int set_motor(int motor, float duty);
 int set_esc(int esc, float normalized_duty);
 int kill_pwm();
 int set_all_esc(float duty);
-int set_pwm_period_ns(int period);
+int set_all_esc(float duty);
 int enable_motors();
 int disable_motors();
 
 //// eQep encoder counter
 long int get_encoder_pos(int ch);
 int set_encoder_pos(int ch, long value);
-
-//// Buttons LEDS BLFNAR interrupt functions///
+ 
+//// Buttons LEDS interrupt functions///
 int setGRN(PIN_VALUE i);
 int setRED(PIN_VALUE i);
 int set_pause_pressed_func(int (*func)(void));
