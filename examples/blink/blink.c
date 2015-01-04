@@ -29,77 +29,89 @@ either expressed or implied, of the FreeBSD Project.
 
 // Button and LED tester for the Robotics Cape
 // Pressing either button makes an LED blink
-// Hold the start button or ctrl-c to exit cleanly
-// James Strawson - 2013
+// Hold the pause button or ctrl-c to exit cleanly
+// James Strawson - 2014
 
 #include <robotics_cape.h>
 
 int mode; 	// 0, 1, 2  slow medium fast blink rate
-int paused; // 0 for running, 1 for paused
+// sleep between toggling LEDs in 3 modes
+const int us_delay[] = {400000, 200000, 100000};	
 int toggle; // toggles between 0&1 for led blink
 
 // Print to the console when buttons are pressed
 int on_pause_press(){
-	printf("pressed Pause\n");
-	if(get_mode_button_state() == 1){
-		//both buttons pressed exit cleanly
-		set_state(EXITING);
+	printf("user pressed Pause\n");
+	// toggle between PAUSED and RUNNING
+	switch(get_state()){
+	case PAUSED:
+		set_state(RUNNING);
+		break;
+	case RUNNING:
+		set_state(PAUSED);
+		break;
+	case EXITING: 
+		// careful to exit if program is already shutting down
+		return 0; 
+	default: // ignore other states
+		break;
 	}
-	return 0;
-}
-
-int on_mode_press(){
-	printf("pressed mode\n");
-	if(get_pause_button_state() == 1){
-		//both buttons pressed exit cleanly
-		set_state(EXITING);
+	
+	// now wait to see if the user want to shut down the program
+	int i=0;
+	const int us_wait = 1500000; //1.5 seconds
+	while(i<100){
+		usleep(us_wait/100);
+		if(get_pause_button_state() == UNPRESSED){
+			printf("user let go\n");
+			return 0; //user let go before time-out
+		}
+		i++;
 	}
-	return 0;
-}
-
-// toggle paused state when button released
-int on_pause_release(){
-	if(paused) paused=0;
-	else paused=1;
+	printf("long press detected, shutting down\n");
+	//user held the button down long enough, blink and exit cleanly
+	set_state(EXITING);
 	return 0;
 }
 
 // increment mode
-int on_mode_release(){
+int on_mode_unpress(){
 	if(mode<2)mode++;
 	else mode=0;
+	
+	printf("setting mode: %d\n", mode);
 	return 0;
 }
-
 
 int main(){
 	initialize_cape();
 	
 	printf("\nPress mode to change blink rate\n");
-	printf("hold pause to exit\n");
+	printf("hold pause button to exit\n");
 	
 	//Assign your own functions to be called when events occur
 	set_pause_pressed_func(&on_pause_press);
-	set_pause_unpressed_func(&on_pause_release);
-	set_mode_pressed_func(&on_mode_press);
-	set_mode_unpressed_func(&on_mode_release);
+	set_mode_unpressed_func(&on_mode_unpress);
 	
 	// start in slow mode
 	mode = 0;
+	set_state(RUNNING);
 	
 	//toggle leds till the program state changes
-	while(get_state() != EXITING){
-		usleep(500000 - (mode*200000));
-		if(!paused && toggle){
-			setGRN(LOW);
-			setRED(HIGH);
-			toggle = 0;
+	while(get_state()!=EXITING){
+		if(get_state()==RUNNING){
+			if(toggle){
+				setGRN(LOW);
+				setRED(HIGH);
+				toggle = 0;
+			}
+			else{
+				setGRN(HIGH);
+				setRED(LOW);
+				toggle=1;
+			}
 		}
-		else if(!paused && !toggle){
-			setGRN(HIGH);
-			setRED(LOW);
-			toggle=1;
-		}
+		usleep(us_delay[mode]);
 	}
 	
 	cleanup_cape();
