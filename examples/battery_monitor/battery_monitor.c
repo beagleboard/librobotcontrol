@@ -9,14 +9,12 @@
 #include <SimpleGPIO.h>
 
 //Critical Max voltages of packs used to detect number of cells in pack
-#define CELL_MAX			4.25		//set higher than actual to detect num cells
-#define VOLTAGE_FULL		4.0		//minimum V to consider battery full
-#define VOLTAGE_75			3.75	
+#define CELL_MAX			4.25	// set higher than actual to detect num cells
+#define VOLTAGE_FULL		4.0		// minimum V to consider battery full
+#define VOLTAGE_75			3.8	
 #define VOLTAGE_50			3.65
-#define VOLTAGE_25			3.6	
-#define VOLTAGE_SHUTDOWN 	3.4		// When to shut down to prevent over discharge.
+#define VOLTAGE_25			3.45	
 #define VOLTAGE_DISCONNECT	2		// Threshold for detecting disconnected battery
-#define SHUTDOWN_WAIT		2		// Seconds votlage must me too low before shutting down
 
 // gpio # for gpio_a.b = (32*a)+b
 #define LED_1	27 // P8.17
@@ -33,6 +31,7 @@ float cell_voltage;
 int num_cells;
 int toggle = 0;
 int shutdown_counter;
+int printing = 0;
 
 int main(){
 
@@ -47,6 +46,13 @@ int main(){
 	
 	printf("\n    Pack   Cell\n");
 	while(1){
+	
+		// first decide if the user has called this from a terminal
+		// or as a startup process
+		if(isatty(fileno(stdout))){
+			printing = 1;
+		}
+		
 		//printf("opening adc6\n");
 		AIN6_fd = fopen(AIN6_DIR, "r");
 		if(AIN6_fd < 0){
@@ -91,17 +97,7 @@ int main(){
 			
 			cell_voltage = pack_voltage/num_cells;
 			
-			if(cell_voltage<VOLTAGE_SHUTDOWN){
-				//the user left their BBB on
-				//shutdown to protect battery after time period
-				shutdown_counter ++;
-				if(shutdown_counter>SHUTDOWN_WAIT){
-					shutdown_counter = 0;
-					printf("going for shutdown!\n");
-					system("shutdown -P now");
-				}
-			}
-			else if(cell_voltage>VOLTAGE_FULL){
+			if(cell_voltage>VOLTAGE_FULL){
 				gpio_set_value(LED_1,HIGH);
 				gpio_set_value(LED_2,HIGH);
 				gpio_set_value(LED_3,HIGH);
@@ -142,8 +138,10 @@ int main(){
 					toggle = 1;
 				}
 			}
-			printf("\r%dS  %0.2fV  %0.2fV   ", num_cells, pack_voltage, cell_voltage);
-			fflush(stdout);
+			if(printing){
+				printf("\r%dS  %0.2fV  %0.2fV   ", num_cells, pack_voltage, cell_voltage);
+				fflush(stdout);
+			}
 		}
 		//check periodically
 		usleep(1000000);

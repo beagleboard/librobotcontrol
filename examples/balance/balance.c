@@ -304,6 +304,7 @@ void* balance_stack(void* ptr){
 	usleep(1000000);
 	usleep(500000);
 	set_state(RUNNING);
+	setpoint.core_mode = POSITION; //start in position control
 	
 	// exiting condition is checked inside the switch case instead
 	while(1){
@@ -635,7 +636,7 @@ int disarm_controller(){
 /************************************************************************
 * 	arm_controller()
 *		- zero out the controller
-*		- set the setpoint.core_mode to ARMED
+*		- set the setpoint.armed_state to ARMED
 *		- enable motors
 ************************************************************************/
 int arm_controller(){
