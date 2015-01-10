@@ -57,7 +57,7 @@
 												  \
 	X(float,  "%f", gearbox, 		35.577		) \
 	X(float,  "%f", encoder_res,	60			) \
-	X(float,  "%f", bb_mount_angle,	0.51		) \
+	X(float,  "%f", bb_mount_angle,	0.45		) \
 	X(float,  "%f", wheel_radius, 	0.034		) \
 	X(float,  "%f", track_width, 	0.035		) \
 												  \

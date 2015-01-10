@@ -792,6 +792,8 @@ int on_pause_press(){
 		setGRN(LOW);
 		break;
 	case PAUSED:
+		// load data from disk.
+		load_config(&config);
 		set_state(RUNNING);
 		disarm_controller();
 		setRED(LOW);
