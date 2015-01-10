@@ -518,7 +518,7 @@ int balance_core(){
 		// this control will be scaled by battery voltage
 		if(saturate_number(&cstate.u[0], cstate.vBatt/config.v_nominal)){
 			D1_saturation_counter ++;
-			if(D1_saturation_counter > SAMPLE_RATE_HZ/2){
+			if(D1_saturation_counter > SAMPLE_RATE_HZ/4){
 				printf("inner loop controller saturated\n");
 				disarm_controller();
 				return 1;
