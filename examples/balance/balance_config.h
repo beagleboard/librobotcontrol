@@ -19,7 +19,7 @@
 *	logging, mavlink, and bluetooth functions should be 0 or 1
 *	floats are in rad, rad/s, meters, or unitless
 *	LEFT and RIGHT correspond to your l&r
-*	when looking at the battery side of MiP	
+*	when looking at the battery side of MiP	 
 ************************************************************************/
 
 #define CONFIG_TABLE\
@@ -35,13 +35,14 @@
 	X(int, 	  "%d", enable_mavlink_transmitting,1)\
 	X(int, 	  "%d", enable_mavlink_listening, 1 ) \
 												  \
+	X(float,  "%f", bb_mount_angle,	0.46		) \
     X(float,  "%f", numD1_0, 		-6.289		) \
     X(float,  "%f", numD1_1, 		11.91		) \
     X(float,  "%f", numD1_2, 		-5.634		) \
 	X(float,  "%f", denD1_0, 		1			) \
     X(float,  "%f", denD1_1, 		-1.702		) \
     X(float,  "%f", denD1_2, 		0.702		) \
-	X(float,  "%f", K_D1, 			1.0			) \
+	X(float,  "%f", K_D1, 			0.85		) \
 											      \
     X(float,  "%f", numD2_0, 		0.3858		) \
     X(float,  "%f", numD2_1, 		-0.3853		) \
@@ -57,7 +58,6 @@
 												  \
 	X(float,  "%f", gearbox, 		35.577		) \
 	X(float,  "%f", encoder_res,	60			) \
-	X(float,  "%f", bb_mount_angle,	0.45		) \
 	X(float,  "%f", wheel_radius, 	0.034		) \
 	X(float,  "%f", track_width, 	0.035		) \
 												  \
@@ -70,8 +70,8 @@
 	X(float,  "%f", max_turn_rate, 		6		) \
 	X(float,  "%f", max_RC_theta, 		0.4		) \
 	X(float,  "%f", tip_angle, 			0.6		) \
-	X(float,  "%f", start_angle, 		0.2		) \
-	X(float,  "%f", start_delay, 		1.0		) \
+	X(float,  "%f", start_angle, 		0.3		) \
+	X(float,  "%f", start_delay, 		0.5		) \
 	X(float,  "%f", v_nominal, 			7.4		)
 	
  // may try to use this later
@@ -131,7 +131,6 @@ int save_config(FILE *f, balance_config_t* config){
 ************************************************************************/
 int load_config(balance_config_t* config){
 	// try opening the file
-	printf("opening file\n");
 	FILE* config_file = fopen(BALANCE_CONFIG_FILE, "r");
 	
 	// if no file yet, make a new one

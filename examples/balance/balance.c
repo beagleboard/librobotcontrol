@@ -187,8 +187,8 @@ struct sockaddr_in gcAddr;
 ***********************************************************************/
 int main(){
 	initialize_cape();
-	setRED(1);
-	setGRN(0);
+	setRED(HIGH);
+	setGRN(LOW);
 	set_state(UNINITIALIZED);
 	
 	// set up button handlers first
@@ -299,12 +299,14 @@ int main(){
 void* balance_stack(void* ptr){
 	
 	// wait for IMU to settle
-	set_state(PAUSED);
 	disarm_controller();
+	usleep(1000000);
 	usleep(1000000);
 	usleep(500000);
 	set_state(RUNNING);
 	setpoint.core_mode = POSITION; //start in position control
+	setRED(LOW);
+	setGRN(HIGH);
 	
 	// exiting condition is checked inside the switch case instead
 	while(1){
@@ -332,7 +334,10 @@ void* balance_stack(void* ptr){
 				}
 				// write a blank log entry to mark this time
 				log_blank_entry();
-				// off we go!
+				// load data from disk each time it's picked up
+				// to recognize new settings user may have changed
+				load_config(&config);
+				zero_out_controller();
 				arm_controller();
 			}
 		
@@ -387,7 +392,7 @@ void* balance_stack(void* ptr){
 ************************************************************************/
 int balance_core(){
 	// local variables only in memory scope of balance_core
-	static int D1_saturation_counter=0; 
+	static int D1_saturation_counter = 0; 
 	float compensated_D1_output = 0;
 	float dutyL = 0;
 	float dutyR = 0;
@@ -466,6 +471,7 @@ int balance_core(){
 		// check for a tipover before anything else
 		if(fabs(cstate.current_theta)>config.tip_angle){
 			disarm_controller();
+			printf("tip detected \n");
 			break;
 		}
 		
@@ -516,12 +522,13 @@ int balance_core(){
 		
 		// check saturation of inner loop knowing that right after
 		// this control will be scaled by battery voltage
-		if(saturate_number(&cstate.u[0], cstate.vBatt/config.v_nominal)){
+		if(saturate_number(&cstate.u[0], config.v_nominal/cstate.vBatt)){
 			D1_saturation_counter ++;
 			if(D1_saturation_counter > SAMPLE_RATE_HZ/4){
 				printf("inner loop controller saturated\n");
 				disarm_controller();
-				return 1;
+				D1_saturation_counter = 0;
+				break;
 			}
 		}
 		else{
@@ -530,8 +537,8 @@ int balance_core(){
 		cstate.current_u = cstate.u[0];
 		
 		// scale output to compensate for battery charge level
-		compensated_D1_output = cstate.u[0] * (config.v_nominal \
-											   / cstate.vBatt);
+		compensated_D1_output = cstate.u[0] \
+					* (config.v_nominal / cstate.vBatt);
 		
 		// // integrate the reference theta to correct for imbalance or sensor
 		// // only if standing relatively still with zero phi reference
@@ -629,7 +636,6 @@ int zero_out_controller(){
 int disarm_controller(){
 	disable_motors();
 	setpoint.arm_state = DISARMED;
-	setGRN(LOW);
 	return 0;
 }
 
@@ -643,8 +649,6 @@ int arm_controller(){
 	zero_out_controller();
 	setpoint.arm_state = ARMED;
 	enable_motors();
-	setGRN(HIGH);
-	setRED(LOW);
 	return 0;
 }
 
@@ -670,28 +674,22 @@ int saturate_number(float* val, float limit){
 *	wait for MiP to be held upright long enough to begin
 ************************************************************************/
 int wait_for_starting_condition(){
+	int checks = 0;
+	
+	const int check_hz = 20;	// check 20 times per second
+	int checks_needed = round(config.start_delay*check_hz);
+	int wait_us = (1000000)/check_hz; 
+
 	while(get_state()!=EXITING){
+		// if within range, start counting
 		if(fabs(cstate.current_theta)<config.start_angle){
-			setGRN(HIGH); //tell user it's upright enough to start
-			// keep checking to see if it stays up
-			int i;
-			for(i=0;i<7;i++){
-				usleep(100000);
-				if(fabs(cstate.current_theta)>config.start_delay)	{
-					// not held upright long enough
-					setGRN(LOW);
-					break; 
-				}
-			}
-			return 0;
+			checks++;
+			// waited long enough, return
+			if(checks>=checks_needed) return 0;
 		}
-		
-		// if it's gotten here, it's been upright long enough
-		// only leave the green light on if running
-		if(get_state()==PAUSED){
-			setGRN(LOW);
-		}
-		usleep(100000);
+		// fell out of range, restart counter
+		else checks = 0;
+		usleep(wait_us);
 	}
 	return 0;
 }
@@ -792,10 +790,9 @@ int on_pause_press(){
 		setGRN(LOW);
 		break;
 	case PAUSED:
-		// load data from disk.
-		load_config(&config);
 		set_state(RUNNING);
 		disarm_controller();
+		setGRN(HIGH);
 		setRED(LOW);
 		break;
 	default:
@@ -823,9 +820,12 @@ int on_pause_press(){
 *	toggle between position and angle modes if MiP is paused
 ***********************************************************************/
 int on_mode_release(){
-	// if the MiP isn't disarmed, don't try changing mode
-	if(setpoint.arm_state != DISARMED){
-		return -1;
+	// store whether or not the controller was armed
+	int was_armed = setpoint.arm_state;
+	
+	// disarm the controller if necessary
+	if(was_armed == ARMED){
+		disarm_controller();
 	}
 	// toggle between position and angle modes
 	if(setpoint.core_mode == POSITION){
@@ -836,6 +836,12 @@ int on_mode_release(){
 		setpoint.core_mode = POSITION;
 		printf("using core_mode = POSITION\n");
 	}
+	// arm the controller if it was armed before swapping modes
+	if(was_armed == ARMED){
+		zero_out_controller();
+		arm_controller();
+	}
+	
 	blink_green();
 	return 0;
 }
@@ -843,29 +849,35 @@ int on_mode_release(){
 /***********************************************************************
 *	blink_green()
 *	nothing exciting, just blink the GRN LED for half a second
+*	then return the LED to its original state
 ***********************************************************************/
 int blink_green(){
-	const int blinks = 10;
-	// half a second of blinking
-	const int delay = 700000/(2*blinks); 
+	// record if the led was on or off so we can return later
+	int old_state = getGRN();
+	
+	const int us_to_blink = 700000; // 0.7 seconds
+	const int blink_hz = 10;
+	const int delay = 1000000/(2*blink_hz); 
+	const int blinks = blink_hz*us_to_blink/1000000;
 	int i;
 	for(i=0;i<blinks;i++){
 		usleep(delay);
-		setGRN(HIGH);
+		setGRN(!old_state);
 		usleep(delay);
-		setGRN(LOW);
+		setGRN(old_state);
 	}
 	return 0;
 }
 
 /***********************************************************************
 *	blink_red()
-*	used to warn user of critical failure
-*	doesn't return until force closed by user
+*	used to warn user that the program is exiting
 ***********************************************************************/
 int blink_red(){
-	const int blinks = 40;
-	const int delay = 2000000/(2*blinks); 
+	const int us_to_blink = 2000000; // 2 seconds
+	const int blink_hz = 10;
+	const int delay = 1000000/(2*blink_hz); 
+	const int blinks = blink_hz*us_to_blink/1000000;
 	int i;
 	for(i=0;i<blinks;i++){
 		usleep(delay);

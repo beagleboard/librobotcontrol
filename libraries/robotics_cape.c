@@ -415,6 +415,16 @@ int setGRN(PIN_VALUE i){
 int setRED(PIN_VALUE i){
 	return gpio_set_value(RED_LED, i);
 }
+int getGRN(){
+	unsigned int val = 0;
+	gpio_get_value(GRN_LED, &val);
+	return (int)val;
+}
+int getRED(){
+	unsigned int val = 0;
+	gpio_get_value(RED_LED, &val);
+	return (int)val;
+}
 
 //// Read battery voltage
 float getBattVoltage(){

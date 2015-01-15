@@ -135,6 +135,8 @@ int set_encoder_pos(int ch, long value);
 //// Buttons LEDS interrupt functions///
 int setGRN(PIN_VALUE i);
 int setRED(PIN_VALUE i);
+int getGRN();
+int getRED();
 int set_pause_pressed_func(int (*func)(void));
 int set_pause_unpressed_func(int (*func)(void));
 int set_mode_pressed_func(int (*func)(void));
