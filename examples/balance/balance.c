@@ -31,11 +31,12 @@ either expressed or implied, of the FreeBSD Project.
 * 			Includes & Constants			*
 *********************************************/
 #include <robotics_cape.h>
-#include "balance_logging.h"
-#include "balance_config.h"
 
 #define SAMPLE_RATE_HZ 200	// main filter and control loop speed
 #define DT 0.005       		// 1/sample_rate
+
+#include "balance_logging.h"
+#include "balance_config.h"
 
 /************************************************************************
 * 	core_mode_t
@@ -85,6 +86,8 @@ typedef struct core_setpoint_t{
 *	Should only be written to by the balance core after initialization		
 ************************************************************************/
 typedef struct core_state_t{
+	// time when core_controller has finished a step
+	uint64_t time_us; 
 	// inner feedback loop to control theta body angle
 	float theta[3];
 	float theta_ref[3];
@@ -139,6 +142,9 @@ typedef struct user_interface_t{
 	float drive_stick; 	// positive forward
 	float turn_stick;	// positive to the right, CW yaw
 }user_interface_t;
+
+// set with microsSinceEpoch() when the core starts
+uint64_t core_start_time_us;
 
 /************************************************************************
 * 	Function declarations in this c file
@@ -247,16 +253,19 @@ int main(){
 		// }
 	// }
 	
-	// // start logging thread if enabled
-	// if(config.enable_logging){
-		// if(start_log()<0) printf("failed to start log\n");
-		// else{
-			// pthread_t logging_thread;
-			// pthread_create(&logging_thread, NULL, log_writer, log_file);
-		// }
-	// }
-	// Finally start the real-time interrupt driven control thread
+	// start logging thread if enabled
+	if(config.enable_logging){
+		if(start_log(SAMPLE_RATE_HZ, &cstate.time_us)<0){
+			printf("failed to start log\n");
+		}
+		else{
+			// start new thread to write the file occationally
+			pthread_t  logging_thread;
+			pthread_create(&logging_thread, NULL, log_writer, (void*) NULL);
+		}
+	}
 	
+	// Finally start the real-time interrupt driven control thread
 	// start IMU with equilibrium set with upright orientation 
 	// for MiP with Ethernet pointing relatively up
 	signed char orientation[9] = ORIENTATION_UPRIGHT; 
@@ -269,6 +278,7 @@ int main(){
 	// this should be the last step in initialization 
 	// to make sure other setup functions don't interfere
 	printf("starting core IMU interrupt\n");
+	core_start_time_us = microsSinceEpoch();
 	set_imu_interrupt_func(&balance_core);
 	
 	// start balance stack to control setpoints
@@ -283,7 +293,6 @@ int main(){
 		usleep(100000);
 	}
 	
-	// stop_log(); 	// write rest of log file and close it
 	// close(*udp_sock); 	// close network socket
 	cleanup_cape(); // always end with cleanup to shut down cleanly
 	return 0;
@@ -396,7 +405,7 @@ int balance_core(){
 	float compensated_D1_output = 0;
 	float dutyL = 0;
 	float dutyR = 0;
-	log_entry_t new_log_entry;
+	static log_entry_t new_log_entry;
 	
 	// if an IMU packet read failed, ignore and just return
 	// the mpu9150_read function may print it's own warnings
@@ -572,22 +581,19 @@ int balance_core(){
 		// one motor is flipped on chassis so reverse duty to L
 		set_motor(config.motor_channel_L,-dutyL); 
 		set_motor(config.motor_channel_R,dutyR); 
+		cstate.time_us = microsSinceEpoch();
 		
-		// pass new information to the logging thread
+		// pass new information to the log with add_to_buffer
 		// this only puts information in memory, doesn't
 		// write to disk immediately
-		new_log_entry.theta_ref	= setpoint.theta;
-		new_log_entry.theta		= cstate.current_theta;
-		new_log_entry.d_theta = cstate.d_theta;
-		new_log_entry.phi_ref 	= setpoint.phi;
-		new_log_entry.phi 		= cstate.current_phi; 
-		new_log_entry.d_phi 	= cstate.d_phi;
-		new_log_entry.gamma_ref	= setpoint.gamma;	
-		new_log_entry.gamma 	= cstate.current_gamma;
-		new_log_entry.d_gamma 	= cstate.d_gamma;
-		new_log_entry.duty_split= cstate.duty_split;
-		new_log_entry.u 		= cstate.current_u;
-		add_to_buffer(&new_log_entry);
+		if(config.enable_logging){
+			new_log_entry.time_us	= cstate.time_us-core_start_time_us;
+			new_log_entry.theta		= cstate.current_theta;
+			new_log_entry.theta_ref	= setpoint.theta;
+			new_log_entry.phi 		= cstate.current_phi; 
+			new_log_entry.u 		= cstate.current_u;
+			add_to_buffer(new_log_entry);
+		}
 		
 		// end of normal balancing routine
 		// last_state will be updated beginning of next interrupt
@@ -788,12 +794,16 @@ int on_pause_press(){
 		disarm_controller();
 		setRED(HIGH);
 		setGRN(LOW);
+		if(config.enable_logging)
+			stop_log();
 		break;
 	case PAUSED:
 		set_state(RUNNING);
 		disarm_controller();
 		setGRN(HIGH);
 		setRED(LOW);
+		if(config.enable_logging)
+			start_log(SAMPLE_RATE_HZ, &cstate.time_us);
 		break;
 	default:
 		break;
