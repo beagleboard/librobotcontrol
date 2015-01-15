@@ -46,7 +46,7 @@ int log_needs_writing = 0;
 FILE* log_file;
 uint64_t* ctrl_time_ptr_local; // stores pointer to parent cstate time
 int ctrl_rate_local = 200; // default to 200, this is reset by user later
-// array of two buffers so one can fill while writing the other to file
+int is_logging_functional = 0;
 
 // array of two buffer pointers
 // memory will be allocated to these pointers in start_log
@@ -71,6 +71,9 @@ int print_entry(log_entry_t* entry){
 *	called by an outside function to quickly add new data to local buffer
 ************************************************************************/
 int add_to_buffer(log_entry_t new_entry){
+	if(is_logging_functional==0){
+		return -1;
+	}
 	if(log_needs_writing && buffer_position >= log_buf_length){
 		printf("warning, both logging buffers full\n");
 		return -1;
@@ -211,7 +214,7 @@ int start_log(int ctrl_rate, uint64_t * ctrl_time_us){
 	#undef X	
 	fprintf(log_file, "\n");
 	fflush(log_file);
-	
+	is_logging_functional = 1;
 	return 0;
 }
 

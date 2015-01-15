@@ -794,16 +794,12 @@ int on_pause_press(){
 		disarm_controller();
 		setRED(HIGH);
 		setGRN(LOW);
-		if(config.enable_logging)
-			stop_log();
 		break;
 	case PAUSED:
 		set_state(RUNNING);
 		disarm_controller();
 		setGRN(HIGH);
 		setRED(LOW);
-		if(config.enable_logging)
-			start_log(SAMPLE_RATE_HZ, &cstate.time_us);
 		break;
 	default:
 		break;
