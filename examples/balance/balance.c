@@ -203,8 +203,10 @@ int main(){
 	set_mode_unpressed_func(&on_mode_release);
 	
 	// load data from disk.
-	load_config(&config);
-	
+	if(load_config(&config)==-1){
+		printf("aborting, config file error\n");
+		return -1;
+	}
 
 
 	
@@ -343,8 +345,9 @@ void* balance_stack(void* ptr){
 				}
 				// write a blank log entry to mark this time
 				log_blank_entry();
-				// load data from disk each time it's picked up
-				// to recognize new settings user may have changed
+				// read config each time it's picked up to recognize new
+				// settings user may have changed
+				// only actually reads from disk if the file was modified
 				load_config(&config);
 				zero_out_controller();
 				arm_controller();

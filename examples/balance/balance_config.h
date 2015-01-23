@@ -3,6 +3,7 @@
 // functions to load and save a config file
 
 #include <robotics_cape.h>
+#include <sys/stat.h>
 
 #define BALANCE_CONFIG_FILE "/root/robot_config/balance_config.txt"
 
@@ -118,7 +119,8 @@ int print_config(balance_config_t* config){
 ************************************************************************/
 int save_config(FILE *f, balance_config_t* config){
 	rewind(f);
-	#define X(type, fmt, name, default) fprintf(f, "%s," fmt "\n", #name, config->name);
+	//#define X(type, fmt, name, default) fprintf(f, "%s," fmt "\n", #name, config->name);
+	#define X(type, fmt, name, default) fprintf(f, #name "," fmt "\n", config->name);
     CONFIG_TABLE
 	#undef X	
 	fflush(f);
@@ -126,35 +128,79 @@ int save_config(FILE *f, balance_config_t* config){
 }
 
 /************************************************************************
+* 	read_file()
+*	called by the higher level load_config() function
+*	use load_config() in your program
+************************************************************************/
+int read_file(FILE *f, balance_config_t* config){
+	rewind(f);
+	#define X(type, fmt, name, default) fscanf(f, #name "," fmt"\n", &config->name);
+	CONFIG_TABLE
+	#undef X
+	return 0;
+}
+
+/************************************************************************
 * 	load_config()
-*	read from the disk
+*	normally reads config from the disk
+*	if the file doesn't exist, make one with defaults
+*	if the file hasn't been modified since loading it last
+*	then don't bother loading again
+*	return -1 if error
+*	return 0 if no new data but file is okay
+*	return 1 if there is new data
 ************************************************************************/
 int load_config(balance_config_t* config){
-	// try opening the file
-	FILE* config_file = fopen(BALANCE_CONFIG_FILE, "r");
+	// static struct to remember last modified time of config file
+	// these are initialized as 0
+	struct stat file_attributes = {0};
+	static  time_t last_time = {0};
+	const time_t zero_time = {0};
+	FILE* config_file;
 	
-	// if no file yet, make a new one
-	if (config_file==NULL){
-		printf("BALANCE_CONFIG_FILE doesn't exist yet\n");
-		printf("generating a new one with default values\n");
-		*config = construct_default();
-		
-		FILE* config_file = fopen(BALANCE_CONFIG_FILE, "w+");
+	// last_time is initialized as 0, so if it's 0 then this is the first 
+	// call to load_config(). Thus, check if the file exists
+	if(last_time == zero_time){
+		// try opening the file
+		config_file = fopen(BALANCE_CONFIG_FILE, "r");
+		// if no file yet, make a new one
 		if (config_file==NULL){
-			printf("WARNING can't create balance_config_file\n");
-			printf("using default values anyway\n");
-			return -1;
+			printf("BALANCE_CONFIG_FILE doesn't exist yet\n");
+			printf("generating a new one with default values\n");
+			*config = construct_default();
+			config_file = fopen(BALANCE_CONFIG_FILE, "w+");
+			if (config_file==NULL){
+				printf("WARNING can't create balance_config_file\n");
+				printf("using default values anyway\n");
+				return -1;
+			}
+			save_config(config_file, config);
 		}
-		save_config(config_file, config);
-		fclose(config_file);
+		// file exists, load as normal
+		else{
+			read_file(config_file, config);
+		}
+		// record the modify time for the future
+		stat(BALANCE_CONFIG_FILE, &file_attributes);
+		last_time = file_attributes.st_mtime;
 	}
-	// file exists, load as normal
+	
+	// if this is not the first time opening the file, 
+	// check if it's been modified and load if so
 	else{
-		rewind(config_file);
-		#define X(type, fmt, name, default) fscanf(config_file, #name "," fmt"\n", &config->name);
-		CONFIG_TABLE
-		#undef X
-		fclose(config_file);
+		stat(BALANCE_CONFIG_FILE, &file_attributes);
+		if(last_time == file_attributes.st_mtime){
+			return 0; // no changes, just return
+		}
+		// read the file
+		config_file = fopen(BALANCE_CONFIG_FILE, "r");
+		read_file(config_file, config);
+		// record when it was saved
+		last_time = file_attributes.st_mtime;
+		printf("loaded updated config file\n");		
 	}
-	return 0;
+	
+	fclose(config_file);
+	printf("closed file\n");
+	return 1;
 }
