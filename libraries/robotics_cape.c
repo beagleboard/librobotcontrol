@@ -163,10 +163,6 @@ int pwm_period_ns=0; //stores current pwm period in nanoseconds
 // eQEP Encoder mmap arrays
 volatile char *pwm_map_base[3];
 
-// ADC AIN6 for Battery Monitoring
-FILE *AIN6_file;
-int millivolts;	
-
 // DSM2 Spektrum radio & UART4
 int rc_channels[RC_CHANNELS];
 int rc_maxes[RC_CHANNELS];
@@ -437,6 +433,21 @@ float getBattVoltage(){
 	}
 	fscanf(AIN6_fd, "%i", &raw_adc);
 	fclose(AIN6_fd);
+	// times 11 for the voltage divider, divide by 1000 to go from mv to V
+	return (float)raw_adc*11.0/1000.0; 
+}
+
+//// Read 6-16V DC input jack voltage
+float getJackVoltage(){
+	int raw_adc;
+	FILE *AIN5_fd;
+	AIN5_fd = fopen("/sys/devices/ocp.3/helper.16/AIN5", "r");
+	if(AIN5_fd < 0){
+		printf("error reading adc\n");
+		return -1;
+	}
+	fscanf(AIN5_fd, "%i", &raw_adc);
+	fclose(AIN5_fd);
 	// times 11 for the voltage divider, divide by 1000 to go from mv to V
 	return (float)raw_adc*11.0/1000.0; 
 }

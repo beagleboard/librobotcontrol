@@ -145,8 +145,9 @@ int get_pause_button_state();
 int get_mode_button_state();
 void* read_events(void* ptr); //background thread for polling inputs
 
-//// Battery
+//// Battery & power
 float getBattVoltage();
+float getJackVoltage();
 
 //// MPU9150 IMU DMP
 mpudata_t mpu; //struct to read IMU data into
