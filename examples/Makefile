@@ -9,6 +9,7 @@ all:
 	cd calibrate_gyro; $(MAKE)
 	cd center_servos; $(MAKE)
 	cd complementary_filter; $(MAKE)
+	cd drive; $(MAKE)
 	cd fly; $(MAKE)
 	cd kill_robot; $(MAKE)
 	cd mmap_eqep; $(MAKE)
@@ -31,6 +32,7 @@ clean:
 	cd calibrate_gyro; $(MAKE) clean
 	cd center_servos; $(MAKE) clean
 	cd complementary_filter; $(MAKE) clean
+	cd drive; $(MAKE) clean
 	cd fly; $(MAKE) clean
 	cd kill_robot; $(MAKE) clean
 	cd mmap_eqep; $(MAKE) clean
@@ -52,6 +54,7 @@ install:
 	cd calibrate_gyro; $(MAKE) install
 	cd center_servos; $(MAKE) install
 	cd complementary_filter; $(MAKE) install
+	cd drive; $(MAKE) install
 	cd fly; $(MAKE) install
 	cd kill_robot; $(MAKE) install
 	cd mmap_eqep; $(MAKE) install

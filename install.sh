@@ -61,10 +61,11 @@ update-rc.d $BOOTSCRIPT defaults
 
 echo " "
 echo "which program should run on boot?"
-echo "type 1-4 then enter"
+echo "type 1-5 then enter"
 select bfn in "blink" "balance" "fly" "none"; do
     case $bfn in
 		blink ) echo "blink &" >> $INSTALL_DIR/$BOOTSCRIPT; break;;
+		drive ) echo "drive &" >> $INSTALL_DIR/$BOOTSCRIPT; break;;
         balance ) echo "balance &" >> $INSTALL_DIR/$BOOTSCRIPT; break;;
 		fly ) echo "fly &" >> $INSTALL_DIR/$BOOTSCRIPT; break;;
 		none ) exit;;
