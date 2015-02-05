@@ -98,8 +98,8 @@ either expressed or implied, of the FreeBSD Project.
 
 //// PRU Servo Control
 #define SERVO_CHANNELS			8
-#define SERVO_MIN_US 			1000	// min pulse to send to servos	in microseconds
-#define SERVO_MAX_US 			2000	// max pulse to send to servos in microseconds
+#define SERVO_MIN_US 			800	// min pulse to send to servos	in microseconds
+#define SERVO_MAX_US 			2200	// max pulse to send to servos in microseconds
 
 #define PRESSED 1
 #define UNPRESSED 0

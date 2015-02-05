@@ -7,6 +7,7 @@ all:
 	cd calibrate_dsm2; $(MAKE)
 	cd calibrate_escs; $(MAKE)
 	cd calibrate_gyro; $(MAKE)
+	cd center_servos; $(MAKE)
 	cd complementary_filter; $(MAKE)
 	cd fly; $(MAKE)
 	cd kill_robot; $(MAKE)
@@ -28,6 +29,7 @@ clean:
 	cd calibrate_dsm2; $(MAKE) clean
 	cd calibrate_escs; $(MAKE) clean
 	cd calibrate_gyro; $(MAKE) clean
+	cd center_servos; $(MAKE) clean
 	cd complementary_filter; $(MAKE) clean
 	cd fly; $(MAKE) clean
 	cd kill_robot; $(MAKE) clean
@@ -48,6 +50,7 @@ install:
 	cd calibrate_dsm2; $(MAKE) install
 	cd calibrate_escs; $(MAKE) install
 	cd calibrate_gyro; $(MAKE) install
+	cd center_servos; $(MAKE) install
 	cd complementary_filter; $(MAKE) install
 	cd fly; $(MAKE) install
 	cd kill_robot; $(MAKE) install
