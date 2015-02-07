@@ -39,17 +39,17 @@
 	X(float,  "%f", mot3_polarity, 		-1		) \
 	X(float,  "%f", mot4_polarity, 		1		) \
 													\
-	X(float,  "%f", serv1_straight,		.85		) \
-	X(float,  "%f", serv2_straight,		.15		) \
-	X(float,  "%f", serv3_straight,		.15		) \
-	X(float,  "%f", serv4_straight,		.88		) \
+	X(float,  "%f", serv1_straight,		.25		) \
+	X(float,  "%f", serv2_straight,		.75		) \
+	X(float,  "%f", serv3_straight,		.25		) \
+	X(float,  "%f", serv4_straight,		.75		) \
 													\
 	X(float,  "%f", normal_turn_range,	.3		) \
-	X(float,  "%f", turn_for_spin,		.2		) \
-	X(float,  "%f", turn_for_crab,		.3		) \
-	X(float,  "%f", crab_turn_const,	.5		) \
+	X(float,  "%f", turn_for_spin,		.4		) \
+	X(float,  "%f", turn_for_crab,		.75		) \
+	X(float,  "%f", crab_turn_const,	.7		) \
 													\
-	X(float,  "%f", motor_max, 			.8		) \
+	X(float,  "%f", motor_max, 			.9		) \
 	X(float,  "%f", torque_vec_const, 	.2		) \
 												  \
 	X(float,  "%f", v_nominal, 			7.4		)

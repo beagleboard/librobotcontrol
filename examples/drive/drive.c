@@ -223,8 +223,8 @@ void* drive_stack(void* ptr){
 				cstate.motors[1]=(net_drive+net_torque_split)*config.mot2_polarity;
 				cstate.motors[2]=(net_drive-net_torque_split)*config.mot3_polarity;
 				cstate.motors[3]=(net_drive-net_torque_split)*config.mot4_polarity;
-				cstate.servos[0]=config.serv1_straight - net_turn;
-				cstate.servos[1]=config.serv2_straight;
+				cstate.servos[0]=config.serv1_straight;
+				cstate.servos[1]=config.serv2_straight - net_turn;
 				cstate.servos[2]=config.serv3_straight - net_turn;
 				cstate.servos[3]=config.serv4_straight;
 				break;
@@ -237,36 +237,37 @@ void* drive_stack(void* ptr){
 				cstate.motors[1]=(net_drive+net_torque_split)*config.mot2_polarity;
 				cstate.motors[2]=(net_drive-net_torque_split)*config.mot3_polarity;
 				cstate.motors[3]=(net_drive-net_torque_split)*config.mot4_polarity;
-				cstate.servos[0]=config.serv1_straight - net_turn;
-				cstate.servos[1]=config.serv2_straight + net_turn;
+				cstate.servos[0]=config.serv1_straight + net_turn;
+				cstate.servos[1]=config.serv2_straight - net_turn;
 				cstate.servos[2]=config.serv3_straight - net_turn;
 				cstate.servos[3]=config.serv4_straight + net_turn;
 				break;
 			
 			// crab, turn all wheels sideways and drive
 			case CRAB:
-				net_drive = user_interface.drive_stick*config.motor_max;
-				net_turn = user_interface.turn_stick*config.crab_turn_const;
-				cstate.motors[0]=(net_drive+net_turn)*config.mot1_polarity;
+				net_drive = user_interface.turn_stick*config.motor_max;
+				net_turn = user_interface.drive_stick*config.crab_turn_const\
+														*net_drive;
+				cstate.motors[0]=(-net_drive-net_turn)*config.mot1_polarity;
 				cstate.motors[1]=(net_drive-net_turn)*config.mot2_polarity;
-				cstate.motors[2]=(net_drive+net_turn)*config.mot3_polarity;
-				cstate.motors[3]=(net_drive-net_turn)*config.mot4_polarity;
-				cstate.servos[0]=config.serv1_straight-config.turn_for_crab;
-				cstate.servos[1]=config.serv2_straight+config.turn_for_crab;
+				cstate.motors[2]=(-net_drive+net_turn)*config.mot3_polarity;
+				cstate.motors[3]=(net_drive+net_turn)*config.mot4_polarity;
+				cstate.servos[0]=config.serv1_straight+config.turn_for_crab;
+				cstate.servos[1]=config.serv2_straight-config.turn_for_crab;
 				cstate.servos[2]=config.serv3_straight+config.turn_for_crab;
 				cstate.servos[3]=config.serv4_straight-config.turn_for_crab;
 				break;
 				
 			case SPIN:
-				net_drive = user_interface.drive_stick*config.motor_max;
+				net_drive = user_interface.turn_stick*config.motor_max;
 				cstate.motors[0]=net_drive*config.mot1_polarity;
 				cstate.motors[1]=net_drive*config.mot2_polarity;
-				cstate.motors[2]=net_drive*config.mot3_polarity;
-				cstate.motors[3]=net_drive*config.mot4_polarity;
-				cstate.servos[0]=config.serv1_straight-config.turn_for_spin;
-				cstate.servos[0]=config.serv2_straight+config.turn_for_spin;
-				cstate.servos[0]=config.serv3_straight+config.turn_for_spin;
-				cstate.servos[0]=config.serv4_straight-config.turn_for_spin;
+				cstate.motors[2]=-net_drive*config.mot3_polarity;
+				cstate.motors[3]=-net_drive*config.mot4_polarity;
+				cstate.servos[0]=config.serv1_straight+config.turn_for_spin;
+				cstate.servos[1]=config.serv2_straight-config.turn_for_spin;
+				cstate.servos[2]=config.serv3_straight+config.turn_for_spin;
+				cstate.servos[3]=config.serv4_straight-config.turn_for_spin;
 				break;
 				
 			default:
@@ -281,8 +282,8 @@ void* drive_stack(void* ptr){
 			
 			// send pulses to servos and drive motors
 			for (i=1; i<=4; i++){
-				saturate_number(&cstate.servos[i-1],0,1);
-				saturate_number(&cstate.motors[i-1],-1,1);
+				saturate_number(&cstate.servos[i-1],.05,.95);
+				saturate_number(&cstate.motors[i-1],-config.motor_max,config.motor_max);
 				set_motor(i,cstate.motors[i-1]);
 				send_servo_pulse_normalized(i,cstate.servos[i-1]);
 			}
@@ -398,17 +399,17 @@ void* printf_loop(void* ptr){
 		switch (get_state()){	
 		case RUNNING: { // show all the things
 			if(print_header_flag){
-				printf("    motors             servos  \n");
-				printf(" 1   2   3   4      1   2   3   4\n");
+				printf("    motors              servos  \n");
+				printf(" 1   2   3   4       1   2   3   4\n");
 				print_header_flag=0;
 			}
 			printf("\r");
 			printf("%0.1f ", cstate.motors[0]);
 			printf("%0.1f ", cstate.motors[1]);
 			printf("%0.1f ", cstate.motors[2]);
-			printf("%0.1f    ", cstate.motors[3]);
-			printf("%0.1f ", cstate.servos[0]);
-			printf("%0.1f ", cstate.servos[1]);
+			printf("%0.1f   ", cstate.motors[3]);
+			printf("%0.2f ", cstate.servos[0]);
+			printf("%0.2f ", cstate.servos[1]);
 			printf("%.2f ", cstate.servos[2]);
 			printf("%.2f ", cstate.servos[3]);
 			printf("   "); // clear remaining characters
