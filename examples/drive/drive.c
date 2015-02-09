@@ -245,13 +245,13 @@ void* drive_stack(void* ptr){
 			
 			// crab, turn all wheels sideways and drive
 			case CRAB:
-				net_drive = user_interface.turn_stick*config.motor_max;
-				net_turn = user_interface.drive_stick*config.crab_turn_const\
-														*net_drive;
-				cstate.motors[0]=(-net_drive-net_turn)*config.mot1_polarity;
-				cstate.motors[1]=(net_drive-net_turn)*config.mot2_polarity;
-				cstate.motors[2]=(-net_drive+net_turn)*config.mot3_polarity;
-				cstate.motors[3]=(net_drive+net_turn)*config.mot4_polarity;
+				net_drive = user_interface.drive_stick*config.motor_max;
+				net_turn = user_interface.turn_stick*config.crab_turn_const\
+														*(net_drive+0.5);
+				cstate.motors[0]=(-net_drive+net_turn)*config.mot1_polarity;
+				cstate.motors[1]=(net_drive+net_turn)*config.mot2_polarity;
+				cstate.motors[2]=(-net_drive-net_turn)*config.mot3_polarity;
+				cstate.motors[3]=(net_drive-net_turn)*config.mot4_polarity;
 				cstate.servos[0]=config.serv1_straight+config.turn_for_crab;
 				cstate.servos[1]=config.serv2_straight-config.turn_for_crab;
 				cstate.servos[2]=config.serv3_straight+config.turn_for_crab;
