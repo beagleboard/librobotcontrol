@@ -16,6 +16,7 @@ all:
 	cd test_dsm2; $(MAKE)
 	cd test_encoders; $(MAKE)
 	cd test_imu; $(MAKE)
+	cd test_initialization; $(MAKE)
 	cd test_mavlink; $(MAKE)
 	cd test_motors; $(MAKE)
 	cd test_servos; $(MAKE)
@@ -39,6 +40,7 @@ clean:
 	cd test_dsm2; $(MAKE) clean
 	cd test_encoders; $(MAKE) clean
 	cd test_imu; $(MAKE) clean
+	cd test_initialization; $(MAKE) clean
 	cd test_mavlink; $(MAKE) clean
 	cd test_motors; $(MAKE) clean
 	cd test_servos; $(MAKE) clean
@@ -61,6 +63,7 @@ install:
 	cd test_dsm2; $(MAKE) install
 	cd test_encoders; $(MAKE) install
 	cd test_imu; $(MAKE) install
+	cd test_initialization; $(MAKE) install
 	cd test_mavlink; $(MAKE) install
 	cd test_motors; $(MAKE) install
 	cd test_servos; $(MAKE) install
