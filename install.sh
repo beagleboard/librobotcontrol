@@ -33,8 +33,11 @@ KERN="$(uname -r)"
 echo "using linux kernel $KERN"
 
 echo " "
-echo "Compiling and Installing Device Tree Overlay"
-dtc -O dtb -o /lib/firmware/SD-101C-00A0.dtbo -b 0 -@ install_files/SD-101C-00A0.dts
+echo "Installing Device Tree Overlay"
+cp install_files/SD-101C-00A0.dtbo /lib/firmware/SD-101C-00A0.dtbo
+
+# if you want to recompile yourself use this
+#dtc -O dtb -o /lib/firmware/SD-101C-00A0.dtbo -b 0 -@ install_files/SD-101C-00A0.dts
 
 # HDMI must be disabled to open pins for cape use
 echo "modifying uEnv.txt to Disable HDMI"
@@ -121,8 +124,13 @@ cp -r robot_config/ $INSTALL_DIR
 mkdir /root/robot_logs
 
 
+#the led_aging script causes problems in older images so this is a modified version
+if [ "$IMG" == "2014-05-14" ]; then
+	echo "upgrading /etc/init.d/led_aging.sh"
+	cp install_files/led_aging.sh /etc/init.d/
+fi
+
 echo "Enabling Boot Script"
-cp install_files/led_aging.sh /etc/init.d/
 cp install_files/$BOOTSCRIPT $INSTALL_DIR
 rm -f /etc/init.d/$BOOTSCRIPT
 ln $INSTALL_DIR/$BOOTSCRIPT /etc/init.d/$BOOTSCRIPT 
@@ -133,23 +141,18 @@ update-rc.d $BOOTSCRIPT defaults
 echo " "
 echo "which program should run on boot?"
 echo "type 1-5 then enter"
-select bfn in "blink" "balance" "fly" "none"; do
+select bfn in "blink" "drive" "balance" "fly" "none"; do
     case $bfn in
-		blink ) echo "blink &" >> $INSTALL_DIR/$BOOTSCRIPT; break;;
-		drive ) echo "drive &" >> $INSTALL_DIR/$BOOTSCRIPT; break;;
-        balance ) echo "balance &" >> $INSTALL_DIR/$BOOTSCRIPT; break;;
-		fly ) echo "fly &" >> $INSTALL_DIR/$BOOTSCRIPT; break;;
-		none ) exit;;
+		blink ) PROG="blink"; break;;
+		drive ) PROG="drive"; break;;
+        balance ) PROG="balance"; break;;
+		fly ) PROG="fly"; break;;
+		none ) PROG=" "; break;;
     esac
 done
 
-echo " " >> $INSTALL_DIR/$BOOTSCRIPT;
-echo "	;;" >> $INSTALL_DIR/$BOOTSCRIPT;
-echo "esac" >> $INSTALL_DIR/$BOOTSCRIPT;
-echo "exit 0" >> $INSTALL_DIR/$BOOTSCRIPT;
-
-
-
+# put the right program in the auto run script
+sed "s/#INSERT/$PROG/" install_files/Auto_Run_Script.sh > $INSTALL_DIR/Auto_Run_Script.sh
 
 echo
 echo "Robotics Cape Configured and Installed"

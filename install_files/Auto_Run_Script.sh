@@ -37,5 +37,9 @@ case "$1" in
 		# everything seems to be loaded now, start the battery monitor program in the background
 		battery_monitor &
 		
-		# now put anything else you want loaded on boot below
-
+		# now put anything else you want loaded on boot HERE
+		#INSERT
+		
+	;;
+esac
+exit 0
