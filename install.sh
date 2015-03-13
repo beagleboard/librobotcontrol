@@ -10,6 +10,20 @@ BOOTSCRIPT="Auto_Run_Script.sh"
 touch *
 echo " "
 
+echo "This script will install all Robotics Cape supporting software."
+
+read -r -p "Continue? [y/n] " response
+case $response in
+    [yY]) 
+        echo " "
+        ;;
+    *)
+		echo "cancelled"
+        exit
+        ;;
+esac
+
+
 # make sure the user is root
 if [ `whoami` != 'root' ]; then
 	echo "You must be root to install this"
@@ -26,11 +40,40 @@ elif grep -q "2014-05-14" /etc/dogtag; then
 else
 	echo "please use Debian 2015-03-01 or 2014-05-14"
 	exit
-fi
+fi 
 
 # print kernel version, mostly for fun
 KERN="$(uname -r)"
 echo "using linux kernel $KERN"
+
+#check dependencies
+if [ ! -f /usr/bin/make ]; then
+	echo " "
+    echo "error: dependency 'make' not installed"
+	echo "use apt-get install build-essentials"
+	echo "OR, if you are using a console-only image:"
+	echo "bash upgrade_console_only_image.sh"
+	exit
+fi
+
+if [ ! -f /usr/bin/gcc ]; then
+	echo " "
+    echo "error: dependency 'gcc' not installed"
+	echo "use apt-get install build-essentials"
+	echo "OR, if you are using a console-only image:"
+	echo "bash upgrade_console_only_image.sh"
+	exit
+fi
+
+if [ ! -f /usr/lib/libprussdrv.so]; then
+	if [ ! -f /usr/lib/local/libprussdrv.so]; then
+		echo " "
+		echo "error: PRU library not installed"
+		echo "use the following script with an internet connection:"
+		echo "bash upgrade_console_only_image.sh"
+		exit
+	fi
+fi
 
 echo " "
 echo "Installing Device Tree Overlay"
@@ -117,12 +160,64 @@ make install > /dev/null
 make clean > /dev/null
 cd ../
 
+# install calibration files 
+if [ ! -d "$INSTALL_DIR/robot_config" ]; then
+	echo "Installing Default Calibration Files"
+	cp -r robot_config/ $INSTALL_DIR
+else
+	#okay, the config folder exists, check status of each config file
+	# STAT=0 > files are the same as default
+	# STAT=1 > user has modified a file
+	# STAT=2 > file doesn't exist yet
+	cmp -s robot_config/gyro.cal $INSTALL_DIR/robot_config/gyro.cal
+	GYRO_STAT=$?
+	cmp -s robot_config/dsm2.cal $INSTALL_DIR/robot_config/dsm2.cal
+	DSM_STAT=$?
+	
+	if [ $GYRO_STAT -eq "1" ]; then
+		echo " "
+		read -r -p "Would you like to keep your old gyro calibration file? [y/n] " response
+		case $response in
+			[yY]) 
+				echo " "
+				;;
+			*)
+				echo "writing new default gyro calibration file"
+				cp robot_config/gyro.cal $INSTALL_DIR/robot_config/
+				;;
+		esac
+	else
+		echo "writing new default gyro calibration file"
+		cp robot_config/gyro.cal $INSTALL_DIR/robot_config/
+	fi
+	
+	if [ $DSM_STAT -eq "1" ]; then
+		echo " "
+		read -r -p "Would you like to keep your old DSM2 calibration file? [y/n] " response
+		case $response in
+			[yY]) 
+				echo " "
+				;;
+			*)
+				echo "writing new default DSM2 calibration file"
+				cp robot_config/dsm2.cal $INSTALL_DIR/robot_config/
+				;;
+		esac
+	else
+		echo "writing new default DSM2 calibration file"
+		cp robot_config/dsm2.cal $INSTALL_DIR/robot_config/
+	fi
+		
+fi
 
-echo "Installing Default Calibration Files"
-cp -r robot_config/ $INSTALL_DIR
 
-mkdir /root/robot_logs
-
+# make a robot_logs directory if it doesn't exist
+if [ -d $INSTALL_DIR/robot_logs ]; then
+	echo "$INSTALL_DIR/robot_logs already exists"
+else
+	echo "creating log directory $INSTALL_DIR/robot_logs"
+	mkdir $INSTALL_DIR/robot_logs
+fi
 
 #the led_aging script causes problems in older images so this is a modified version
 if [ "$IMG" == "2014-05-14" ]; then
@@ -154,8 +249,9 @@ done
 # put the right program in the auto run script
 sed "s/#INSERT/$PROG/" install_files/Auto_Run_Script.sh > $INSTALL_DIR/Auto_Run_Script.sh
 
-echo
+echo " "
 echo "Robotics Cape Configured and Installed"
 echo "Reboot to complete installation."
-echo
+echo "After Rebooting we suggest running 'calibrate_gyro'"
+echo " " 
 
