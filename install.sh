@@ -65,8 +65,8 @@ if [ ! -f /usr/bin/gcc ]; then
 	exit
 fi
 
-if [ ! -f /usr/lib/libprussdrv.so]; then
-	if [ ! -f /usr/lib/local/libprussdrv.so]; then
+if [ ! -f /usr/lib/libprussdrv.so ]; then
+	if [ ! -f /usr/lib/local/libprussdrv.so ]; then
 		echo " "
 		echo "error: PRU library not installed"
 		echo "use the following script with an internet connection:"
