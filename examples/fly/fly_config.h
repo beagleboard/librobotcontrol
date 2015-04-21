@@ -9,7 +9,6 @@
 #define FLY_CONFIG_FILE "/root/robot_config/fly_config.txt"
 
 #define CONFIG_TABLE\
-	X(int, 	  "%s", config_name,	  "default" ) \
 	X(int, 	  "%d", enable_logging,	  	0		) \
 	\
 	X(int, 	  "%d", enable_dsm2, 	 	 1		) \
@@ -29,7 +28,7 @@
 	X(int, 	  "%d", enable_mavlink_tx,	0		)\
 	X(int, 	  "%d", enable_mavlink_rx,	0		) \
 	\
-	X(int, 	  "%d", rotors,				6		) \
+	X(int, 	  "%d", rotors,				4		) \
 	X(char,	  "%c", rotor_layout,		'X'		) \
 												\
 	X(float,  "%f", alt_KP,				0		)\
@@ -55,6 +54,12 @@
 	X(float,  "%f", max_yaw_rate,		3		)\
 	X(float,  "%f", idle_speed,			.11		)\
 	X(float,  "%f", max_throttle, 		.8		)\
+	X(float,  "%f", tip_angle, 			1.5		)\
+	X(float,  "%f", v_nominal, 			7.4		)\
+	X(float,  "%f", dsm2_timeout, 		0.3		)\
+	X(float,  "%f", land_timeout, 		0.3		)\
+	X(float,  "%f", disarm_timeout,		4.0		)\
+	X(float,  "%f", land_throttle,		.15		)\
 												\
 	X(float,  "%f", max_vert_velocity,	3		)\
 	X(float,  "%f", max_horz_velocity, 	3		)\
@@ -68,14 +73,14 @@
 
 
 /************************************************************************
-* 	core_config_t
+* 	fly_config_t
 *	this contains all configuration data for the flight_core
 *	the global instance core_config is populated before launching 
 *	the flight core. It can be modified while flying, eg to adjust gains
 *	an instance should be declared in your own C file
 ************************************************************************/
 #define X(type, fmt, name, default) type name ;
-typedef struct core_config_t { CONFIG_TABLE } core_config_t;
+typedef struct fly_config_t { CONFIG_TABLE } fly_config_t;
 #undef X
 
 
@@ -83,7 +88,7 @@ typedef struct core_config_t { CONFIG_TABLE } core_config_t;
 * 	print_core_config()
 *	print configuration table to console
 ************************************************************************/
-int print_core_config(core_config_t* config){	
+int print_core_config(fly_config_t* config){	
 	#define X(type, fmt, name, default) printf("%s " fmt "\n", #name, config->name);
 	CONFIG_TABLE
 	#undef X
@@ -97,7 +102,6 @@ int print_core_config(core_config_t* config){
 ************************************************************************/
 int save_config(FILE *f, fly_config_t* config){
 	rewind(f);
-	//#define X(type, fmt, name, default) fprintf(f, "%s," fmt "\n", #name, config->name);
 	#define X(type, fmt, name, default) fprintf(f, #name "," fmt "\n", config->name);
     CONFIG_TABLE
 	#undef X	
@@ -116,6 +120,17 @@ int read_file(FILE *f, fly_config_t* config){
 	CONFIG_TABLE
 	#undef X
 	return 0;
+}
+
+/************************************************************************
+* 	construct_default()
+*	struct definition to contain information in local memory
+************************************************************************/
+fly_config_t construct_default(){		
+	#define X(type, fmt, name, default) default ,
+	fly_config_t defaults = { CONFIG_TABLE };
+	#undef X
+	return defaults;
 }
 
 /************************************************************************
