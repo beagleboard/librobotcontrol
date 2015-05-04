@@ -2,6 +2,16 @@
 // This also provides an example of GPIO and PINMUX functions
 // James Strawson 2014
 
+// the number of pulses dictates the mode the radio will be put in
+// Testing done with DX7s, DX6i, DX8, and Orange T-SIX
+// 
+// Table of Bind Modes
+// pulses    mode           orange       dx6          dx7            dx8   
+//   3  DSM2 1024/22ms      works       works      6 ch work      6 ch work
+//   5  DSM2 2048/11ms:     works       works        no bind	  no bind
+//   7  DSMX 22ms:          works   ----  dx6 dx7 dx8 bind but can't read    -----------
+//   9  DSMx 11ms: 			works	----  bind but no read, also says 22ms    -----------
+
 #include <robotics_cape.h>
 
 // satellite receiver communication pin is P9.11 gpio_0[30]
@@ -11,6 +21,10 @@
 
 
 int main(){
+	unsigned int value;
+	int i;
+	int pulses = 3;
+	
 	// swap pinmux from UART4_RX to GPIO
 	FILE *pinmux_fd;
 	pinmux_fd = fopen(PINMUX_PATH, "w+");
@@ -29,13 +43,18 @@ int main(){
 	gpio_set_dir(GPIO_PIN, INPUT_PIN);
 	
 	// wait for user to hit enter before continuing
-	printf("\nDisconnect your dsm2 satellite receiver and press enter to continue\n");
-	while( getchar() != '\n' );
+	printf("\nDisconnect your dsm2 satellite receiver and push back in to continue\n");
+	
+	// wait for the receiver to be disconnected
+	value = 1;
+	while(value==1){ //pin will go low when disconnected
+		gpio_get_value(GPIO_PIN, &value);
+	}
+	usleep(100000);
 	
 	//wait for the receiver to be plugged in
-	printf("Now reconnect to put the receiver into bind mode\n");
-	unsigned int value = 0;
-	while(value==0){ //receiver will pull pin up when connected
+	//receiver will pull pin up when connected
+	while(value==0){ 
 		gpio_get_value(GPIO_PIN, &value);
 	}
 	
@@ -43,21 +62,14 @@ int main(){
 	gpio_set_dir(GPIO_PIN, OUTPUT_PIN);
 	gpio_set_value(GPIO_PIN, HIGH);
 	usleep(90000);
-	gpio_set_value(GPIO_PIN, LOW);
-	usleep(PAUSE);
-	gpio_set_value(GPIO_PIN, HIGH);
-	usleep(PAUSE);
-	gpio_set_value(GPIO_PIN, LOW);
-	usleep(PAUSE); 
-	gpio_set_value(GPIO_PIN, HIGH);
-	usleep(PAUSE);
-	gpio_set_value(GPIO_PIN, LOW);
-	usleep(PAUSE);
-	gpio_set_value(GPIO_PIN, HIGH);
-	usleep(PAUSE);
-	gpio_set_value(GPIO_PIN, LOW);
-	usleep(PAUSE);
-	gpio_set_value(GPIO_PIN, HIGH);
+	
+	for(i=0; i<pulses; i++){
+		gpio_set_value(GPIO_PIN, LOW);
+		usleep(PAUSE);
+		gpio_set_value(GPIO_PIN, HIGH);
+		usleep(PAUSE);
+	}
+	
 	usleep(1000000);
 	
 	// swap pinmux back to uart
@@ -66,6 +78,8 @@ int main(){
 	fclose(pinmux_fd);
 	
 	// all done
-	printf("Finished. Use test_dsm2 to confirm functionality.\n");
+	printf("Your receiver should now be blinking. If not try again.\n");
+	printf("Now put your transmitter into bind mode.\n");
+	printf("Use test_dsm2 to confirm functionality.\n\n");
 	return 0;
 }
