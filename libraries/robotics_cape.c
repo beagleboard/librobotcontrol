@@ -617,7 +617,7 @@ float get_dsm2_ch_normalized(int ch){
 		return -1;
 	}
 	float range = rc_maxes[ch-1]-rc_mins[ch-1];
-	if(range!=0) {
+	if(range!=0 && rc_channels[ch-1]!=0) {
 		new_dsm2_flag = 0;
 		float center = (rc_maxes[ch-1]+rc_mins[ch-1])/2;
 		return 2*(rc_channels[ch-1]-center)/range;
