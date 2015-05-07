@@ -642,8 +642,9 @@ int is_new_dsm2_data(){
 	return new_dsm2_flag;
 }
 
-// uncomment this define to print raw data for debugging
-// #define DEBUG_DSM2
+// uncomment defines to print raw data for debugging
+//#define DEBUG_DSM2
+//#define DEBUG_DSM2_RAW
 void* uart4_checker(void *ptr){
 	
 	//set up sart/stop bit and 115200 baud
@@ -661,7 +662,7 @@ void* uart4_checker(void *ptr){
 	if ((tty4_fd = open (UART4_PATH, O_RDWR | O_NOCTTY)) < 0) {
 		printf("error opening uart4\n");
 	}
-	// Spektrum and Oragne recievers are 115200 baud
+	// Spektrum and Orange recievers are 115200 baud
 	if(cfsetispeed(&config, B115200) < 0) {
 		printf("cannot set uart4 baud rate\n");
 		return NULL;
@@ -679,10 +680,6 @@ void* uart4_checker(void *ptr){
 		memset(&buf, 0, sizeof(buf)); // clear buffer
 		
 		i = read(tty4_fd,&buf,sizeof(buf)); // blocking read
-		
-		#ifdef DEBUG_DSM2
-		printf("recieved %d bytes, ", i);
-		#endif
 		
 		if(i<0){
 			#ifdef DEBUG_DSM2
@@ -705,10 +702,6 @@ void* uart4_checker(void *ptr){
 			//read the rest
 			j = read(tty4_fd,&buf[i],sizeof(buf)-i); // blocking read
 			
-			#ifdef DEBUG_DSM2
-				printf("then %d bytes, ", j);
-			#endif
-			
 			//if the rest of the packet failed to arrive, error
 			if(j+i != 16){
 				#ifdef DEBUG_DSM2
@@ -719,74 +712,103 @@ void* uart4_checker(void *ptr){
 			}
 		}
 		// if we've gotten here, we have a 16 byte packet
+		tcflush(tty4_fd,TCIOFLUSH);
+		#ifdef DEBUG_DSM2
+			printf("read %d bytes, ", j+i);
+		#endif
 		
-		
-		// first check if it's from an Orange TX and read channels in order
-		// 8 and 9 ch dsmx radios end in 0xFF too, but those are also 0xFF
-		// on bytes 5-13
-		if(buf[14]==0xFF && buf[15]==0xFF && buf[13]!=0xFF){
-			// i from 1 to 7 to get last 6 words of packet
-			// first word contains lost frames so skip it
-			for(i=1;i<=7;i++){
-				int16_t value;
-				
-				// merge bytes
-				value = buf[i*2]<<8 ^ buf[(i*2)+1];
-				 
-				// on Orange tx, each raw channel is 1000 larger than the last
-				// remove this extra 1000 to get back to microseconds
-				value -= 1000*(i-2);
-				// rc_channels is 0 indexed, so i-1
-				rc_channels[i-1] = value;
-				#ifdef DEBUG_DSM2
-				printf("%d %d  ", i, rc_channels[i-1]);
-				#endif
-			}
+		#ifdef DEBUG_DSM2_RAW
+		printf("read %d bytes, ", j+i);
+		for(i=0; i<8; i++){
+			printf(byte_to_binary(buf[i*2]));
+			printf(" ");
+			printf(byte_to_binary(buf[(i*2)+1]));
+			printf("   ");
 		}
+		printf("\n");
+		#endif
 		
-		// must be a Spektrum packet instead, read a channel at a time
-		else{
-			unsigned char ch_id;
-			int16_t value;
-			
-			#ifdef DEBUG_DSM2
-			printf("ch_id: ");
-			#endif
-			
-			// packet is 16 bytes, 8 words long
-			// first word doesn't have channel data, so iterate through last 7
-			for(i=1;i<=7;i++){
-				// in dsmX 8 and 9 ch radios, unused words are 0xFF
-				// skip if one of them
-				if(buf[2*i]!=0xFF || buf[(2*i)+1]!=0xFF){
-					// grab channel id from first byte
-					ch_id = (buf[i*2]&0b01111100)>>2; 
-					// grab value from least 11 bytes
-					value = ((buf[i*2]&0b00000011)<<8) + buf[(2*i)+1];
-					value += 1000; // shift range so 1500 is neutral
-					
+		
+		
+		// Next we must check if the packets are 10-bit 1024/22ms mode
+		// or 11bit 2048/11ms mode. read through and decide which one, then read
+		int mode = 1024; // start assuming 10-bit 1024 mode
+		unsigned char ch_id;
+		int16_t value;
+		
+		// first check each channel id assuming 1024/22ms mode
+		// where the channel id lives in 0b01111000 mask
+		// if one doesn't make sense, must be using 2048/11ms mode
+		for(i=1;i<=7;i++){
+			// last few words in buffer are often all 1's, ignore those
+			if(buf[2*i]!=0xFF && buf[(2*i)+1]!=0xFF){
+				// grab channel id from first byte
+				ch_id = (buf[i*2]&0b01111100)>>2;
+				// maximum 9 channels, if the channel id exceeds that,
+				// we must be reading it wrong, swap to 11ms mode
+				if((ch_id+1)>9){
 					#ifdef DEBUG_DSM2
-					printf("%d %d  ",ch_id,value);
-					// printf(byte_to_binary(buf[i*2]));
-					// printf(" ");
-					// printf(byte_to_binary(buf[(i*2)+1]));
-					// printf("   ");
+					printf("2048/11ms ");
 					#endif
 					
-					if(ch_id>9){
-						#ifdef DEBUG_DSM2
-						printf("error: bad channel id\n");
-						#endif
-						
-						goto end;
-					}
-					// throttle is channel 1 always
-					// ch_id is 0 indexed, though
-					// and rc_channels is 0 indexed, so also 0
-					rc_channels[ch_id] = value;
+					mode = 2048;
+					goto read_packet;
 				}
 			}
 		}
+		#ifdef DEBUG_DSM2
+			printf("1024/22ms ");
+		#endif
+
+read_packet:			
+		// packet is 16 bytes, 8 words long
+		// first word doesn't have channel data, so iterate through last 7 words
+		for(i=1;i<=7;i++){
+			// in  8 and 9 ch radios, unused words are 0xFF
+			// skip if one of them
+			if(buf[2*i]!=0xFF || buf[(2*i)+1]!=0xFF){
+				// grab channel id from first byte
+				// and value from both bytes
+				if(mode == 1024){
+					ch_id = (buf[i*2]&0b01111100)>>2; 
+					// grab value from least 11 bytes
+					value = ((buf[i*2]&0b00000011)<<8) + buf[(2*i)+1];
+					value += 989; // shift range so 1500 is neutral
+				}
+				else if(mode == 2048){
+					ch_id = (buf[i*2]&0b01111000)>>3; 
+					// grab value from least 11 bytes
+					value = ((buf[i*2]&0b00000111)<<8) + buf[(2*i)+1];
+					
+					// extra bit of precision means scale is off by factor of two
+					// also add 989 to center channels around 1500
+					value = (value/2) + 989; 
+				}
+				else{
+					printf("dsm2 mode incorrect\n");
+					goto end;
+				}
+				
+				#ifdef DEBUG_DSM2
+				printf("%d %d  ",ch_id,value);
+				#endif
+				
+				if((ch_id+1)>9){
+					#ifdef DEBUG_DSM2
+					printf("error: bad channel id\n");
+					#endif
+					
+					#ifndef DEBUG_DSM2
+					goto end;
+					#endif
+				}
+				// throttle is first channel always
+				// ch_id is 0 indexed
+				// and rc_channels is 0 indexed
+				rc_channels[ch_id] = value;
+			}
+		}
+
 		// indicate new a new packet has been processed
 		new_dsm2_flag=1;
 		
@@ -795,12 +817,8 @@ void* uart4_checker(void *ptr){
 		#endif
 		
 end:
-		// wait and clear the buffer
+		// wait a bit, then check the buffer again
 		usleep(2000);
-		tcflush(tty4_fd,TCIOFLUSH);
-		// packets arrive in every 11ms or 22ms
-		// to account for possible wait above, sleep for 6ms
-		usleep(6000);
 	}
 	return NULL;
 }
