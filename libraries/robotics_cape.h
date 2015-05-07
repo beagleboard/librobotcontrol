@@ -164,7 +164,8 @@ int initialize_dsm2();
 float get_dsm2_ch_normalized(int channel);
 int get_dsm2_ch_raw(int channel);
 int is_new_dsm2_data();
-void* uart4_checker(void *ptr); //background thread
+int get_dsm2_frame_rate();
+
 
 //// Mavlink 
 #define DEFAULT_MAV_ADDRESS "192.168.7.1"

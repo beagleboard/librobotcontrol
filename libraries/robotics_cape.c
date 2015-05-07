@@ -169,6 +169,8 @@ int rc_maxes[RC_CHANNELS];
 int rc_mins[RC_CHANNELS];
 int tty4_fd;
 int new_dsm2_flag;
+int dsm2_frame_rate;
+void* uart4_checker(void *ptr); //background thread
 
 // PRU Servo Control shared memory pointer
 #define PRU_NUM 	 1
@@ -605,6 +607,8 @@ int initialize_dsm2(){
 		printf("DSM2 Calibration Loaded\n");
 	}
 	fclose(cal);
+	
+	dsm2_frame_rate = 0; // zero until mode is detected on first packet
 	pthread_t uart4_thread;
 	pthread_create(&uart4_thread, NULL, uart4_checker, (void*) NULL);
 	printf("DSM2 Thread Started\n");
@@ -640,6 +644,10 @@ int get_dsm2_ch_raw(int ch){
 
 int is_new_dsm2_data(){
 	return new_dsm2_flag;
+}
+
+int get_dsm2_frame_rate(){
+	return dsm2_frame_rate;
 }
 
 // uncomment defines to print raw data for debugging
@@ -732,7 +740,7 @@ void* uart4_checker(void *ptr){
 		
 		// Next we must check if the packets are 10-bit 1024/22ms mode
 		// or 11bit 2048/11ms mode. read through and decide which one, then read
-		int mode = 1024; // start assuming 10-bit 1024 mode
+		int mode = 22; // start assuming 10-bit 1024 mode, 22ms
 		unsigned char ch_id;
 		int16_t value;
 		
@@ -751,7 +759,7 @@ void* uart4_checker(void *ptr){
 					printf("2048/11ms ");
 					#endif
 					
-					mode = 2048;
+					mode = 11;
 					goto read_packet;
 				}
 			}
@@ -769,13 +777,15 @@ read_packet:
 			if(buf[2*i]!=0xFF || buf[(2*i)+1]!=0xFF){
 				// grab channel id from first byte
 				// and value from both bytes
-				if(mode == 1024){
+				if(mode == 22){
+					dsm2_frame_rate = 22;
 					ch_id = (buf[i*2]&0b01111100)>>2; 
 					// grab value from least 11 bytes
 					value = ((buf[i*2]&0b00000011)<<8) + buf[(2*i)+1];
 					value += 989; // shift range so 1500 is neutral
 				}
-				else if(mode == 2048){
+				else if(mode == 11){
+					dsm2_frame_rate = 11;
 					ch_id = (buf[i*2]&0b01111000)>>3; 
 					// grab value from least 11 bytes
 					value = ((buf[i*2]&0b00000111)<<8) + buf[(2*i)+1];

@@ -13,11 +13,12 @@ int main(){
 		printf("run calibrate_dsm2 first\n");
 		return -1;
 	}
-	printf("1:Thr  ");
+	printf("framerate ");
+	printf(" 1:Thr ");
 	printf("2:Roll ");
 	printf("3:Pitch ");
 	printf("4:Yaw  ");
-	printf("5:Kill  ");
+	printf("5:Kill ");
 	printf("6:Mode ");
 	printf("7:Aux1 ");
 	printf("8:Aux2 ");
@@ -27,10 +28,14 @@ int main(){
 	int i;
 	while(get_state()!=EXITING){
 		if(is_new_dsm2_data()){	
+			printf("\r");// keep printing on same line
+			
+			// print framerate
+			printf("   %dms    ", get_dsm2_frame_rate());
+			
 			//print all channels
-			printf("\r");
 			for(i=0;i<RC_CHANNELS;i++){
-				printf("%0.2f   ", get_dsm2_ch_normalized(i+1));
+				printf("% 0.2f  ", get_dsm2_ch_normalized(i+1));
 			}
 			fflush(stdout);
 		}
