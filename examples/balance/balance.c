@@ -119,13 +119,11 @@ typedef struct core_state_t{
 /************************************************************************
 * 	input_mode_t
 *	possible modes of user control
-*	these are ordered such that DSM2 has highest priority
 ************************************************************************/
 typedef enum input_mode_t {
 	NONE,
-	MAVLINK,
-	BLUETOOTH,
-	DSM2
+	DSM2,
+	MAVLINK
 }input_mode_t;
 
 
@@ -221,39 +219,39 @@ int main(){
 		pthread_create(&printf_thread, NULL, printf_loop, (void*) NULL);
 	}
 	
-	// // start listening for RC control from dsm2 radio
-	// if(config.enable_dsm2){
-		// initialize_dsm2();
-		// pthread_t  dsm2_thread;
-		// pthread_create(&dsm2_thread, NULL, dsm2_listener, (void*) NULL);
-	// }
+	// start listening for RC control from dsm2 radio
+	if(config.enable_dsm2){
+		initialize_dsm2();
+		pthread_t  dsm2_thread;
+		pthread_create(&dsm2_thread, NULL, dsm2_listener, (void*) NULL);
+	}
 	
-	// // start mavlink if enabled
-	// if(config.enable_mavlink_listening || config.enable_mavlink_listening){
-		// char target_ip[16];
-		// strcpy(target_ip, DEFAULT_MAV_ADDRESS);
-		// // open a udp port for mavlink
-		// // sock and gcAddr are global variables needed to send and receive
-		// gcAddr = initialize_mavlink_udp(target_ip, udp_sock);
+	// start mavlink if enabled
+	if(config.enable_mavlink_listening || config.enable_mavlink_listening){
+		char target_ip[16];
+		strcpy(target_ip, DEFAULT_MAV_ADDRESS);
+		// open a udp port for mavlink
+		// sock and gcAddr are global variables needed to send and receive
+		gcAddr = initialize_mavlink_udp(target_ip, udp_sock);
 		
-		// if(udp_sock != NULL){ 
-			// printf("WARNING: continuing without mavlink enabled\n");
-		// }
-		// else {
-			// if(config.enable_mavlink_listening){
-				// // start a thread listening for incoming packets
-				// pthread_t  mav_listen_thread;
-				// pthread_create(&mav_listen_thread, NULL, mavlink_listener, (void*) NULL);
-				// printf("Listening for Packets\n");
-			// }
-			// if(config.enable_mavlink_transmitting){
-				// // Start thread sending heartbeat and IMU attitude packets
-				// pthread_t  mav_send_thread;
-				// pthread_create(&mav_send_thread, NULL, mavlink_sender, (void*) NULL);
-				// printf("Transmitting Heartbeat Packets\n");
-			// }
-		// }
-	// }
+		if(udp_sock != NULL){ 
+			printf("WARNING: continuing without mavlink enabled\n");
+		}
+		else {
+			if(config.enable_mavlink_listening){
+				// start a thread listening for incoming packets
+				pthread_t  mav_listen_thread;
+				pthread_create(&mav_listen_thread, NULL, mavlink_listener, (void*) NULL);
+				printf("Listening for Packets\n");
+			}
+			if(config.enable_mavlink_transmitting){
+				// Start thread sending heartbeat and IMU attitude packets
+				pthread_t  mav_send_thread;
+				pthread_create(&mav_send_thread, NULL, mavlink_sender, (void*) NULL);
+				printf("Transmitting Heartbeat Packets\n");
+			}
+		}
+	}
 	
 	// start logging thread if enabled
 	if(config.enable_logging){
@@ -357,22 +355,18 @@ void* balance_stack(void* ptr){
 			if(user_interface.mode == NONE){
 				// no user input, just keep the controller setpoint at zero
 				setpoint.theta = 0;
-				setpoint.phi = 0;
 				setpoint.phi_dot = 0;
-				setpoint.gamma = 0;
 				setpoint.gamma_dot = 0;
 				break;
 			}
 			if(setpoint.core_mode == ANGLE){
 				// in angle mode, scale user input from -1 to 1 to
 				// the minimum and maximum theta reference angles
-				setpoint.theta = config.theta_ref_max	\
-					*(saturate_number(&user_interface.drive_stick,1));
-				setpoint.gamma_dot = config.max_turn_rate	\
-					*(saturate_number(&user_interface.turn_stick,1));
 				// phi is not controlled in angle mode
-				setpoint.phi = 0;
-				setpoint.phi_dot = 0;
+				saturate_number(&user_interface.drive_stick,1);
+				setpoint.theta = config.theta_ref_max*user_interface.drive_stick;
+				saturate_number(&user_interface.turn_stick,1);
+				setpoint.gamma_dot = config.max_turn_rate*user_interface.turn_stick;
 			}
 			else if(setpoint.core_mode==POSITION){
 				// in position mode, scale user input from -1 to 1 to
@@ -380,10 +374,22 @@ void* balance_stack(void* ptr){
 				// phi reference angle
 				// leave setpoint.theta alone as it is set by the core itself
 				// using the D2 position controller
-				setpoint.phi_dot = config.max_drive_rate 	\
-							* saturate_number(&user_interface.drive_stick,1);
-				setpoint.gamma_dot = config.max_turn_rate 	\
-							* saturate_number(&user_interface.turn_stick,1);
+				saturate_number(&user_interface.drive_stick,1);
+				
+				// use a small deadzone to prevent slow drifts in position
+				if(fabs(user_interface.drive_stick)<0.02){
+					setpoint.phi_dot = 0;
+				}
+				else{
+					setpoint.phi_dot = config.max_drive_rate * user_interface.drive_stick;
+				}
+				saturate_number(&user_interface.turn_stick,1);
+				if(fabs(user_interface.turn_stick)<0.02){
+					setpoint.gamma_dot = 0;
+				}
+				else{
+					setpoint.gamma_dot = config.max_turn_rate*user_interface.turn_stick;
+				}
 			}
 			break; // end of RUNNING case
 	
@@ -495,9 +501,13 @@ int balance_core(){
 		if(setpoint.core_mode == POSITION){
 			
 			// move the position set points based on user input
-			setpoint.phi += setpoint.phi_dot * DT;
+			if(setpoint.phi_dot != 0.0){
+				//setpoint.phi == cstate.current_phi + setpoint.phi_dot*DT;
+				setpoint.phi += setpoint.phi_dot * DT;
+			}
 			
-			// march the different equation terms for the intput Phi Error
+			
+			// march the different equation terms for the input Phi Error
 			// and the output theta reference angle
 			cstate.ePhi[2] = cstate.ePhi[1]; 
 			cstate.ePhi[1] = cstate.ePhi[0];
@@ -748,12 +758,12 @@ void* printf_loop(void* ptr){
 		switch (new_state){	
 		case RUNNING: { // show all the things
 			printf("\r");
-			printf(" %0.2f ", cstate.current_theta);
-			printf(" %0.2f ", setpoint.theta);
-			printf(" %0.2f ", cstate.current_phi);
-			printf(" %0.2f ", setpoint.phi);
-			printf(" %0.2f ", cstate.current_gamma);
-			printf(" %0.2f ", cstate.current_u);
+			printf("% 0.2f ", cstate.current_theta);
+			printf("% 0.2f ", setpoint.theta);
+			printf("% 0.2f ", cstate.current_phi);
+			printf("% 0.2f ", setpoint.phi);
+			printf("% 0.2f ", cstate.current_gamma);
+			printf("% 0.2f ", cstate.current_u);
 			
 			if(setpoint.arm_state == ARMED)
 				printf(" ARMED");

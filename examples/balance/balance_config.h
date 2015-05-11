@@ -27,14 +27,14 @@
 	X(int, 	  "%d", enable_logging,	  	0		) \
 	X(int, 	  "%d", enable_bluetooth, 	0		) \
 												  \
-	X(int, 	  "%d", enable_dsm2, 	 	 0		) \
+	X(int, 	  "%d", enable_dsm2, 	 	 1		) \
 	X(int, 	  "%d", dsm2_drive_polarity, 1		) \
 	X(int, 	  "%d", dsm2_turn_polarity,  -1		) \
 	X(int, 	  "%d", dsm2_drive_ch, 	 	 3		) \
 	X(int, 	  "%d", dsm2_turn_ch, 	 	 2		) \
 												  \
-	X(int, 	  "%d", enable_mavlink_transmitting,1)\
-	X(int, 	  "%d", enable_mavlink_listening, 1 ) \
+	X(int, 	  "%d", enable_mavlink_transmitting,0)\
+	X(int, 	  "%d", enable_mavlink_listening, 0 ) \
 												  \
 	X(float,  "%f", bb_mount_angle,	0.46		) \
     X(float,  "%f", numD1_0, 		-6.289		) \
