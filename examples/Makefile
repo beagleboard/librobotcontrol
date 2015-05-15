@@ -14,6 +14,7 @@ all:
 	cd fly; $(MAKE)
 	cd kill_robot; $(MAKE)
 	cd mmap_eqep; $(MAKE)
+	cd test_adc; $(MAKE)
 	cd test_dsm2; $(MAKE)
 	cd test_encoders; $(MAKE)
 	cd test_imu; $(MAKE)
@@ -39,6 +40,7 @@ clean:
 	cd fly; $(MAKE) clean
 	cd kill_robot; $(MAKE) clean
 	cd mmap_eqep; $(MAKE) clean
+	cd test_adc; $(MAKE) clean
 	cd test_dsm2; $(MAKE) clean
 	cd test_encoders; $(MAKE) clean
 	cd test_imu; $(MAKE) clean
@@ -63,6 +65,7 @@ install:
 	cd fly; $(MAKE) install
 	cd kill_robot; $(MAKE) install
 	cd mmap_eqep; $(MAKE) install
+	cd test_adc; $(MAKE) install
 	cd test_dsm2; $(MAKE) install
 	cd test_encoders; $(MAKE) install
 	cd test_imu; $(MAKE) install

@@ -146,7 +146,9 @@ int get_pause_button_state();
 int get_mode_button_state();
 void* read_events(void* ptr); //background thread for polling inputs
 
-//// Battery & power
+//// adc Battery & power
+int get_adc_raw(int p);
+float get_adc_volt(int p);
 float getBattVoltage();
 float getJackVoltage();
 
