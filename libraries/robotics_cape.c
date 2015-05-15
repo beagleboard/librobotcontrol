@@ -42,31 +42,21 @@ Strawson Design - 2014
 
 
 //// gpio output pins 
-#define RED_LED   66	//gpio2.2	P8.7
-#define GRN_LED   67	//gpio2.3	P8.8
+#define RED_LED P8_7	//gpio2.2
+#define GRN_LED P8_8	//gpio2.3
 
-#define MDIR1A    60	//gpio1.28  P9.12
-#define MDIR1B    31	//gpio0.31	P9.13
-#define MDIR2A    48	//gpio1.16  P9.15
-#define MDIR2B    79	//gpio2.15  P8.38
-#define MDIR4A    70	//gpio2.6   P8.45
-#define MDIR4B    71	//gpio2.7   P8.46
-#define MDIR3B    72	//gpio2.8   P8.43
-#define MDIR3A    73	//gpio2.9   P8.44
-#define MOT_STBY  20	//gpio0.20  P9.41
-
-#define PAIRING_PIN 30  //gpio0.30 P9.11
-#define SPI1_SS1_GPIO_PIN 113  // P9.28 gpio3.17
-#define SPI1_SS2_GPIO_PIN 49   // P9.23 gpio1.17
-#define NUM_OUT_PINS 14		// update when adding new pins!!!!
-
-// motor direction pins MUST be first in the list!!!!
-unsigned int out_gpio_pins[] = 
-					{MDIR1A, MDIR1B, MDIR2A, MDIR2B, 
-					 MDIR3A, MDIR3B, MDIR4A, MDIR4B,
-					 MOT_STBY, GRN_LED, RED_LED, 
-					 PAIRING_PIN, SPI1_SS1_GPIO_PIN,
-					 SPI1_SS2_GPIO_PIN};
+#define MDIR1A    P9_12	//gpio1.28  P9.12
+#define MDIR1B    P9_13	//gpio0.31	P9.13
+#define MDIR2A    P9_15	//gpio1.16  P9.15
+#define MDIR2B    P8_38	//gpio2.15  P8.38
+#define MDIR4A    P8_45	//gpio2.6   P8.45
+#define MDIR4B    P8_46	//gpio2.7   P8.46
+#define MDIR3B    P8_43	//gpio2.8   P8.43
+#define MDIR3A    P8_44	//gpio2.9   P8.44
+#define MOT_STBY  P9_41	//gpio0.20  P9.41
+#define PAIRING_PIN P9_11  //gpio0.30 P9.11
+#define SPI1_SS1_GPIO_PIN P9_28  // P9.28 gpio3.17
+#define SPI1_SS2_GPIO_PIN P9_23   // P9.23 gpio1.17
 
 								 
 //// eQep and pwmss registers, more in tipwmss.h
@@ -104,8 +94,6 @@ int set_state(enum state_t new_state){
 	state = new_state;
 	return 0;
 }
-
-
 
 
 								 
@@ -214,18 +202,19 @@ int initialize_cape(){
 	fflush(fd);
 	fclose(fd);
 	
-	// ensure gpios are exported
-	printf("Initializing GPIO\n");
-	for(i=0; i<NUM_OUT_PINS; i++){
-		if(gpio_export(out_gpio_pins[i])){
-			printf("failed to export gpio %d", out_gpio_pins[i]);
-			return -1;
-		};
-		gpio_set_dir(out_gpio_pins[i], OUTPUT_PIN);
-	}
+	// map /dev/mem for adc, gpio, & eqep functions
+	init_mmap();
+	printf("/dev/mem mapped\n");
 	
-	// set up default values for some gpio
-	disable_motors();
+	// start adc
+	adc_init_mmap();
+	
+	
+	// export a single pin from GPIO bank 3
+	// just to initialize the final bank
+	gpio_export(113);
+
+	// start with slave pins high (deselected)
 	deselect_spi1_slave(1);	
 	deselect_spi1_slave(2);	
 	
@@ -264,6 +253,9 @@ int initialize_cape(){
 	}
 	fscanf(fd,"%i", &pwm_period_ns);
 	fclose(fd);
+	
+	disable_motors();
+	
 	
 	// mmap pwm modules to get fast access to eQep encoder position
 	// see mmap_eqep example program for more mmap and encoder info
@@ -323,15 +315,12 @@ int initialize_cape(){
 // motor is from 1 to 4
 // duty is from -1 to +1
 int set_motor(int motor, float duty){
-	PIN_VALUE a;
-	PIN_VALUE b;
+	uint8_t a,b;
+	
 	if(state == UNINITIALIZED){
 		initialize_cape();
 	}
-	if(motor>4 || motor<1){
-		printf("enter a motor value between 1 and 4\n");
-		return -1;
-	}
+
 	//check that the duty cycle is within +-1
 	if (duty>1){
 		duty = 1;
@@ -349,17 +338,40 @@ int set_motor(int motor, float duty){
 		b=HIGH;
 		duty=-duty;
 	}
-	gpio_set_value(out_gpio_pins[(motor-1)*2],a);
-	gpio_set_value(out_gpio_pins[(motor-1)*2+1],b);
+	
+	// set gpio direction outputs
+	switch(motor){
+		case 1:
+			digitalWrite(MDIR1A, a);
+			digitalWrite(MDIR1B, b);
+			break;
+		case 2:
+			digitalWrite(MDIR2A, a);
+			digitalWrite(MDIR2B, b);
+			break;
+		case 3:
+			digitalWrite(MDIR3A, a);
+			digitalWrite(MDIR3B, b);
+			break;
+		case 4:
+			digitalWrite(MDIR4A, a);
+			digitalWrite(MDIR4B, b);
+			break;
+		default:
+			printf("enter a motor value between 1 and 4\n");
+			return -1;
+	}
+	// send pwm duty
 	fprintf(pwm_duty_pointers[motor-1], "%d", (int)(duty*pwm_period_ns));	
 	fflush(pwm_duty_pointers[motor-1]);
+	
 	return 0;
 }
 
 int kill_pwm(){
 	int ch;
 	if(pwm_duty_pointers[0] == NULL){
-		printf("opening pwm duty files\n");
+		//printf("opening pwm duty files\n");
 		char path[128];
 		int i = 0;
 		for(i=0; i<4; i++){
@@ -367,7 +379,7 @@ int kill_pwm(){
 			strcat(path, "duty");
 			pwm_duty_pointers[i] = fopen(path, "a");
 		}
-		printf("opened pwm duty files\n");
+		//printf("opened pwm duty files\n");
 	}
 	for(ch=0;ch<4;ch++){
 		fprintf(pwm_duty_pointers[ch], "%d", 0);	
@@ -378,12 +390,12 @@ int kill_pwm(){
 
 int enable_motors(){
 	kill_pwm();
-	return gpio_set_value(MOT_STBY, HIGH);
+	return digitalWrite(MOT_STBY, HIGH);
 }
 
 int disable_motors(){
 	kill_pwm();
-	return gpio_set_value(MOT_STBY, LOW);
+	return digitalWrite(MOT_STBY, LOW);
 }
 
 //// eQep Encoder read/write
@@ -406,22 +418,18 @@ int set_encoder_pos(int ch, long value){
 
 
 //// LED functions
-// PIN_VALUE and be HIGH or LOW
-int setGRN(PIN_VALUE i){
-	return gpio_set_value(GRN_LED, i);
+//  and be HIGH or LOW
+int setGRN(uint8_t i){
+	return digitalWrite(GRN_LED, i);
 }
-int setRED(PIN_VALUE i){
-	return gpio_set_value(RED_LED, i);
+int setRED(uint8_t i){
+	return digitalWrite(RED_LED, i);
 }
 int getGRN(){
-	unsigned int val = 0;
-	gpio_get_value(GRN_LED, &val);
-	return (int)val;
+	return digitalRead(GRN_LED);
 }
 int getRED(){
-	unsigned int val = 0;
-	gpio_get_value(RED_LED, &val);
-	return (int)val;
+	return digitalRead(RED_LED);
 }
 
 //// Read battery voltage
@@ -1122,14 +1130,8 @@ int initialize_spi1(){ // returns a file descriptor to spi device
         printf("/dev/spidev2.0 not found\n"); 
         return -1; 
     } 
-	if(gpio_export(SPI1_SS1_GPIO_PIN)){
-		printf("failed to export gpio0[5] p9.17\n"); 
-        return -1; 
-	}
-	gpio_set_dir(SPI1_SS1_GPIO_PIN, OUTPUT_PIN);
-	gpio_set_value(SPI1_SS1_GPIO_PIN, HIGH);
-	gpio_set_dir(SPI1_SS2_GPIO_PIN, OUTPUT_PIN);
-	gpio_set_value(SPI1_SS2_GPIO_PIN, HIGH);
+	digitalWrite(SPI1_SS1_GPIO_PIN, HIGH);
+	digitalWrite(SPI1_SS2_GPIO_PIN, HIGH);
 	
 	return spi1_fd;
 }
@@ -1137,11 +1139,11 @@ int initialize_spi1(){ // returns a file descriptor to spi device
 int select_spi1_slave(int slave){
 	switch(slave){
 		case 1:
-			gpio_set_value(SPI1_SS2_GPIO_PIN, HIGH);
-			return gpio_set_value(SPI1_SS1_GPIO_PIN, LOW);
+			digitalWrite(SPI1_SS2_GPIO_PIN, HIGH);
+			return digitalWrite(SPI1_SS1_GPIO_PIN, LOW);
 		case 2:
-			gpio_set_value(SPI1_SS1_GPIO_PIN, HIGH);
-			return gpio_set_value(SPI1_SS2_GPIO_PIN, LOW);
+			digitalWrite(SPI1_SS1_GPIO_PIN, HIGH);
+			return digitalWrite(SPI1_SS2_GPIO_PIN, LOW);
 		default:
 			printf("SPI slave number must be 1 or 2\n");
 			return -1;
@@ -1150,9 +1152,9 @@ int select_spi1_slave(int slave){
 int deselect_spi1_slave(int slave){
 	switch(slave){
 		case 1:
-			return gpio_set_value(SPI1_SS1_GPIO_PIN, HIGH);
+			return digitalWrite(SPI1_SS1_GPIO_PIN, HIGH);
 		case 2:
-			return gpio_set_value(SPI1_SS2_GPIO_PIN, HIGH);
+			return digitalWrite(SPI1_SS2_GPIO_PIN, HIGH);
 		default:
 			printf("SPI slave number must be 1 or 2\n");
 			return -1;

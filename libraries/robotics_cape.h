@@ -55,7 +55,8 @@ either expressed or implied, of the FreeBSD Project.
 #include <arpa/inet.h>  // mavlink udp socket	
 #include <ctype.h>		// for isprint()
 
-#include "SimpleGPIO.h"
+#include "SimpleGPIO.h" // used for setting interrupt input pin
+#include "mmap_gpio.h"	// used for fast gpio functions
 #include "c_i2c.h"		// i2c lib
 #include "mpu9150.h"	// general DMP library
 #include "MPU6050.h" 	// gyro offset registers
@@ -133,8 +134,8 @@ long int get_encoder_pos(int ch);
 int set_encoder_pos(int ch, long value);
  
 //// Buttons LEDS interrupt functions///
-int setGRN(PIN_VALUE i);
-int setRED(PIN_VALUE i);
+int setGRN(uint8_t i);
+int setRED(uint8_t i);
 int getGRN();
 int getRED();
 int set_pause_pressed_func(int (*func)(void));
