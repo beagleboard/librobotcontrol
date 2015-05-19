@@ -207,7 +207,7 @@ int initialize_cape(){
 	printf("/dev/mem mapped\n");
 	
 	// start adc
-	adc_init_mmap();
+	//adc_init_mmap();
 	
 	
 	// export a single pin from GPIO bank 3
@@ -453,14 +453,38 @@ float get_adc_volt(int p){
 
 
 float getBattVoltage(){
-	float v_adc = get_adc_volt(6);
-	return v_adc*11.0/1000.0; 
+	// float v_adc = get_adc_volt(6);
+	// return v_adc*11.0; 
+	
+	int raw_adc;
+	FILE *AIN6_fd;
+	AIN6_fd = fopen("/sys/devices/ocp.3/helper.16/AIN6", "r");
+	if(AIN6_fd < 0){
+		printf("error reading adc\n");
+		return -1;
+	}
+	fscanf(AIN6_fd, "%i", &raw_adc);
+	fclose(AIN6_fd);
+	// times 11 for the voltage divider, divide by 1000 to go from mv to V
+	return (float)raw_adc*11.0/1000.0; 
 }
 
 //// Read 6-16V DC input jack voltage
 float getJackVoltage(){
-	float v_adc = get_adc_volt(5);
-	return v_adc*11.0/1000.0; 
+	// float v_adc = get_adc_volt(5);
+	// return v_adc*11.0; 
+	
+	int raw_adc;
+	FILE *AIN5_fd;
+	AIN5_fd = fopen("/sys/devices/ocp.3/helper.16/AIN5", "r");
+	if(AIN5_fd < 0){
+		printf("error reading adc\n");
+		return -1;
+	}
+	fscanf(AIN5_fd, "%i", &raw_adc);
+	fclose(AIN5_fd);
+	// times 11 for the voltage divider, divide by 1000 to go from mv to V
+	return (float)raw_adc*11.0/1000.0; 
 }
 
 /***********************************************************************
