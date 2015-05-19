@@ -1,5 +1,14 @@
 # Auto detect text files and perform LF normalization
-* text=auto
+* text eol=lf
+
+# Explicitly declare text files you want to always be normalized and converted
+# to native line endings on checkout.
+*.c text eol=lf
+*.h text eol=lf
+*.sh text eol=lf
+*.txt text eol=lf
+*.cal text eol=lf
+
 
 # Custom for Visual Studio
 *.cs     diff=csharp
