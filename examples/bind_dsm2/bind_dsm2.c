@@ -37,6 +37,7 @@ int main(){
 	char c = 0; // for reading user input
 	// default to dsmx 11ms mode for most applications
 	int pulses = 9; 
+	int delay = 200000;
 	
 	// swap pinmux from UART4_RX to GPIO
 	FILE *pinmux_fd;
@@ -60,15 +61,15 @@ int main(){
 	printf("Note that your transmitter may actually bind in a different mode\n");
 	printf("depending on how it is configured.\n");
 	printf("We suggest option 1 for 6-channel DSM2 radios,\n");
-	printf("option 4 for Orange receivers,\n");
 	printf("and option 4 for 7-9 channel DSMX radios\n");
 	printf("\n");
 	printf("1: DSM2 10-bit 22ms framerate\n");
 	printf("2: DSM2 11-bit 11ms framerate\n"); 
 	printf("3: DSMX 10-bit 22ms framerate\n"); 
 	printf("4: DSMX 11-bit 11ms framerate\n"); 
+	printf("5: Orange 10-bit 22ms framerate\n");
 	printf("\n"); 
-	printf("Enter mode 1-4: ");
+	printf("Enter mode 1-5: ");
 	
 	// wait for user input
 enter:
@@ -86,6 +87,10 @@ enter:
 			break;
 		case '4':
 			pulses = 9;
+			break;
+		case '5':
+			pulses = 9;
+			delay = 50000;
 			break;
 		case '\n':
 			goto enter;
@@ -122,9 +127,8 @@ enter:
 	
 	// wait as long as possible before sending pulses
 	// in case the user plugs in the receiver slowly at an angle
-	// which would delay the power pin from connecting
-	usleep(150000); 
-	//usleep(200000); 
+	// which would delay the power pin from connecting 
+	usleep(delay); 
 	
 	for(i=0; i<pulses; i++){
 		gpio_set_value(GPIO_PIN, LOW);
