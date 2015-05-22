@@ -346,12 +346,12 @@ int set_motor(int motor, float duty){
 			digitalWrite(MDIR1B, b);
 			break;
 		case 2:
-			digitalWrite(MDIR2A, a);
-			digitalWrite(MDIR2B, b);
+			digitalWrite(MDIR2A, b);
+			digitalWrite(MDIR2B, a);
 			break;
 		case 3:
-			digitalWrite(MDIR3A, a);
-			digitalWrite(MDIR3B, b);
+			digitalWrite(MDIR3A, b);
+			digitalWrite(MDIR3B, a);
 			break;
 		case 4:
 			digitalWrite(MDIR4A, a);
