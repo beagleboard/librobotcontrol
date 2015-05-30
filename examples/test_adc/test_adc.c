@@ -29,6 +29,7 @@ int main(){
 		printf(" %0.2f   ", getBattVoltage());
 		printf("  ");
 		fflush(stdout);
+		usleep(100000);
 	}
 	cleanup_cape();
 	return 0;
