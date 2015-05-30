@@ -125,7 +125,6 @@ int set_motor(int motor, float duty);
 int set_esc(int esc, float normalized_duty);
 int kill_pwm();
 int set_all_esc(float duty);
-int set_all_esc(float duty);
 int enable_motors();
 int disable_motors();
 

@@ -66,11 +66,15 @@
 #define ADCSTEPCONFIG8 (ADC_TSC+0x9C)
 #define ADCSTEPDELAY8  (ADC_TSC+0xA0)
 
-#define ADC_AVG0  (0x000)
-#define ADC_AVG2  (0x001)
-#define ADC_AVG4  (0x010)
-#define ADC_AVG8  (0x011)
-#define ADC_AVG16 (0x100) 
+#define ADC_AVG1 (0b000 << 2)
+#define ADC_AVG2 (0b001 << 2)
+#define ADC_AVG4 (0b010 << 2)
+#define ADC_AVG8 (0b011 << 2)
+#define ADC_AVG16 (0b100 << 2)
+
+#define ADC_SW_ONESHOT 0b00
+#define FIFO0COUNT (ADC_TSC+0xE4)
+#define FIFO_COUNT_MASK 0b01111111
 
 #define ADC_FIFO0DATA (ADC_TSC+0x100)
 #define ADC_FIFO_MASK (0xFFF)

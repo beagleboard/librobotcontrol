@@ -78,65 +78,84 @@ int digitalRead(PIN p) {
 }
 
 
-/**
- * Initializee the Analog-Digital Converter
+/*
+ * Initialize the Analog-Digital Converter
+ * each channel is set up in software one-shot mode for general purpose reading
+ * no averaging or delays are used for fastest speed
  */
 int adc_init_mmap() {
 	init_mmap();
-
+	
+	// disable adc
+	map[(ADC_CTRL-MMAP_OFFSET)/4] &= !0x01;
+	
 	// enable the CM_WKUP_ADC_TSC_CLKCTRL with CM_WKUP_MODUELEMODE_ENABLE
 	map[(CM_WKUP_ADC_TSC_CLKCTRL-MMAP_OFFSET)/4] |= CM_WKUP_MODULEMODE_ENABLE;
 
-	// wait for the enable to complete
+	// waiting for adc clock module to initialize
 	while(!(map[(CM_WKUP_ADC_TSC_CLKCTRL-MMAP_OFFSET)/4] & CM_WKUP_MODULEMODE_ENABLE)) {
-		// waiting for adc clock module to initialize
-		//printf("Waiting for CM_WKUP_ADC_TSC_CLKCTRL to enable with MODULEMODE_ENABLE\n");
+		//printf("Waiting for CM_WKUP_ADC_TSC_CLKCTRL to enable with MODULEMODE_ENABLE\n"); 
 	}
-	// software reset, set bit 1 of sysconfig high?
+	
 	// make sure STEPCONFIG write protect is off
 	map[(ADC_CTRL-MMAP_OFFSET)/4] |= ADC_STEPCONFIG_WRITE_PROTECT_OFF;
 
 	// set up each ADCSTEPCONFIG for each ain pin
-	map[(ADCSTEPCONFIG1-MMAP_OFFSET)/4] = 0x00<<19 | ADC_AVG16;
-	map[(ADCSTEPDELAY1-MMAP_OFFSET)/4]  = (0x0F)<<24;
-	map[(ADCSTEPCONFIG2-MMAP_OFFSET)/4] = 0x01<<19 | ADC_AVG16;
-	map[(ADCSTEPDELAY2-MMAP_OFFSET)/4]  = (0x0F)<<24;
-	map[(ADCSTEPCONFIG3-MMAP_OFFSET)/4] = 0x02<<19 | ADC_AVG16;
-	map[(ADCSTEPDELAY3-MMAP_OFFSET)/4]  = (0x0F)<<24;
-	map[(ADCSTEPCONFIG4-MMAP_OFFSET)/4] = 0x03<<19 | ADC_AVG16;
-	map[(ADCSTEPDELAY4-MMAP_OFFSET)/4]  = (0x0F)<<24;
-	map[(ADCSTEPCONFIG5-MMAP_OFFSET)/4] = 0x04<<19 | ADC_AVG16;
-	map[(ADCSTEPDELAY5-MMAP_OFFSET)/4]  = (0x0F)<<24;
-	map[(ADCSTEPCONFIG6-MMAP_OFFSET)/4] = 0x05<<19 | ADC_AVG16;
-	map[(ADCSTEPDELAY6-MMAP_OFFSET)/4]  = (0x0F)<<24;
-	map[(ADCSTEPCONFIG7-MMAP_OFFSET)/4] = 0x06<<19 | ADC_AVG16;
-	map[(ADCSTEPDELAY7-MMAP_OFFSET)/4]  = (0x0F)<<24;
-	map[(ADCSTEPCONFIG8-MMAP_OFFSET)/4] = 0x07<<19 | ADC_AVG16;
-	map[(ADCSTEPDELAY8-MMAP_OFFSET)/4]  = (0x0F)<<24;
-
+	map[(ADCSTEPCONFIG1-MMAP_OFFSET)/4] = 0x00<<19 | ADC_AVG8 | ADC_SW_ONESHOT;
+	map[(ADCSTEPDELAY1-MMAP_OFFSET)/4]  = 0<<24;
+	map[(ADCSTEPCONFIG2-MMAP_OFFSET)/4] = 0x01<<19 | ADC_AVG8 | ADC_SW_ONESHOT;
+	map[(ADCSTEPDELAY2-MMAP_OFFSET)/4]  = 0<<24;
+	map[(ADCSTEPCONFIG3-MMAP_OFFSET)/4] = 0x02<<19 | ADC_AVG8 | ADC_SW_ONESHOT;
+	map[(ADCSTEPDELAY3-MMAP_OFFSET)/4]  = 0<<24;
+	map[(ADCSTEPCONFIG4-MMAP_OFFSET)/4] = 0x03<<19 | ADC_AVG8 | ADC_SW_ONESHOT;
+	map[(ADCSTEPDELAY4-MMAP_OFFSET)/4]  = 0<<24;
+	map[(ADCSTEPCONFIG5-MMAP_OFFSET)/4] = 0x04<<19 | ADC_AVG8 | ADC_SW_ONESHOT;
+	map[(ADCSTEPDELAY5-MMAP_OFFSET)/4]  = 0<<24;
+	map[(ADCSTEPCONFIG6-MMAP_OFFSET)/4] = 0x05<<19 | ADC_AVG8 | ADC_SW_ONESHOT;
+	map[(ADCSTEPDELAY6-MMAP_OFFSET)/4]  = 0<<24;
+	map[(ADCSTEPCONFIG7-MMAP_OFFSET)/4] = 0x06<<19 | ADC_AVG8 | ADC_SW_ONESHOT;
+	map[(ADCSTEPDELAY7-MMAP_OFFSET)/4]  = 0<<24;
+	map[(ADCSTEPCONFIG8-MMAP_OFFSET)/4] = 0x07<<19 | ADC_AVG8 | ADC_SW_ONESHOT;
+	map[(ADCSTEPDELAY8-MMAP_OFFSET)/4]  = 0<<24;
+	
 	// enable the ADC
 	map[(ADC_CTRL-MMAP_OFFSET)/4] |= 0x01;
+		
+	// clear the FIFO buffer
+	int output;
+	while(map[(FIFO0COUNT-MMAP_OFFSET)/4] & FIFO_COUNT_MASK){
+		output =  map[(ADC_FIFO0DATA-MMAP_OFFSET)/4] & ADC_FIFO_MASK;
+	}
 	
-	return 1;
+	// just suppress the warning about output not being used
+	if(output){}
+	
+	return 0;
 }
 
-/**
+/*
  * Read in from an analog pin
  *
  * @param p pin to read value from
  * @returns the analog value of pin p
  */
 int analogRead(uint8_t p) {
-	init_mmap();
-	
-	// the clock module is not enabled
-	if(map[(CM_WKUP_ADC_TSC_CLKCTRL-MMAP_OFFSET)/4] & CM_WKUP_IDLEST_DISABLED)
-		adc_init_mmap();
-	
-	// enable the step sequencer for this pin
+		  
+	// clear the FIFO buffer just in case it's not empty
+	int output;
+	while(map[(FIFO0COUNT-MMAP_OFFSET)/4] & FIFO_COUNT_MASK){
+		output =  map[(ADC_FIFO0DATA-MMAP_OFFSET)/4] & ADC_FIFO_MASK;
+	}
+		
+	// enable step for the right pin
 	map[(ADC_STEPENABLE-MMAP_OFFSET)/4] |= (0x01<<(p+1));
-
+	
+	// wait for sample to appear in the FIFO buffer
+	while(!(map[(FIFO0COUNT-MMAP_OFFSET)/4] & FIFO_COUNT_MASK)){}
+	
 	// return the the FIFO0 data register
-	return map[(ADC_FIFO0DATA-MMAP_OFFSET)/4] & ADC_FIFO_MASK;
+	output =  map[(ADC_FIFO0DATA-MMAP_OFFSET)/4] & ADC_FIFO_MASK;
+	
+	return output;
 }
-  
+

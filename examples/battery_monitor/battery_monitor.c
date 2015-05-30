@@ -47,7 +47,9 @@ int main(){
 	gpio_set_dir(LED_3, OUTPUT_PIN);
 	gpio_set_dir(LED_4, OUTPUT_PIN);
 	
-		
+	// enable adc
+	adc_init_mmap();
+	
 	// first decide if the user has called this from a terminal
 	// or as a startup process
 	if(isatty(fileno(stdout))){
@@ -60,8 +62,9 @@ int main(){
 	while(1){
 		
 		// read in the voltage of the 2S pack and DC jack
-		pack_voltage = getBattVoltage(); 
+		pack_voltage = getBattVoltage();
 		jack_voltage = getJackVoltage();
+
 		if(pack_voltage==-1 || jack_voltage==-1){
 			printf("can't read battery voltages\n");
 			return -1;

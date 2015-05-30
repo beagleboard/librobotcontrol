@@ -11,7 +11,7 @@ int main(){
 	printf(" adc_0 ");
 	printf(" adc_1 ");
 	printf(" adc_2 ");
-	printf(" adc_3 ");
+	printf(" adc_3raw ");
 	printf(" DC_Jack ");
 	printf(" Battery ");
 	
@@ -22,14 +22,13 @@ int main(){
 		printf("\r");
 		//print all channels
 		for(i=0;i<3;i++){
-			printf(" %0.2f  ", get_adc_volt(i));
+			printf("  %0.2f ", get_adc_volt(i));
 		}
-		printf(" %4d  ", get_adc_raw(3));
+		printf("   %4d    ", get_adc_raw(3));
 		printf(" %0.2f   ", getJackVoltage());
 		printf(" %0.2f   ", getBattVoltage());
-		printf("          ");
+		printf("  ");
 		fflush(stdout);
-		usleep(250000);
 	}
 	cleanup_cape();
 	return 0;
