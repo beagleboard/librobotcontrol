@@ -41,45 +41,68 @@ either expressed or implied, of the FreeBSD Project.
 
 #include <robotics_cape.h>
 
+#define FORWARD 1
+#define REVERSE -1
+// only test over half the range to prevent stalling
+#define MIN_US 1500-300
+#define MAX_US 1500+300
+
 int main(int argc, char *argv[]){
     initialize_cape();
     
 	int i;
-	int micros = SERVO_MIN_US;
+	int micros = MIN_US;
+	int direction = FORWARD;
 	int ch = 0;
 	int all = 0;
 
+	// first parse the command line arguments to determine if one servo was selected
 	if (argc==1){
-		all = 1;
+		all = 1; // no argument given, enable commands to all servos
+		printf("\nSending signal to all servos\n");
     }
 	else{
 		ch = atoi(argv[1]);
-		all = 0;
 		if(ch>SERVO_CHANNELS || ch<1){
 			printf("choose a channel between 1 and %d\n", SERVO_CHANNELS);
 			return -1;
 		}
+		all = 0;
+		printf("\nSending signal only to servo %d\n", ch);
 	}
 	
+	printf("Pulse width in microseconds:\n");
+	
+	// now loop back and forth continuously
 	while(get_state()!=EXITING){
 	
+		// increase or decrease # of microseconds each loop 
+		micros += direction * 10;
+		
+		// reset pulse width at end of sweep
+		if(micros>MAX_US){
+			micros = MAX_US;
+			direction = REVERSE;
+		}
+		else if(micros<MIN_US){
+			micros = MIN_US;
+			direction = FORWARD;
+		}
+		
+
+		
+		// send single pulse to each servo
 		if(all){
-			// send single pulse to each servo
 			for(i=0; i<SERVO_CHANNELS; i++){
 				send_servo_pulse_us(i+1,micros);
 			}
 		}
-		else{
-			send_servo_pulse_us(ch,micros);
-		}
+		// or just send one pulse to one servo
+		else send_servo_pulse_us(ch,micros);
 		
-		// increase # of microseconds each loop 
-		micros += 10;
-		
-		// reset pulse width at end of sweep
-		if(micros>SERVO_MAX_US){
-			micros=SERVO_MIN_US;
-		}
+		// tell the user the current microsecond pulse width
+		printf("\r%d", micros);
+		fflush(stdout); // flush the output
 		
 		// Send pulses at roughly 50hz
 		usleep(20000); 
