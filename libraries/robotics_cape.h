@@ -99,8 +99,8 @@ either expressed or implied, of the FreeBSD Project.
 
 //// PRU Servo Control
 #define SERVO_CHANNELS			8
-#define SERVO_MIN_US 			800	// min pulse to send to servos	in microseconds
-#define SERVO_MAX_US 			2200	// max pulse to send to servos in microseconds
+#define SERVO_MIN_US 			900	// min pulse to send to servos	in microseconds
+#define SERVO_MAX_US 			2100	// max pulse to send to servos in microseconds
 
 #define PRESSED 1
 #define UNPRESSED 0
@@ -197,3 +197,5 @@ uint64_t microsSinceEpoch();
 void ctrl_c(int signo); // signal catcher
 int cleanup_cape();		// call at the very end of main()
 #endif
+
+
