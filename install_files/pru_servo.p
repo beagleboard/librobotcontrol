@@ -29,8 +29,8 @@ either expressed or implied, of the FreeBSD Project.
 
 // these pin definitions are specific to SD-101C Robotics Cape
 #define CH1BIT r30.t8
-#define CH2BIT r30.t9
-#define CH3BIT r30.t10
+#define CH2BIT r30.t10
+#define CH3BIT r30.t9
 #define CH4BIT r30.t11
 #define CH5BIT r30.t6
 #define CH6BIT r30.t7
