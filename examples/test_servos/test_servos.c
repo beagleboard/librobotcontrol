@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014, James Strawson
+Copyright (c) 2015, James Strawson
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,85 +30,101 @@ either expressed or implied, of the FreeBSD Project.
 /*
 	test_servos.c
 	
-	demonstrates use of pru to control servos or ESCs with pulse widths
-	note that this library purposefully sends only a single pulse for
-	each call to send_servo_pulse_us(). This allows the user to send
-	pulses immediately after calculating a control input and at any
-	arbitrary frequency to suit specific hardware. For example a user can
-	send a 50hz signal to control a servo on one channel and a 200hz signal
-	on another channel for controlling high-performance brushless ESCs
+	demonstrates use of pru to control servos or ESCs with pulse widths.
+	This program takes in 1 or 2 arguments. 
+	
+	The first argument is the pulse width in either microseconds or a normalized
+	value from 0 to 1. the normalized value will scale to microseconds between 
+	900 and 2100 microseconds which is common for servos.
+	
+	The seconds argument is optional and is the channel between 1 and 8.
+	If the second argument isn't given then all servos are driven.
 */
 
 #include <robotics_cape.h>
 
-#define FORWARD 1
-#define REVERSE -1
-// only test over half the range to prevent stalling
-#define MIN_US 1500-300
-#define MAX_US 1500+300
+typedef enum servo_mode_t{
+	NORMALIZED,
+	MICROS
+}servo_mode_t;
 
 int main(int argc, char *argv[]){
-    initialize_cape();
-    
-	int i;
-	int micros = MIN_US;
-	int direction = FORWARD;
-	int ch = 0;
-	int all = 0;
-
-	// first parse the command line arguments to determine if one servo was selected
+	initialize_cape();
+	
+	servo_mode_t mode;
+	float input;
+	int micros, ch, all, i;
+	
+	// first parse the command line arguments to determine what position to go to
 	if (argc==1){
-		all = 1; // no argument given, enable commands to all servos
-		printf("\nSending signal to all servos\n");
+		printf("\nPlease give a normalized value or pulse width in microseconds\n");
+		return -1;
     }
+	if(argc>3){
+		printf("too many input arguments\n");
+		return -1;
+	}
+
+	input = atof(argv[1]);
+	micros = lround(input);
+	printf("\n");
+	
+	if(input<=1 && input >=0){
+		printf("using normalized pulse width: %0.4f\n", input);
+		mode = NORMALIZED;
+	}
+	else if(micros>= SERVO_MIN_US && micros<=SERVO_MAX_US){
+		printf("using pulse width in microseconds: %d\n", micros);
+		mode = MICROS;
+	}
 	else{
-		ch = atoi(argv[1]);
+		printf("invalid input\n");
+		return -1;
+	}
+
+	// now check if a channel was also given as an argument
+	if(argc==3){
+		ch = atoi(argv[2]);
 		if(ch>SERVO_CHANNELS || ch<1){
 			printf("choose a channel between 1 and %d\n", SERVO_CHANNELS);
 			return -1;
 		}
 		all = 0;
-		printf("\nSending signal only to servo %d\n", ch);
+		printf("Sending signal only to servo %d\n", ch);
 	}
-	
-	printf("Pulse width in microseconds:\n");
-	
-	// now loop back and forth continuously
-	while(get_state()!=EXITING){
-	
-		// increase or decrease # of microseconds each loop 
-		micros += direction * 10;
-		
-		// reset pulse width at end of sweep
-		if(micros>MAX_US){
-			micros = MAX_US;
-			direction = REVERSE;
-		}
-		else if(micros<MIN_US){
-			micros = MIN_US;
-			direction = FORWARD;
-		}
-		
+	else{
+		all=1;
+		printf("Sending signal to all channels\n");
+	}
 
-		
-		// send single pulse to each servo
-		if(all){
-			for(i=0; i<SERVO_CHANNELS; i++){
+	
+	// if we got ot here, ready to send signal
+	while(get_state()!=EXITING){
+		if(mode==NORMALIZED && all==0){
+			send_servo_pulse_normalized(ch,input);
+		}
+		else if(mode==NORMALIZED && all==1){
+			for(i=0;i<SERVO_CHANNELS;i++){
+				send_servo_pulse_normalized(i+1,input);
+			}
+		}
+		else if(mode==MICROS && all==0){
+			send_servo_pulse_us(ch,micros);
+		}
+		else if(mode==MICROS && all==1){
+			for(i=0;i<SERVO_CHANNELS;i++){
 				send_servo_pulse_us(i+1,micros);
 			}
 		}
-		// or just send one pulse to one servo
-		else send_servo_pulse_us(ch,micros);
-		
-		// tell the user the current microsecond pulse width
-		printf("\r%d", micros);
-		fflush(stdout); // flush the output
-		
-		// Send pulses at roughly 50hz
-		usleep(20000); 
+		else{
+			printf("logic error\n");
+			return -1;
+		}
+	usleep(20000);
 	}
-    
+	
 	cleanup_cape();
     return 0;
+	
 }
-
+	
