@@ -53,6 +53,18 @@ typedef enum core_mode_t{
 }core_mode_t;
 
 /************************************************************************
+* 	drive_mode_t
+*
+*	NOVICE: Drive rate and turn rate are limited to make driving easy.
+*
+*	ADVANCED: Faster drive and turn rate for more fun.
+************************************************************************/
+typedef enum drive_mode_t{
+	NOVICE,
+	ADVANCED
+}drive_mode_t;
+
+/************************************************************************
 * 	arm_state_t
 *
 *	ARMED or DISARMED to indicate if the controller is running
@@ -134,7 +146,10 @@ typedef enum input_mode_t {
 ************************************************************************/
 typedef struct user_interface_t{
 	// written by the last input watching thread to update
-	input_mode_t mode;
+	input_mode_t input_mode;
+	
+	// Novice or Advanced drive modes alter speed
+	drive_mode_t drive_mode;
 	
 	// All sticks scaled from -1 to 1
 	float drive_stick; 	// positive forward
@@ -352,44 +367,34 @@ void* balance_stack(void* ptr){
 			}
 		
 		
-			if(user_interface.mode == NONE){
+			if(user_interface.input_mode == NONE){
 				// no user input, just keep the controller setpoint at zero
 				setpoint.theta = 0;
 				setpoint.phi_dot = 0;
 				setpoint.gamma_dot = 0;
 				break;
 			}
-			if(setpoint.core_mode == ANGLE){
-				// in angle mode, scale user input from -1 to 1 to
-				// the minimum and maximum theta reference angles
-				// phi is not controlled in angle mode
-				saturate_number(&user_interface.drive_stick,1);
-				setpoint.theta = config.theta_ref_max*user_interface.drive_stick;
-				saturate_number(&user_interface.turn_stick,1);
-				setpoint.gamma_dot = config.max_turn_rate*user_interface.turn_stick;
-			}
-			else if(setpoint.core_mode==POSITION){
-				// in position mode, scale user input from -1 to 1 to
+			else{
+				setpoint.core_mode=POSITION;
+				// scale user input from -1 to 1 to
 				// the minimum and maximum phi_dot, the rate of change of the
 				// phi reference angle
 				// leave setpoint.theta alone as it is set by the core itself
 				// using the D2 position controller
 				saturate_number(&user_interface.drive_stick,1);
+				saturate_number(&user_interface.turn_stick,1);
 				
 				// use a small deadzone to prevent slow drifts in position
-				if(fabs(user_interface.drive_stick)<0.02){
-					setpoint.phi_dot = 0;
-				}
-				else{
-					setpoint.phi_dot = config.max_drive_rate * user_interface.drive_stick;
-				}
-				saturate_number(&user_interface.turn_stick,1);
-				if(fabs(user_interface.turn_stick)<0.02){
-					setpoint.gamma_dot = 0;
-				}
-				else{
-					setpoint.gamma_dot = config.max_turn_rate*user_interface.turn_stick;
-				}
+				if(fabs(user_interface.drive_stick)<0.03)setpoint.phi_dot = 0;
+				else if(user_interface.drive_mode == NOVICE) \
+					setpoint.phi_dot = config.drive_rate_novice*user_interface.drive_stick;
+				else setpoint.phi_dot = config.drive_rate_advanced*user_interface.drive_stick;
+		
+				
+				if(fabs(user_interface.turn_stick)<0.03) setpoint.gamma_dot = 0;
+				else if(user_interface.drive_mode == NOVICE) \
+					setpoint.gamma_dot = config.turn_rate_novice*user_interface.turn_stick;
+				else setpoint.gamma_dot = config.turn_rate_advanced*user_interface.turn_stick;
 			}
 			break; // end of RUNNING case
 	
@@ -546,7 +551,7 @@ int balance_core(){
 		// this control will be scaled by battery voltage
 		if(saturate_number(&cstate.u[0], config.v_nominal/cstate.vBatt)){
 			D1_saturation_counter ++;
-			if(D1_saturation_counter > SAMPLE_RATE_HZ/4){
+			if(D1_saturation_counter > SAMPLE_RATE_HZ*config.pickup_detection_time){
 				printf("inner loop controller saturated\n");
 				disarm_controller();
 				D1_saturation_counter = 0;
@@ -672,7 +677,7 @@ int arm_controller(){
 }
 
 /***********************************************************************
-*	saturate_num(float val, float limit)
+*	saturate_number(float val, float limit)
 *	bounds val to +- limit
 *	return one if saturation occurred, otherwise zero
 ************************************************************************/
@@ -918,6 +923,7 @@ void* dsm2_listener(void* ptr){
 	
 	int missed_frames;
 	float turn, drive;
+	drive_mode_t drive_mode;
 	
 	while(get_state()!=EXITING){
 		if(is_new_dsm2_data()){	
@@ -929,13 +935,18 @@ void* dsm2_listener(void* ptr){
 			drive = config.dsm2_drive_polarity * \
 					get_dsm2_ch_normalized(config.dsm2_drive_ch);
 			
-			if(fabs(turn)>1.1 || fabs(drive)>1.1){
-				// bad packet, ignore
-			}
-			else{
+			// get the drive mode
+			if(get_dsm2_ch_normalized(config.dsm2_mode_ch)<0) \
+				drive_mode = NOVICE;
+			else drive_mode = ADVANCED;
+			
+			// if the drive and turn readings are within reason
+			// set the unser interface struct properly
+			if(fabs(turn)<1.1 && fabs(drive)<1.1){
 				missed_frames = 0;
 				// dsm has highest interface priority so take over
-				user_interface.mode = DSM2;
+				user_interface.input_mode = DSM2;
+				user_interface.drive_mode = drive_mode;
 				user_interface.drive_stick = drive;
 				user_interface.turn_stick  = turn;
 			}
@@ -943,12 +954,12 @@ void* dsm2_listener(void* ptr){
 		}
 		// if no new data and currently operating in DSM2 mode, 
 		// count a missed frame
-		else if(user_interface.mode == DSM2){
+		else if(user_interface.input_mode == DSM2){
 			missed_frames ++;
 			// if enough frames were missed and in DSM2 mode, 
 			// this thread relinquishes control 
 			if(missed_frames >= timeout_frames){
-				user_interface.mode = NONE;
+				user_interface.input_mode = NONE;
 			}
 		}
 		// wait for the next frame
@@ -985,8 +996,8 @@ void* mavlink_listener(void* ptr){
 						mavlink_msg_rc_channels_scaled_get_chan3_scaled(&msg);
 						chan4_scaled =	\
 						mavlink_msg_rc_channels_scaled_get_chan4_scaled(&msg);
-						if(user_interface.mode |= DSM2){
-							user_interface.mode = MAVLINK;
+						if(user_interface.input_mode |= DSM2){
+							user_interface.input_mode = MAVLINK;
 							// chan_scaled are integers from +- 10000,
 							// scale them to normalized floats
 							user_interface.drive_stick = (float)chan3_scaled \

@@ -32,10 +32,11 @@
 	X(int, 	  "%d", dsm2_turn_polarity,  -1		) \
 	X(int, 	  "%d", dsm2_drive_ch, 	 	 3		) \
 	X(int, 	  "%d", dsm2_turn_ch, 	 	 2		) \
-												  \
+	X(int, 	  "%d", dsm2_mode_ch, 	 	 5		) \
+	\
 	X(int, 	  "%d", enable_mavlink_transmitting,0)\
 	X(int, 	  "%d", enable_mavlink_listening, 0 ) \
-												  \
+	\
 	X(float,  "%f", bb_mount_angle,	0.46		) \
     X(float,  "%f", numD1_0, 		-6.289		) \
     X(float,  "%f", numD1_1, 		11.91		) \
@@ -43,36 +44,39 @@
 	X(float,  "%f", denD1_0, 		1			) \
     X(float,  "%f", denD1_1, 		-1.702		) \
     X(float,  "%f", denD1_2, 		0.702		) \
-	X(float,  "%f", K_D1, 			0.85		) \
-											      \
+	X(float,  "%f", K_D1, 			1.0		) \
+	\
     X(float,  "%f", numD2_0, 		0.3858		) \
     X(float,  "%f", numD2_1, 		-0.3853		) \
     X(float,  "%f", numD2_2, 		0.0			) \
     X(float,  "%f", denD2_0, 		1.0 		) \
     X(float,  "%f", denD2_1, 		-0.9277		) \
     X(float,  "%f", denD2_2, 		0.0			) \
-	X(float,  "%f", K_D2, 			1.0			) \
-	X(float,  "%f", theta_ref_max, 	0.45		) \
-											      \
+	X(float,  "%f", K_D2, 			0.7		) \
+	X(float,  "%f", theta_ref_max, 	0.37		) \
+	\
 	X(float,  "%f", KP_steer, 		1.0			) \
 	X(float,  "%f", KD_steer,		0.1			) \
-												  \
+	\
 	X(float,  "%f", gearbox, 		35.577		) \
 	X(float,  "%f", encoder_res,	60			) \
 	X(float,  "%f", wheel_radius, 	0.034		) \
 	X(float,  "%f", track_width, 	0.035		) \
-												  \
+	\
 	X(int, 	 "%d", motor_channel_L, 	4		) \
 	X(int, 	 "%d", motor_channel_R,		1		) \
 	X(int, 	 "%d", encoder_channel_L, 	3		) \
 	X(int, 	 "%d", encoder_channel_R, 	2		) \
-												  \
-	X(float,  "%f", max_drive_rate, 	13		) \
-	X(float,  "%f", max_turn_rate, 		6		) \
-	X(float,  "%f", max_RC_theta, 		0.4		) \
-	X(float,  "%f", tip_angle, 			0.6		) \
+	\
+	X(float,  "%f", drive_rate_novice, 		16		) \
+	X(float,  "%f", turn_rate_novice, 		6		) \
+	X(float,  "%f", drive_rate_advanced, 	26		) \
+	X(float,  "%f", turn_rate_advanced, 	10		) \
+	\
+	X(float,  "%f", tip_angle, 			0.75		) \
 	X(float,  "%f", start_angle, 		0.3		) \
 	X(float,  "%f", start_delay, 		0.5		) \
+	X(float,  "%f", pickup_detection_time, 	0.65		) \
 	X(float,  "%f", v_nominal, 			7.4		)
 	
  // may try to use this later
