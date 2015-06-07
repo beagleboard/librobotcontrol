@@ -3,7 +3,7 @@
 // functions to load and save a config file
 
 #include <robotics_cape.h>
-#include <sys/stat.h>
+#include <sys/stat.h> 
 
 #define DRIVE_CONFIG_FILE "/root/robot_config/drive_config.txt"
 
@@ -24,37 +24,45 @@
 ************************************************************************/
 
 #define CONFIG_TABLE\
-	X(int, 	  "%d", enable_dsm2, 	 	 1		) \
-	X(int, 	  "%d", dsm2_drive_polarity, 1		) \
-	X(int, 	  "%d", dsm2_turn_polarity,  -1		) \
-	X(int, 	  "%d", dsm2_drive_ch, 	 	 3		) \
-	X(int, 	  "%d", dsm2_turn_ch, 	 	 2		) \
-	X(int, 	  "%d", dsm2_switch1_polarity, 	-1	) \
-	X(int, 	  "%d", dsm2_switch2_polarity, 	1	) \
-	X(int, 	  "%d", dsm2_switch1_ch, 	 	6	) \
-	X(int, 	  "%d", dsm2_switch2_ch, 	 	5	) \
-													\
-	X(float,  "%f", mot1_polarity, 		-1		) \
-	X(float,  "%f", mot2_polarity, 		1		) \
-	X(float,  "%f", mot3_polarity, 		-1		) \
-	X(float,  "%f", mot4_polarity, 		1		) \
-													\
-	X(float,  "%f", serv1_straight,		.25		) \
-	X(float,  "%f", serv2_straight,		.75		) \
-	X(float,  "%f", serv3_straight,		.25		) \
-	X(float,  "%f", serv4_straight,		.75		) \
-													\
-	X(float,  "%f", normal_turn_range,	.3		) \
-	X(float,  "%f", turn_for_spin,		.4		) \
-	X(float,  "%f", turn_for_crab,		.75		) \
-	X(float,  "%f", crab_turn_const,	.7		) \
-													\
-	X(float,  "%f", motor_max, 			.9		) \
-	X(float,  "%f", torque_vec_const, 	.2		) \
-												  \
-	X(float,  "%f", v_nominal, 			7.4		)
+	X(int, 	  "%d", enable_dsm2, 	 	 	1		) \
+	X(int, 	  "%d", dsm2_drive_polarity, 	1		) \
+	X(int, 	  "%d", dsm2_turn_polarity,  	-1		) \
+	X(int, 	  "%d", dsm2_drive_ch, 	 	 	3		) \
+	X(int, 	  "%d", dsm2_turn_ch, 	 	 	2		) \
+	X(int, 	  "%d", dsm2_switch1_polarity, 	-1		) \
+	X(int, 	  "%d", dsm2_switch2_polarity, 	1		) \
+	X(int, 	  "%d", dsm2_switch1_ch, 	 	6		) \
+	X(int, 	  "%d", dsm2_switch2_ch, 	 	5		) \
+	\
+	X(float,  "%f", track_width, 			0.12	) \
+	X(float,  "%f", wheelbase, 				0.17	) \
+	X(float,  "%f", centered_angle, 		37.5	) \
+	X(float,  "%f", servo_range, 			120		) \
+	\
+	X(float,  "%f", mot1_polarity, 			1		) \
+	X(float,  "%f", mot2_polarity, 			-1		) \
+	X(float,  "%f", mot3_polarity, 			-1		) \
+	X(float,  "%f", mot4_polarity, 			1		) \
+	\
+	X(float,  "%f", serv1_center,			0.5		) \
+	X(float,  "%f", serv2_center,			0.5		) \
+	X(float,  "%f", serv3_center,			0.5 	) \
+	X(float,  "%f", serv4_center,			0.5 	) \
+	\
+	X(float,  "%f", normal_turn_range,		0.3		) \
+	X(float,  "%f", turn_straight,			0.31	) \
+	X(float,  "%f", turn_spin,				0.28	) \
+	X(float,  "%f", turn_crab,				0.47		) \
+	X(float,  "%f", crab_turn_const,		0.7		) \
+	X(float,  "%f", turn_max,				1.0		) \
+	X(float,  "%f", turn_min,				0.0		) \
+	\
+	X(float,  "%f", motor_max, 				1.0		) \
+	X(float,  "%f", torque_vec_const, 		0.2		) \
+	\
+	X(float,  "%f", v_nominal, 				7.4		)
 
- 
+  
  
 /************************************************************************
 * 	drive_config_t

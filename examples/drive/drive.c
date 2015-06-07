@@ -66,7 +66,7 @@ typedef enum input_mode_t {
 *	possible modes of driving around
 ************************************************************************/
 typedef enum drive_mode_t {
-	NORMAL,
+	LANECHANGE,
 	NORMAL_4W,
 	CRAB,
 	SPIN
@@ -207,29 +207,37 @@ void* drive_stack(void* ptr){
 		// user input and current controller mode
 		case RUNNING:
 			if(user_interface.input_mode == NONE){
-				// no user input, nothing to do yet
+				cstate.servos[0]=config.serv1_center-config.turn_straight;
+				cstate.servos[1]=config.serv2_center+config.turn_straight;
+				cstate.servos[2]=config.serv3_center-config.turn_straight;
+				cstate.servos[3]=config.serv4_center+config.turn_straight;
+				for (i=1; i<=4; i++){
+					send_servo_pulse_normalized(i,cstate.servos[i-1]);
+				}
+				disable_motors();
 				break;
 			}
 			enable_motors();
 			// now send input to servos and motors based on drive mode and UI
-			// 1 3		0  2
-			// 2 4		1  3
+			// motors 2 and 3 have negative polarity in the config.txt file so that positive sign in this file = 
+			// clockwise spin with a forward input. Eg. all of the net_drive values are positive in spin mode.
+			// 1 3		0  2	New version is 1 2		0 1		to match the orientation of motor wire
+			// 2 4		1  3				   4 3		3 2		connectors on cape
 			switch(user_interface.drive_mode){
-			case NORMAL:		// Front wheel steering only
+			case LANECHANGE:		// lane change maneuver
 				net_drive = user_interface.drive_stick*config.motor_max;
 				net_turn = user_interface.turn_stick*config.normal_turn_range;
-				net_torque_split=user_interface.turn_stick*config.torque_vec_const*net_drive;
-				cstate.motors[0]=(net_drive+net_torque_split)*config.mot1_polarity;
-				cstate.motors[1]=(net_drive+net_torque_split)*config.mot2_polarity;
-				cstate.motors[2]=(net_drive-net_torque_split)*config.mot3_polarity;
-				cstate.motors[3]=(net_drive-net_torque_split)*config.mot4_polarity;
-				cstate.servos[0]=config.serv1_straight;
-				cstate.servos[1]=config.serv2_straight - net_turn;
-				cstate.servos[2]=config.serv3_straight - net_turn;
-				cstate.servos[3]=config.serv4_straight;
+				cstate.motors[0]=net_drive*config.mot1_polarity;
+				cstate.motors[1]=net_drive*config.mot2_polarity;
+				cstate.motors[2]=net_drive*config.mot3_polarity;
+				cstate.motors[3]=net_drive*config.mot4_polarity;
+				cstate.servos[0]=config.serv1_center-config.turn_straight+net_turn;
+				cstate.servos[1]=config.serv2_center+config.turn_straight+net_turn;
+				cstate.servos[2]=config.serv3_center-config.turn_straight+net_turn;
+				cstate.servos[3]=config.serv4_center+config.turn_straight+net_turn;
 				break;
 				
-			case NORMAL_4W:		// Four wheel steering
+			case NORMAL_4W:		// Normal 4W Steering
 				net_drive = user_interface.drive_stick*config.motor_max;
 				net_turn = user_interface.turn_stick*config.normal_turn_range;
 				net_torque_split = user_interface.turn_stick*config.torque_vec_const*net_drive;
@@ -237,37 +245,37 @@ void* drive_stack(void* ptr){
 				cstate.motors[1]=(net_drive+net_torque_split)*config.mot2_polarity;
 				cstate.motors[2]=(net_drive-net_torque_split)*config.mot3_polarity;
 				cstate.motors[3]=(net_drive-net_torque_split)*config.mot4_polarity;
-				cstate.servos[0]=config.serv1_straight + net_turn;
-				cstate.servos[1]=config.serv2_straight - net_turn;
-				cstate.servos[2]=config.serv3_straight - net_turn;
-				cstate.servos[3]=config.serv4_straight + net_turn;
+				cstate.servos[0]=config.serv1_center-config.turn_straight+net_turn;
+				cstate.servos[1]=config.serv2_center+config.turn_straight+net_turn;
+				cstate.servos[2]=config.serv3_center-config.turn_straight-net_turn;
+				cstate.servos[3]=config.serv4_center+config.turn_straight-net_turn;
 				break;
 			
 			// crab, turn all wheels sideways and drive
 			case CRAB:
 				net_drive = user_interface.drive_stick*config.motor_max;
 				net_turn = user_interface.turn_stick*config.crab_turn_const\
-														*(net_drive+0.5);
-				cstate.motors[0]=(-net_drive+net_turn)*config.mot1_polarity;
-				cstate.motors[1]=(net_drive+net_turn)*config.mot2_polarity;
-				cstate.motors[2]=(-net_drive-net_turn)*config.mot3_polarity;
+								 						*(net_drive+0.5);
+				cstate.motors[0]=(net_drive+net_turn)*config.mot1_polarity;
+				cstate.motors[1]=-(net_drive+net_turn)*config.mot2_polarity;
+				cstate.motors[2]=-(net_drive-net_turn)*config.mot3_polarity;
 				cstate.motors[3]=(net_drive-net_turn)*config.mot4_polarity;
-				cstate.servos[0]=config.serv1_straight+config.turn_for_crab;
-				cstate.servos[1]=config.serv2_straight-config.turn_for_crab;
-				cstate.servos[2]=config.serv3_straight+config.turn_for_crab;
-				cstate.servos[3]=config.serv4_straight-config.turn_for_crab;
+				cstate.servos[0]=config.serv1_center+config.turn_crab;
+				cstate.servos[1]=config.serv2_center-config.turn_crab;
+				cstate.servos[2]=config.serv3_center+config.turn_crab;
+				cstate.servos[3]=config.serv4_center-config.turn_crab;
 				break;
 				
 			case SPIN:
 				net_drive = user_interface.turn_stick*config.motor_max;
 				cstate.motors[0]=net_drive*config.mot1_polarity;
-				cstate.motors[1]=net_drive*config.mot2_polarity;
+				cstate.motors[1]=-net_drive*config.mot2_polarity;  
 				cstate.motors[2]=-net_drive*config.mot3_polarity;
-				cstate.motors[3]=-net_drive*config.mot4_polarity;
-				cstate.servos[0]=config.serv1_straight+config.turn_for_spin;
-				cstate.servos[1]=config.serv2_straight-config.turn_for_spin;
-				cstate.servos[2]=config.serv3_straight+config.turn_for_spin;
-				cstate.servos[3]=config.serv4_straight-config.turn_for_spin;
+				cstate.motors[3]=net_drive*config.mot4_polarity;
+				cstate.servos[0]=config.serv1_center+config.turn_spin;
+				cstate.servos[1]=config.serv2_center-config.turn_spin;
+				cstate.servos[2]=config.serv3_center+config.turn_spin;
+				cstate.servos[3]=config.serv4_center-config.turn_spin;
 				break;
 				
 			default:
@@ -282,7 +290,7 @@ void* drive_stack(void* ptr){
 			
 			// send pulses to servos and drive motors
 			for (i=1; i<=4; i++){
-				saturate_number(&cstate.servos[i-1],.05,.95);
+				saturate_number(&cstate.servos[i-1],config.turn_min,config.turn_max);
 				saturate_number(&cstate.motors[i-1],-config.motor_max,config.motor_max);
 				set_motor(i,cstate.motors[i-1]);
 				send_servo_pulse_normalized(i,cstate.servos[i-1]);
@@ -304,8 +312,8 @@ void* drive_stack(void* ptr){
 ************************************************************************/
 int print_drive_mode(drive_mode_t mode){
 	switch(mode){
-		case NORMAL:
-			printf("drive_mode: NORMAL\n");
+		case LANECHANGE:
+			printf("drive_mode: LANECHANGE\n");
 			break;
 			
 		case NORMAL_4W:
@@ -549,7 +557,7 @@ void* dsm2_watcher(void* ptr){
 			switch2 = config.dsm2_switch2_polarity * \
 					get_dsm2_ch_normalized(config.dsm2_switch2_ch);
 			if(switch1>0 && switch2>0){
-				temp_drive_mode = NORMAL;
+				temp_drive_mode = LANECHANGE;
 			}
 			else if(switch1>0 && switch2<0){
 				temp_drive_mode = NORMAL_4W;
