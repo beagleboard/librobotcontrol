@@ -102,6 +102,9 @@ either expressed or implied, of the FreeBSD Project.
 #define SERVO_MIN_US 			900	// min pulse to send to servos	in microseconds
 #define SERVO_MAX_US 			2100	// max pulse to send to servos in microseconds
 
+//// Motors
+#define MOTOR_CHANNELS	4
+
 #define PRESSED 1
 #define UNPRESSED 0
 	
@@ -122,9 +125,8 @@ int set_state(enum state_t);
 
 //// Motor, ESC, PWM ///
 int set_motor(int motor, float duty);
-int set_esc(int esc, float normalized_duty);
+int set_motor_all(float duty);
 int kill_pwm();
-int set_all_esc(float duty);
 int enable_motors();
 int disable_motors();
 
@@ -143,7 +145,6 @@ int set_mode_pressed_func(int (*func)(void));
 int set_mode_unpressed_func(int (*func)(void));
 int get_pause_button_state();
 int get_mode_button_state();
-void* read_events(void* ptr); //background thread for polling inputs
 
 //// adc Battery & power
 int get_adc_raw(int p);
@@ -158,8 +159,7 @@ int setXGyroOffset(int16_t offset);
 int setYGyroOffset(int16_t offset);
 int setZGyroOffset(int16_t offset);
 int loadGyroCalibration();
-void* imu_interrupt_handler(void* ptr);
-int set_imu_interrupt_func(int (*func)(void));
+int set_imu_interrupt_func(int(*func)(void));
 
 //// DSM2 Spektrum RC radio functions
 int initialize_dsm2();
@@ -183,8 +183,11 @@ int deselect_spi1_slave(int slave);
 
 //// PRU Servo Control Functions
 int initialize_pru_servos();
-int send_servo_pulse_us(int ch, float us);
+int send_servo_pulse_us(int ch, int us);
+int send_servo_pulse_us_all(int us);
 int send_servo_pulse_normalized(int ch, float input);
+int send_servo_pulse_normalized_all(float input);
+
 
 //// General use Functions
 int null_func();	// good for making interrupt handlers do nothing

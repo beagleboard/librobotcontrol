@@ -82,6 +82,8 @@ void* pause_pressed_handler(void* ptr);
 void* pause_unpressed_handler(void* ptr);
 void* mode_pressed_handler(void* ptr);
 void* mode_unpressed_handler(void* ptr);
+void* imu_interrupt_handler(void* ptr);
+void* read_events(void* ptr); //background thread for polling inputs
 
 // state variable for loop and thread control
 enum state_t state = UNINITIALIZED;
@@ -365,6 +367,14 @@ int set_motor(int motor, float duty){
 	fprintf(pwm_duty_pointers[motor-1], "%d", (int)(duty*pwm_period_ns));	
 	fflush(pwm_duty_pointers[motor-1]);
 	
+	return 0;
+}
+
+int set_motor_all(float duty){
+	int i;
+	for(i=1;i<=MOTOR_CHANNELS; i++){
+		set_motor(i, duty);
+	}
 	return 0;
 }
 
@@ -1021,7 +1031,7 @@ int initialize_pru_servos(){
     return(0);
 }
 
-int send_servo_pulse_us(int ch, float us){
+int send_servo_pulse_us(int ch, int us){
 	// Sanity Checks
 	if(ch<1 || ch>SERVO_CHANNELS){
 		printf("ERROR: Servo Channel must be between 1 & %d \n", SERVO_CHANNELS);
@@ -1033,7 +1043,7 @@ int send_servo_pulse_us(int ch, float us){
 	}
 
 	// PRU runs at 200Mhz. find #loops needed
-	unsigned int num_loops = ((us*200)/PRU_LOOP_INSTRUCTIONS); 
+	unsigned int num_loops = ((us*200.0)/PRU_LOOP_INSTRUCTIONS); 
 	
 	// write to PRU shared memory
 	prusharedMem_32int_ptr[ch-1] = num_loops;
@@ -1051,6 +1061,22 @@ int send_servo_pulse_normalized(int ch, float input){
 	}
 	float micros = SERVO_MIN_US + (input*(SERVO_MAX_US-SERVO_MIN_US));
 	return send_servo_pulse_us(ch, micros);
+}
+
+int send_servo_pulse_normalized_all(float input){
+	int i;
+	for(i=1;i<=SERVO_CHANNELS; i++){
+		send_servo_pulse_normalized(i, input);
+	}
+	return 0;
+}
+
+int send_servo_pulse_us_all(int us){
+	int i;
+	for(i=1;i<=SERVO_CHANNELS; i++){
+		send_servo_pulse_us(i, us);
+	}
+	return 0;
 }
 
 
