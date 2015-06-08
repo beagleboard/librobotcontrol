@@ -27,34 +27,80 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-// Basic Program to Test Motors
-// Moves all 4 motors forward and back
-// James Strawson - 2013
+/*
+	test_motors.c
+	
+	demonstrates use of H-bridges to drive motors. This program takes in
+	1 or two arguments.
+	
+	The first argument is the duty cycle normalized from -1 to 1;
+	
+	The seconds argument is optional and is the channel between 1 and 4.
+	If the second argument isn't given then all motors are driven.
+*/
 
 #include <robotics_cape.h>
 
-int main(){
+int main(int argc, char *argv[]){
+	float duty;
+	int ch, all;
+	
 	initialize_cape();
+		
+	// first parse the command line arguments to determine what position to go to
+	if (argc==1){
+		printf("\nPlease give a normalized duty cycle from -1 to 1\n");
+		return -1;
+    }
+	if(argc>3){
+		printf("too many input arguments\n");
+		return -1;
+	}
+
+	duty = atof(argv[1]);
+	printf("\n");
+	
+	if(duty<=1 && duty >=-1){
+		printf("using normalized duty_cycle: %0.4f\n", duty);
+	}
+	else{
+		printf("invalid input\n");
+		return -1;
+	}
+	
+	// now check if a channel was also given as an argument
+	if(argc==3){
+		ch = atoi(argv[2]);
+		if(ch>MOTOR_CHANNELS || ch<1){
+			printf("choose a channel between 1 and %d\n", MOTOR_CHANNELS);
+			return -1;
+		}
+		all = 0;
+		printf("Sending signal only to motor %d\n", ch);
+	}
+	else{
+		all=1;
+		printf("Sending signal to all channels\n");
+	}
+	
+
 	enable_motors(); // bring H-bridges of of standby
 	setGRN(HIGH);
 	setRED(HIGH);
-	int i;
-	for(i=1;i<=4;i++){
-		set_motor(i,.3);
-	}
-	printf("\nAll Motors Forward\n");
-	sleep(2);
-
-	for(i=1;i<=4;i++){
-		set_motor(i,-.3);
-	}
-	printf("All Motors Reverse\n");
-	sleep(2);
 	
-	for(i=1;i<=4;i++){
-		set_motor(i,0);
+	// set one or all motors
+	if(all) set_motor_all(duty);
+	else set_motor(ch,duty);
+	
+	// chill till the user exits
+	while(get_state() != EXITING){
+		usleep(500000);
 	}
-	disable_motors();	//put H-bridges into standby
+	
+	// User must have existed, put H-bridges into standby
+	// not entirely necessary since clenup_cape does this too
+	kill_pwm();
+	disable_motors();	
 	printf("All Motors Off\n\n");
 	
 	cleanup_cape();
