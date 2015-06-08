@@ -14,6 +14,7 @@ all:
 	cd fly; $(MAKE)
 	cd kill_robot; $(MAKE)
 	cd mmap_eqep; $(MAKE)
+	cd sweep_motors; $(MAKE)
 	cd sweep_servos; $(MAKE)
 	cd test_adc; $(MAKE)
 	cd test_dsm2; $(MAKE)
@@ -41,6 +42,7 @@ clean:
 	cd fly; $(MAKE) clean
 	cd kill_robot; $(MAKE) clean
 	cd mmap_eqep; $(MAKE) clean
+	cd sweep_motors; $(MAKE) clean
 	cd sweep_servos; $(MAKE) clean
 	cd test_adc; $(MAKE) clean
 	cd test_dsm2; $(MAKE) clean
@@ -67,6 +69,7 @@ install:
 	cd fly; $(MAKE) install
 	cd kill_robot; $(MAKE) install
 	cd mmap_eqep; $(MAKE) install
+	cd sweep_motors; $(MAKE) install
 	cd sweep_servos; $(MAKE) install
 	cd test_adc; $(MAKE) install
 	cd test_dsm2; $(MAKE) install
