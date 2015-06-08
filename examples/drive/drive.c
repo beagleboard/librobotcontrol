@@ -226,7 +226,7 @@ void* drive_stack(void* ptr){
 			switch(user_interface.drive_mode){
 			case LANECHANGE:		// lane change maneuver
 				net_drive = user_interface.drive_stick*config.motor_max;
-				net_turn = user_interface.turn_stick*config.normal_turn_range;
+				net_turn = user_interface.turn_stick*(0.5-config.turn_straight);
 				cstate.motors[0]=net_drive*config.mot1_polarity;
 				cstate.motors[1]=net_drive*config.mot2_polarity;
 				cstate.motors[2]=net_drive*config.mot3_polarity;
@@ -557,10 +557,10 @@ void* dsm2_watcher(void* ptr){
 			switch2 = config.dsm2_switch2_polarity * \
 					get_dsm2_ch_normalized(config.dsm2_switch2_ch);
 			if(switch1>0 && switch2>0){
-				temp_drive_mode = LANECHANGE;
+				temp_drive_mode = NORMAL_4W;
 			}
 			else if(switch1>0 && switch2<0){
-				temp_drive_mode = NORMAL_4W;
+				temp_drive_mode = LANECHANGE;
 			}
 			else if(switch1<0 && switch2>0){
 				temp_drive_mode = CRAB;
