@@ -53,7 +53,7 @@ int main(int argc, char *argv[]){
 	
 	servo_mode_t mode;
 	float input;
-	int micros, ch, all, i;
+	int micros, ch, all;
 	
 	// first parse the command line arguments to determine what position to go to
 	if (argc==1){
@@ -98,24 +98,16 @@ int main(int argc, char *argv[]){
 	}
 
 	
-	// if we got ot here, ready to send signal
+	// if we got here, ready to send signal
 	while(get_state()!=EXITING){
-		if(mode==NORMALIZED && all==0){
+		if(mode==NORMALIZED && all==0)
 			send_servo_pulse_normalized(ch,input);
-		}
-		else if(mode==NORMALIZED && all==1){
-			for(i=0;i<SERVO_CHANNELS;i++){
-				send_servo_pulse_normalized(i+1,input);
-			}
-		}
-		else if(mode==MICROS && all==0){
+		else if(mode==NORMALIZED && all==1)
+			send_servo_pulse_normalized_all(input);
+		else if(mode==MICROS && all==0)
 			send_servo_pulse_us(ch,micros);
-		}
-		else if(mode==MICROS && all==1){
-			for(i=0;i<SERVO_CHANNELS;i++){
-				send_servo_pulse_us(i+1,micros);
-			}
-		}
+		else if(mode==MICROS && all==1)
+			send_servo_pulse_us_all(micros);
 		else{
 			printf("logic error\n");
 			return -1;
