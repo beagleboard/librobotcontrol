@@ -51,8 +51,8 @@
 	\
 	X(float,  "%f", normal_turn_range,		0.3		) \
 	X(float,  "%f", turn_straight,			0.31	) \
-	X(float,  "%f", turn_spin,				0.28	) \
-	X(float,  "%f", turn_crab,				0.47		) \
+	X(float,  "%f", turn_spin,				0.15	) \
+	X(float,  "%f", turn_crab,				0.43		) \
 	X(float,  "%f", crab_turn_const,		0.7		) \
 	X(float,  "%f", turn_max,				1.0		) \
 	X(float,  "%f", turn_min,				0.0		) \
