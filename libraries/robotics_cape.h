@@ -190,6 +190,7 @@ int send_servo_pulse_normalized_all(float input);
 
 
 //// General use Functions
+int saturate_float(float* val, float min, float max);
 int null_func();	// good for making interrupt handlers do nothing
 char *byte_to_binary(unsigned char x); // for diagnostic prints
 typedef struct timespec	timespec;

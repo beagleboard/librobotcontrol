@@ -1197,6 +1197,23 @@ void ctrl_c(int signo){
  	}
 }
 
+/***********************************************************************
+*	saturate_float(float* val, float min, float max)
+*	bounds val to +- limit
+*	return one if saturation occurred, otherwise zero
+************************************************************************/
+int saturate_float(float* val, float min, float max){
+	if(*val>max){
+		*val = max;
+		return 1;
+	}
+	else if(*val<min){	
+		*val = min;
+		return 1;
+	}
+	return 0;
+}
+
 // cleanup_cape() should be at the end of every main() function
 int cleanup_cape(){
 	set_state(EXITING);
