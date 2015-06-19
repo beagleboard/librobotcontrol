@@ -10,6 +10,7 @@ all:
 	cd center_servos; $(MAKE)
 	cd complementary_filter; $(MAKE)
 	cd drive; $(MAKE)
+	cd drive_basic; $(MAKE)
 	cd dsm2_passthrough; $(MAKE)
 	cd fly; $(MAKE)
 	cd kill_robot; $(MAKE)
@@ -38,6 +39,7 @@ clean:
 	cd center_servos; $(MAKE) clean
 	cd complementary_filter; $(MAKE) clean
 	cd drive; $(MAKE) clean
+	cd drive_basic; $(MAKE) clean
 	cd dsm2_passthrough; $(MAKE) clean
 	cd fly; $(MAKE) clean
 	cd kill_robot; $(MAKE) clean
@@ -65,6 +67,7 @@ install:
 	cd center_servos; $(MAKE) install
 	cd complementary_filter; $(MAKE) install
 	cd drive; $(MAKE) install
+	cd drive_basic; $(MAKE) install
 	cd dsm2_passthrough; $(MAKE) install
 	cd fly; $(MAKE) install
 	cd kill_robot; $(MAKE) install
