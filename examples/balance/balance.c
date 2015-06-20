@@ -180,7 +180,6 @@ int balance_core(); // IMU interrupt routine
 int zero_out_controller();
 int disarm_controller();
 int arm_controller();
-int saturate_number(float* val, float limit);
 int wait_for_starting_condition();
 int on_pause_press();
 int on_mode_release();
@@ -381,8 +380,8 @@ void* balance_stack(void* ptr){
 				// phi reference angle
 				// leave setpoint.theta alone as it is set by the core itself
 				// using the D2 position controller
-				saturate_number(&user_interface.drive_stick,1);
-				saturate_number(&user_interface.turn_stick,1);
+				saturate_float(&user_interface.drive_stick,-1,1);
+				saturate_float(&user_interface.turn_stick,-1,1);
 				
 				// use a small deadzone to prevent slow drifts in position
 				if(fabs(user_interface.drive_stick)<0.03)setpoint.phi_dot = 0;
@@ -420,6 +419,7 @@ int balance_core(){
 	float dutyL = 0;
 	float dutyR = 0;
 	static log_entry_t new_log_entry;
+	float output_scale; //battery voltage/nominal voltage
 	
 	// if an IMU packet read failed, ignore and just return
 	// the mpu9150_read function may print it's own warnings
@@ -459,6 +459,9 @@ int balance_core(){
 				* (config.wheel_radius/config.track_width);
 	cstate.d_gamma = (cstate.gamma[0]-cstate.gamma[1])/DT;
 	cstate.current_gamma = cstate.gamma[0];
+	
+	// output scaling
+	output_scale =  cstate.vBatt/config.v_nominal;
 	
 	/***********************************************************************
 	*	Control based on the robotics_library defined state variable
@@ -530,7 +533,7 @@ int balance_core(){
 							+ config.denD2_1 * cstate.theta_ref[1]);
 						
 			//check saturation of outer loop theta reference output signal
-			saturate_number(&cstate.theta_ref[0], config.theta_ref_max);
+			saturate_float(&cstate.theta_ref[0],-config.theta_ref_max,config.theta_ref_max);
 			setpoint.theta = cstate.theta_ref[0];
 		}
 		
@@ -549,7 +552,7 @@ int balance_core(){
 		
 		// check saturation of inner loop knowing that right after
 		// this control will be scaled by battery voltage
-		if(saturate_number(&cstate.u[0], config.v_nominal/cstate.vBatt)){
+		if(saturate_float(&cstate.u[0], -output_scale, output_scale)){
 			D1_saturation_counter ++;
 			if(D1_saturation_counter > SAMPLE_RATE_HZ*config.pickup_detection_time){
 				printf("inner loop controller saturated\n");
@@ -564,8 +567,7 @@ int balance_core(){
 		cstate.current_u = cstate.u[0];
 		
 		// scale output to compensate for battery charge level
-		compensated_D1_output = cstate.u[0] \
-					* (config.v_nominal / cstate.vBatt);
+		compensated_D1_output = cstate.u[0] / output_scale;
 		
 		// // integrate the reference theta to correct for imbalance or sensor
 		// // only if standing relatively still with zero phi reference
@@ -673,23 +675,6 @@ int arm_controller(){
 	zero_out_controller();
 	setpoint.arm_state = ARMED;
 	enable_motors();
-	return 0;
-}
-
-/***********************************************************************
-*	saturate_number(float val, float limit)
-*	bounds val to +- limit
-*	return one if saturation occurred, otherwise zero
-************************************************************************/
-int saturate_number(float* val, float limit){
-	if(*val>limit){
-		*val = limit;
-		return 1;
-	}
-	else if(*val<-limit){	
-		*val = -limit;
-		return 1;
-	}
 	return 0;
 }
 
