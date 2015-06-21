@@ -24,6 +24,7 @@ all:
 	cd test_initialization; $(MAKE)
 	cd test_mavlink; $(MAKE)
 	cd test_motors; $(MAKE)
+	cd test_orientation; $(MAKE)
 	cd test_servos; $(MAKE)
 	
 
@@ -53,6 +54,7 @@ clean:
 	cd test_initialization; $(MAKE) clean
 	cd test_mavlink; $(MAKE) clean
 	cd test_motors; $(MAKE) clean
+	cd test_orientation; $(MAKE) clean
 	cd test_servos; $(MAKE) clean
 	
 install:
@@ -81,4 +83,5 @@ install:
 	cd test_initialization; $(MAKE) install
 	cd test_mavlink; $(MAKE) install
 	cd test_motors; $(MAKE) install
+	cd test_orientation; $(MAKE) install
 	cd test_servos; $(MAKE) install
