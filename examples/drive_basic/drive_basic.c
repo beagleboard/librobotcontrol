@@ -31,7 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 * 			Includes & Constants			*
 *********************************************/
 #include <robotics_cape.h>
-#include "drive_config.h"
+#include "drive_basic_config.h"
 
 #define CONTROL_HZ 50
 

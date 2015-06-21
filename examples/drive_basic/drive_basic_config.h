@@ -5,7 +5,7 @@
 #include <robotics_cape.h>
 #include <sys/stat.h> 
 
-#define DRIVE_CONFIG_FILE "/root/robot_config/drive_config.txt"
+#define DRIVE_CONFIG_FILE "/root/robot_config/drive_basic_config.txt"
 
 /************************************************************************
 * 	DRIVE_CONFIG_TABLE
@@ -49,10 +49,10 @@
 	X(float,  "%f", serv3_center,			0.5 	) \
 	X(float,  "%f", serv4_center,			0.5 	) \
 	\
-	X(float,  "%f", normal_turn_range,		0.19		) \
+	X(float,  "%f", normal_turn_range,		0.19	) \
 	X(float,  "%f", turn_straight,			0.31	) \
 	X(float,  "%f", turn_spin,				0.15	) \
-	X(float,  "%f", turn_crab,				0.43		) \
+	X(float,  "%f", turn_crab,				0.43	) \
 	X(float,  "%f", crab_turn_const,		0.7		) \
 	X(float,  "%f", turn_max,				1.0		) \
 	X(float,  "%f", turn_min,				0.0		) \
