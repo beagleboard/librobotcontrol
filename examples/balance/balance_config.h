@@ -37,7 +37,7 @@
 	X(int, 	  "%d", enable_mavlink_transmitting,0)\
 	X(int, 	  "%d", enable_mavlink_listening, 0 ) \
 	\
-	X(float,  "%f", bb_mount_angle,	0.46		) \
+	X(float,  "%f", bb_mount_angle,	0.40		) \
     X(float,  "%f", numD1_0, 		-6.289		) \
     X(float,  "%f", numD1_1, 		11.91		) \
     X(float,  "%f", numD1_2, 		-5.634		) \
