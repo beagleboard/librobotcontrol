@@ -2,7 +2,7 @@ Robotics Cape Rev D Installer for BeagleBone Black
 James Strawson - 2015
 
 For older Revision C installer see the Rev C Branch
-Latest version will alwyas be the master branch.
+Latest version will always be the master branch.
 
 Installation Instructions:
 
