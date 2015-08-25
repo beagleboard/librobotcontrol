@@ -43,12 +43,9 @@ either expressed or implied, of the FreeBSD Project.
 
 int main(int argc, char *argv[]){
     initialize_cape();
-    
-	int i;
+ 
 	int ch = 0;
 	int all = 0;
-	// micros is in the middle of range
-	int micros = (SERVO_MIN_US+SERVO_MAX_US)/2;
 
 	// check if user gave command line argument for which servo to use
 	if (argc==1){
@@ -65,20 +62,17 @@ int main(int argc, char *argv[]){
 		}
 	}
 	printf("\n");
-	printf("sending center pulses, width: %d microseconds\n", micros);
+	printf("sending center pulses, width: %d microseconds\n", SERVO_MID_US);
 	printf("press ctrl-c to exit\n");
 	
 	while(get_state()!=EXITING){
 		// if user gave no arguments, send single pulse to each servo
 		if(all){
-
-			for(i=0; i<SERVO_CHANNELS; i++){
-				send_servo_pulse_us(i+1,micros);
-			}
+			send_servo_pulse_us_all(SERVO_MID_US);
 		}
 		// or send to just the one requested servo
 		else{
-			send_servo_pulse_us(ch,micros);
+			send_servo_pulse_us(ch,SERVO_MID_US);
 		}
 		
 		// Send pulses at roughly 50hz
