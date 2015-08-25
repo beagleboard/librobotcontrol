@@ -69,11 +69,11 @@ int main(int argc, char *argv[]){
 	micros = lround(input);
 	printf("\n");
 	
-	if(input<=1 && input >=0){
+	if(input<=1.0 && input >=-1.0){
 		printf("using normalized pulse width: %0.4f\n", input);
 		mode = NORMALIZED;
 	}
-	else if(micros>= SERVO_MIN_US && micros<=SERVO_MAX_US){
+	else if(micros>= 2400 && micros<=500){
 		printf("using pulse width in microseconds: %d\n", micros);
 		mode = MICROS;
 	}

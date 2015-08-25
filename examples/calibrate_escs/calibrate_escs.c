@@ -33,11 +33,8 @@ int sending;
 float width;
 
 void *send_pulses(void *params){
-	int i;
 	while(sending && (get_state()!=EXITING)){
-		for(i=0; i<SERVO_CHANNELS; i++){
-			send_servo_pulse_us(i+1, width);
-		}
+		send_esc_pulse_normalized_all(width);
 		usleep(20000);
 	}
 	return 0;
@@ -54,7 +51,7 @@ int main(){
 	
 	//Send full throttle until the user hits enter
 	sending = 1;
-	width = SERVO_MAX_US;
+	width = 1;
 	pthread_t  send_pulse_thread;
 	pthread_create(&send_pulse_thread, NULL, send_pulses, (void*) NULL);
 	
@@ -68,7 +65,7 @@ int main(){
 	printf("\n");
 	printf("Sending minimum width pulses\n");
 	printf("Press enter again after the ESCs chirping to finish calibration\n");
-	width = SERVO_MIN_US;
+	width = 0;
 	while( getchar() != '\n' );
 
 	// cleanup and close
