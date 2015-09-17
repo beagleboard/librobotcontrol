@@ -77,7 +77,7 @@ fi
 
 echo " "
 echo "Installing Device Tree Overlay"
-cp install_files/SD-101C-00A0.dtbo /lib/firmware/SD-101C-00A0.dtbo
+cp install_files/RoboticsCapeRevD.dtbo /lib/firmware/RoboticsCapeRevD.dtbo
 
 # if you want to recompile yourself use this
 #dtc -O dtb -o /lib/firmware/SD-101C-00A0.dtbo -b 0 -@ install_files/SD-101C-00A0.dts
@@ -137,7 +137,7 @@ fi
 # set SD-101C as the only cape to load besides eMMC
 # single ">" means previous contents will be erased
 echo "Setting Capemgr to Load Robotics Overlay by Default"
-echo "CAPE=SD-101C" > /etc/default/capemgr
+echo "CAPE=RoboticsCapeRevD" > /etc/default/capemgr
 
 
 echo "Installing Supporting Libraries"
@@ -149,7 +149,6 @@ cd ../
 
 echo "Installing PRU Binaries and Assembler"
 cp install_files/pru_servo.bin /usr/bin
-cp install_files/pru_encoder.bin /usr/bin
 cp install_files/pasm /usr/bin
 
 

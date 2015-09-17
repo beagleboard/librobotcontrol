@@ -21,7 +21,7 @@ Bit 0 /
     compatible = "ti,beaglebone-black";
 
     /* identification */
-    part-number = "SD-101C";
+    part-number = "RoboticsCapeRevD";
 
     /* version */
     version = "00A0";
@@ -39,14 +39,15 @@ Bit 0 /
 		"P8.13",	/*PWM_2B*/
 		"ehrpwm2B",
 		
-		"P8.14",	/*LED_1*/
-		"P8.15",	/*LED_2*/
-		"P8.16",	/*LED_3*/
-		"P8.17",	/*LED_4*/
+		"P8.14",	/*LED_4*/
+		"P8.15",	/*QEP_4B*/
+		"P8.16",	/*QEP_4A*/
+		"P8.17",	/*LED_1*/
 		
-		"P8.19",	/*PWM_2A*/
+		"P8.19",	/*PWM_2A (MOT3)*/
 		"ehrpwm2A", 
 		
+		"P8.26",	/*LED_3*/
 		"P8.27",	/*SERVO_1*/
 		"P8.28",	/*SERVO_2*/
 		"P8.29",	/*SERVO_3*/
@@ -55,13 +56,16 @@ Bit 0 /
 		"pru1",
 		"pruss",
 		
-		"P8.35",	/*QEP_1A*/
+		"P8.31",	/*UART5_RX*/
+		"uart5",
 		"P8.33",	/*QEP_1B*/
 		"eqep1", 
 		
-		/*
+		"P8.35",	/*QEP_1A*/
 		
-		*/
+		"P8.36",	/*SERVO_PWR*/
+		"P8.37",	/*UART5_TX*/
+		"P8.38",	/*MDIR_2B*/
 		
 		"P8.39",	/*SERVO_5*/
 		"P8.40",	/*SERVO_6*/
@@ -100,11 +104,12 @@ Bit 0 /
 		"uart2",
 		
 		"P9.23", 	/*SPI1_SS2 GPIO*/
-		"P9.25",	/*IMU_INT*/
+		"P9.24",	/*UART1_TX*/
+		"uart1",
 		
-		"P9.24",	/*CAN1_RX*/
-		"P9.26",	/*CAN1_TX*/
-		"dcan1",
+		"P9.25",	/*IMU_INT*/
+
+		"P9.26",	/*UART1_RX*/
 		
 		"P9.27",	/*QEP_0B*/
 		"eqep0", 
@@ -181,6 +186,8 @@ Bit 0 /
                 >;
             };
 			
+			
+			
 
 			/****************************************/
 			/* 		GPIO interrupt pinmux			*/
@@ -201,9 +208,10 @@ Bit 0 /
 					0x090 0x0F	/*P8.7 MODE7 | OUTPUT*/
 					0x094 0x0F	/*P8.8*/
 					0x028 0x0F	/*P8.14*/
-					0x03C 0x0F	/*P8.15*/
-					0x038 0x0F	/*P8.16*/
 					0x02C 0x0F	/*P8.17*/
+					0x08c 0x0F	/*P8.18*/
+					0x07c 0x0F	/*P8.26*/
+					0x0C8 0x0F	/*P8.36*/
 					0x0c4 0x0F	/*P8.38*/
 					0x0a8 0x0F	/*P8.43*/
 					0x0ac 0x0F	/*P8.44*/
@@ -219,19 +227,10 @@ Bit 0 /
 					0x1b4 0x0F	/*P9.41*/
 				>;
 			};
-			/****************************************/
-			/* 		UART2 GPS PINS		*/
-			/****************************************/
-			bb_uart2_pins: pinmux_bb_uart2_pins {
-				pinctrl-single,pins = <
-					0x150 0x21	/* spi0_sclk.uart2_rxd | MODE1 */
-					0x154 0x01	/* spi0_d0.uart2_txd | MODE1 */
-				>;
-			};
-			
-			/****************************************/
-			/* 		PRU Servo Output pinmux			*/
-			/****************************************/
+		
+			/*****************************************/
+			/* 	PRU Servo Output and encoder 4 input */
+			/*****************************************/
 			pru_pins: pinmux_pru_pins {
 				pinctrl-single,pins = <
 					0x0e0 0x25	/* lcd_vsync.pr1_pru1_pru_r30_8, MODE5 | OUTPUT | PRU */
@@ -242,6 +241,8 @@ Bit 0 /
 					0x0bc 0x25	/* lcd_data7.pr1_pru1_pru_r30_7, MODE5 | OUTPUT | PRU */
 					0x0b0 0x25	/* lcd_data4.pr1_pru1_pru_r30_4, MODE5 | OUTPUT | PRU */
 					0x0b4 0x25	/* lcd_data5.pr1_pru1_pru_r30_5, MODE5 | OUTPUT | PRU */
+					0x03C 0x36	/*P8.15 input pullup mode 6*/
+					0x038 0x36	/*P8.16 input pullup mode 6*/
 				>;
 			};
 			
@@ -262,18 +263,39 @@ Bit 0 /
 			/****************************************/
 			bb_i2c1_pins: pinmux_bb_i2c1_pins {
 				pinctrl-single,pins = <
-					0x158 0x72	/* spi0_d1.i2c1_sda, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2 */
-					0x15c 0x72	/* spi0_cs0.i2c1_scl, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2 */
+					0x15C 0x32	/* P9.17 i2c1_scl,  | INPUT_PULLUP | MODE2 */
+					0x158 0x32	/* P9.18 i2c1_sda,  INPUT_PULLUP | MODE2 */
 				>;
 			};
 			
 			/****************************************/
-			/* 		DCAN1 PINMUX	*/
+			/* 		UART1 PINMUX	*/
 			/****************************************/
-			cbb_serial_dcan1_pins: pinmux_cbb_serial_dcan1_pins {
-			pinctrl-single,pins = <
-				0x180 0x12 /* uart1_rxd - PULLUP | MODE2 (DCAN TX) */
-				0x184 0x32 /* uart1_txd - RX_ENABLED | PULLUP | MODE2 (DCAN1 RX) */
+			 bb_uart1_pins: pinmux_bb_uart1_pins {
+				pinctrl-single,pins = <
+					0x184 0x20 /* P9.24 uart1_txd.uart1_txd MODE0 OUTPUT (TX) */
+					0x180 0x20 /* P9.26 uart1_rxd.uart1_rxd MODE0 INPUT (RX) */
+				>;
+			};
+			
+			/****************************************/
+			/* 		UART2 GPS PINS		*/
+			/****************************************/
+			bb_uart2_pins: pinmux_bb_uart2_pins {
+				pinctrl-single,pins = <
+					0x150 0x21	/* spi0_sclk.uart2_rxd | MODE1 */
+					0x154 0x01	/* spi0_d0.uart2_txd | MODE1 */
+				>;
+			};
+			
+			
+			/****************************************/
+			/* 		UART5 PINMUX	*/
+			/****************************************/
+			 bb_uart5_pins: pinmux_bb_uart5_pins {
+				pinctrl-single,pins = <
+					0x0D8 0x24	/* P8.31 uart5_rxd | MODE4 */
+					0x0C0 0x04	/* lcd_data8.uart5_txd | MODE4 */
 				>;
 			};
 			
@@ -434,15 +456,22 @@ Bit 0 /
 		};
 	};
 	
-	
-	
-	
-	fragment@21 {
-		target = <&uart5>;	/* really uart4 */
+	fragment@19 {
+		target = <&uart1>;
 		__overlay__ {
 			status = "okay";
 			pinctrl-names = "default";
-			pinctrl-0 = <>;
+			pinctrl-0 = <&bb_uart1_pins>;
+		};
+	};
+	
+	
+	fragment@21 {
+		target = <&uart5>;
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_uart5_pins>;
 		};
 	};
 	fragment@22 {
@@ -578,23 +607,9 @@ Bit 0 /
 			#size-cells = <0>;
 
 			/* add any i2c devices on the bus here */
-
-			/* DS1338 RTC module */
-			rtc@68 {
-				compatible = "maxim,ds1338";
-				reg = <0x68>;
-			};
 		};
 	};
 	
-	fragment@30 {
-		target = <&dcan1>;
-		__overlay__ {
-			status = "okay";
-			pinctrl-names = "default";
-			pinctrl-0 = <&cbb_serial_dcan1_pins>;
-		};
-	};
 	
 	fragment@31 {
 		target = <&spi1>;	/* spi1 is numbered correctly */
