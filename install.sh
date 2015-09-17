@@ -149,6 +149,7 @@ cd ../
 
 echo "Installing PRU Binaries and Assembler"
 cp install_files/pru_servo.bin /usr/bin
+cp install_files/pru_encoder.bin /usr/bin
 cp install_files/pasm /usr/bin
 
 
