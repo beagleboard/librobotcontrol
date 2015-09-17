@@ -77,6 +77,7 @@ Strawson Design - 2014
 #define ARRAY_SIZE(array) sizeof(array)/sizeof(array[0]) 
 
 // local function declarations
+int initialize_pru();
 int initialize_button_handlers();
 void* pause_pressed_handler(void* ptr);
 void* pause_unpressed_handler(void* ptr);
@@ -163,8 +164,10 @@ int dsm2_frame_rate;
 void* uart4_checker(void *ptr); //background thread
 
 // PRU Servo Control shared memory pointer
-#define PRU_NUM 	 1
-#define PRU_BIN_LOCATION "/usr/bin/pru_servo.bin"
+#define SERVO_PRU_NUM 	 1
+#define ENCODER_PRU_NUM 	 0
+#define PRU_SERVO_BIN "/usr/bin/pru_servo.bin"
+#define PRU_ENCODER_BIN "/usr/bin/pru_encoder.bin"
 #define PRU_LOOP_INSTRUCTIONS	48		// instructions per PRU servo timer loop
 static unsigned int *prusharedMem_32int_ptr;
 
@@ -258,6 +261,11 @@ int initialize_cape(){
 	
 	disable_motors();
 	
+	// Load binary into PRU
+	printf("Starting PRU servo controller\n");
+	if(initialize_pru()){
+		printf("WARNING: PRU init FAILED");
+	}
 	
 	// mmap pwm modules to get fast access to eQep encoder position
 	// see mmap_eqep example program for more mmap and encoder info
@@ -284,6 +292,10 @@ int initialize_cape(){
 			return -1;
 		}
 	}
+	if(set_encoder_pos(4,0)){
+		printf("failed to access PRU Encoder Memory\n");
+		return -1;
+	}
 	
 	//set up function pointers for button press events
 	printf("starting button interrupts\n");
@@ -293,11 +305,7 @@ int initialize_cape(){
 	set_mode_unpressed_func(&null_func);
 	initialize_button_handlers();
 	
-	// Load binary into PRU
-	printf("Starting PRU servo controller\n");
-	if(initialize_pru_servos()){
-		printf("WARNING: PRU init FAILED");
-	}
+	
 	
 	// Print current battery voltage
 	printf("Battery Voltage = %fV\n", getBattVoltage());
@@ -409,19 +417,31 @@ int disable_motors(){
 }
 
 //// eQep Encoder read/write
-long int get_encoder_pos(int ch){
-	if(ch<1 || ch>3){
-		printf("Encoder Channel must be in 1, 2, or 3\n");
+int get_encoder_pos(int ch){
+	if(ch<1 || ch>4){
+		printf("Encoder Channel must be from 1 to 4\n");
 		return -1;
 	}
+	// 4th channel is counted by the PRU not eQEP
+	if(ch==4){
+		return (int) prusharedMem_32int_ptr[8];
+	}
+	
+	// first 3 channels counted by eQEP
 	return  *(unsigned long*)(pwm_map_base[ch-1] + EQEP_OFFSET +QPOSCNT);
 }
 
-int set_encoder_pos(int ch, long value){
-	if(ch<1 || ch>3){
-		printf("Encoder Channel must be 1, 2 or 3\n");
+int set_encoder_pos(int ch, int value){
+	if(ch<1 || ch>4){
+		printf("Encoder Channel must be from 1 to 4\n");
 		return -1;
 	}
+	// 4th channel is counted by the PRU not eQEP
+	if(ch==4){
+		prusharedMem_32int_ptr[8] = value;
+		return 0;
+	}
+	// else write to eQEP
 	*(unsigned long*)(pwm_map_base[ch-1] + EQEP_OFFSET +QPOSCNT) = value;
 	return 0;
 }
@@ -1004,8 +1024,8 @@ void* imu_interrupt_handler(void* ptr){
 	return 0;
 }
 
-//// PRU Servo Control
-int initialize_pru_servos(){
+//// PRU Servo and Encoder setup
+int initialize_pru(){
 	// start pru
     prussdrv_init();
 
@@ -1023,10 +1043,11 @@ int initialize_pru_servos(){
 	void* sharedMem = NULL;
     prussdrv_map_prumem(PRUSS0_SHARED_DATARAM, &sharedMem);
     prusharedMem_32int_ptr = (unsigned int*) sharedMem;
-	memset(prusharedMem_32int_ptr, 0, SERVO_CHANNELS*4);
+	memset(prusharedMem_32int_ptr, 0, 9*4);
 	
 	// launch servo binary
-	prussdrv_exec_program(PRU_NUM, PRU_BIN_LOCATION);
+	prussdrv_exec_program(SERVO_PRU_NUM, PRU_SERVO_BIN);
+	prussdrv_exec_program(ENCODER_PRU_NUM, PRU_ENCODER_BIN);
 
     return(0);
 }
@@ -1050,25 +1071,16 @@ int send_servo_pulse_us(int ch, int us){
 	return 0;
 }
 
-
-int send_servo_pulse_us_all(int us){
-	int i;
-	for(i=1;i<=SERVO_CHANNELS; i++){
-		send_servo_pulse_us(i, us);
-	}
-	return 0;
-}
-
 int send_servo_pulse_normalized(int ch, float input){
 	if(ch<1 || ch>SERVO_CHANNELS){
 		printf("ERROR: Servo Channel must be between 1 & %d \n", SERVO_CHANNELS);
 		return -1;
 	}
-	if(input<-1.0 || input>1.0){
-		printf("ERROR: normalized input must be between -1 & 1\n");
+	if(input<0.0 || input>1.0){
+		printf("ERROR: normalized input must be between 0 & 1\n");
 		return -1;
 	}
-	float micros = SERVO_MID_US + (input*(SERVO_EXTENDED_RANGE/2));
+	float micros = SERVO_MIN_US + (input*(SERVO_MAX_US-SERVO_MIN_US));
 	return send_servo_pulse_us(ch, micros);
 }
 
@@ -1080,28 +1092,14 @@ int send_servo_pulse_normalized_all(float input){
 	return 0;
 }
 
-
-int send_esc_pulse_normalized(int ch, float input){
-	if(ch<1 || ch>SERVO_CHANNELS){
-		printf("ERROR: Servo Channel must be between 1 & %d \n", SERVO_CHANNELS);
-		return -1;
-	}
-	if(input<0.0 || input>1.0){
-		printf("ERROR: normalized input must be between 0 & 1\n");
-		return -1;
-	}
-	float micros = SERVO_MID_US + ((input-0.5)*SERVO_NORMAL_RANGE);
-	return send_servo_pulse_us(ch, micros);
-}
-
-
-int send_esc_pulse_normalized_all(float input){
+int send_servo_pulse_us_all(int us){
 	int i;
 	for(i=1;i<=SERVO_CHANNELS; i++){
-		send_esc_pulse_normalized(i, input);
+		send_servo_pulse_us(i, us);
 	}
 	return 0;
 }
+
 
 //// helpful functions
 char *byte_to_binary(unsigned char x){
@@ -1255,7 +1253,7 @@ int cleanup_cape(){
 	disable_motors();
 	deselect_spi1_slave(1);	
 	deselect_spi1_slave(2);	
-	prussdrv_pru_disable(PRU_NUM);
+	prussdrv_pru_disable(SERVO_PRU_NUM);
     prussdrv_exit();
 	printf("\nExiting Cleanly\n");
 	return 0;

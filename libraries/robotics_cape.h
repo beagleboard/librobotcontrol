@@ -99,10 +99,8 @@ either expressed or implied, of the FreeBSD Project.
 
 //// PRU Servo Control
 #define SERVO_CHANNELS			8
-#define SERVO_EXTENDED_RANGE	1800 // Most servos will keep moving out to 600-2400	
-#define SERVO_NORMAL_RANGE		1200 // normal range is from 900 to 2100 for 120 degree servos
-#define SERVO_MID_US			1500 // servo center at 1500us
-
+#define SERVO_MIN_US 			900	// min pulse to send to servos	in microseconds
+#define SERVO_MAX_US 			2100	// max pulse to send to servos in microseconds
 
 //// Motors
 #define MOTOR_CHANNELS	4
@@ -133,8 +131,8 @@ int enable_motors();
 int disable_motors();
 
 //// eQep encoder counter
-long int get_encoder_pos(int ch);
-int set_encoder_pos(int ch, long value);
+int get_encoder_pos(int ch);
+int set_encoder_pos(int ch, int value);
  
 //// Buttons LEDS interrupt functions///
 int setGRN(uint8_t i);
@@ -189,8 +187,6 @@ int send_servo_pulse_us(int ch, int us);
 int send_servo_pulse_us_all(int us);
 int send_servo_pulse_normalized(int ch, float input);
 int send_servo_pulse_normalized_all(float input);
-int send_esc_pulse_normalized(int ch, float input);
-int send_esc_pulse_normalized_all(float input);
 
 
 //// General use Functions
