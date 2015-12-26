@@ -1,27 +1,16 @@
 #!/bin/bash
 
 # Bash script to install supporting software for the Robotics Cape
-# tested on beagleboard.org Debian release 2014-05-14
-# and 2015-03-01
+# tested on follwing beagleboard.org Debian releases 
+# 2014-05-14, 2015-03-01, 2015-11-12
 
 INSTALL_DIR="/root"
 BOOTSCRIPT="Auto_Run_Script.sh"
+OVERLAY="SD-101C-00A0"
+KERNEL="$(uname -r)"
+DEBIAN="$(cat /etc/debian_version)"
 
-touch *
 echo " "
-
-echo "This script will install all Robotics Cape supporting software."
-
-read -r -p "Continue? [y/n] " response
-case $response in
-    [yY]) 
-        echo " "
-        ;;
-    *)
-		echo "cancelled"
-        exit
-        ;;
-esac
 
 
 # make sure the user is root
@@ -30,21 +19,57 @@ if [ `whoami` != 'root' ]; then
 	exit
 fi
 
-# check what image is being used as the install differs
+# check what image and kernel is being used as the install differs
 if grep -q "2015-03-01" /etc/dogtag; then
 	echo "using Debian release 2015-03-01"
     IMG="2015-03-01"
 elif grep -q "2014-05-14" /etc/dogtag; then
 	echo "using Debian release 2014-05-14"
 	IMG="2014-05-14"
+elif grep -q "2015-11-12" /etc/dogtag; then
+	echo "using Debian release 2015-11-12"
+	IMG="2015-11-12"
 else
-	echo "please use Debian 2015-03-01 or 2014-05-14"
+	echo "please use one of the following Debian images"
+	echo "2014-05-14"
+	echo "2015-03-01"
+	echo "2015-11-12 (Wheezy)"
 	exit
 fi 
+echo "using linux kernel $KERNEL"
 
-# print kernel version, mostly for fun
-KERN="$(uname -r)"
-echo "using linux kernel $KERN"
+# warn the user if using a 'ti' kernel instead of a 'bone' kernel
+if uname -r | grep -q "ti"; then
+	echo "WARNING: the 'ti' kernels do not necessarily"
+	echo "support the uio-pruss PRU driver."
+	echo "we suggest using a 'bone' kernel"
+fi
+
+#check that the uio-pruss driver is available
+if modprobe -n uio-pruss | grep -q "not found"; then
+	echo "ERROR: uio-pruss driver missing."
+	echo "We suggest using the latest Debian Wheezy image."
+	echo "The Debian Jessie image does not yet support the PRU."
+	exit
+fi
+
+# change location of uEnv.txt and sitara  file based on image
+if [ "$IMG" == "2014-05-14" ]; then
+	UENV_TXT="/boot/uboot/uEnv.txt"
+	AM335_DTB="/boot/uboot/dtbs/am335x-boneblack.dtb"
+else
+	UENV_TXT="/boot/uEnv.txt"
+	AM335_DTB="/boot/dtbs/$KERNEL/am335x-boneblack.dtb"
+fi
+
+# detect if preemptive scheduling is enabled
+# not necessary
+if [ ! -f /sys/kernel/realtime ]; 
+then
+	echo "installing without realtime preemption"	
+else
+	echo "installing with realtime preemption"
+fi
 
 #check dependencies
 if [ ! -f /usr/bin/make ]; then
@@ -75,69 +100,73 @@ if [ ! -f /usr/lib/libprussdrv.so ]; then
 	fi
 fi
 
+# make sure the user really wants to install
+echo "This script will install all Robotics Cape supporting software."
+echo "This is for SD-101C Revision C capes ONLY!!!!"
+read -r -p "Continue? [y/n] " response
+case $response in
+    [yY]) echo " " ;;
+    *) echo "cancelled"; exit;;
+esac
 echo " "
+
+
+# touch everything since the BBB clock is probably wrong
+find . -exec touch {} \;
+
 echo "Installing Device Tree Overlay"
-cp install_files/SD-101C-00A0.dtbo /lib/firmware/SD-101C-00A0.dtbo
-
-# if you want to recompile yourself use this
-#dtc -O dtb -o /lib/firmware/SD-101C-00A0.dtbo -b 0 -@ install_files/SD-101C-00A0.dts
-
-# HDMI must be disabled to open pins for cape use
-echo "modifying uEnv.txt to Disable HDMI"
-# uEnv.txt is located differently between releases
-# set a variable with the path
-
-if [ "$IMG" == "2014-05-14" ]; then
-	ENVPATH="/boot/uboot/uEnv.txt"
-elif [ "$IMG" == "2015-03-01" ]; then
-	ENVPATH="/boot/uEnv.txt"
+if [ "$IMG" == "2015-11-12" ]; #  image includes dtc compiler
+then dtc -O dtb -o /lib/firmware/$OVERLAY.dtbo -b 0 -@ install_files/$OVERLAY.dts
+# older images need pre-compiled dtbo
+else cp install_files/$IMG/$OVERLAY.dtbo /lib/firmware/$OVERLAY.dtbo
 fi
 
-# make a backup of the original file if it hasn't already been 
-# done before by a previous installation
-if [ -a "$ENVPATH.old" ];then
-	echo "backup of $ENVPATH already exists"
+# make a backup of the original uEnv.txt file
+# if it doesn't already exist
+if [ -a "$UENV_TXT.old" ];then
+	echo "backup of $UENV_TXT already exists"
 else
-	echo "making backup copy of $ENVPATH"
-	cp $ENVPATH $ENVPATH.old
+	echo "making backup copy of $UENV_TXT"
+	cp $UENV_TXT $UENV_TXT.old
 fi
 
-# copy the appropriate line to disable HDMI
-# if the user reinstalls the line is duplicated, but still works
-echo "optargs=capemgr.disable_partno=BB-BONELT-HDMI,BB-BONELT-HDMIN" >> $ENVPATH
+# disable cape-universal in 2015-11-12 image
+if [ "$IMG" == "2015-11-12" ]; then
+	sed -i '/cape_universal=enable/ s??#cape_universal=enable?' $UENV_TXT
+fi
+
+# all images need HDMI disabled
+echo "optargs=capemgr.disable_partno=BB-BONELT-HDMI,BB-BONELT-HDMIN" >> $UENV_TXT
 
 
 # Now we must increase the I2C bus speed, this is done by tweaking the 
 # am335x-boneblack.dtb file. Modified versions are included with the installer
-# first make a backup copy, then pick which one to copy
-if [ "$IMG" == "2014-05-14" ]; then
-	AMPATH="/boot/uboot/dtbs/am335x-boneblack.dtb"
-elif [ "$IMG" == "2015-03-01" ]; then
-	AMPATH="/boot/dtbs/3.8.13-bone70/am335x-boneblack.dtb"
-else
-	echo "invalid IMG variable value $IMG"
-fi
 #make a backup if it hasn't been made by a previous installation
-if [ -a "$AMPATH.old" ];then
-	echo "backup of $AMPATH already exists"
+if [ -a "$AM335_DTB.old" ];then
+	echo "backup of $AM335_DTB already exists"
 else
-	echo "making backup copy of $AMPATH"
-	cp $AMPATH $AMPATH.old
+	echo "making backup copy of $AM335_DTB"
+	cp $AM335_DTB $AM335_DTB.old
 fi
 #copy the right file over
 echo "installing new am335x-boneblack.dtb"
 if [ "$IMG" == "2014-05-14" ]; then
-	cp install_files/2014-05-14/am335x-boneblack.dtb $AMPATH
+	cp install_files/$IMG/am335x-boneblack.dtb $AM335_DTB
 elif [ "$IMG" == "2015-03-01" ]; then
-	cp install_files/2015-03-01/am335x-boneblack.dtb $AMPATH
+	cp install_files/$IMG/am335x-boneblack.dtb $AM335_DTB
+elif [ "$IMG" == "2015-11-12" ]; then
+	cp install_files/$IMG/$DEBIAN/am335x-boneblack.dtb $AM335_DTB
 else
 	echo "invalid IMG variable value $IMG"
 fi
 
-# set SD-101C as the only cape to load besides eMMC
-# single ">" means previous contents will be erased
+# set SD-101C as the only cape to load
 echo "Setting Capemgr to Load Robotics Overlay by Default"
 echo "CAPE=SD-101C" > /etc/default/capemgr
+
+# also add to uEnv.txt even though this doesn't work until
+# the cape is pushed upstream. here now in anticipation of that
+echo "cape_enable=capemgr.enable_partno=SD-101C" >> $UENV_TXT
 
 
 echo "Installing Supporting Libraries"
@@ -152,7 +181,7 @@ cp install_files/pru_servo.bin /usr/bin
 cp install_files/pasm /usr/bin
 
 
-echo "Installing examples, this may take a minute."
+echo "Installing examples, this will take a few minutes."
 find examples/ -exec touch {} \;
 cd examples
 make clean > /dev/null
@@ -219,10 +248,11 @@ else
 	mkdir $INSTALL_DIR/robot_logs
 fi
 
-#the led_aging script causes problems in older images so this is a modified version
+#the led_aging script causes problems in old image
+#install modified version
 if [ "$IMG" == "2014-05-14" ]; then
 	echo "upgrading /etc/init.d/led_aging.sh"
-	cp install_files/led_aging.sh /etc/init.d/
+	cp install_files/2015-05-14/led_aging.sh /etc/init.d/
 fi
 
 echo "Enabling Boot Script"

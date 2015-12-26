@@ -33,83 +33,664 @@ Supporting library for Robotics Cape Features
 Strawson Design - 2014
 */
 
-#include "robotics_cape.h"
+//#define DEBUG
 
-//// Button pins
-// gpio # for gpio_a.b = (32*a)+b
-#define PAUSE_BTN 69 	//gpio2.5 P8.9
-#define MODE_BTN  68	//gpio2.4 P8.10
+#define _GNU_SOURCE 	// to enable macros in pthread
+#include <pthread.h>    // multi-threading
+#include <errno.h>		// pthread error codes
 
+#include <robotics_cape.h>
+#include <robotics_cape_revC_defs.h>
 
-//// gpio output pins 
-#define RED_LED P8_7	//gpio2.2
-#define GRN_LED P8_8	//gpio2.3
-
-#define MDIR1A    P9_12	//gpio1.28  P9.12
-#define MDIR1B    P9_13	//gpio0.31	P9.13
-#define MDIR2A    P9_15	//gpio1.16  P9.15
-#define MDIR2B    P8_38	//gpio2.15  P8.38
-#define MDIR4A    P8_45	//gpio2.6   P8.45
-#define MDIR4B    P8_46	//gpio2.7   P8.46
-#define MDIR3B    P8_43	//gpio2.8   P8.43
-#define MDIR3A    P8_44	//gpio2.9   P8.44
-#define MOT_STBY  P9_41	//gpio0.20  P9.41
-#define PAIRING_PIN P9_11  //gpio0.30 P9.11
-#define SPI1_SS1_GPIO_PIN P9_28  // P9.28 gpio3.17
-#define SPI1_SS2_GPIO_PIN P9_23   // P9.23 gpio1.17
-
-								 
-//// eQep and pwmss registers, more in tipwmss.h
-#define PWM0_BASE   0x48300000
-#define PWM1_BASE   0x48302000
-#define PWM2_BASE   0x48304000
-#define EQEP_OFFSET  0x180
-
-//// MPU-9150 defs
-#define MPU_ADDR 0x68
-
-#define POLL_TIMEOUT (3 * 1000) /* 3 seconds */
-#define INTERRUPT_PIN 117  //gpio3.21 P9.25
-
-#define UART4_PATH "/dev/ttyO4"
-
-
-#define ARRAY_SIZE(array) sizeof(array)/sizeof(array[0]) 
-
-// local function declarations
-int initialize_button_handlers();
-void* pause_pressed_handler(void* ptr);
-void* pause_unpressed_handler(void* ptr);
-void* mode_pressed_handler(void* ptr);
-void* mode_unpressed_handler(void* ptr);
-void* imu_interrupt_handler(void* ptr);
-void* read_events(void* ptr); //background thread for polling inputs
-
-// state variable for loop and thread control
+/**************************************
+* Local Global Variables
+***************************************/
+int rc_channels[RC_CHANNELS];
+int rc_maxes[RC_CHANNELS];
+int rc_mins[RC_CHANNELS];
+int tty4_fd;
+int new_dsm2_flag;
+int dsm2_frame_rate;
 enum state_t state = UNINITIALIZED;
-
-enum state_t get_state(){
-	return state;
-}
-
-int set_state(enum state_t new_state){
-	state = new_state;
-	return 0;
-}
-
-
-								 
-// buttons
 int pause_btn_state, mode_btn_state;
+static unsigned int *prusharedMem_32int_ptr;
+
+/**************************************
+* local function declarations
+***************************************/
+int is_cape_loaded();
+int initialize_button_handlers();
 int (*imu_interrupt_func)();
 int (*pause_unpressed_func)();
 int (*pause_pressed_func)();
 int (*mode_unpressed_func)();
 int (*mode_pressed_func)();
 
-//function pointers for events initialized to null_func()
-//instead of containing a null pointer
+/**************************************
+* local thread function declarations
+***************************************/
+void* pause_pressed_handler(void* ptr);
+void* pause_unpressed_handler(void* ptr);
+void* mode_pressed_handler(void* ptr);
+void* mode_unpressed_handler(void* ptr);
+void* imu_interrupt_handler(void* ptr);
+void* uart4_checker(void *ptr); //background thread
+
+/**************************************
+* local thread structs
+***************************************/
+pthread_t pause_pressed_thread;
+pthread_t pause_unpressed_thread;
+pthread_t mode_pressed_thread;
+pthread_t mode_unpressed_thread;
+pthread_t imu_interrupt_thread;
+pthread_t uart4_thread;
+
+
+/*****************************************************************
+* int initialize_cape()
+* sets up necessary hardware and software
+* should be the first thing your program calls
+*****************************************************************/
+int initialize_cape(){
+	FILE *fd; 		
+	printf("\n");
+
+	// check if another project was using resources
+	// kill that process cleanly with sigint if so
+	#ifdef DEBUG
+		printf("checking for existing PID_FILE\n");
+	#endif
+	fd = fopen(PID_FILE, "r");
+	if (fd != NULL) {
+		int old_pid;
+		fscanf(fd,"%d", &old_pid);
+		if(old_pid != 0){
+			printf("warning, shutting down existing robotics project\n");
+			kill((pid_t)old_pid, SIGINT);
+			sleep(1);
+		}
+		// close and delete the old file
+		fclose(fd);
+		remove(PID_FILE);
+	}
+	
+	// create new pid file with process id
+	#ifdef DEBUG
+		printf("opening PID_FILE\n");
+	#endif
+	fd = fopen(PID_FILE, "ab+");
+	if (fd < 0) {
+		printf("\n error opening PID_FILE for writing\n");
+		return -1;
+	}
+	pid_t current_pid = getpid();
+	printf("Current Process ID: %d\n", (int)current_pid);
+	fprintf(fd,"%d",(int)current_pid);
+	fflush(fd);
+	fclose(fd);
+	
+	// check the device tree overlay is actually loaded
+	if (is_cape_loaded() != 1){
+		printf("ERROR: Device tree overlay not loaded by cape manager\n");
+		return -1;
+	}
+	
+	// initialize mmap io libs
+	printf("initializing GPIO\n");
+	if(initialize_gpio()){
+		printf("mmap_gpio_adc.c failed to initialize gpio\n");
+		return -1;
+	}
+	printf("Initializing ADC\n");
+	if(initialize_adc()){
+		printf("mmap_gpio_adc.c failed to initialize adc\n");
+		return -1;
+	}
+	printf("Initializing eQEP\n");
+	if(init_eqep(0)){
+		printf("mmap_pwmss.c failed to initialize eQEP\n");
+		return -1;
+	}
+	if(init_eqep(1)){
+		printf("mmap_pwmss.c failed to initialize eQEP\n");
+		return -1;
+	}
+	if(init_eqep(2)){
+		printf("mmap_pwmss.c failed to initialize eQEP\n");
+		return -1;
+	}
+	printf("Initializing PWM\n");
+	if(init_pwm(1)){
+		printf("mmap_pwmss.c failed to initialize PWMSS 0\n");
+		return -1;
+	}
+	if(init_pwm(2)){
+		printf("mmap_pwmss.c failed to initialize PWMSS 1\n");
+		return -1;
+	}
+	
+	// start some gpio pins at defaults
+	deselect_spi1_slave(1);	
+	deselect_spi1_slave(2);
+	disable_motors();
+	
+	//set up function pointers for button press events
+	printf("starting button interrupts\n");
+	initialize_button_handlers();
+	
+	// Load binary into PRU
+	printf("Starting PRU servo controller\n");
+	if(initialize_pru_servos()){
+		printf("ERROR: PRU init FAILED\n");
+		return -1;
+	}
+	
+	// Start Signal Handler
+	printf("Enabling exit signal handler\n");
+	signal(SIGINT, ctrl_c);	
+	
+	// Print current battery voltage
+	printf("Battery Voltage: %2.2fV\n", getBattVoltage());
+	
+	// all done
+	set_state(PAUSED);
+	printf("\nRobotics Cape Initialized\n");
+
+	return 0;
+}
+
+/*********************************************************************************
+*	int cleanup_cape()
+*	shuts down library and hardware functions cleanly
+*	you should call this before your main() function returns
+**********************************************************************************/
+int cleanup_cape(){
+	set_state(EXITING);
+	
+	// allow up to 3 seconds for thread cleanup
+	struct timespec thread_timeout;
+	clock_gettime(CLOCK_REALTIME, &thread_timeout);
+	thread_timeout.tv_sec += 3;
+	int thread_err = 0;
+	thread_err = pthread_timedjoin_np(pause_pressed_thread, NULL, &thread_timeout);
+	if(thread_err == ETIMEDOUT){
+		printf("WARNING: pause_pressed_thread exit timeout\n");
+	}
+	thread_err = 0;
+	thread_err = pthread_timedjoin_np(pause_unpressed_thread, NULL, &thread_timeout);
+	if(thread_err == ETIMEDOUT){
+		printf("WARNING: pause_unpressed_thread exit timeout\n");
+	}
+	thread_err = 0;
+	thread_err = pthread_timedjoin_np(mode_pressed_thread, NULL, &thread_timeout);
+	if(thread_err == ETIMEDOUT){
+		printf("WARNING: mode_pressed_thread exit timeout\n");
+	}
+	thread_err = 0;
+	thread_err = pthread_timedjoin_np(mode_unpressed_thread, NULL, &thread_timeout);
+	if(thread_err == ETIMEDOUT){
+		printf("WARNING: mode_unpressed_thread exit timeout\n");
+	}
+	thread_err = 0;
+	thread_err = pthread_timedjoin_np(imu_interrupt_thread, NULL, &thread_timeout);
+	if(thread_err == ETIMEDOUT){
+		printf("WARNING: imu_interrupt_thread exit timeout\n");
+	}
+	
+	#ifdef DEBUG
+	printf("turning off GPIOs & PWM\n");
+	#endif
+	setGRN(0);
+	setRED(0);	
+	disable_motors();
+	deselect_spi1_slave(1);	
+	deselect_spi1_slave(2);	
+	
+	#ifdef DEBUG
+	printf("turning off PRU\n");
+	#endif
+	prussdrv_pru_disable(PRU_SERVO_NUM);
+    prussdrv_exit();
+	
+	#ifdef DEBUG
+	printf("deleting PID file\n");
+	#endif
+	FILE* fd;
+	// clean up the pid_file if it still exists
+	fd = fopen(PID_FILE, "r");
+	if (fd != NULL) {
+		// close and delete the old file
+		fclose(fd);
+		remove(PID_FILE);
+	}
+	
+	printf("\nExiting Cleanly\n");
+	return 0;
+}
+
+
+/*****************************************************************
+* enum state_t get_state()
+* returns the high-level robot state variable
+* use this for managing how your threads start and stop
+*****************************************************************/
+enum state_t get_state(){
+	return state;
+}
+
+
+/*****************************************************************
+* int set_state(enum state_t new_state)
+* sets the high-level robot state variable
+* use this for managing how your threads start and stop
+*****************************************************************/
+int set_state(enum state_t new_state){
+	state = new_state;
+	return 0;
+}
+
+/*****************************************************************
+* int null_func()
+* function pointers for events initialized to null_func()
+* instead of containing a null pointer
+*****************************************************************/
 int null_func(){
+	return 0;
+}
+
+
+/*****************************************************************
+* int set_motor(int motor, float duty)
+* 
+* set a motor direction and power
+* motor is from 1 to 4, duty is from -1.0 to +1.0
+*****************************************************************/
+int set_motor(int motor, float duty){
+	uint8_t a,b;
+	
+	if(state == UNINITIALIZED){
+		initialize_cape();
+	}
+
+	//check that the duty cycle is within +-1
+	if (duty>1.0){
+		duty = 1.0;
+	}
+	else if(duty<-1.0){
+		duty=-1.0;
+	}
+	//switch the direction pins to H-bridge
+	if (duty>=0){
+	 	a=HIGH;
+		b=LOW;
+	}
+	else{
+		a=LOW;
+		b=HIGH;
+		duty=-duty;
+	}
+	
+	// set gpio direction outputs & duty
+	switch(motor){
+		case 1:
+			digitalWrite(MDIR1A, a);
+			digitalWrite(MDIR1B, b);
+			set_pwm_duty(1, 'A', duty);
+			break;
+		case 2:
+			digitalWrite(MDIR2A, b);
+			digitalWrite(MDIR2B, a);
+			set_pwm_duty(1, 'B', duty);
+			break;
+		case 3:
+			digitalWrite(MDIR3A, b);
+			digitalWrite(MDIR3B, a);
+			set_pwm_duty(2, 'A', duty);
+			break;
+		case 4:
+			digitalWrite(MDIR4A, a);
+			digitalWrite(MDIR4B, b);
+			set_pwm_duty(2, 'B', duty);
+			break;
+		default:
+			printf("enter a motor value between 1 and 4\n");
+			return -1;
+	}
+	return 0;
+}
+
+/*****************************************************************
+* int set_motor_all(float duty)
+* 
+* applies the same duty cycle argument to all 4 motors
+*****************************************************************/
+int set_motor_all(float duty){
+	int i;
+	for(i=1;i<=MOTOR_CHANNELS; i++){
+		set_motor(i, duty);
+	}
+	return 0;
+}
+
+/*****************************************************************
+* int kill_pwm()
+* 
+* disable pwm output for all motors
+* used in shutdown sequence
+*****************************************************************/
+int kill_pwm(){
+	set_pwm_duty(1, 'A', 0.0);
+	set_pwm_duty(1, 'B', 0.0);
+	set_pwm_duty(2, 'A', 0.0);
+	set_pwm_duty(2, 'B', 0.0);
+	return 0;
+}
+
+/*****************************************************************
+* enable_motors()
+* 
+* turns on the standby pin to enable the h-bridge ICs
+* returns 0 on success
+*****************************************************************/
+int enable_motors(){
+	kill_pwm();
+	return digitalWrite(MOT_STBY, HIGH);
+}
+
+/*****************************************************************
+* int disable_motors()
+* 
+* turns off the standby pin to disable the h-bridge ICs
+* and disables PWM output signals, returns 0 on success
+*****************************************************************/
+int disable_motors(){
+	kill_pwm();
+	return digitalWrite(MOT_STBY, LOW);
+}
+
+
+/*****************************************************************
+* int get_encoder_pos(int ch)
+* 
+* returns the encoder counter position
+*****************************************************************/
+int get_encoder_pos(int ch){
+	if(ch>3 || ch<1){
+		printf("encoder channel must be 1,2, or 3\n");
+		return -1;
+	}
+	return read_eqep(ch-1);
+}
+
+/*****************************************************************
+* int set_encoder_pos(int ch, int val)
+* 
+* sets the encoder counter position
+*****************************************************************/
+int set_encoder_pos(int ch, int val){
+	if(ch>3 || ch<1){
+		printf("encoder channel must be 1,2, or 3\n");
+		return -1;
+	}
+	return write_eqep(ch, val);
+}
+
+
+/*****************************************************************
+* int setGRN(uint8_t i)
+* 
+* turn on or off the green LED on robotics cape
+* takes in a value either HIGH or LOW
+*****************************************************************/
+int setGRN(uint8_t i){
+	return digitalWrite(GRN_LED, i);
+}
+
+/*****************************************************************
+* int setRED(uint8_t i)
+* 
+* turn on or off the red LED on robotics cape
+* takes in a value either HIGH or LOW
+*****************************************************************/
+int setRED(uint8_t i){
+	return digitalWrite(RED_LED, i);
+}
+
+/*****************************************************************
+* int getGRN(uint8_t i)
+* 
+* returns the status of the green LED on robotics cape
+* takes in a value either HIGH or LOW
+*****************************************************************/
+int getGRN(){
+	return digitalRead(GRN_LED);
+}
+
+/*****************************************************************
+* int getRED(uint8_t i)
+* 
+* returns the status of the red LED on robotics cape
+* takes in a value either HIGH or LOW
+*****************************************************************/
+int getRED(){
+	return digitalRead(RED_LED);
+}
+
+
+//// ADC Functions
+/*****************************************************************
+* int get_adc_raw(int p)
+*
+* returns the raw adc reading
+*****************************************************************/
+int get_adc_raw(int p){
+	if(p<0 || p>6){
+		printf("analog pin must be in 0-6\n");
+		return -1;
+	}
+	return analogRead((uint8_t)p);
+}
+
+/*****************************************************************
+* float get_adc_volt(int p)
+* 
+* returns an actual voltage for an adc channel
+*****************************************************************/
+float get_adc_volt(int p){
+	if(p<0 || p>6){
+		printf("analog pin must be in 0-6\n");
+		return -1;
+	}
+	int raw_adc = analogRead((uint8_t)p);
+	return raw_adc * 1.8 / 4095.0;
+}
+
+/*****************************************************************
+* float getBattVoltage()
+* 
+* returns the LiPo battery voltage on the robotics cape
+* this accounts for the voltage divider ont he cape
+*****************************************************************/
+float getBattVoltage(){
+	float v_adc = get_adc_volt(6);
+	return v_adc*11.0; 
+}
+
+/*****************************************************************
+* float getJackVoltage()
+* 
+* returns the DC power jack voltage on the robotics cape
+* this accounts for the voltage divider ont he cape
+*****************************************************************/
+float getJackVoltage(){
+	float v_adc = get_adc_volt(5);
+	return v_adc*11.0; 
+}
+
+/*********************************************************************************
+*	int initialize_button_interrups()
+*
+*	start 4 threads to handle 4 interrupt routines for pressing and
+*	releasing the two buttons.
+**********************************************************************************/
+int initialize_button_handlers(){
+	
+	#ifdef DEBUG
+	printf("setting up mode & pause gpio pins\n");
+	#endif
+	//set up mode pin
+	if(gpio_export(MODE_BTN)){
+		printf("can't export gpio %d \n", MODE_BTN);
+		return (-1);
+	}
+	gpio_set_dir(MODE_BTN, INPUT_PIN);
+	gpio_set_edge(MODE_BTN, "both");  // Can be rising, falling or both
+	
+	//set up pause pin
+	if(gpio_export(PAUSE_BTN)){
+		printf("can't export gpio %d \n", PAUSE_BTN);
+		return (-1);
+	}
+	gpio_set_dir(PAUSE_BTN, INPUT_PIN);
+	gpio_set_edge(PAUSE_BTN, "both");  // Can be rising, falling or both
+	
+	#ifdef DEBUG
+	printf("starting button handling threads\n");
+	#endif
+	struct sched_param params;
+	pthread_attr_t attr;
+	params.sched_priority = sched_get_priority_max(SCHED_FIFO)/2;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+   
+	set_pause_pressed_func(&null_func);
+	set_pause_unpressed_func(&null_func);
+	set_mode_pressed_func(&null_func);
+	set_mode_unpressed_func(&null_func);
+	
+	
+	pthread_create(&pause_pressed_thread, &attr,			 \
+				pause_pressed_handler, (void*) NULL);
+	pthread_create(&pause_unpressed_thread, &attr,			 \
+				pause_unpressed_handler, (void*) NULL);
+	pthread_create(&mode_pressed_thread, &attr,			 \
+					mode_pressed_handler, (void*) NULL);
+	pthread_create(&mode_unpressed_thread, &attr,			 \
+					mode_unpressed_handler, (void*) NULL);
+	
+	// apply medium priority to all threads
+	pthread_setschedparam(pause_pressed_thread, SCHED_FIFO, &params);
+	pthread_setschedparam(pause_unpressed_thread, SCHED_FIFO, &params);
+	pthread_setschedparam(mode_pressed_thread, SCHED_FIFO, &params);
+	pthread_setschedparam(mode_unpressed_thread, SCHED_FIFO, &params);
+	 
+	return 0;
+}
+
+/*********************************************************************************
+*	void* pause_pressed_handler(void* ptr)
+* 
+*	wait on falling edge of pause button
+**********************************************************************************/
+void* pause_pressed_handler(void* ptr){
+	struct pollfd fdset[1];
+	char buf[MAX_BUF];
+	int gpio_fd = gpio_fd_open(PAUSE_BTN);
+	fdset[0].fd = gpio_fd;
+	fdset[0].events = POLLPRI; // high-priority interrupt
+	// keep running until the program closes
+	while(get_state() != EXITING) {
+		// system hangs here until FIFO interrupt
+		poll(fdset, 1, POLL_TIMEOUT);        
+		if (fdset[0].revents & POLLPRI) {
+			lseek(fdset[0].fd, 0, SEEK_SET);  
+			read(fdset[0].fd, buf, MAX_BUF);
+			if(get_pause_button_state()==PRESSED){
+				pause_pressed_func(); 
+			}
+		}
+	}
+	gpio_fd_close(gpio_fd);
+	return 0;
+}
+
+/*********************************************************************************
+*	void* pause_unpressed_handler(void* ptr) 
+*
+*	wait on rising edge of pause button
+**********************************************************************************/
+void* pause_unpressed_handler(void* ptr){
+	struct pollfd fdset[1];
+	char buf[MAX_BUF];
+	int gpio_fd = gpio_fd_open(PAUSE_BTN);
+	fdset[0].fd = gpio_fd;
+	fdset[0].events = POLLPRI; // high-priority interrupt
+	// keep running until the program closes
+	while(get_state() != EXITING) {
+		// system hangs here until FIFO interrupt
+		poll(fdset, 1, POLL_TIMEOUT);        
+		if (fdset[0].revents & POLLPRI) {
+			lseek(fdset[0].fd, 0, SEEK_SET);  
+			read(fdset[0].fd, buf, MAX_BUF);
+			if(get_pause_button_state()==UNPRESSED){
+				pause_unpressed_func(); 
+			}
+		}
+	}
+	gpio_fd_close(gpio_fd);
+	return 0;
+}
+
+/*********************************************************************************
+*	void* mode_pressed_handler(void* ptr) 
+*	wait on falling edge of mode button
+**********************************************************************************/
+void* mode_pressed_handler(void* ptr){
+	struct pollfd fdset[1];
+	char buf[MAX_BUF];
+	int gpio_fd = gpio_fd_open(MODE_BTN);
+	fdset[0].fd = gpio_fd;
+	fdset[0].events = POLLPRI; // high-priority interrupt
+	// keep running until the program closes
+	while(get_state() != EXITING) {
+		// system hangs here until FIFO interrupt
+		poll(fdset, 1, POLL_TIMEOUT);        
+		if (fdset[0].revents & POLLPRI) {
+			lseek(fdset[0].fd, 0, SEEK_SET);  
+			read(fdset[0].fd, buf, MAX_BUF);
+			if(get_mode_button_state()==PRESSED){
+				mode_pressed_func(); 
+			}
+		}
+	}
+	gpio_fd_close(gpio_fd);
+	return 0;
+}
+
+/*********************************************************************************
+*	void* mode_unpressed_handler(void* ptr) 
+*	wait on rising edge of mode button
+**********************************************************************************/
+void* mode_unpressed_handler(void* ptr){
+	struct pollfd fdset[1];
+	char buf[MAX_BUF];
+	int gpio_fd = gpio_fd_open(MODE_BTN);
+	fdset[0].fd = gpio_fd;
+	fdset[0].events = POLLPRI; // high-priority interrupt
+	// keep running until the program closes
+	while(get_state() != EXITING) {
+		// system hangs here until FIFO interrupt
+		poll(fdset, 1, POLL_TIMEOUT);        
+		if (fdset[0].revents & POLLPRI) {
+			lseek(fdset[0].fd, 0, SEEK_SET);  
+			read(fdset[0].fd, buf, MAX_BUF);
+			if(get_mode_button_state()==UNPRESSED){
+				mode_unpressed_func(); 
+			}
+		}
+	}
+	gpio_fd_close(gpio_fd);
 	return 0;
 }
 
@@ -131,475 +712,30 @@ int set_mode_unpressed_func(int (*func)(void)){
 }
 
 int get_pause_button_state(){
-	return pause_btn_state;
+	if(digitalRead(PAUSE_BTN)==HIGH){
+		return UNPRESSED;
+	}
+	else{
+		return PRESSED;
+	}
 }
 
 int get_mode_button_state(){
-	return mode_btn_state;
-}
-
-
-// pwm stuff
-// motors 1-4 driven by pwm 1A, 1B, 2A, 2B respectively
-char pwm_files[][64] = {"/sys/devices/ocp.3/pwm_test_P9_14.12/",
-							 "/sys/devices/ocp.3/pwm_test_P9_16.13/",
-							 "/sys/devices/ocp.3/pwm_test_P8_19.14/",
-							 "/sys/devices/ocp.3/pwm_test_P8_13.15/"
-};
-FILE *pwm_duty_pointers[4]; //store pointers to 4 pwm channels for frequent writes
-int pwm_period_ns=0; //stores current pwm period in nanoseconds
-
-
-// eQEP Encoder mmap arrays
-volatile char *pwm_map_base[3];
-
-// DSM2 Spektrum radio & UART4
-int rc_channels[RC_CHANNELS];
-int rc_maxes[RC_CHANNELS];
-int rc_mins[RC_CHANNELS];
-int tty4_fd;
-int new_dsm2_flag;
-int dsm2_frame_rate;
-void* uart4_checker(void *ptr); //background thread
-
-// PRU Servo Control shared memory pointer
-#define PRU_NUM 	 1
-#define PRU_BIN_LOCATION "/usr/bin/pru_servo.bin"
-#define PRU_LOOP_INSTRUCTIONS	48		// instructions per PRU servo timer loop
-static unsigned int *prusharedMem_32int_ptr;
-
-int initialize_cape(){
-	FILE *fd; 			// opened and closed for each file
-	char path[128]; // buffer to store file path string
-	int i = 0; 			// general use counter
-	
-	printf("\n");
-
-	// check if another project was using resources
-	// kill that process cleanly with sigint if so
-	fd = fopen(LOCKFILE, "r");
-	if (fd != NULL) {
-		int old_pid;
-		fscanf(fd,"%d", &old_pid);
-		if(old_pid != 0){
-			printf("warning, shutting down existing robotics project\n");
-			kill((pid_t)old_pid, SIGINT);
-			sleep(1);
-		}
-		// close and delete the old file
-		fclose(fd);
-		remove(LOCKFILE);
-	}
-	
-	
-	// create new lock file with process id
-	fd = fopen(LOCKFILE, "ab+");
-	if (fd < 0) {
-		printf("\n error opening LOCKFILE for writing\n");
-		return -1;
-	}
-	pid_t current_pid = getpid();
-	printf("Current Process ID: %d\n", (int)current_pid);
-	fprintf(fd,"%d",(int)current_pid);
-	fflush(fd);
-	fclose(fd);
-	
-	// map /dev/mem for adc, gpio, & eqep functions
-	init_mmap();
-	printf("/dev/mem mapped\n");
-	
-	// start adc
-	adc_init_mmap();
-	
-	
-	// export a single pin from GPIO bank 3
-	// just to initialize the final bank
-	gpio_export(113);
-
-	// start with slave pins high (deselected)
-	deselect_spi1_slave(1);	
-	deselect_spi1_slave(2);	
-	
-
-	//Set up PWM
-	printf("Initializing PWM\n");
-	i=0;
-	for(i=0; i<4; i++){
-		strcpy(path, pwm_files[i]);
-		strcat(path, "polarity");
-		fd = fopen(path, "a");
-		if(fd<0){
-			printf("PWM polarity not available in /sys/class/devices/ocp.3\n");
-			return -1;
-		}
-		//set correct polarity such that 'duty' is time spent HIGH
-		fprintf(fd,"%c",'0');
-		fflush(fd);
-		fclose(fd);
-	}
-	
-	//leave duty cycle file open for future writes
-	for(i=0; i<4; i++){
-		strcpy(path, pwm_files[i]);
-		strcat(path, "duty");
-		pwm_duty_pointers[i] = fopen(path, "a");
-	}
-	
-	//read in the pwm period defined in device tree overlay .dts
-	strcpy(path, pwm_files[0]);
-	strcat(path, "period");
-	fd = fopen(path, "r");
-	if(fd<0){
-		printf("PWM period not available in /sys/class/devices/ocp.3\n");
-		return -1;
-	}
-	fscanf(fd,"%i", &pwm_period_ns);
-	fclose(fd);
-	
-	disable_motors();
-	
-	
-	// mmap pwm modules to get fast access to eQep encoder position
-	// see mmap_eqep example program for more mmap and encoder info
-	printf("Initializing eQep Encoders\n");
-	int dev_mem;
-	if ((dev_mem = open("/dev/mem", O_RDWR | O_SYNC))==-1){
-	  printf("Could not open /dev/mem \n");
-	  return -1;
-	}
-	pwm_map_base[0] = mmap(0,getpagesize(),PROT_READ|PROT_WRITE,MAP_SHARED,dev_mem,PWM0_BASE);
-	pwm_map_base[1] = mmap(0,getpagesize(),PROT_READ|PROT_WRITE,MAP_SHARED,dev_mem,PWM1_BASE);
-	pwm_map_base[2] = mmap(0,getpagesize(),PROT_READ|PROT_WRITE,MAP_SHARED,dev_mem,PWM2_BASE);
-	if(pwm_map_base[0] == (void *) -1) {
-		printf("Unable to mmap pwm \n");
-		return(-1);
-	}
-	close(dev_mem);
-	
-	// Test eqep and reset position
-	for(i=1;i<3;i++){
-		if(set_encoder_pos(i,0)){
-			printf("failed to access eQep register\n");
-			printf("eQep driver not loaded\n");
-			return -1;
-		}
-	}
-	
-	//set up function pointers for button press events
-	printf("starting button interrupts\n");
-	set_pause_pressed_func(&null_func);
-	set_pause_unpressed_func(&null_func);
-	set_mode_pressed_func(&null_func);
-	set_mode_unpressed_func(&null_func);
-	initialize_button_handlers();
-	
-	// Load binary into PRU
-	printf("Starting PRU servo controller\n");
-	if(initialize_pru_servos()){
-		printf("WARNING: PRU init FAILED");
-	}
-	
-	// Print current battery voltage
-	printf("Battery Voltage = %fV\n", getBattVoltage());
-	
-	// Start Signal Handler
-	printf("Enabling exit signal handler\n");
-	signal(SIGINT, ctrl_c);	
-	
-	// all done
-	set_state(PAUSED);
-	printf("\nRobotics Cape Initialized\n");
-
-	return 0;
-}
-
-// set a motor direction and power
-// motor is from 1 to 4
-// duty is from -1 to +1
-int set_motor(int motor, float duty){
-	uint8_t a,b;
-	
-	if(state == UNINITIALIZED){
-		initialize_cape();
-	}
-
-	//check that the duty cycle is within +-1
-	if (duty>1){
-		duty = 1;
-	}
-	else if(duty<-1){
-		duty=-1;
-	}
-	//switch the direction pins to H-bridge
-	if (duty>=0){
-	 	a=HIGH;
-		b=LOW;
+	if(digitalRead(MODE_BTN)==HIGH){
+		return UNPRESSED;
 	}
 	else{
-		a=LOW;
-		b=HIGH;
-		duty=-duty;
+		return PRESSED;
 	}
-	
-	// set gpio direction outputs
-	switch(motor){
-		case 1:
-			digitalWrite(MDIR1A, a);
-			digitalWrite(MDIR1B, b);
-			break;
-		case 2:
-			digitalWrite(MDIR2A, b);
-			digitalWrite(MDIR2B, a);
-			break;
-		case 3:
-			digitalWrite(MDIR3A, b);
-			digitalWrite(MDIR3B, a);
-			break;
-		case 4:
-			digitalWrite(MDIR4A, a);
-			digitalWrite(MDIR4B, b);
-			break;
-		default:
-			printf("enter a motor value between 1 and 4\n");
-			return -1;
-	}
-	// send pwm duty
-	fprintf(pwm_duty_pointers[motor-1], "%d", (int)(duty*pwm_period_ns));	
-	fflush(pwm_duty_pointers[motor-1]);
-	
-	return 0;
-}
-
-int set_motor_all(float duty){
-	int i;
-	for(i=1;i<=MOTOR_CHANNELS; i++){
-		set_motor(i, duty);
-	}
-	return 0;
-}
-
-int kill_pwm(){
-	int ch;
-	if(pwm_duty_pointers[0] == NULL){
-		//printf("opening pwm duty files\n");
-		char path[128];
-		int i = 0;
-		for(i=0; i<4; i++){
-			strcpy(path, pwm_files[i]);
-			strcat(path, "duty");
-			pwm_duty_pointers[i] = fopen(path, "a");
-		}
-		//printf("opened pwm duty files\n");
-	}
-	for(ch=0;ch<4;ch++){
-		fprintf(pwm_duty_pointers[ch], "%d", 0);	
-		fflush(pwm_duty_pointers[ch]);
-	}
-	return 0;
-}
-
-int enable_motors(){
-	kill_pwm();
-	return digitalWrite(MOT_STBY, HIGH);
-}
-
-int disable_motors(){
-	kill_pwm();
-	return digitalWrite(MOT_STBY, LOW);
-}
-
-//// eQep Encoder read/write
-long int get_encoder_pos(int ch){
-	if(ch<1 || ch>3){
-		printf("Encoder Channel must be in 1, 2, or 3\n");
-		return -1;
-	}
-	return  *(unsigned long*)(pwm_map_base[ch-1] + EQEP_OFFSET +QPOSCNT);
-}
-
-int set_encoder_pos(int ch, long value){
-	if(ch<1 || ch>3){
-		printf("Encoder Channel must be 1, 2 or 3\n");
-		return -1;
-	}
-	*(unsigned long*)(pwm_map_base[ch-1] + EQEP_OFFSET +QPOSCNT) = value;
-	return 0;
 }
 
 
-//// LED functions
-//  and be HIGH or LOW
-int setGRN(uint8_t i){
-	return digitalWrite(GRN_LED, i);
-}
-int setRED(uint8_t i){
-	return digitalWrite(RED_LED, i);
-}
-int getGRN(){
-	return digitalRead(GRN_LED);
-}
-int getRED(){
-	return digitalRead(RED_LED);
-}
-
-
-//// ADC Functions
-int get_adc_raw(int p){
-	if(p<0 || p>6){
-		printf("analog pin must be in 0-6\n");
-		return -1;
-	}
-	return analogRead((uint8_t)p);
-}
-
-float get_adc_volt(int p){
-	if(p<0 || p>6){
-		printf("analog pin must be in 0-6\n");
-		return -1;
-	}
-	int raw_adc = analogRead((uint8_t)p);
-	return raw_adc * 1.8 / 4095.0;
-}
-
-
-float getBattVoltage(){
-	float v_adc = get_adc_volt(6);
-	return v_adc*11.0; 
-}
-
-//// Read 6-16V DC input jack voltage
-float getJackVoltage(){
-	float v_adc = get_adc_volt(5);
-	return v_adc*11.0; 
-}
-
-/***********************************************************************
-*	int initialize_button_interrups()
-*	start 4 threads to handle 4 interrupt routines for pressing and
-*	releasing the two buttons.
-************************************************************************/
-int initialize_button_handlers(){
-	pthread_t pause_pressed_thread;
-	pthread_t pause_unpressed_thread;
-	pthread_t mode_pressed_thread;
-	pthread_t mode_unpressed_thread;
-	struct sched_param params;
-	
-	params.sched_priority = sched_get_priority_max(SCHED_FIFO)/2;
-	
-	pthread_create(&pause_pressed_thread, NULL,			 \
-				pause_pressed_handler, (void*) NULL);
-	pthread_create(&pause_unpressed_thread, NULL,			 \
-				pause_unpressed_handler, (void*) NULL);
-	pthread_create(&mode_pressed_thread, NULL,			 \
-					mode_pressed_handler, (void*) NULL);
-	pthread_create(&mode_unpressed_thread, NULL,			 \
-					mode_unpressed_handler, (void*) NULL);
-	
-	// apply medium priority to all threads
-	pthread_setschedparam(pause_pressed_thread, SCHED_FIFO, &params);
-	pthread_setschedparam(pause_unpressed_thread, SCHED_FIFO, &params);
-	pthread_setschedparam(mode_pressed_thread, SCHED_FIFO, &params);
-	pthread_setschedparam(mode_unpressed_thread, SCHED_FIFO, &params);
-	 
-	return 0;
-}
-
-/***********************************************************************
-*	void* pause_pressed_handler(void* ptr) 
-*	wait on falling edge of pause button
-************************************************************************/
-void* pause_pressed_handler(void* ptr){
-	int fd;
-    fd = open("/dev/input/event1", O_RDONLY);
-    struct input_event ev;
-	while (get_state() != EXITING){
-        read(fd, &ev, sizeof(struct input_event));
-		// uncomment printf to see how event codes work
-		// printf("type %i key %i state %i\n", ev.type, ev.code, ev.value); 
-        if(ev.type==1 && ev.code==1){ //only new data
-			if(ev.value == 1){
-				pause_btn_state = PRESSED;
-				(*pause_pressed_func)();
-			}
-		}
-		usleep(10000); // wait
-    }
-	return NULL;
-}
-
-/***********************************************************************
-*	void* pause_unpressed_handler(void* ptr) 
-*	wait on rising edge of pause button
-************************************************************************/
-void* pause_unpressed_handler(void* ptr){
-	int fd;
-    fd = open("/dev/input/event1", O_RDONLY);
-    struct input_event ev;
-	while (get_state() != EXITING){
-        read(fd, &ev, sizeof(struct input_event));
-		// uncomment printf to see how event codes work
-		// printf("type %i key %i state %i\n", ev.type, ev.code, ev.value); 
-        if(ev.type==1 && ev.code==1){ //only new data
-			if(ev.value == 0){
-			
-				pause_btn_state = UNPRESSED;
-				(*pause_unpressed_func)();
-			}
-		}
-		usleep(10000); // wait
-    }
-	return NULL;
-}
-
-/***********************************************************************
-*	void* mode_pressed_handler(void* ptr) 
-*	wait on falling edge of mode button
-************************************************************************/
-void* mode_pressed_handler(void* ptr){
-	int fd;
-    fd = open("/dev/input/event1", O_RDONLY);
-    struct input_event ev;
-	while (get_state() != EXITING){
-        read(fd, &ev, sizeof(struct input_event));
-		// uncomment printf to see how event codes work
-		// printf("type %i key %i state %i\n", ev.type, ev.code, ev.value); 
-        if(ev.type==1 && ev.code==2){ //only new data
-			if(ev.value == 1){
-				mode_btn_state = PRESSED;
-				(*mode_pressed_func)();
-			}
-		}
-		usleep(10000); // wait
-    }
-	return NULL;
-}
-
-/***********************************************************************
-*	void* mode_unpressed_handler(void* ptr) 
-*	wait on rising edge of mode button
-************************************************************************/
-void* mode_unpressed_handler(void* ptr){
-	int fd;
-    fd = open("/dev/input/event1", O_RDONLY);
-    struct input_event ev;
-	while (get_state() != EXITING){
-        read(fd, &ev, sizeof(struct input_event));
-		// uncomment printf to see how event codes work
-		// printf("type %i key %i state %i\n", ev.type, ev.code, ev.value); 
-        if(ev.type==1 && ev.code==2){ //only new data
-			if(ev.value == 0){
-				mode_btn_state = UNPRESSED; //pressed
-				(*mode_unpressed_func)();
-			}
-		}
-		usleep(10000); // wait
-    }
-	return NULL;
-}
-
-
-////  DSM2  Spektrum  RC Stuff  
+////  DSM2  Spektrum  RC Stuff 
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/ 
 int initialize_dsm2(){
 	//if calibration file exists, load it and start spektrum thread
 	FILE *cal;
@@ -628,12 +764,16 @@ int initialize_dsm2(){
 	fclose(cal);
 	
 	dsm2_frame_rate = 0; // zero until mode is detected on first packet
-	pthread_t uart4_thread;
 	pthread_create(&uart4_thread, NULL, uart4_checker, (void*) NULL);
 	printf("DSM2 Thread Started\n");
 	return 0;
 }
 
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 float get_dsm2_ch_normalized(int ch){
 	if(ch<1 || ch > RC_CHANNELS){
 		printf("please enter a channel between 1 & %d",RC_CHANNELS);
@@ -650,6 +790,11 @@ float get_dsm2_ch_normalized(int ch){
 	}
 }
 
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 int get_dsm2_ch_raw(int ch){
 	if(ch<1 || ch > RC_CHANNELS){
 		printf("please enter a channel between 1 & %d",RC_CHANNELS);
@@ -661,10 +806,20 @@ int get_dsm2_ch_raw(int ch){
 	}
 }
 
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 int is_new_dsm2_data(){
 	return new_dsm2_flag;
 }
 
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 int get_dsm2_frame_rate(){
 	return dsm2_frame_rate;
 }
@@ -672,6 +827,11 @@ int get_dsm2_frame_rate(){
 // uncomment defines to print raw data for debugging
 //#define DEBUG_DSM2
 //#define DEBUG_DSM2_RAW
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 void* uart4_checker(void *ptr){
 	
 	//set up sart/stop bit and 115200 baud
@@ -853,8 +1013,11 @@ end:
 }
 
 
-
-//// MPU9150 IMU ////
+/*****************************************************************
+* int initialize_imu(int sample_rate, signed char orientation[9])
+* 
+* set up the imu and interrupt handler
+*****************************************************************/
 int initialize_imu(int sample_rate, signed char orientation[9]){
 	printf("Initializing IMU\n");
 	//set up gpio interrupt pin connected to imu
@@ -865,7 +1028,8 @@ int initialize_imu(int sample_rate, signed char orientation[9]){
 	gpio_set_dir(INTERRUPT_PIN, INPUT_PIN);
 	gpio_set_edge(INTERRUPT_PIN, "falling");  // Can be rising, falling or both
 		
-	linux_set_i2c_bus(1);
+	//linux_set_i2c_bus(1);
+	linux_set_i2c_bus(2);
 
 	
 	if (mpu_init(NULL)) {
@@ -906,7 +1070,7 @@ int initialize_imu(int sample_rate, signed char orientation[9]){
 	// set the imu_interrupt_thread to highest priority since this is used
 	// for real-time control with time-sensitive IMU data
 	set_imu_interrupt_func(&null_func);
-	pthread_t imu_interrupt_thread;
+	
 	struct sched_param params;
 	pthread_create(&imu_interrupt_thread, NULL, imu_interrupt_handler, (void*) NULL);
 	params.sched_priority = sched_get_priority_max(SCHED_FIFO);
@@ -915,6 +1079,11 @@ int initialize_imu(int sample_rate, signed char orientation[9]){
 	return 0;
 }
 
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 int setXGyroOffset(int16_t offset) {
 	uint16_t new = offset;
 	const unsigned char msb = (unsigned char)((new&0xff00)>>8);
@@ -924,6 +1093,11 @@ int setXGyroOffset(int16_t offset) {
 	return linux_i2c_write(MPU_ADDR, MPU6050_RA_XG_OFFS_USRL, 1, &lsb);
 }
 
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 int setYGyroOffset(int16_t offset) {
 	uint16_t new = offset;
 	const unsigned char msb = (unsigned char)((new&0xff00)>>8);
@@ -933,6 +1107,11 @@ int setYGyroOffset(int16_t offset) {
 	return linux_i2c_write(MPU_ADDR, MPU6050_RA_YG_OFFS_USRL, 1, &lsb);
 }
 
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 int setZGyroOffset(int16_t offset) {
 	uint16_t new = offset;
 	const unsigned char msb = (unsigned char)((new&0xff00)>>8);
@@ -942,6 +1121,11 @@ int setZGyroOffset(int16_t offset) {
 	return linux_i2c_write(MPU_ADDR, MPU6050_RA_ZG_OFFS_USRL, 1, &lsb);
 }
 
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 int loadGyroCalibration(){
 	FILE *cal;
 	char file_path[100];
@@ -978,11 +1162,21 @@ int loadGyroCalibration(){
 
 // IMU interrupt stuff
 // see test_imu and calibrate_gyro for examples
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 int set_imu_interrupt_func(int (*func)(void)){
 	imu_interrupt_func = func;
 	return 0;
 }
 
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 void* imu_interrupt_handler(void* ptr){
 	struct pollfd fdset[1];
 	char buf[MAX_BUF];
@@ -1005,17 +1199,49 @@ void* imu_interrupt_handler(void* ptr){
 }
 
 //// PRU Servo Control
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 int initialize_pru_servos(){
+	// enbale clock signal to PRU
+	int dev_mem;
+	dev_mem = open("/dev/mem", O_RDWR);
+	if(dev_mem == -1) {
+		printf("Unable to open /dev/mem\n");
+		return -1;
+	}
+	volatile char *cm_per_base;
+	cm_per_base=mmap(0,CM_PER_PAGE_SIZE,PROT_READ|PROT_WRITE,MAP_SHARED,dev_mem,CM_PER);
+	if(cm_per_base == (void *) -1) {
+		printf("Unable to mmap cm_per\n");
+		return -1;
+	}
+	*(uint16_t*)(cm_per_base + CM_PER_PRU_ICSS_CLKCTRL) |= MODULEMODE_ENABLE;
+	*(uint16_t*)(cm_per_base + CM_PER_PRU_ICSS_CLKSTCTRL) |= MODULEMODE_ENABLE;
+	close(dev_mem);
+	
+	
 	// start pru
+	#ifdef DEBUG
+		printf("calling prussdrv_init()\n");
+	#endif
     prussdrv_init();
-
+	
     // Open PRU Interrupt
+	#ifdef DEBUG
+		printf("calling prussdrv_open\n");
+	#endif
     if (prussdrv_open(PRU_EVTOUT_0)){
         printf("prussdrv_open open failed\n");
         return -1;
     }
 
     // Get the interrupt initialized
+	#ifdef DEBUG
+		printf("calling prussdrv_pruintc_init\n");
+	#endif
 	tpruss_intc_initdata pruss_intc_initdata = PRUSS_INTC_INITDATA;
     prussdrv_pruintc_init(&pruss_intc_initdata);
 
@@ -1026,11 +1252,16 @@ int initialize_pru_servos(){
 	memset(prusharedMem_32int_ptr, 0, SERVO_CHANNELS*4);
 	
 	// launch servo binary
-	prussdrv_exec_program(PRU_NUM, PRU_BIN_LOCATION);
+	prussdrv_exec_program(PRU_SERVO_NUM, PRU_SERVO_BIN_LOCATION);
 
     return(0);
 }
 
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 int send_servo_pulse_us(int ch, int us){
 	// Sanity Checks
 	if(ch<1 || ch>SERVO_CHANNELS){
@@ -1043,14 +1274,18 @@ int send_servo_pulse_us(int ch, int us){
 	}
 
 	// PRU runs at 200Mhz. find #loops needed
-	unsigned int num_loops = ((us*200.0)/PRU_LOOP_INSTRUCTIONS); 
+	unsigned int num_loops = ((us*200.0)/PRU_SERVO_LOOP_INSTRUCTIONS); 
 	
 	// write to PRU shared memory
 	prusharedMem_32int_ptr[ch-1] = num_loops;
 	return 0;
 }
 
-
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 int send_servo_pulse_us_all(int us){
 	int i;
 	for(i=1;i<=SERVO_CHANNELS; i++){
@@ -1059,6 +1294,11 @@ int send_servo_pulse_us_all(int us){
 	return 0;
 }
 
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 int send_servo_pulse_normalized(int ch, float input){
 	if(ch<1 || ch>SERVO_CHANNELS){
 		printf("ERROR: Servo Channel must be between 1 & %d \n", SERVO_CHANNELS);
@@ -1072,6 +1312,11 @@ int send_servo_pulse_normalized(int ch, float input){
 	return send_servo_pulse_us(ch, micros);
 }
 
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 int send_servo_pulse_normalized_all(float input){
 	int i;
 	for(i=1;i<=SERVO_CHANNELS; i++){
@@ -1080,7 +1325,11 @@ int send_servo_pulse_normalized_all(float input){
 	return 0;
 }
 
-
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 int send_esc_pulse_normalized(int ch, float input){
 	if(ch<1 || ch>SERVO_CHANNELS){
 		printf("ERROR: Servo Channel must be between 1 & %d \n", SERVO_CHANNELS);
@@ -1094,7 +1343,11 @@ int send_esc_pulse_normalized(int ch, float input){
 	return send_servo_pulse_us(ch, micros);
 }
 
-
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 int send_esc_pulse_normalized_all(float input){
 	int i;
 	for(i=1;i<=SERVO_CHANNELS; i++){
@@ -1103,7 +1356,11 @@ int send_esc_pulse_normalized_all(float input){
 	return 0;
 }
 
-//// helpful functions
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 char *byte_to_binary(unsigned char x){
     static char b[9];
     b[0] = '\0';
@@ -1119,6 +1376,11 @@ char *byte_to_binary(unsigned char x){
 
 // find the difference between two timespec structs
 // used with sleep_ns() function and accurately timed loops
+/*****************************************************************
+* 
+* 
+* 
+*****************************************************************/
 timespec diff(timespec start, timespec end){
 	timespec temp;
 	if ((end.tv_nsec-start.tv_nsec)<0) {
@@ -1131,6 +1393,12 @@ timespec diff(timespec start, timespec end){
 	return temp;
 }
 
+/*****************************************************************
+* uint64_t microsSinceEpoch()
+* 
+* handy function for getting current time in microseconds
+* so you don't have to deal with timespec structs
+*****************************************************************/
 uint64_t microsSinceEpoch(){
 	struct timeval tv;
 	uint64_t micros = 0;
@@ -1160,7 +1428,7 @@ struct sockaddr_in initialize_mavlink_udp(char gc_ip_addr[],  int *udp_sock){
 		exit(EXIT_FAILURE);
     }
 
-	memset(&gcAddr, 0, sizeof(&gcAddr));
+	memset(&gcAddr, 0, sizeof(gcAddr));
 	gcAddr.sin_family = AF_INET;
 	gcAddr.sin_addr.s_addr = inet_addr(target_ip);
 	gcAddr.sin_port = htons(14550);
@@ -1220,11 +1488,12 @@ void ctrl_c(int signo){
  	}
 }
 
-/***********************************************************************
+/*********************************************************************************
 *	saturate_float(float* val, float min, float max)
+*
 *	bounds val to +- limit
 *	return one if saturation occurred, otherwise zero
-************************************************************************/
+**********************************************************************************/
 int saturate_float(float* val, float min, float max){
 	if(*val>max){
 		*val = max;
@@ -1237,26 +1506,47 @@ int saturate_float(float* val, float min, float max){
 	return 0;
 }
 
-// cleanup_cape() should be at the end of every main() function
-int cleanup_cape(){
-	set_state(EXITING);
-	usleep(500000); // let final threads clean up
-	FILE* fd;
-	// clean up the lockfile if it still exists
-	fd = fopen(LOCKFILE, "r");
-	if (fd != NULL) {
-		// close and delete the old file
-		fclose(fd);
-		remove(LOCKFILE);
+/*********************************************************************************
+*	is_cape_loaded()
+*
+*	check to make sure robotics cape overlay is loaded
+*	return 1 if cape is loaded
+*	return -1 if cape_mgr is missing
+* 	return 0 if mape_mgr is present but cape is missing
+**********************************************************************************/
+int is_cape_loaded(){
+	int ret;
+	
+	// first check if the old (Wheezy) location of capemanager exists
+	if(system("ls /sys/devices/ | grep -q \"bone_capemgr\"")==0){
+		#ifdef DEBUG
+		printf("checking /sys/devices/bone_capemgr*/slots\n");
+		#endif
+		ret = system("grep -q "CAPE_NAME" /sys/devices/bone_capemgr*/slots");
 	}
-	 
-	setGRN(0);
-	setRED(0);	
-	disable_motors();
-	deselect_spi1_slave(1);	
-	deselect_spi1_slave(2);	
-	prussdrv_pru_disable(PRU_NUM);
-    prussdrv_exit();
-	printf("\nExiting Cleanly\n");
+	else if(system("ls /sys/devices/platform/ | grep -q \"bone_capemgr\"")==0){
+		#ifdef DEBUG
+		printf("checking /sys/devices/platform/bone_capemgr*/slots\n");
+		#endif
+		ret = system("grep -q "CAPE_NAME" /sys/devices/platform/bone_capemgr*/slots");
+	}
+	else{
+		printf("Cannot find bone_capemgr*/slots\n");
+		return -1;
+	}
+	
+	if(ret == 0){
+		#ifdef DEBUG
+		printf("Cape Loaded\n");
+		#endif
+		return 1;
+	} 
+	
+	#ifdef DEBUG
+	printf("Cape NOT Loaded\n");
+	printf("grep returned %d\n", ret);
+	#endif
+	
 	return 0;
 }
+

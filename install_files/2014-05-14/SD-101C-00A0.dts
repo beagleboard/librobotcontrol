@@ -1,6 +1,6 @@
 /*
  * Device Tree Overlay for Robotics Cape SD-101C
- * Strawson Design 2015
+ * Strawson Design 2013
  *
  */
  
@@ -58,7 +58,10 @@ Bit 0 /
 		"P8.35",	/*QEP_1A*/
 		"P8.33",	/*QEP_1B*/
 		"eqep1", 
-
+		
+		/*
+		
+		*/
 		
 		"P8.39",	/*SERVO_5*/
 		"P8.40",	/*SERVO_6*/
@@ -180,9 +183,9 @@ Bit 0 /
 			
 
 			/****************************************/
-			/* 		GPIO input pinmux			*/
+			/* 		GPIO interrupt pinmux			*/
 			/****************************************/
-			input_pins: pinmux_input_pins{
+			interrupt_pins: pinmux_interrupt_pins{
 				pinctrl-single,pins = <
 					0x09c 0x37	/*P8.9  Pause BUTTON, input pullup*/
 					0x098 0x37	/*P8.10 MODE BUTTON input pullup*/
@@ -276,6 +279,163 @@ Bit 0 /
 			
 		};
 	};
+
+	fragment@1 {
+		target = <&epwmss0>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@2 {
+		target = <&ehrpwm0>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@3 {
+		target = <&ecap0>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@4 {
+		target = <&epwmss1>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@5 {
+		target = <&ehrpwm1>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@6 {
+		target = <&epwmss2>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@7 {
+		target = <&ehrpwm2>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@8 {
+		target = <&ecap2>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+	
+	fragment@9 {
+		target = <&ocp>;
+		__overlay__ {
+			pwm_test_P9_14 {
+				compatible	= "pwm_test";
+				pwms 		= <&ehrpwm1 0 25000 1>;
+				pwm-names 	= "PWM_P9_14";
+			    pinctrl-names	= "default";
+			    pinctrl-0	= <&pwm_P9_14>;
+				enabled		= <1>;
+				duty		= <0>;
+				status 		= "okay";
+			};
+		};
+	};
+	
+	fragment@10 {
+		target = <&ocp>;
+		__overlay__ {
+			pwm_test_P9_16 {
+				compatible	= "pwm_test";
+				pwms 		= <&ehrpwm1 1 25000 1>;
+				pwm-names 	= "PWM_P9_16";
+			    pinctrl-names	= "default";
+			    pinctrl-0	= <&pwm_P9_16>;
+				enabled		= <1>;
+				duty		= <0>;
+				status 		= "okay";
+			};
+		};
+	};
+	
+	fragment@13 {
+		target = <&ocp>;
+		__overlay__ {
+			pwm_test_P8_19 {
+				compatible	= "pwm_test";
+				pwms 		= <&ehrpwm2 0 25000 1>;
+				pwm-names 	= "PWM_P8_19";
+
+				pinctrl-names	= "default";
+				pinctrl-0	= <&pwm_P8_19>;
+
+				enabled		= <1>;
+				duty		= <0>;
+				status 		= "okay";
+			};
+		};
+	};
+	
+	fragment@14 {
+		target = <&ocp>;
+		__overlay__ {
+			pwm_test_P8_13 {
+				compatible	= "pwm_test";
+				pwms 		= <&ehrpwm2 1 25000 1>;
+				pwm-names 	= "PWM_P8_13";
+				pinctrl-names	= "default";
+				pinctrl-0	= <&pwm_P8_13>;
+				enabled		= <1>;
+				duty		= <0>;
+				status 		= "okay";
+			};
+		};
+	};
+	
+
+	
+	fragment@18 {
+		target = <&ocp>;
+		__overlay__ {
+			/* avoid stupid warning */
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			tscadc {
+				compatible = "ti,ti-tscadc";
+				reg = <0x44e0d000 0x1000>;
+
+				interrupt-parent = <&intc>;
+				interrupts = <16>;
+				ti,hwmods = "adc_tsc";
+				status = "okay";
+
+				adc {
+					ti,adc-channels = <0 1 2 3 4 5 6 7>;
+				};
+			};
+
+			test_helper: helper {
+				compatible = "bone-iio-helper";
+				vsense-name  = "AIN0", "AIN1", "AIN2", "AIN3", "AIN4", "AIN5", "AIN6", "AIN7";
+				vsense-scale = <100     100     100     100     100     100     100     100>;
+				status = "okay";
+			};
+		};
+	};
+	
+	
+	
 	
 	fragment@21 {
 		target = <&uart5>;	/* really uart4 */
@@ -294,6 +454,89 @@ Bit 0 /
 		};
 	};
 	
+	
+	fragment@23 {
+        target = <&ocp>;
+        __overlay__ {            
+            #address-cells = <1>;
+            #size-cells = <1>;                            
+
+            gpio_keys {
+                compatible = "gpio-keys";
+                pinctrl-names = "default";
+                pinctrl-0 = <&interrupt_pins>;
+                #address-cells = <1>;
+                #size-cells = <0>;
+
+                switch_x1 {
+                    label = "PAUSE_BTN";
+                    debounce_interval = <50>;
+                    linux,code = <1>;
+                    gpios = <&gpio3 5 0x5>; /* really gpio_2[5] */
+                    gpio-key,wakeup;
+                };                
+                switch_x2 {
+                    label = "MODE_BTN";
+                    debounce_interval = <50>;
+                    linux,code = <2>;
+                    gpios = <&gpio3 4 0x5>; /*really gpio_2[4]*/
+                    gpio-key,wakeup;
+                };  
+            };
+        };
+    };
+	fragment@24 {
+    	target = <&eqep0>;
+    	__overlay__ {
+            pinctrl-names = "default";
+            pinctrl-0 = <&pinctrl_eqep0>;
+            
+            count_mode = <0>;  /* 0 - Quadrature mode, normal 90 phase offset cha & chb.  1 - Direction mode.  cha input = clock, chb input = direction */
+            swap_inputs = <0>; /* Are channel A and channel B swapped? (0 - no, 1 - yes) */
+            invert_qa = <1>;   /* Should we invert the channel A input?  */
+            invert_qb = <1>;   /* Should we invert the channel B input? I invert these because my encoder outputs drive transistors that pull down the pins */
+            invert_qi = <0>;   /* Should we invert the index input? */
+            invert_qs = <0>;   /* Should we invert the strobe input? */
+            
+	        status = "okay";
+    	};
+    };
+
+
+    
+    fragment@25 {
+    	target = <&eqep1>;
+    	__overlay__ {
+            pinctrl-names = "default";
+            pinctrl-0 = <&pinctrl_eqep1>;
+            
+            count_mode = <0>;  /* 0 - Quadrature mode, normal 90 phase offset cha & chb.  1 - Direction mode.  cha input = clock, chb input = direction */
+            swap_inputs = <0>; /* Are channel A and channel B swapped? (0 - no, 1 - yes) */
+            invert_qa = <1>;   /* Should we invert the channel A input?  */
+            invert_qb = <1>;   /* Should we invert the channel B input? I invert these because my encoder outputs drive transistors that pull down the pins */
+            invert_qi = <0>;   /* Should we invert the index input? */
+            invert_qs = <0>;   /* Should we invert the strobe input? */
+            
+	        status = "okay";
+    	};
+    };
+
+    fragment@26 {
+    	target = <&eqep2>;
+    	__overlay__ {
+            pinctrl-names = "default";
+            pinctrl-0 = <&pinctrl_eqep2>;
+            
+            count_mode = <0>;  /* 0 - Quadrature mode, normal 90 phase offset cha & chb.  1 - Direction mode.  cha input = clock, chb input = direction */
+            swap_inputs = <0>; /* Are channel A and channel B swapped? (0 - no, 1 - yes) */
+            invert_qa = <1>;   /* Should we invert the channel A input?  */
+            invert_qb = <1>;   /* Should we invert the channel B input? I invert these because my encoder outputs drive transistors that pull down the pins */
+            invert_qi = <0>;   /* Should we invert the index input? */
+            invert_qs = <0>;   /* Should we invert the strobe input? */
+            
+	        status = "okay";
+    	};
+    };
 	
 	fragment@27 {
         target = <&ocp>;

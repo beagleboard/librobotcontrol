@@ -13,7 +13,7 @@ int main(){
 	printf("\n\nRaw data for encoders 1,2,3\n");
 
 	while(get_state() != EXITING){
-		printf("\r%3li %3li %3li  ", get_encoder_pos(1),get_encoder_pos(2),get_encoder_pos(3));
+		printf("\r%3d %3d %3d  ", get_encoder_pos(1),get_encoder_pos(2),get_encoder_pos(3));
 		fflush(stdout);
 		usleep(50000);
 	}

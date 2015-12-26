@@ -8,13 +8,13 @@ int main(){
 	FILE* fd;
 	int old_pid;
 	
-	fd = fopen(LOCKFILE, "r");
+	fd = fopen(PID_FILE, "r");
 	if (fd != NULL) {
 		fscanf(fd,"%d", &old_pid);
 		if(old_pid != 0){
 			printf("Cleanly shutting down existing robotics project\n");
 			kill((pid_t)old_pid, SIGINT);
-			sleep(1);
+			sleep(3);
 		}
 	}
 	else{
@@ -22,16 +22,15 @@ int main(){
 	}
 	
 	
-	// clean up the lockfile if it still exists
-	fd = fopen(LOCKFILE, "r");
+	// force kill the program if the PID file never got cleaned up
+	fd = fopen(PID_FILE, "r");
 	if (fd != NULL) {
 		kill((pid_t)old_pid, SIGKILL);
 		printf("Force closing existing robotics project\n");
 		// close and delete the old file
 		fclose(fd);
-		remove(LOCKFILE);
+		remove(PID_FILE);
 	}
 	
-	//cleanup_cape();
 	return 0;
 }

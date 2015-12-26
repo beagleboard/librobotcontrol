@@ -17,7 +17,7 @@ Bit 0 /
 /dts-v1/;
 /plugin/; 
 
-/ {
+/{
     compatible = "ti,beaglebone-black";
 
     /* identification */
