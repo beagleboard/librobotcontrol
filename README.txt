@@ -8,8 +8,10 @@ Installation Instructions:
 
 1) Flash your BBB to the latest version using the eMMC image.
 http://beagleboard.org/latest-images
-This package is tested on Debian 2014-05-14 & 2015-03-01
-
+This package is tested on the following Debian Wheezy images
+2014-05-14 
+2015-03-01
+2015-11-12
 
 2) Copy the Robotics_Cape_Installer folder to /root/
 This is usually done through SFTP using a program like WinSCP
@@ -40,7 +42,7 @@ balance program has started on boot.
 
 
 
-7) Now located at /root/Auto_Run_Script.sh is a bash script that is 
+7) Located at /root/Auto_Run_Script.sh is a bash script that is 
 configured to run on boot. By default it includes whatever program 
 you selected during the install process in step 5. Modify this
 bootscript to include any other boot time configuration.
