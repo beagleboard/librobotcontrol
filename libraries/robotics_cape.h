@@ -55,62 +55,21 @@ either expressed or implied, of the FreeBSD Project.
 #include <arpa/inet.h>  // mavlink udp socket	
 #include <ctype.h>		// for isprint()
 
-#include "SimpleGPIO.h" // used for setting interrupt input pin
-#include "mmap_gpio.h"	// used for fast gpio functions
-#include "c_i2c.h"		// i2c lib
-#include "mpu9150.h"	// general DMP library
-#include "MPU6050.h" 	// gyro offset registers
-#include "tipwmss.h"	// pwmss and eqep registers
-#include "mavlink/mavlink.h"
-#include "prussdrv.h"
-#include "pruss_intc_mapping.h"
+#include <robotics_cape_revC_defs.h>
+#include <simple_gpio/SimpleGPIO.h> // used for setting interrupt input pin
+#include <mmap/mmap_gpio_adc.h>	// used for fast gpio functions
+#include <mmap/mmap_pwmss.h>	// used for fast pwm functions
+#include <imu/c_i2c.h>		// i2c lib
+#include <imu/mpu9150.h>	// general DMP library
+#include <imu/MPU6050.h> 	// gyro offset registers
+#include <mavlink/mavlink.h>
+#include <pru/prussdrv.h>
+#include <pru/pruss_intc_mapping.h>
 
 #define DEG_TO_RAD 		0.0174532925199
 #define RAD_TO_DEG 	 	57.295779513
 #define PI				3.141592653
 #define MAX_BUF 64
-
-
-//// MPU9150 IMU
-#define ORIENTATION_UPRIGHT {1,0,0, 0,0,-1, 0,1,0}; // Ethernet pointing up for BeagleMIP
-#define ORIENTATION_FLAT    {1,0,0, 0,1,0, 0,0,1} // BB flat on table for BealgeQuad
-#define GYRO_FSR			2000				  // default full scale range (deg/s)
-#define ACCEL_FSR			2					  // default full scale range  (g)
-
-//// Spektrum DSM2 RC Radio
-#define RC_CHANNELS 9
-
-// Calibration File Locations
-#define CONFIG_DIRECTORY "/root/robot_config/"
-#define DSM2_CAL_FILE	"dsm2.cal"
-#define GYRO_CAL_FILE 	"gyro.cal"
-#define IMU_CAL_FILE	"imu.cal"
-
-// log file location
-#define LOG_DIRECTORY "/root/robot_logs/"
-
-// lock file location
-// file created to indicate running process
-// contains pid of current process
-#define LOCKFILE "/tmp/robotics.lock"
-
-//// Mavlink UDP input buffer size
-#define MAV_BUF_LEN 512 
-
-//// PRU Servo Control
-#define SERVO_CHANNELS			8
-#define SERVO_MIN_US 			900	// min pulse to send to servos	in microseconds
-#define SERVO_MAX_US 			2100	// max pulse to send to servos in microseconds
-
-//// Motors
-#define MOTOR_CHANNELS	4
-
-#define PRESSED 1
-#define UNPRESSED 0
-	
-
-//// Initialization function must call at beginning of main()
-int initialize_cape();
 
 //// Program Flow and State Control ////
 typedef enum state_t {
@@ -122,15 +81,19 @@ typedef enum state_t {
 
 enum state_t get_state();
 int set_state(enum state_t);
+	
 
-//// Motor, ESC, PWM ///
+//// Initialization function must call at beginning of main()
+int initialize_cape();
+
+//// DC Motor ///
 int set_motor(int motor, float duty);
 int set_motor_all(float duty);
 int kill_pwm();
 int enable_motors();
 int disable_motors();
 
-//// eQep encoder counter
+//// Quadrature Encoder counter
 int get_encoder_pos(int ch);
 int set_encoder_pos(int ch, int value);
  
@@ -187,6 +150,8 @@ int send_servo_pulse_us(int ch, int us);
 int send_servo_pulse_us_all(int us);
 int send_servo_pulse_normalized(int ch, float input);
 int send_servo_pulse_normalized_all(float input);
+int send_esc_pulse_normalized(int ch, float input);
+int send_esc_pulse_normalized_all(float input);
 
 
 //// General use Functions

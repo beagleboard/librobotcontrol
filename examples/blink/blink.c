@@ -84,7 +84,10 @@ int on_mode_unpress(){
 }
 
 int main(){
-	initialize_cape();
+	if(initialize_cape()){
+		printf("failed to initialize cape\n");
+		return -1;
+	}
 	
 	printf("\nPress mode to change blink rate\n");
 	printf("hold pause button to exit\n");

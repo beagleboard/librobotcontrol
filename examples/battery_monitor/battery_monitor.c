@@ -38,17 +38,18 @@ int printing = 0;
 
 int main(){
 	// open the gpio channels for 4 battery indicator LEDs
-	gpio_export(LED_1);
-	gpio_export(LED_2);
-	gpio_export(LED_3);
-	gpio_export(LED_4);
-	gpio_set_dir(LED_1, OUTPUT_PIN);
-	gpio_set_dir(LED_2, OUTPUT_PIN);
-	gpio_set_dir(LED_3, OUTPUT_PIN);
-	gpio_set_dir(LED_4, OUTPUT_PIN);
+	// gpio_export(LED_1);
+	// gpio_export(LED_2);
+	// gpio_export(LED_3);
+	// gpio_export(LED_4);
+	// gpio_set_dir(LED_1, OUTPUT_PIN);
+	// gpio_set_dir(LED_2, OUTPUT_PIN);
+	// gpio_set_dir(LED_3, OUTPUT_PIN);
+	// gpio_set_dir(LED_4, OUTPUT_PIN);
 	
 	// enable adc
-	adc_init_mmap();
+	initialize_adc();
+	initialize_gpio();
 	
 	// first decide if the user has called this from a terminal
 	// or as a startup process
@@ -122,42 +123,42 @@ int main(){
 		
 		// now illuminate LEDs properly
 		if(cell_voltage<VOLTAGE_DISCONNECT){
-			gpio_set_value(LED_1,LOW);
-			gpio_set_value(LED_2,LOW);
-			gpio_set_value(LED_3,LOW);
-			gpio_set_value(LED_4,LOW);
+			digitalWrite(LED_1,LOW);
+			digitalWrite(LED_2,LOW);
+			digitalWrite(LED_3,LOW);
+			digitalWrite(LED_4,LOW);
 		}
 		else if(cell_voltage>VOLTAGE_FULL){
-			gpio_set_value(LED_1,HIGH);
-			gpio_set_value(LED_2,HIGH);
-			gpio_set_value(LED_3,HIGH);
-			gpio_set_value(LED_4,HIGH);
+			digitalWrite(LED_1,HIGH);
+			digitalWrite(LED_2,HIGH);
+			digitalWrite(LED_3,HIGH);
+			digitalWrite(LED_4,HIGH);
 		}
 		else if(cell_voltage>VOLTAGE_75){
-			gpio_set_value(LED_1,HIGH);
-			gpio_set_value(LED_2,HIGH);
-			gpio_set_value(LED_3,HIGH);
-			gpio_set_value(LED_4,LOW);
+			digitalWrite(LED_1,HIGH);
+			digitalWrite(LED_2,HIGH);
+			digitalWrite(LED_3,HIGH);
+			digitalWrite(LED_4,LOW);
 		}
 		else if(cell_voltage>VOLTAGE_50){
-			gpio_set_value(LED_1,HIGH);
-			gpio_set_value(LED_2,HIGH);
-			gpio_set_value(LED_3,LOW);
-			gpio_set_value(LED_4,LOW);
+			digitalWrite(LED_1,HIGH);
+			digitalWrite(LED_2,HIGH);
+			digitalWrite(LED_3,LOW);
+			digitalWrite(LED_4,LOW);
 		}
 		else if(cell_voltage>VOLTAGE_25){
-			gpio_set_value(LED_1,HIGH);
-			gpio_set_value(LED_2,LOW);
-			gpio_set_value(LED_3,LOW);
-			gpio_set_value(LED_4,LOW);
+			digitalWrite(LED_1,HIGH);
+			digitalWrite(LED_2,LOW);
+			digitalWrite(LED_3,LOW);
+			digitalWrite(LED_4,LOW);
 		}
 		else if(dc_supply_connected!=1){
 			// blink battery LEDs to warn extremely low battery
 			// but only if not charging
-			gpio_set_value(LED_1,toggle);
-			gpio_set_value(LED_2,toggle);
-			gpio_set_value(LED_3,toggle);
-			gpio_set_value(LED_4,toggle);
+			digitalWrite(LED_1,toggle);
+			digitalWrite(LED_2,toggle);
+			digitalWrite(LED_3,toggle);
+			digitalWrite(LED_4,toggle);
 			if(toggle){
 				toggle = 0;
 			}
@@ -167,10 +168,10 @@ int main(){
 		}
 		else{
 			// if we've gotten here, battery is extremely low but charging
-			gpio_set_value(LED_1,HIGH);
-			gpio_set_value(LED_2,LOW);
-			gpio_set_value(LED_3,LOW);
-			gpio_set_value(LED_4,LOW);
+			digitalWrite(LED_1,HIGH);
+			digitalWrite(LED_2,LOW);
+			digitalWrite(LED_3,LOW);
+			digitalWrite(LED_4,LOW);
 		}
 		
 		if(printing){
