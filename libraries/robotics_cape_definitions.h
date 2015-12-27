@@ -20,7 +20,7 @@
 #define IMU_CAL_FILE	"imu.cal"
 
 // Cape name
-#define CAPE_NAME 	"SD-101C"
+#define CAPE_NAME 	"RoboticsCape"
 
 // log file location
 #define LOG_DIRECTORY "/root/robot_logs/"
@@ -78,9 +78,11 @@
 #define UART4_PATH "/dev/ttyO4"
 
 // PRU Servo Control shared memory pointer
-#define PRU_SERVO_NUM 	 1
-#define PRU_SERVO_BIN_LOCATION "/usr/bin/pru_servo.bin"
-#define PRU_SERVO_LOOP_INSTRUCTIONS	48		// instructions per PRU servo timer loop
+#define SERVO_PRU_NUM 	 1
+#define ENCODER_PRU_NUM 	 0
+#define PRU_SERVO_BIN "/usr/bin/pru_1_servo.bin"
+#define PRU_ENCODER_BIN "/usr/bin/pru_0_encoder.bin"
+#define PRU_LOOP_INSTRUCTIONS	48		// instructions per PRU servo timer loop
 
 
 #define ARRAY_SIZE(array) sizeof(array)/sizeof(array[0]) 

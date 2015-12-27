@@ -40,7 +40,7 @@ Strawson Design - 2014
 #include <errno.h>		// pthread error codes
 
 #include <robotics_cape.h>
-#include <robotics_cape_revC_defs.h>
+#include <robotics_cape_definitions.h>
 
 /**************************************
 * Local Global Variables
@@ -180,8 +180,8 @@ int initialize_cape(){
 	initialize_button_handlers();
 	
 	// Load binary into PRU
-	printf("Starting PRU servo controller\n");
-	if(initialize_pru_servos()){
+	printf("Starting PRU binaries\n");
+	if(initialize_pru()){
 		printf("ERROR: PRU init FAILED\n");
 		return -1;
 	}
@@ -416,12 +416,19 @@ int disable_motors(){
 * returns the encoder counter position
 *****************************************************************/
 int get_encoder_pos(int ch){
-	if(ch>3 || ch<1){
-		printf("encoder channel must be 1,2, or 3\n");
+	if(ch<1 || ch>4){
+		printf("Encoder Channel must be from 1 to 4\n");
 		return -1;
 	}
-	return read_eqep(ch-1);
+	// 4th channel is counted by the PRU not eQEP
+	if(ch==4){
+		return (int) prusharedMem_32int_ptr[8];
+	}
+	
+	// first 3 channels counted by eQEP
+	return  read_eqep(ch-1);
 }
+
 
 /*****************************************************************
 * int set_encoder_pos(int ch, int val)
@@ -429,11 +436,18 @@ int get_encoder_pos(int ch){
 * sets the encoder counter position
 *****************************************************************/
 int set_encoder_pos(int ch, int val){
-	if(ch>3 || ch<1){
-		printf("encoder channel must be 1,2, or 3\n");
+	int set_encoder_pos(int ch, int value){
+	if(ch<1 || ch>4){
+		printf("Encoder Channel must be from 1 to 4\n");
 		return -1;
 	}
-	return write_eqep(ch, val);
+	// 4th channel is counted by the PRU not eQEP
+	if(ch==4){
+		prusharedMem_32int_ptr[8] = value;
+		return 0;
+	}
+	// else write to eQEP
+	return write_eqep(ch-1, val);
 }
 
 
@@ -1198,40 +1212,23 @@ void* imu_interrupt_handler(void* ptr){
 	return 0;
 }
 
-//// PRU Servo Control
+//// PRU Servo control and encoder counting 
 /*****************************************************************
 * 
 * 
 * 
 *****************************************************************/
-int initialize_pru_servos(){
-	// enbale clock signal to PRU
-	int dev_mem;
-	dev_mem = open("/dev/mem", O_RDWR);
-	if(dev_mem == -1) {
-		printf("Unable to open /dev/mem\n");
-		return -1;
-	}
-	volatile char *cm_per_base;
-	cm_per_base=mmap(0,CM_PER_PAGE_SIZE,PROT_READ|PROT_WRITE,MAP_SHARED,dev_mem,CM_PER);
-	if(cm_per_base == (void *) -1) {
-		printf("Unable to mmap cm_per\n");
-		return -1;
-	}
-	*(uint16_t*)(cm_per_base + CM_PER_PRU_ICSS_CLKCTRL) |= MODULEMODE_ENABLE;
-	*(uint16_t*)(cm_per_base + CM_PER_PRU_ICSS_CLKSTCTRL) |= MODULEMODE_ENABLE;
-	close(dev_mem);
-	
+int initialize_pru(){
 	
 	// start pru
 	#ifdef DEBUG
-		printf("calling prussdrv_init()\n");
+	printf("calling prussdrv_init()\n");
 	#endif
     prussdrv_init();
 	
     // Open PRU Interrupt
 	#ifdef DEBUG
-		printf("calling prussdrv_open\n");
+	printf("calling prussdrv_open\n");
 	#endif
     if (prussdrv_open(PRU_EVTOUT_0)){
         printf("prussdrv_open open failed\n");
@@ -1240,8 +1237,9 @@ int initialize_pru_servos(){
 
     // Get the interrupt initialized
 	#ifdef DEBUG
-		printf("calling prussdrv_pruintc_init\n");
+	printf("calling prussdrv_pruintc_init\n");
 	#endif
+	
 	tpruss_intc_initdata pruss_intc_initdata = PRUSS_INTC_INITDATA;
     prussdrv_pruintc_init(&pruss_intc_initdata);
 
@@ -1249,10 +1247,11 @@ int initialize_pru_servos(){
 	void* sharedMem = NULL;
     prussdrv_map_prumem(PRUSS0_SHARED_DATARAM, &sharedMem);
     prusharedMem_32int_ptr = (unsigned int*) sharedMem;
-	memset(prusharedMem_32int_ptr, 0, SERVO_CHANNELS*4);
+	memset(prusharedMem_32int_ptr, 0, 9*4);
 	
-	// launch servo binary
-	prussdrv_exec_program(PRU_SERVO_NUM, PRU_SERVO_BIN_LOCATION);
+	// launch binaries
+	prussdrv_exec_program(SERVO_PRU_NUM, PRU_SERVO_BIN);
+	prussdrv_exec_program(ENCODER_PRU_NUM, PRU_ENCODER_BIN);
 
     return(0);
 }
