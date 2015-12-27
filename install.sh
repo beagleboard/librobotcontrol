@@ -6,7 +6,8 @@
 
 INSTALL_DIR="/root"
 BOOTSCRIPT="Auto_Run_Script.sh"
-OVERLAY="SD-101C-00A0"
+OVERLAY="RoboticsCape-00A0"
+CAPENAME="RoboticsCape"
 KERNEL="$(uname -r)"
 DEBIAN="$(cat /etc/debian_version)"
 
@@ -118,7 +119,7 @@ echo "Installing Device Tree Overlay"
 if [ "$IMG" == "2015-11-12" ]; #  image includes dtc compiler
 then dtc -O dtb -o /lib/firmware/$OVERLAY.dtbo -b 0 -@ install_files/$OVERLAY.dts
 # older images need pre-compiled dtbo
-else cp install_files/$IMG/$OVERLAY.dtbo /lib/firmware/$OVERLAY.dtbo
+else cp install_files/$OVERLAY.dtbo /lib/firmware/$OVERLAY.dtbo
 fi
 
 # make a backup of the original uEnv.txt file
@@ -160,9 +161,9 @@ else
 	echo "invalid IMG variable value $IMG"
 fi
 
-# set SD-101C as the only cape to load
-echo "Setting Capemgr to Load Robotics Overlay by Default"
-echo "CAPE=SD-101C" > /etc/default/capemgr
+# set Robotics Cape as the only cape to load
+echo "Setting Capemgr to Load $CAPENAME Overlay by Default"
+echo "CAPE=$CAPENAME" > /etc/default/capemgr
 
 # also add to uEnv.txt even though this doesn't work until
 # the cape is pushed upstream. here now in anticipation of that
@@ -177,7 +178,8 @@ make clean
 cd ../
 
 echo "Installing PRU Binaries and Assembler"
-cp install_files/pru_servo.bin /usr/bin
+cp install_files/pru/pru_1_servo.bin /usr/bin
+cp install_files/pru/pru_0_encoder.bin /usr/bin
 cp install_files/pasm /usr/bin
 
 
