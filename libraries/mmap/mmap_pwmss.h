@@ -7,6 +7,9 @@ depending on the exact function.
 
 Note that a device tree overlay is still necessary to configure the
 pin multiplexer and enable clock signal to each subsystem.
+
+the pwm driver is still needed to set up pwm output. This can
+be done through /sys/class/pwm or with simple_pwm.c
 */
 
 #ifndef MMAP_PWMSS
@@ -18,8 +21,6 @@ int read_eqep(int ch);
 int write_eqep(int ch, int val);
 
 // PWM
-int init_pwm(int subsystem);
-int set_pwm_freq(int subsystem, int hz);
 int set_pwm_duty(int subsystem, char ch, float duty);
 
 #endif

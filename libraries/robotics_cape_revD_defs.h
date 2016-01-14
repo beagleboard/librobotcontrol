@@ -43,6 +43,7 @@
 #define SERVO_MID_US			1500 
 
 #define MOTOR_CHANNELS	4
+#define PWM_FREQ 25000
 
 #define PRESSED 1
 #define UNPRESSED 0
@@ -65,6 +66,7 @@
 #define MDIR3A    	73	//gpio2.9   P8.44
 #define MOT_STBY  	20	//gpio0.20  P9.41
 #define PAIRING_PIN 		30 	//gpio0.30 	P9.11
+#define SERVO_PWR	80	//gpio2.16 P8.36
 #define SPI1_SS1_GPIO_PIN 	113 //gpio3.17	P9.28 
 #define SPI1_SS2_GPIO_PIN 	49  //gpio1.17	P9.23 
 
@@ -82,32 +84,32 @@
 #define ENCODER_PRU_NUM 	 0
 #define PRU_SERVO_BIN "/usr/bin/pru_1_servo.bin"
 #define PRU_ENCODER_BIN "/usr/bin/pru_0_encoder.bin"
-#define PRU_LOOP_INSTRUCTIONS	48		// instructions per PRU servo timer loop
+#define PRU_SERVO_LOOP_INSTRUCTIONS	48		// instructions per PRU servo timer loop
 
 
 #define ARRAY_SIZE(array) sizeof(array)/sizeof(array[0]) 
 
-/*********************************
-* clock control registers
-*********************************/
-#ifndef CM_PER
-	#define CM_PER 0x44E00000 //base of Clock Module Peripheral control
-	#define CM_PER_PAGE_SIZE 1024 //1kb
-#endif
+// /*********************************
+// * clock control registers
+// *********************************/
+// #ifndef CM_PER
+	// #define CM_PER 0x44E00000 //base of Clock Module Peripheral control
+	// #define CM_PER_PAGE_SIZE 1024 //1kb
+// #endif
 
-#define CM_PER_PRU_ICSS_CLKCTRL 0xE8 //16 bit register
-#define CM_PER_PRU_ICSS_CLKSTCTRL 0x140	
-#define CM_PER_UART5_CLKCTRL 0x38
-#define CM_PER_I2C2_CLKCTRL 0x44
-#define CM_PER_I2C1_CLKCTRL 0x48
-#define CM_PER_SPI0_CLKCTRL 0x4C
-#define CM_PER_SPI1_CLKCTRL 0x50
-#define CM_PER_GPIO1_CLKCTRL 0xAC
-#define CM_PER_GPIO2_CLKCTRL 0xB0
-#define CM_PER_GPIO3_CLKCTRL 0xB4
+// #define CM_PER_PRU_ICSS_CLKCTRL 0xE8 //16 bit register
+// #define CM_PER_PRU_ICSS_CLKSTCTRL 0x140	
+// #define CM_PER_UART5_CLKCTRL 0x38
+// #define CM_PER_I2C2_CLKCTRL 0x44
+// #define CM_PER_I2C1_CLKCTRL 0x48
+// #define CM_PER_SPI0_CLKCTRL 0x4C
+// #define CM_PER_SPI1_CLKCTRL 0x50
+// #define CM_PER_GPIO1_CLKCTRL 0xAC
+// #define CM_PER_GPIO2_CLKCTRL 0xB0
+// #define CM_PER_GPIO3_CLKCTRL 0xB4
 
 
-#define MODULEMODE_DISABLED 0x0
-#define MODULEMODE_ENABLE 	0x2
+// #define MODULEMODE_DISABLED 0x0
+// #define MODULEMODE_ENABLE 	0x2
 
 #endif

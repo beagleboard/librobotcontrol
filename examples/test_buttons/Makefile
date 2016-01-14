@@ -1,7 +1,6 @@
 # project name 
 # change to match your main c file
-TARGET = test_log_file
-
+TARGET = test_buttons
 
 
 

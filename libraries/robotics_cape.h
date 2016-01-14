@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014, James Strawson
+Copyright (c) 2015, James Strawson
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -55,10 +55,11 @@ either expressed or implied, of the FreeBSD Project.
 #include <arpa/inet.h>  // mavlink udp socket	
 #include <ctype.h>		// for isprint()
 
-#include <robotics_cape_revC_defs.h>
+#include <robotics_cape_revD_defs.h>
 #include <simple_gpio/SimpleGPIO.h> // used for setting interrupt input pin
 #include <mmap/mmap_gpio_adc.h>	// used for fast gpio functions
 #include <mmap/mmap_pwmss.h>	// used for fast pwm functions
+#include <simple_pwm/simple_pwm.h>
 #include <imu/c_i2c.h>		// i2c lib
 #include <imu/mpu9150.h>	// general DMP library
 #include <imu/MPU6050.h> 	// gyro offset registers
@@ -145,7 +146,6 @@ int select_spi1_slave(int slave);
 int deselect_spi1_slave(int slave);	
 
 //// PRU Servo Control Functions
-int initialize_pru_servos();
 int send_servo_pulse_us(int ch, int us);
 int send_servo_pulse_us_all(int us);
 int send_servo_pulse_normalized(int ch, float input);

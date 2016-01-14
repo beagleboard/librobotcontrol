@@ -10,7 +10,7 @@
 // https://www.tindie.com/products/jkicklighter/adns-9800-optical-laser-sensor/
 // http://www.pixart.com.tw/upload/ADNS-9800%20DS_S_V1.0_20130514144352.pdf
 
-// requires SPI0 to be set up in the device tree 
+// requires spi1 to be set up in the device tree 
 // this is done already in the robotics cape overlay
 
 // Bealgebone black Connections 
@@ -305,10 +305,10 @@ int adns_write_reg(int fd, unsigned char reg_addr, unsigned char data){
     xfer[0].bits_per_word = adns_bits;
 	
 	//sent data
-	select_spi0_slave(0);
+	select_spi1_slave(0);
 	status = ioctl(fd, SPI_IOC_MESSAGE(1), xfer);
 	usleep(20); // tSCLK-NCS for write operation
-	deselect_spi0_slave(0); 
+	deselect_spi1_slave(0); 
 	usleep(100); // tSWW/tSWR (=120us) minus tSCLK-NCS. 
 	
 	//printf("status: %d\n", status);
@@ -329,7 +329,7 @@ unsigned char adns_read_reg(int fd, unsigned char reg_addr){
 	
 	// send adress of the register, with MSBit = 0 to indicate it's a read
 	wr_buf[0] = reg_addr & 0x7f;
-	select_spi0_slave(0);
+	select_spi1_slave(0);
 	xfer[0].tx_buf = (unsigned long) wr_buf; 
 	xfer[0].len = 1;
 	xfer[0].speed_hz = adns_speed;
@@ -345,7 +345,7 @@ unsigned char adns_read_reg(int fd, unsigned char reg_addr){
     xfer[0].bits_per_word = adns_bits;
 	status = ioctl(fd, SPI_IOC_MESSAGE(1), xfer);
 	usleep(1);
-	deselect_spi0_slave(0);
+	deselect_spi1_slave(0);
 	// should wait for tSRW/tSRR (=20us) minus tSCLK-NCS
 	usleep(1); //but waiting for only 1 seems to work fine
 	
@@ -398,7 +398,7 @@ int adns_read_burst(int fd, int *dx, int *dy){
 	memset(wr_buf, 0, sizeof wr_buf);
 	memset(rd_buf, 0, sizeof rd_buf);
 
-	select_spi0_slave(0);
+	select_spi1_slave(0);
 	//send adress of the register, with MSBit = 1 to indicate it's a write
 	wr_buf[0] = REG_Motion_Burst;
 	xfer[0].tx_buf = (unsigned long) wr_buf;
@@ -415,7 +415,7 @@ int adns_read_burst(int fd, int *dx, int *dy){
 	xfer[0].speed_hz = adns_speed;
 	xfer[0].bits_per_word = adns_bits;
 	ioctl(fd, SPI_IOC_MESSAGE(1), xfer);
-	deselect_spi0_slave(0);
+	deselect_spi1_slave(0);
 	
 	dx_16 = (int16_t) (rd_buf[2]<<8)|rd_buf[1];
 	dy_16 = (int16_t) (rd_buf[4]<<8)|rd_buf[3];
@@ -448,7 +448,7 @@ int adns_upload_firmware(int fd){
 	adns_write_reg(fd, REG_SROM_Enable, 0x18); 
 
 	// write the SROM file (=firmware data) 
-	select_spi0_slave(0);
+	select_spi1_slave(0);
 	
 	wr_buf[0] = REG_SROM_Load_Burst | 0x80;
 	xfer[0].tx_buf = (unsigned long) wr_buf; 
@@ -468,7 +468,7 @@ int adns_upload_firmware(int fd){
 		ioctl(fd, SPI_IOC_MESSAGE(1), xfer);
 		usleep(15);
 	}
-	deselect_spi0_slave(0);
+	deselect_spi1_slave(0);
 	usleep(160);
 
 	
@@ -490,9 +490,9 @@ int initialize_adns9800(void){
 	
 	
 	
-    adns_fd = initialize_spi0(); 
+    adns_fd = initialize_spi1(); 
     if (adns_fd<=0) {  
-        printf("failed to start spi0\n"); 
+        printf("failed to start spi1\n"); 
         return -1; 
     } 
 	
@@ -525,9 +525,9 @@ int initialize_adns9800(void){
 	// printf("max speed: %d Hz \n", adns_speed);
 
 	usleep(10000);
-	deselect_spi0_slave(0); // ensure that the serial port is reset
-	select_spi0_slave(0); // ensure that the serial port is reset
-	deselect_spi0_slave(0); // ensure that the serial port is reset
+	deselect_spi1_slave(0); // ensure that the serial port is reset
+	select_spi1_slave(0); // ensure that the serial port is reset
+	deselect_spi1_slave(0); // ensure that the serial port is reset
 	
 	adns_write_reg(adns_fd,REG_Power_Up_Reset, 0x5a); // force reset
 	usleep(50000); // wait for it to reboot

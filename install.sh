@@ -103,7 +103,7 @@ fi
 
 # make sure the user really wants to install
 echo "This script will install all Robotics Cape supporting software."
-echo "This is for SD-101C Revision C capes ONLY!!!!"
+echo "This is for SD-101D Revision D capes ONLY!!!!"
 read -r -p "Continue? [y/n] " response
 case $response in
     [yY]) echo " " ;;
@@ -180,7 +180,6 @@ cd ../
 echo "Installing PRU Binaries and Assembler"
 cp install_files/pru/pru_1_servo.bin /usr/bin
 cp install_files/pru/pru_0_encoder.bin /usr/bin
-cp install_files/pasm /usr/bin
 
 
 echo "Installing examples, this will take a few minutes."

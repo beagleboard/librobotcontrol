@@ -1,6 +1,6 @@
 TARGET = robotics_cape.so
 
-SUBDIRS = imu mavlink mmap pru simple_gpio
+SUBDIRS = $(shell find * -type d -print)
 CC = gcc
 LINKER   := gcc
 TOUCH 	 := $(shell touch *)
