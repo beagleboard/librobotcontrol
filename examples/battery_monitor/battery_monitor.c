@@ -18,13 +18,6 @@
 #define VOLTAGE_25			3.45	
 #define VOLTAGE_DISCONNECT	2		// Threshold for detecting disconnected battery
 
-// gpio # for gpio_a.b = (32*a)+b
-#define LED_1	27 // P8.17
-#define LED_2	47 // P8.15
-#define LED_3	46 // P8.16
-#define LED_4	26 // P8.14
-
-
 int raw_adc;
 float pack_voltage;		 	// 2S pack voltage on JST XH 2S balance connector
 float cell_voltage;			// cell voltage from either 2S or external pack
@@ -38,14 +31,14 @@ int printing = 0;
 
 int main(){
 	// open the gpio channels for 4 battery indicator LEDs
-	// gpio_export(LED_1);
-	// gpio_export(LED_2);
-	// gpio_export(LED_3);
-	// gpio_export(LED_4);
-	// gpio_set_dir(LED_1, OUTPUT_PIN);
-	// gpio_set_dir(LED_2, OUTPUT_PIN);
-	// gpio_set_dir(LED_3, OUTPUT_PIN);
-	// gpio_set_dir(LED_4, OUTPUT_PIN);
+	gpio_export(BATT_LED_1);
+	gpio_export(BATT_LED_2);
+	gpio_export(BATT_LED_3);
+	gpio_export(BATT_LED_4);
+	gpio_set_dir(BATT_LED_1, OUTPUT_PIN);
+	gpio_set_dir(BATT_LED_2, OUTPUT_PIN);
+	gpio_set_dir(BATT_LED_3, OUTPUT_PIN);
+	gpio_set_dir(BATT_LED_4, OUTPUT_PIN);
 	
 	// enable adc
 	initialize_adc();
@@ -123,42 +116,42 @@ int main(){
 		
 		// now illuminate LEDs properly
 		if(cell_voltage<VOLTAGE_DISCONNECT){
-			digitalWrite(LED_1,LOW);
-			digitalWrite(LED_2,LOW);
-			digitalWrite(LED_3,LOW);
-			digitalWrite(LED_4,LOW);
+			digitalWrite(BATT_LED_1,LOW);
+			digitalWrite(BATT_LED_2,LOW);
+			digitalWrite(BATT_LED_3,LOW);
+			digitalWrite(BATT_LED_4,LOW);
 		}
 		else if(cell_voltage>VOLTAGE_FULL){
-			digitalWrite(LED_1,HIGH);
-			digitalWrite(LED_2,HIGH);
-			digitalWrite(LED_3,HIGH);
-			digitalWrite(LED_4,HIGH);
+			digitalWrite(BATT_LED_1,HIGH);
+			digitalWrite(BATT_LED_2,HIGH);
+			digitalWrite(BATT_LED_3,HIGH);
+			digitalWrite(BATT_LED_4,HIGH);
 		}
 		else if(cell_voltage>VOLTAGE_75){
-			digitalWrite(LED_1,HIGH);
-			digitalWrite(LED_2,HIGH);
-			digitalWrite(LED_3,HIGH);
-			digitalWrite(LED_4,LOW);
+			digitalWrite(BATT_LED_1,HIGH);
+			digitalWrite(BATT_LED_2,HIGH);
+			digitalWrite(BATT_LED_3,HIGH);
+			digitalWrite(BATT_LED_4,LOW);
 		}
 		else if(cell_voltage>VOLTAGE_50){
-			digitalWrite(LED_1,HIGH);
-			digitalWrite(LED_2,HIGH);
-			digitalWrite(LED_3,LOW);
-			digitalWrite(LED_4,LOW);
+			digitalWrite(BATT_LED_1,HIGH);
+			digitalWrite(BATT_LED_2,HIGH);
+			digitalWrite(BATT_LED_3,LOW);
+			digitalWrite(BATT_LED_4,LOW);
 		}
 		else if(cell_voltage>VOLTAGE_25){
-			digitalWrite(LED_1,HIGH);
-			digitalWrite(LED_2,LOW);
-			digitalWrite(LED_3,LOW);
-			digitalWrite(LED_4,LOW);
+			digitalWrite(BATT_LED_1,HIGH);
+			digitalWrite(BATT_LED_2,LOW);
+			digitalWrite(BATT_LED_3,LOW);
+			digitalWrite(BATT_LED_4,LOW);
 		}
 		else if(dc_supply_connected!=1){
 			// blink battery LEDs to warn extremely low battery
 			// but only if not charging
-			digitalWrite(LED_1,toggle);
-			digitalWrite(LED_2,toggle);
-			digitalWrite(LED_3,toggle);
-			digitalWrite(LED_4,toggle);
+			digitalWrite(BATT_LED_1,toggle);
+			digitalWrite(BATT_LED_2,toggle);
+			digitalWrite(BATT_LED_3,toggle);
+			digitalWrite(BATT_LED_4,toggle);
 			if(toggle){
 				toggle = 0;
 			}
@@ -168,10 +161,10 @@ int main(){
 		}
 		else{
 			// if we've gotten here, battery is extremely low but charging
-			digitalWrite(LED_1,HIGH);
-			digitalWrite(LED_2,LOW);
-			digitalWrite(LED_3,LOW);
-			digitalWrite(LED_4,LOW);
+			digitalWrite(BATT_LED_1,HIGH);
+			digitalWrite(BATT_LED_2,LOW);
+			digitalWrite(BATT_LED_3,LOW);
+			digitalWrite(BATT_LED_4,LOW);
 		}
 		
 		if(printing){

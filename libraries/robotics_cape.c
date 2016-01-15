@@ -40,7 +40,6 @@ Strawson Design - 2014
 #include <errno.h>		// pthread error codes
 
 #include <robotics_cape.h>
-#include <robotics_cape_definitions.h>
 
 /**************************************
 * Local Global Variables
@@ -60,6 +59,7 @@ static unsigned int *prusharedMem_32int_ptr;
 ***************************************/
 int is_cape_loaded();
 int initialize_button_handlers();
+int initialize_pru();
 int (*imu_interrupt_func)();
 int (*pause_unpressed_func)();
 int (*pause_pressed_func)();
@@ -137,11 +137,43 @@ int initialize_cape(){
 	}
 	
 	// initialize mmap io libs
-	printf("initializing GPIO\n");
+	printf("Initializing GPIO\n");
 	if(initialize_gpio()){
 		printf("mmap_gpio_adc.c failed to initialize gpio\n");
 		return -1;
 	}
+	//export all GPIO output pins
+	gpio_export(RED_LED);
+	gpio_set_dir(RED_LED, OUTPUT_PIN);
+	gpio_export(GRN_LED);
+	gpio_set_dir(GRN_LED, OUTPUT_PIN);
+	gpio_export(MDIR1A);
+	gpio_set_dir(MDIR1A, OUTPUT_PIN);
+	gpio_export(MDIR1B);
+	gpio_set_dir(MDIR1B, OUTPUT_PIN);
+	gpio_export(MDIR2A);
+	gpio_set_dir(MDIR2A, OUTPUT_PIN);
+	gpio_export(MDIR2B);
+	gpio_set_dir(MDIR2B, OUTPUT_PIN);
+	gpio_export(MDIR3A);
+	gpio_set_dir(MDIR3A, OUTPUT_PIN);
+	gpio_export(MDIR3B);
+	gpio_set_dir(MDIR3B, OUTPUT_PIN);
+	gpio_export(MDIR4A);
+	gpio_set_dir(MDIR4A, OUTPUT_PIN);
+	gpio_export(MDIR4B);
+	gpio_set_dir(MDIR4B, OUTPUT_PIN);
+	gpio_export(MOT_STBY);
+	gpio_set_dir(MOT_STBY, OUTPUT_PIN);
+	gpio_export(PAIRING_PIN);
+	gpio_set_dir(PAIRING_PIN, OUTPUT_PIN);
+	gpio_export(SPI1_SS1_GPIO_PIN);
+	gpio_set_dir(SPI1_SS1_GPIO_PIN, OUTPUT_PIN);
+	gpio_export(SPI1_SS2_GPIO_PIN);
+	gpio_set_dir(SPI1_SS2_GPIO_PIN, OUTPUT_PIN);
+	gpio_export(INTERRUPT_PIN);
+	gpio_set_dir(INTERRUPT_PIN, INPUT_PIN);
+	
 	printf("Initializing ADC\n");
 	if(initialize_adc()){
 		printf("mmap_gpio_adc.c failed to initialize adc\n");
@@ -160,13 +192,15 @@ int initialize_cape(){
 		printf("mmap_pwmss.c failed to initialize eQEP\n");
 		return -1;
 	}
+	
+	// setup pwm driver
 	printf("Initializing PWM\n");
-	if(init_pwm(1)){
-		printf("mmap_pwmss.c failed to initialize PWMSS 0\n");
+	if(simple_init_pwm(1,PWM_FREQ)){
+		printf("simple_pwm.c failed to initialize PWMSS 0\n");
 		return -1;
 	}
-	if(init_pwm(2)){
-		printf("mmap_pwmss.c failed to initialize PWMSS 1\n");
+	if(simple_init_pwm(2,PWM_FREQ)){
+		printf("simple_pwm.c failed to initialize PWMSS 1\n");
 		return -1;
 	}
 	
@@ -176,18 +210,18 @@ int initialize_cape(){
 	disable_motors();
 	
 	//set up function pointers for button press events
-	printf("starting button interrupts\n");
+	printf("Initializing button interrupts\n");
 	initialize_button_handlers();
 	
 	// Load binary into PRU
-	printf("Starting PRU binaries\n");
+	printf("Initializing PRU\n");
 	if(initialize_pru()){
 		printf("ERROR: PRU init FAILED\n");
 		return -1;
 	}
 	
 	// Start Signal Handler
-	printf("Enabling exit signal handler\n");
+	printf("Initializing exit signal handler\n");
 	signal(SIGINT, ctrl_c);	
 	
 	// Print current battery voltage
@@ -200,11 +234,11 @@ int initialize_cape(){
 	return 0;
 }
 
-/*********************************************************************************
+/******************************************************************
 *	int cleanup_cape()
 *	shuts down library and hardware functions cleanly
 *	you should call this before your main() function returns
-**********************************************************************************/
+*******************************************************************/
 int cleanup_cape(){
 	set_state(EXITING);
 	
@@ -250,7 +284,8 @@ int cleanup_cape(){
 	#ifdef DEBUG
 	printf("turning off PRU\n");
 	#endif
-	prussdrv_pru_disable(PRU_SERVO_NUM);
+	prussdrv_pru_disable(0);
+	prussdrv_pru_disable(1);
     prussdrv_exit();
 	
 	#ifdef DEBUG
@@ -436,14 +471,13 @@ int get_encoder_pos(int ch){
 * sets the encoder counter position
 *****************************************************************/
 int set_encoder_pos(int ch, int val){
-	int set_encoder_pos(int ch, int value){
 	if(ch<1 || ch>4){
 		printf("Encoder Channel must be from 1 to 4\n");
 		return -1;
 	}
 	// 4th channel is counted by the PRU not eQEP
 	if(ch==4){
-		prusharedMem_32int_ptr[8] = value;
+		prusharedMem_32int_ptr[8] = val;
 		return 0;
 	}
 	// else write to eQEP
@@ -602,11 +636,11 @@ int initialize_button_handlers(){
 	return 0;
 }
 
-/*********************************************************************************
+/******************************************************************
 *	void* pause_pressed_handler(void* ptr)
 * 
 *	wait on falling edge of pause button
-**********************************************************************************/
+*******************************************************************/
 void* pause_pressed_handler(void* ptr){
 	struct pollfd fdset[1];
 	char buf[MAX_BUF];
@@ -629,11 +663,11 @@ void* pause_pressed_handler(void* ptr){
 	return 0;
 }
 
-/*********************************************************************************
+/******************************************************************
 *	void* pause_unpressed_handler(void* ptr) 
 *
 *	wait on rising edge of pause button
-**********************************************************************************/
+*******************************************************************/
 void* pause_unpressed_handler(void* ptr){
 	struct pollfd fdset[1];
 	char buf[MAX_BUF];
@@ -656,10 +690,10 @@ void* pause_unpressed_handler(void* ptr){
 	return 0;
 }
 
-/*********************************************************************************
+/******************************************************************
 *	void* mode_pressed_handler(void* ptr) 
 *	wait on falling edge of mode button
-**********************************************************************************/
+*******************************************************************/
 void* mode_pressed_handler(void* ptr){
 	struct pollfd fdset[1];
 	char buf[MAX_BUF];
@@ -682,10 +716,10 @@ void* mode_pressed_handler(void* ptr){
 	return 0;
 }
 
-/*********************************************************************************
+/******************************************************************
 *	void* mode_unpressed_handler(void* ptr) 
 *	wait on rising edge of mode button
-**********************************************************************************/
+*******************************************************************/
 void* mode_unpressed_handler(void* ptr){
 	struct pollfd fdset[1];
 	char buf[MAX_BUF];
@@ -1254,6 +1288,24 @@ int initialize_pru(){
 	prussdrv_exec_program(ENCODER_PRU_NUM, PRU_ENCODER_BIN);
 
     return(0);
+}
+
+/*****************************************************************
+* int enable_servo_power_rail()
+* 
+* 
+*****************************************************************/
+int enable_servo_power_rail(){
+	return digitalWrite(SERVO_PWR, HIGH);
+}
+
+/*****************************************************************
+* int disable_servo_power_rail()
+* 
+* 
+*****************************************************************/
+int disable_servo_power_rail(){
+	return digitalWrite(SERVO_PWR, LOW);
 }
 
 /*****************************************************************

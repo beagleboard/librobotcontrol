@@ -17,20 +17,13 @@ case "$1" in
 		kill_robot
     ;;
 	start)
-		# wait for for the cape to load
-		until [ $(grep -c "SD-101" /sys/devices/bone_capemgr.*/slots) -gt 0 ]; do
-			#echo "waiting for cape" >> /root/log.txt
-            sleep 1
-        done
-		#echo "cape loaded" >> /root/log.txt
 		
-		# now keep checking the test-initialization example program
+		# keep checking the test-initialization example program
 		# until it loads the cape hardware correctly
 		RETURNCODE=-1
 		until [ $RETURNCODE -eq "0" ]; do
 			test_initialization
 			RETURNCODE=$?
-			#echo "$RETURNCODE" >> /root/log.txt
             sleep 1
         done
 		

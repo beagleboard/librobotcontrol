@@ -42,17 +42,12 @@ either expressed or implied, of the FreeBSD Project.
 #include <unistd.h>
 #include <math.h>
 
-#define DEFAULT_FREQ 40000 // 40khz pwm freq
-#define DEFAULT_DIVIDER 4  // clock divider
-
 volatile char *cm_per_base;
 int cm_per_mapped=0;
 volatile char *pwm_base[3]; // pwm subsystem pointers for eQEP
 int pwmss_mapped[3] = {0,0,0}; // to record which subsystems have been mapped
 int eqep_initialized[3] = {0,0,0};
 int pwm_initialized[3] = {0,0,0};
-uint16_t period[3] = {0,0,0}; // real world period, not tb_prd
-int divider[3] = {0,0,0}; 	// these get set in initialize_pwm
 
 /********************************************
 *  PWMSS Mapping
@@ -144,7 +139,7 @@ int map_pwmss(int ss){
 	}
 	pwmss_mapped[ss]=1;
 	
-	// //enable clock from PWMSS
+	// enable clock from PWMSS
 	*(uint32_t*)(pwm_base[ss]+PWMSS_CLKCONFIG) |= 0x010;
 	
 	close(dev_mem);
@@ -208,7 +203,7 @@ int init_eqep(int ss){
 // read a value from eQEP counter
 int read_eqep(int ch){
 	if(init_eqep(ch)) return -1;
-	return  *(int*)(pwm_base[ch-1] + EQEP_OFFSET +QPOSCNT);
+	return  *(int*)(pwm_base[ch] + EQEP_OFFSET +QPOSCNT);
 }
 
 // write a value to the eQEP counter
@@ -220,131 +215,41 @@ int write_eqep(int ch, int val){
 
 /****************************************************************
 * PWM
-* we use up-count mode to generate an asymmetric PWM
-* same frequency for each pair on signals in each subsystem
-* refer to page 1523 of AM335x TRM
+* Due to conflicts with the linux driver the only available
+* mmap function for PWM is to set the duty cycle. Setup
+* must be done through /sys/class/pwm or with simple_pwm.c
 *****************************************************************/
-int init_pwm(int ss){
-	if(ss>2 || ss<0){
-		printf("pwm subsystem must be 0,1, or 2\n");
-		return -1;
-	}
-	if(pwm_initialized[ss]){
-		return 0;
-	}
-	if(map_pwmss(ss)){
-		printf("failed to map PWMSS\n");
-		return -1;
-	}
-	
-	// set up the divider bits to match desired divider ratio
-	divider[ss] = DEFAULT_DIVIDER;
-	uint16_t div_bits;
-	switch(divider[ss]){
-		case 1:
-			div_bits=TB_DIV1;
-			break;
-		case 2:
-			div_bits=TB_DIV2;
-			break;
-		case 4:
-			div_bits=TB_DIV4;
-			break;
-		case 8:
-			div_bits=TB_DIV8;
-			break;
-		case 16:
-			div_bits=TB_DIV16;
-			break;
-		case 32:
-			div_bits=TB_DIV32;
-			break;
-		case 64:
-			div_bits=TB_DIV64;
-			break;
-		case 128:
-			div_bits=TB_DIV128;
-			break;
-		default:
-			printf("invalid divider\n");
-			return -1;
-	}
-	
-	//disable clock to EPWM
-	*(uint32_t*)(pwm_base[ss]+PWMSS_CLKCONFIG) &= ~PWMSS_EPWMCLK_EN;
-	// set period to default for divider=4
-	int new_period = (1000000000/(DEFAULT_FREQ*divider[ss]));
-    *(uint16_t*)(pwm_base[ss]+PWM_OFFSET+TBPRD) = new_period-1;
-	period[ss] = new_period;
-	//set phase to 0
-	*(uint16_t*)(pwm_base[ss]+PWM_OFFSET+TBPHS) = 0;
-	// clear TB counter
-	*(uint16_t*)(pwm_base[ss]+PWM_OFFSET+TBCNT) = 0;
-	// disable phase loading and set clock divider to 4
-	*(uint16_t*)(pwm_base[ss]+PWM_OFFSET+TBCTL) \
-		= TB_UP||TB_DISABLE||TB_SHADOW||TB_SYNC_DISABLE||div_bits||TB_HDIV1;
-	// set compare registers to 0
-	*(uint16_t*)(pwm_base[ss]+PWM_OFFSET+CMPA) = 0;
-	*(uint16_t*)(pwm_base[ss]+PWM_OFFSET+CMPB) = 0;
-	// set comparator to toggle on at TBCNT = 0;
-	*(uint16_t*)(pwm_base[ss]+PWM_OFFSET+CMPCTL) \
-		=CC_SHADOW_A||CC_SHADOW_B||CC_CTR_ZERO_A||CC_CTR_ZERO_B;
-	// don't use Action Qualifier Dead Band
-	*(uint16_t*)(pwm_base[ss]+PWM_OFFSET+AQ_CTLA) \
-		= AQ_ZRO_SET||AQ_CAU_CLEAR;
-	*(uint16_t*)(pwm_base[ss]+PWM_OFFSET+AQ_CTLB) \
-		= AQ_ZRO_SET||AQ_CBU_CLEAR;
-	// Enable Clock
-	*(uint32_t*)(pwm_base[ss]+PWMSS_CLKCONFIG) |= PWMSS_EPWMCLK_EN;
-	
-	pwm_initialized[ss]=1;
-	return 0;
-}
-
-
-// set PWM frequency for a subsystem, this effects both channels A & B
-int set_pwm_freq(int ss, int hz){
-	// sanity check initialization
-	if(init_pwm(ss)) return -1;
-	
-	// period = (TBPRD+1) * TBCLK
-	// we set divider to 1 to TBCLK = SYSCLK (1ghz)
-	int new_period = (1000000000/(hz*divider[ss]));
-	// check that the period isn't higher than the 16-bit register can hold
-	if(new_period>65535){
-		int min_hz = (1000000000/(65535*divider[ss]));
-		printf("frequency must be faster than %dhz\n", min_hz);
-		printf("you may change the pwm clock divider in init_pwm() if needed\n");
-		return -1;
-	}
-	period[ss] = new_period;
-	// set duty cycle to 0 before changing frequency
-	*(uint16_t*)(pwm_base[ss]+PWM_OFFSET+CMPA) = 0;
-	*(uint16_t*)(pwm_base[ss]+PWM_OFFSET+CMPA) = 0;
-	// finally set period
-	*(uint16_t*)(pwm_base[ss]+PWM_OFFSET+TBPRD) = period[ss]-1;
-	return 0;
-}
 
 // set duty cycle for either channel A or B in a given subsystem
 // input channel is a character 'A' or 'B'
 int set_pwm_duty(int ss, char ch, float duty){
-	if(init_pwm(ss)) return -1;
+	// make sure the subsystem is mapped
+	if(map_pwmss(ss)){
+		printf("failed to map PWMSS %d\n", ss);
+		return -1;
+	}
 	//sanity check duty
 	if(duty>1.0 || duty<0.0){
 		printf("duty must be between 0.0 & 1.0\n");
 		return -1;
 	}
-	uint16_t new = (uint16_t)lroundf(duty * period[ss]);
+	
+	// duty ranges from 0 to TBPRD+1 for 0-100% PWM duty
+	uint16_t period = *(uint16_t*)(pwm_base[ss]+PWM_OFFSET+TBPRD);
+	uint16_t new_duty = (uint16_t)lroundf(duty * (period+1));
+	
+	#ifdef DEBUG
+		printf("period : %d\n", period);
+		printf("new_duty : %d\n", new_duty);
+	#endif
 	
 	// change appropriate compare register
-	// from 0 to TBPRD+1 to achieve 0-100% PWM duty
 	switch(ch){
 	case 'A':
-		*(uint16_t*)(pwm_base[ss]+PWM_OFFSET+CMPA) = new;
+		*(uint16_t*)(pwm_base[ss]+PWM_OFFSET+CMPA) = new_duty;
 		break;
 	case 'B':
-		*(uint16_t*)(pwm_base[ss]+PWM_OFFSET+CMPB) = new;
+		*(uint16_t*)(pwm_base[ss]+PWM_OFFSET+CMPB) = new_duty;
 		break;
 	default:
 		printf("pwm channel must be 'A' or 'B'\n");
@@ -353,5 +258,3 @@ int set_pwm_duty(int ss, char ch, float duty){
 	
 	return 0;
 }
-
-
