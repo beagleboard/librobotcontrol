@@ -126,8 +126,8 @@ int main(){
 		blink_red();
 		return -1;
 	}
-	setRED(HIGH);
-	setGRN(LOW);
+	set_led(RED,HIGH);
+	set_led(GREEN,LOW);
 	set_state(UNINITIALIZED);
 	
 	// set up button handlers first
@@ -169,8 +169,8 @@ int main(){
 	
 	// all threads have started, off we go
 	set_state(RUNNING);
-	setRED(LOW);
-	setGRN(HIGH);
+	set_led(RED,LOW);
+	set_led(GREEN,HIGH);
 	
 	// chill until something exits the program
 	while(get_state()!=EXITING){
@@ -454,13 +454,13 @@ int on_pause_press(){
 		return 0;
 	case RUNNING:
 		set_state(PAUSED);
-		setRED(HIGH);
-		setGRN(LOW);
+		set_led(RED,HIGH);
+		set_led(GREEN,LOW);
 		break;
 	case PAUSED:
 		set_state(RUNNING);
-		setGRN(HIGH);
-		setRED(LOW);
+		set_led(GREEN,HIGH);
+		set_led(RED,LOW);
 		break;
 	default:
 		break;
@@ -496,7 +496,7 @@ int on_mode_release(){
 ***********************************************************************/
 int blink_green(){
 	// record if the led was on or off so we can return later
-	int old_state = getGRN();
+	int old_state = get_led_state(GREEN);
 	
 	const int us_to_blink = 700000; // 0.7 seconds
 	const int blink_hz = 10;
@@ -505,9 +505,9 @@ int blink_green(){
 	int i;
 	for(i=0;i<blinks;i++){
 		usleep(delay);
-		setGRN(!old_state);
+		set_led(GREEN,!old_state);
 		usleep(delay);
-		setGRN(old_state);
+		set_led(GREEN,old_state);
 	}
 	return 0;
 }
@@ -524,9 +524,9 @@ int blink_red(){
 	int i;
 	for(i=0;i<blinks;i++){
 		usleep(delay);
-		setRED(HIGH);
+		set_led(RED,HIGH);
 		usleep(delay);
-		setRED(LOW);
+		set_led(RED,LOW);
 	}
 	return 0;
 }

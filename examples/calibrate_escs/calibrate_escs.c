@@ -58,7 +58,7 @@ int main(){
 	printf("\n");
 	printf("Now reapply power to the ESCs.\n");
 	printf("Press enter again after the ESCs finish chirping\n");
-	setGRN(HIGH);
+	set_led(GREEN,HIGH);
 	fflush(stdin);
 	while( getchar() != '\n' );
 	

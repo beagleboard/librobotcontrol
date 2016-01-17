@@ -278,8 +278,8 @@ int cleanup_cape(){
 	#ifdef DEBUG
 	printf("turning off GPIOs & PWM\n");
 	#endif
-	setGRN(0);
-	setRED(0);	
+	set_led(GREEN,LOW);
+	set_led(RED,LOW);	
 	disable_motors();
 	deselect_spi1_slave(1);	
 	deselect_spi1_slave(2);	
@@ -490,43 +490,50 @@ int set_encoder_pos(int ch, int val){
 
 
 /*****************************************************************
-* int setGRN(uint8_t i)
+* int set_led(led_t led, int state)
 * 
-* turn on or off the green LED on robotics cape
-* takes in a value either HIGH or LOW
+* turn on or off the green or red LED on robotics cape
+* if state is 0, turn led off, otherwise on.
+* we suggest using the names HIGH or LOW
 *****************************************************************/
-int setGRN(uint8_t i){
-	return digitalWrite(GRN_LED, i);
+int set_led(led_t led, int state){
+	int val;
+	if(state) val = HIGH;
+	else val = LOW;
+	
+	switch(led){
+	case GREEN:
+		return digitalWrite(GRN_LED, val);
+		break;
+	case RED:
+		return digitalWrite(RED_LED, val);
+		break;
+	default:
+		printf("LED must be GREEN or RED\n");
+		break;
+	}
+	return -1;
 }
 
 /*****************************************************************
-* int setRED(uint8_t i)
+* int get_led_state(led_t led)
 * 
-* turn on or off the red LED on robotics cape
-* takes in a value either HIGH or LOW
+* returns the state of the green or red LED on robotics cape
+* state is LOW(0), or HIGH(1)
 *****************************************************************/
-int setRED(uint8_t i){
-	return digitalWrite(RED_LED, i);
-}
-
-/*****************************************************************
-* int getGRN(uint8_t i)
-* 
-* returns the status of the green LED on robotics cape
-* takes in a value either HIGH or LOW
-*****************************************************************/
-int getGRN(){
-	return digitalRead(GRN_LED);
-}
-
-/*****************************************************************
-* int getRED(uint8_t i)
-* 
-* returns the status of the red LED on robotics cape
-* takes in a value either HIGH or LOW
-*****************************************************************/
-int getRED(){
-	return digitalRead(RED_LED);
+int get_led_state(led_t led){
+	switch(led){
+	case GREEN:
+		return digitalRead(GRN_LED);
+		break;
+	case RED:
+		return digitalRead(RED_LED);
+		break;
+	default:
+		printf("LED must be GREEN or RED\n");
+		break;
+	}
+	return -1;
 }
 
 

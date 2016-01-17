@@ -38,47 +38,48 @@ either expressed or implied, of the FreeBSD Project.
 #include "balance_logging.h"
 #include "balance_config.h"
 
-/************************************************************************
+/******************************************************************
 * 	core_mode_t
 *
-*	ANGLE: Only body angle theta and steering is controlled, this lets you
-*	push the MiP around. 
+*	ANGLE: Only body angle theta and steering is controlled, this
+*	lets you push the MiP around. 
 *
-*	POSITION: Additionally the wheel position is controlled so the MiP
-*	will stay still on a table.
-************************************************************************/
+*	POSITION: Additionally the wheel position is controlled so 
+*	the MiP will stay still on a table.
+*******************************************************************/
 typedef enum core_mode_t{
 	ANGLE,
 	POSITION
 }core_mode_t;
 
-/************************************************************************
+/******************************************************************
 * 	drive_mode_t
 *
-*	NOVICE: Drive rate and turn rate are limited to make driving easy.
+*	NOVICE: Drive rate and turn rate are limited to 
+*	make driving easier.
 *
 *	ADVANCED: Faster drive and turn rate for more fun.
-************************************************************************/
+*******************************************************************/
 typedef enum drive_mode_t{
 	NOVICE,
 	ADVANCED
 }drive_mode_t;
 
-/************************************************************************
+/******************************************************************
 * 	arm_state_t
 *
 *	ARMED or DISARMED to indicate if the controller is running
-************************************************************************/
+*******************************************************************/
 typedef enum arm_state_t{
 	ARMED,
 	DISARMED
 }arm_state_t;
 
-/************************************************************************
+/******************************************************************
 * 	core_setpoint_t
 *	setpoint for the balance controller
 *	This is controlled by the balance stack and read by the balance core	
-************************************************************************/
+*******************************************************************/
 typedef struct core_setpoint_t{
 	
 	core_mode_t core_mode;	// see core_state_t declaration
@@ -92,11 +93,12 @@ typedef struct core_setpoint_t{
 	
 }core_setpoint_t;
 
-/************************************************************************
+/******************************************************************
 * 	core_state_t
 *	contains workings of the feedback controller
-*	Should only be written to by the balance core after initialization		
-************************************************************************/
+*	Should only be written to by the balance core after 
+*	initialization		
+*******************************************************************/
 typedef struct core_state_t{
 	// time when core_controller has finished a step
 	uint64_t time_us; 
@@ -128,10 +130,10 @@ typedef struct core_state_t{
 	float vBatt; 
 } core_state_t;
 
-/************************************************************************
+/******************************************************************
 * 	input_mode_t
 *	possible modes of user control
-************************************************************************/
+*******************************************************************/
 typedef enum input_mode_t {
 	NONE,
 	DSM2,
@@ -139,11 +141,12 @@ typedef enum input_mode_t {
 }input_mode_t;
 
 
-/************************************************************************
+/******************************************************************
 * 	user_interface_t
-*	represents current command by the user which may be populated from 
-*	DSM2, mavlink, bluetooth, or any other communication you like
-************************************************************************/
+*	represents current command by the user which may be populated 
+*	from DSM2, mavlink, bluetooth, or any other communication 
+*	you like
+*******************************************************************/
 typedef struct user_interface_t{
 	// written by the last input watching thread to update
 	input_mode_t input_mode;
@@ -159,10 +162,11 @@ typedef struct user_interface_t{
 // set with microsSinceEpoch() when the core starts
 uint64_t core_start_time_us;
 
-/************************************************************************
+/******************************************************************
 * 	Function declarations in this c file
-*	also check out functions in balance_config.h & balance_logging.h		
-************************************************************************/
+*	also check out functions in balance_config.h 
+*	& balance_logging.h		
+*******************************************************************/
 // hardware interrupt routines
 int balance_core();
 
@@ -186,9 +190,9 @@ int on_mode_release();
 int blink_green();
 int blink_red();
 
-/************************************************************************
+/******************************************************************
 * 	Global Variables				
-************************************************************************/
+*******************************************************************/
 balance_config_t config;
 core_state_t cstate;
 core_setpoint_t setpoint;
@@ -198,15 +202,15 @@ int* udp_sock;
 struct sockaddr_in gcAddr;
 
 
-/***********************************************************************
+/******************************************************************
 *	main()
-*	initialize the IMU, start all the threads, and wait still something 
-*	triggers a shut down
-***********************************************************************/
+*	initialize the IMU, start all the threads, and wait still
+*	something triggers a shut down
+*******************************************************************/
 int main(){
 	initialize_cape();
-	setRED(HIGH);
-	setGRN(LOW);
+	set_led(RED,HIGH);
+	set_led(GREEN,LOW);
 	set_state(UNINITIALIZED);
 	
 	// set up button handlers first
@@ -312,13 +316,14 @@ int main(){
 	return 0;
 }
 
-/***********************************************************************
+/******************************************************************
 *	balance_stack
-*	This is the medium between the user_interface and setpoint structs.
-*	dsm2, bluetooth, and mavlink threads may be unreliable and shouldn't
-*	touch the controller setpoint directly. balance_stack and balance_core
-*	should be the only things touching the controller setpoint.
-************************************************************************/
+*	This is the medium between the user_interface and setpoint 
+*	structs. dsm2, bluetooth, and mavlink threads may be 
+*	unreliable and shouldn't touch the controller setpoint 
+*	directly. balance_stack and balance_core should be the only 
+*	things touching the controller setpoint.
+*******************************************************************/
 void* balance_stack(void* ptr){
 	
 	// wait for IMU to settle
@@ -328,8 +333,8 @@ void* balance_stack(void* ptr){
 	usleep(500000);
 	set_state(RUNNING);
 	setpoint.core_mode = POSITION; //start in position control
-	setRED(LOW);
-	setGRN(HIGH);
+	set_led(RED,LOW);
+	set_led(GREEN,HIGH);
 	
 	// exiting condition is checked inside the switch case instead
 	while(1){
@@ -407,11 +412,11 @@ void* balance_stack(void* ptr){
 	return NULL;
 }
 
-/************************************************************************
+/******************************************************************
 * 	balance_core()
 *	discrete-time balance controller operated off IMU interrupt
 *	Called at SAMPLE_RATE_HZ
-************************************************************************/
+*******************************************************************/
 int balance_core(){
 	// local variables only in memory scope of balance_core
 	static int D1_saturation_counter = 0; 
@@ -427,11 +432,11 @@ int balance_core(){
 		return -1;
 	}
 	
-	/***********************************************************************
+	/**************************************************************
 	*	STATE_ESTIMATION
-	*	read sensors and compute the state regardless of if the controller
-	*	is ARMED or DISARMED
-	************************************************************************/
+	*	read sensors and compute the state regardless of if the 
+	*	controller is ARMED or DISARMED
+	***************************************************************/
 	// angle theta is positive in the direction of forward tip
 	// add mounting angle of BBB
 	cstate.theta[2] = cstate.theta[1]; cstate.theta[1] = cstate.theta[0];
@@ -463,16 +468,17 @@ int balance_core(){
 	// output scaling
 	output_scale =  cstate.vBatt/config.v_nominal;
 	
-	/***********************************************************************
+	/*************************************************************
 	*	Control based on the robotics_library defined state variable
 	*	PAUSED: make sure the controller stays DISARMED
 	*	RUNNING: Normal operation of controller.
 	*		- check for tipover
-	*		- wait for MiP to be within config.start_angle of upright
+	*		- wait for MiP to be within config.start_angle of 
+	*			upright
 	*		- choose mode from setpoint.core_mode
 	*		- evaluate difference equation and check saturation
 	*		- actuate motors
-	************************************************************************/
+	***************************************************************/
 	switch (get_state()){
 	
 	// make sure things are off if program is closing
@@ -501,11 +507,12 @@ int balance_core(){
 			break;
 		}
 		
-		/***********************************************************************
+		/**********************************************************
 		*	POSITION Phi controller
-		*	feedback control of wheel angle Phi by outputting a reference theta
-		*	body angle. This is controller D2 in config
-		************************************************************************/
+		*	feedback control of wheel angle Phi by outputting a 
+		*	reference theta body angle. This is controller D2 in 
+		*	config
+		***********************************************************/
 		if(setpoint.core_mode == POSITION){
 			
 			// move the position set points based on user input
@@ -626,13 +633,13 @@ int balance_core(){
 }
 
 
-/************************************************************************
+/******************************************************************
 * 	zero_out_controller()
 *	clear the controller state and setpoint
 *	especially should be called before swapping state to RUNNING
 *	keep current theta and vbatt since they may be used by 
 *	other threads
-************************************************************************/
+*******************************************************************/
 int zero_out_controller(){
 	// store theta and vbatt
 	float theta_tmp = cstate.current_theta;
@@ -654,23 +661,24 @@ int zero_out_controller(){
 	return 0;
 }
 
-/************************************************************************
+/******************************************************************
 * 	disarm_controller()
 *		- disable motors
-*		- set the setpoint.core_mode to DISARMED to stop the controller
-************************************************************************/
+*		- set the setpoint.core_mode to DISARMED to stop the 
+*			controller
+*******************************************************************/
 int disarm_controller(){
 	disable_motors();
 	setpoint.arm_state = DISARMED;
 	return 0;
 }
 
-/************************************************************************
+/******************************************************************
 * 	arm_controller()
 *		- zero out the controller
 *		- set the setpoint.armed_state to ARMED
 *		- enable motors
-************************************************************************/
+*******************************************************************/
 int arm_controller(){
 	zero_out_controller();
 	setpoint.arm_state = ARMED;
@@ -678,10 +686,10 @@ int arm_controller(){
 	return 0;
 }
 
-/***********************************************************************
+/******************************************************************
 *	wait_for_starting_condition()
 *	wait for MiP to be held upright long enough to begin
-************************************************************************/
+*******************************************************************/
 int wait_for_starting_condition(){
 	int checks = 0;
 	
@@ -703,10 +711,10 @@ int wait_for_starting_condition(){
 	return 0;
 }
 
-/***********************************************************************
+/******************************************************************
 *	battery_checker()
 *	super slow loop checking battery voltage
-************************************************************************/
+*******************************************************************/
 void* battery_checker(void* ptr){
 	float new_v;
 	while(get_state()!=EXITING){
@@ -725,11 +733,11 @@ void* battery_checker(void* ptr){
 	return NULL;
 }
 
-/***********************************************************************
+/******************************************************************
 *	printf_loop() 
 *	prints diagnostics to console
 *   this only gets started if executing from terminal
-************************************************************************/
+*******************************************************************/
 void* printf_loop(void* ptr){
 	state_t last_state, new_state; // keep track of last state 
 	while(1){
@@ -778,11 +786,11 @@ void* printf_loop(void* ptr){
 	}
 	return NULL;
 } 
-/***********************************************************************
+/******************************************************************
 *	on_pause_press() 
 *	Disarm the controller and set system state to paused.
 *	If the user holds the pause button for 2 seconds, exit cleanly
-************************************************************************/
+*******************************************************************/
 int on_pause_press(){
 	int i=0;
 	const int samples = 100;	// check for release 100 times in this period
@@ -795,14 +803,14 @@ int on_pause_press(){
 	case RUNNING:
 		set_state(PAUSED);
 		disarm_controller();
-		setRED(HIGH);
-		setGRN(LOW);
+		set_led(RED,HIGH);
+		set_led(GREEN,LOW);
 		break;
 	case PAUSED:
 		set_state(RUNNING);
 		disarm_controller();
-		setGRN(HIGH);
-		setRED(LOW);
+		set_led(GREEN,HIGH);
+		set_led(RED,LOW);
 		break;
 	default:
 		break;
@@ -824,10 +832,10 @@ int on_pause_press(){
 }
 
 
-/***********************************************************************
+/******************************************************************
 *	on_mode_release()
 *	toggle between position and angle modes if MiP is paused
-***********************************************************************/
+*******************************************************************/
 int on_mode_release(){
 	// store whether or not the controller was armed
 	int was_armed = setpoint.arm_state;
@@ -855,14 +863,14 @@ int on_mode_release(){
 	return 0;
 }
 
-/***********************************************************************
+/******************************************************************
 *	blink_green()
 *	nothing exciting, just blink the GRN LED for half a second
 *	then return the LED to its original state
-***********************************************************************/
+*******************************************************************/
 int blink_green(){
 	// record if the led was on or off so we can return later
-	int old_state = getGRN();
+	int old_state = get_led_state(GREEN);
 	
 	const int us_to_blink = 700000; // 0.7 seconds
 	const int blink_hz = 10;
@@ -871,17 +879,17 @@ int blink_green(){
 	int i;
 	for(i=0;i<blinks;i++){
 		usleep(delay);
-		setGRN(!old_state);
+		set_led(GREEN,!old_state);
 		usleep(delay);
-		setGRN(old_state);
+		set_led(GREEN,old_state);
 	}
 	return 0;
 }
 
-/***********************************************************************
+/******************************************************************
 *	blink_red()
 *	used to warn user that the program is exiting
-***********************************************************************/
+*******************************************************************/
 int blink_red(){
 	const int us_to_blink = 2000000; // 2 seconds
 	const int blink_hz = 10;
@@ -890,18 +898,18 @@ int blink_red(){
 	int i;
 	for(i=0;i<blinks;i++){
 		usleep(delay);
-		setRED(HIGH);
+		set_led(RED,HIGH);
 		usleep(delay);
-		setRED(LOW);
+		set_led(RED,LOW);
 	}
 	return 0;
 }
 
 
-/***********************************************************************
+/******************************************************************
 *	dsm2_listener()
 *	listen for RC control for driving around
-***********************************************************************/
+*******************************************************************/
 void* dsm2_listener(void* ptr){
 	const int timeout_frames = 10; // after 10 missed checks, consider broken
 	const int check_us = 5000; // dsm2 packets come in at 11ms, check faster
@@ -953,10 +961,10 @@ void* dsm2_listener(void* ptr){
 	return 0;
 }
 	
-/***********************************************************************
+/******************************************************************
 *	mavlink_listener()
 *	listen for RC mavlink packets for driving around
-***********************************************************************/
+*******************************************************************/
 void* mavlink_listener(void* ptr){
 	ssize_t recsize;
 	socklen_t fromlen;
@@ -1003,10 +1011,10 @@ void* mavlink_listener(void* ptr){
 	return NULL;
 }
 
-/***********************************************************************
+/*****************************************************************
 *	mavlink_sender()
 *	send mavlink heartbeat and IMU attitude packets
-***********************************************************************/
+******************************************************************/
 void* mavlink_sender(void* ptr){
 	uint8_t buf[MAV_BUF_LEN];
 	mavlink_message_t msg;
@@ -1017,17 +1025,21 @@ void* mavlink_sender(void* ptr){
 		memset(buf, 0, MAV_BUF_LEN);
 		mavlink_msg_heartbeat_pack(1, 200, &msg, MAV_TYPE_HELICOPTER, MAV_AUTOPILOT_GENERIC, MAV_MODE_GUIDED_ARMED, 0, MAV_STATE_ACTIVE);
 		len = mavlink_msg_to_send_buffer(buf, &msg);
-		sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr, sizeof(struct sockaddr_in));
+		sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr,\
+							sizeof(struct sockaddr_in));
 		
 		//send attitude
 		memset(&buf, 0, MAV_BUF_LEN);
-		mavlink_msg_attitude_pack(1, 200, &msg, microsSinceEpoch(), 
-											mpu.fusedEuler[VEC3_X], 
-											mpu.fusedEuler[VEC3_Y],
-											mpu.fusedEuler[VEC3_Z], 
-											0, 0, 0); //set gyro rates to 0 for simplicity
+		mavlink_msg_attitude_pack(1, 200, &msg,\
+							microsSinceEpoch(), 
+							mpu.fusedEuler[VEC3_X],\
+							mpu.fusedEuler[VEC3_Y],\
+							mpu.fusedEuler[VEC3_Z],\
+							0, 0, 0);
+							//set gyro rates to 0 for simplicity
 		len = mavlink_msg_to_send_buffer(buf, &msg);
-		sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr, sizeof(struct sockaddr_in));
+		sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr,\
+						sizeof(struct sockaddr_in));
 		
 		usleep(100000); // 10 hz
 	}

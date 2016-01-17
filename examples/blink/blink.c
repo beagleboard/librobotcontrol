@@ -104,13 +104,13 @@ int main(){
 	while(get_state()!=EXITING){
 		if(get_state()==RUNNING){
 			if(toggle){
-				setGRN(LOW);
-				setRED(HIGH);
+				set_led(GREEN,LOW);
+				set_led(RED,HIGH);
 				toggle = 0;
 			}
 			else{
-				setGRN(HIGH);
-				setRED(LOW);
+				set_led(GREEN,HIGH);
+				set_led(RED,LOW);
 				toggle=1;
 			}
 		}

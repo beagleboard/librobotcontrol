@@ -65,6 +65,9 @@ int main(int argc, char *argv[]){
 	printf("sending center pulses, width: %d microseconds\n", SERVO_MID_US);
 	printf("press ctrl-c to exit\n");
 	
+	// make sure the servos get power
+	enable_servo_power_rail();
+	
 	while(get_state()!=EXITING){
 		// if user gave no arguments, send single pulse to each servo
 		if(all){

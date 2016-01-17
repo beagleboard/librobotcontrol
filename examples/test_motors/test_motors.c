@@ -85,8 +85,8 @@ int main(int argc, char *argv[]){
 	
 
 	enable_motors(); // bring H-bridges of of standby
-	setGRN(HIGH);
-	setRED(HIGH);
+	set_led(GREEN,HIGH);
+	set_led(RED,HIGH);
 	
 	// set one or all motors
 	if(all) set_motor_all(duty);

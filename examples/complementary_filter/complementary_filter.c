@@ -108,7 +108,7 @@ int main(){
 	pthread_t slow_thread;
 	pthread_create(&slow_thread, NULL, slow_loop_func, (void*) NULL);
 	
-	setGRN(1);
+	set_led(GREEN,1);
 	while(get_state()!=EXITING){
 		sleep(1);	// chill
 	}

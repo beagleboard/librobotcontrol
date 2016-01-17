@@ -38,8 +38,8 @@ either expressed or implied, of the FreeBSD Project.
 int main(){
 	initialize_cape();
 	enable_motors(); // bring H-bridges of of standby
-	setGRN(HIGH);
-	setRED(HIGH);
+	set_led(GREEN,HIGH);
+	set_led(RED,HIGH);
 	
 	// Forward
 	set_motor_all(SPEED);
