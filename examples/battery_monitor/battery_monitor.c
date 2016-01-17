@@ -56,8 +56,8 @@ int main(){
 	while(1){
 		
 		// read in the voltage of the 2S pack and DC jack
-		pack_voltage = getBattVoltage();
-		jack_voltage = getJackVoltage();
+		pack_voltage = get_battery_voltage();
+		jack_voltage = get_dc_jack_voltage();
 
 		if(pack_voltage==-1 || jack_voltage==-1){
 			printf("can't read battery voltages\n");

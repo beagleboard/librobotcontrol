@@ -88,8 +88,8 @@ int get_mode_button_state();
 //// adc Battery & power
 int get_adc_raw(int p);
 float get_adc_volt(int p);
-float getBattVoltage();
-float getJackVoltage();
+float get_battery_voltage();
+float get_dc_jack_voltage();
 
 //// MPU9150 IMU DMP
 mpudata_t mpu; //struct to read IMU data into

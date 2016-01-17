@@ -360,7 +360,7 @@ int saturate_number(float* val, float min, float max){
 void* battery_checker(void* ptr){
 	float new_v;
 	while(get_state()!=EXITING){
-		new_v = getBattVoltage();
+		new_v = get_battery_voltage();
 		// check if there is a bad reading
 		if (new_v>9.0 || new_v<5.0){
 			// printf("problem reading battery\n");

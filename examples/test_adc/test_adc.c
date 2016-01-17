@@ -25,8 +25,8 @@ int main(){
 			printf("  %0.2f ", get_adc_volt(i));
 		}
 		printf("   %4d    ", get_adc_raw(3));
-		printf(" %0.2f   ", getJackVoltage());
-		printf(" %0.2f   ", getBattVoltage());
+		printf(" %0.2f   ", get_dc_jack_voltage());
+		printf(" %0.2f   ", get_battery_voltage());
 		printf("  ");
 		fflush(stdout);
 		usleep(100000);

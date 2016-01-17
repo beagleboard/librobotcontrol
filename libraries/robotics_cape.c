@@ -228,7 +228,7 @@ int initialize_cape(){
 	signal(SIGTERM, ctrl_c);	
 	
 	// Print current battery voltage
-	printf("Battery Voltage: %2.2fV\n", getBattVoltage());
+	printf("Battery Voltage: %2.2fV\n", get_battery_voltage());
 	
 	// all done
 	set_state(PAUSED);
@@ -566,23 +566,23 @@ float get_adc_volt(int p){
 }
 
 /*****************************************************************
-* float getBattVoltage()
+* float get_battery_voltage()
 * 
 * returns the LiPo battery voltage on the robotics cape
 * this accounts for the voltage divider ont he cape
 *****************************************************************/
-float getBattVoltage(){
+float get_battery_voltage(){
 	float v_adc = get_adc_volt(6);
 	return v_adc*11.0; 
 }
 
 /*****************************************************************
-* float getJackVoltage()
+* float get_dc_jack_voltage()
 * 
 * returns the DC power jack voltage on the robotics cape
 * this accounts for the voltage divider ont he cape
 *****************************************************************/
-float getJackVoltage(){
+float get_dc_jack_voltage(){
 	float v_adc = get_adc_volt(5);
 	return v_adc*11.0; 
 }
