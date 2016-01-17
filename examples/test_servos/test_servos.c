@@ -96,9 +96,10 @@ int main(int argc, char *argv[]){
 		all=1;
 		printf("Sending signal to all channels\n");
 	}
-
 	
 	// if we got here, ready to send signal
+	enable_servo_power_rail();
+	
 	while(get_state()!=EXITING){
 		if(mode==NORMALIZED && all==0)
 			send_servo_pulse_normalized(ch,input);
@@ -112,7 +113,7 @@ int main(int argc, char *argv[]){
 			printf("logic error\n");
 			return -1;
 		}
-	usleep(20000);
+		usleep(20000);
 	}
 	
 	cleanup_cape();

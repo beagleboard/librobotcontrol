@@ -69,6 +69,8 @@ int main(int argc, char *argv[]){
 		printf("\nSending signal only to servo %d\n", ch);
 	}
 	
+	// make sure the servos get power
+	enable_servo_power_rail();
 	printf("Pulse width in microseconds:\n");
 	
 	// now loop back and forth continuously
@@ -86,8 +88,6 @@ int main(int argc, char *argv[]){
 			micros = MIN_US;
 			direction = FORWARD;
 		}
-		
-
 		
 		// send single pulse to each servo
 		if(all){
