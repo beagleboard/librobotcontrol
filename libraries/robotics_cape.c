@@ -173,6 +173,8 @@ int initialize_cape(){
 	gpio_set_dir(SPI1_SS2_GPIO_PIN, OUTPUT_PIN);
 	gpio_export(INTERRUPT_PIN);
 	gpio_set_dir(INTERRUPT_PIN, INPUT_PIN);
+	gpio_export(SERVO_PWR);
+	gpio_set_dir(SERVO_PWR, OUTPUT_PIN);
 	
 	printf("Initializing ADC\n");
 	if(initialize_adc()){
@@ -223,6 +225,7 @@ int initialize_cape(){
 	// Start Signal Handler
 	printf("Initializing exit signal handler\n");
 	signal(SIGINT, ctrl_c);	
+	signal(SIGTERM, ctrl_c);	
 	
 	// Print current battery voltage
 	printf("Battery Voltage: %2.2fV\n", getBattVoltage());
@@ -280,6 +283,7 @@ int cleanup_cape(){
 	disable_motors();
 	deselect_spi1_slave(1);	
 	deselect_spi1_slave(2);	
+	disable_servo_power_rail();
 	
 	#ifdef DEBUG
 	printf("turning off PRU\n");
@@ -1537,14 +1541,18 @@ void ctrl_c(int signo){
 		set_state(EXITING);
 		printf("\nreceived SIGINT Ctrl-C\n");
  	}
+	if (signo == SIGTERM){
+		set_state(EXITING);
+		printf("\nreceived SIGTERM\n");
+ 	}
 }
 
-/*********************************************************************************
+/*****************************************************************
 *	saturate_float(float* val, float min, float max)
 *
 *	bounds val to +- limit
 *	return one if saturation occurred, otherwise zero
-**********************************************************************************/
+******************************************************************/
 int saturate_float(float* val, float min, float max){
 	if(*val>max){
 		*val = max;
@@ -1557,14 +1565,14 @@ int saturate_float(float* val, float min, float max){
 	return 0;
 }
 
-/*********************************************************************************
+/*****************************************************************
 *	is_cape_loaded()
 *
 *	check to make sure robotics cape overlay is loaded
 *	return 1 if cape is loaded
 *	return -1 if cape_mgr is missing
 * 	return 0 if mape_mgr is present but cape is missing
-**********************************************************************************/
+******************************************************************/
 int is_cape_loaded(){
 	int ret;
 	
