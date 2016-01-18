@@ -122,6 +122,8 @@ int simple_init_pwm(int subsystem, int frequency){
 	// set the polarity
 	write(polarityA_fd, "0", 1);
 	write(polarityB_fd, "0", 1);
+	close(polarityA_fd);
+	close(polarityB_fd);
 	
 	// set the period in nanoseconds
 	period_ns[subsystem] = 1000000000/frequency;
@@ -166,6 +168,18 @@ int simple_uninit_pwm(int subsystem){
 
 
 int simple_set_pwm_duty(int subsystem, char ch, float duty){
+	// start with sanity checks
+	if(duty>1.0 || duty<0.0){
+		printf("duty must be between 0.0 & 1.0\n");
+		return -1;
+	}
+	
+	// set the duty
+	int duty_ns = duty*period_ns[subsystem];
+	return simple_set_pwm_duty_ns(subsystem, ch, duty_ns);
+}
+
+int simple_set_pwm_duty_ns(int subsystem, char ch, int duty_ns){
 	int len;
 	char buf[MAXBUF];
 	// start with sanity checks
@@ -173,17 +187,18 @@ int simple_set_pwm_duty(int subsystem, char ch, float duty){
 		printf("PWM subsystem must be between 0 and 2\n");
 		return -1;
 	}
-	if(duty>1.0 || duty<0.0){
-		printf("duty must be between 0.0 & 1.0\n");
-		return -1;
-	}
+	// initialize subsystem if not already
 	if(simple_pwm_initialized[subsystem]==0){
 		printf("initializing PWMSS%d with default PWM frequency\n", subsystem);
 		simple_init_pwm(subsystem, DEFAULT_FREQ);
 	}
+	// boundary check
+	if(duty_ns>period_ns[subsystem] || duty_ns<0){
+		printf("duty must be between 0 & period_ns\n");
+		return -1;
+	}
 	
 	// set the duty
-	int duty_ns = duty*period_ns[subsystem];
 	len = snprintf(buf, sizeof(buf), "%d", duty_ns);
 	switch(ch){
 	case 'A':
@@ -198,5 +213,6 @@ int simple_set_pwm_duty(int subsystem, char ch, float duty){
 	}
 	
 	return 0;
+	
 }
 
