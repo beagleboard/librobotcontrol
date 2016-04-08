@@ -44,12 +44,12 @@ Bit 0 /
 		"P8.28",	/*SERVO_2*/
 		"P8.29",	/*SERVO_3*/
 		"P8.30",	/*SERVO_4*/
-		"P8.31",	/*UART5_RX*/
 		"P8.33",	/*QEP_1B*/
+		"P8.34",	/*MDIR_2B*/
 		"P8.35",	/*QEP_1A*/
 		"P8.36",	/*SERVO_PWR*/
-		"P8.37",	/*UART5_RX*/
-		"P8.38",	/*MDIR_2B*/
+		"P8.37",	/*UART5_TX*/
+		"P8.38",	/*UART5_RX*/
 		"P8.39",	/*SERVO_5*/
 		"P8.40",	/*SERVO_6*/
 		"P8.41",	/*SERVO_7*/
@@ -162,8 +162,8 @@ fragment@0 {
 			0x02C 0x0F	/*P8.17*/
 			0x08c 0x0F	/*P8.18*/
 			0x07c 0x0F	/*P8.26*/
+			0x0cc 0x0F	/*P8.34*/
 			0x0C8 0x0F	/*P8.36*/
-			0x0c4 0x0F	/*P8.38*/
 			0x0a8 0x0F	/*P8.43*/
 			0x0ac 0x0F	/*P8.44*/
 			0x0a0 0x0F	/*P8.45*/
@@ -194,7 +194,7 @@ fragment@0 {
 			0x150 0x31	/*P9.22,uart2_rxd,MODE1 */
 			
 			/* UART5 */
-			0x0D8 0x34	/* P8.31,uart5_rxd,MODE4 */
+			0x0C4 0x34	/* P8.38,uart5_rxd,MODE4 */
 			0x0C0 0x14	/* P8.37,uart5_txd,MODE4 */
 			
 			>;
@@ -324,34 +324,54 @@ fragment@10 {
 };
 
 /****************************************
- 		UART			
+ 	UART
+	
+	UART 1, 2, 5 are used on the cape. 
+	The Beaglebone Blue uses others so all are enabled here.
 ****************************************/	
-fragment@19 {
+
+fragment@22 {
 	target = <&uart1>;
 	__overlay__ {
 		status = "okay";
 	};
 };
 
-fragment@21 {
+fragment@23 {
+	target = <&uart2>;
+	__overlay__ {
+		status = "okay";
+	};
+};
+
+fragment@24 {
+	target = <&uart3>;
+	__overlay__ {
+		status = "okay";
+	};
+};
+
+fragment@25 {
+	target = <&uart4>;
+	__overlay__ {
+		status = "okay";
+	};
+};
+
+fragment@26 {
 	target = <&uart5>;
 	__overlay__ {
 		status = "okay";
 	};
 };
-fragment@22 {
-	target = <&uart3>;	/* really uart2 */
-	__overlay__ {
-		status = "okay";
-	};
-};
+
 
 
 /****************************************
  	configurable DSM2 pin
 	swaps between GPIO & UART4 at runtime
 ****************************************/	
-fragment@27 {
+fragment@30 {
 	target = <&ocp>;
 	__overlay__ {
 	 P9_11_pinmux {
@@ -370,7 +390,7 @@ fragment@27 {
 /****************************************
  		PRU			
 ****************************************/	
-fragment@28 {
+fragment@31 {
 	target = <&pruss>;
 	__overlay__ {
 		status = "okay";
@@ -380,7 +400,7 @@ fragment@28 {
 /****************************************
  		I2C			
 ****************************************/	
-fragment@29 {
+fragment@32 {
 	target = <&i2c1>;	/* i2c1 is numbered correctly */
 	__overlay__ {
 		status = "okay";
@@ -398,7 +418,7 @@ fragment@29 {
 /****************************************
  		SPI			
 ****************************************/	
-fragment@31 {
+fragment@33 {
 	target = <&spi1>;	/* spi1 is numbered correctly */
 	__overlay__ {
 		status = "okay";
