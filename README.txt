@@ -6,12 +6,9 @@ Latest version will always be the master branch.
 
 Installation Instructions:
 
-1) Flash your BBB to the latest version using the eMMC image.
-http://beagleboard.org/latest-images
-This package is tested on the following Debian Wheezy images
-2014-05-14 
-2015-03-01
-2015-11-12
+1) Flash your BBB to one of the following stable Wheezy images.
+	2015-03-01  or  2015-11-12
+	http://beagleboard.org/latest-images
 
 2) Copy the Robotics_Cape_Installer folder to /root/
 This is usually done through SFTP using a program like WinSCP
@@ -22,27 +19,23 @@ If you have difficulty connecting consult BeagleBoard.org
 http://beagleboard.org/Getting%20Started/
 
 
-4) Make sure the Robotics cape is plugged into your BBB
-
-
-5) Log in as root, execute the install.sh script and reboot
-You will be prompted if you wish to run the BeagleMIP balance
-or the BeagleQuad fly programs on boot. Type the number of the
-item you wish to select and hit enter.
+4) Log in as root, execute the install.sh script and reboot.
+You will be prompted if you wish to run one of the main example programs. 
+Type the number of the item you wish to select and hit enter.
 
 root@beaglebone:~#cd Robotics_Cape_Installer
 root@beaglebone:~/Robotics_Cape_Installer# bash install.sh
 root@beaglebone:~/Robotics_Cape_Installer# reboot
 
 
-6) If all went well, restarting will result in the selected example
-program loading on boot. For the Balance and Fly examples, the red LED 
-will turn on once the BBB has completely booted. To indicate the
-balance program has started on boot.
+5) If all went well, restarting will result in the selected example
+program loading on boot. For the 'balance' and 'drive' examples, the red LED 
+will turn on once the BBB has completely booted. For the 'blink' example, both
+LEDs and buttons should be responsive.
 
 
-
-7) Located at /root/Auto_Run_Script.sh is a bash script that is 
-configured to run on boot. By default it includes whatever program 
-you selected during the install process in step 5. Modify this
-bootscript to include any other boot time configuration.
+6) Your BeagleBone will now run any program contained in
+/root/Auto_Run_Programs automatically on boot. The install script will have
+already placed a program in there based on your selection in the last step of
+the install process. While you may put multiple programs in there, note that
+only one program using the Robotics Cape library will run at a time.
