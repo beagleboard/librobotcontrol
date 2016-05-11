@@ -19,13 +19,13 @@ Big thanks to Ethan Hayon for the GPIO code
 
 
 // GPIO
-int initialize_gpio();
-int digitalWrite(int pin, int state);
-int digitalRead(int pin);
+int initialize_mmap_gpio();
+int mmap_gpio_write(int pin, int state);
+int mmap_gpio_read(int pin);
 
 // ADC
-int initialize_adc();
-int analogRead(int p);
+int initialize_mmap_adc();
+int mmap_adc_read_raw(int ch);
 
 
 #endif

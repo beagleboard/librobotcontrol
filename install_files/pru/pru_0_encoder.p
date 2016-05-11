@@ -1,4 +1,7 @@
 /*
+pru_0_encoder.p
+assembly code for counting quadrature encoder signal on inputs R31_14 & 15
+
 Copyright (c) 2015, James Strawson
 All rights reserved.
 
@@ -39,13 +42,16 @@ either expressed or implied, of the FreeBSD Project.
 
 
 // Encoder counting definitions
-#define CHA r31.t14	// these pin definitions are specific to SD-101D Robotics Cape
+// these pin definitions are specific to SD-101D Robotics Cape
+#define CHA r31.t14	
 #define CHB r31.t15
-#define OLD r0
-#define CHA_OLD r0.t14 // keep last known values of chA and B in memory
-#define CHB_OLD r0.t15 //
-//#define CNT_OFFSET 32
-#define CNT_OFFSET 32
+#define OLD r0			// keep last known values of chA and B in memory
+#define OLD_A r0.t14 
+#define OLD_B r0.t15 
+#define EXOR 	r1		// place to store the XOR of old with new AB vals
+#define EXOR_A 	r1.t14
+#define EXOR_B	r1.t15
+#define CNT_OFFSET 32	// counter position in shared memory
 
 
 .origin 0
@@ -55,12 +61,14 @@ either expressed or implied, of the FreeBSD Project.
 	LBCO	r2, CONST_PRUSHAREDRAM, CNT_OFFSET, 4	// load existing counter from shared memory
 	ADD 	r2, r2, 1		// increment
 	SBCO	r2, CONST_PRUSHAREDRAM, CNT_OFFSET, 4	// write to shared memory
+	QBA CHECKPINS				// jump back to main CHECKPINS
 .endm
 
 .macro decrement
 	LBCO	r2, CONST_PRUSHAREDRAM, CNT_OFFSET, 4	// load existing counter from shared memory
 	SUB 	r2, r2, 1		// subtract 1
 	SBCO	r2, CONST_PRUSHAREDRAM, CNT_OFFSET, 4	// write to shared memory
+	QBA CHECKPINS				// jump back to main CHECKPINS
 .endm
 
 
@@ -84,61 +92,38 @@ START:
 	
 // CHECKPINS here forever looking for pin changes
 CHECKPINS:
-	XOR r1, OLD, r31
-//	increment
-//	MOV 	r0, r31
-//	SBCO	r0, CONST_PRUSHAREDRAM, CNT_OFFSET, 4	// write to shared memory
-	QBBS A_CHANGED, r1.t14	// Branch if CHA has toggled
-	QBBS B_CHANGED, r1.t15	// Branch if CHB has toggled
+	XOR EXOR, OLD, r31
+	QBBS A_CHANGED, EXOR_A	// Branch if CHA has toggled
+	QBBS B_CHANGED, EXOR_B	// Branch if CHB has toggled
 	QBA CHECKPINS
 	
+	
 A_CHANGED:
-	MOV OLD, r31		// update old value now that something changed
-	QBBC A_FELL,  CHA 	// Branch if CHA has fallen
-	QBA  A_ROSE, 	 	// Branch if CHA has risen
+	MOV OLD, r31			// update old value now that something changed
+	QBBC A_FELL,  CHA 		// Branch if CHA has fallen
+	QBBS DECREMENT, CHB		// A has risen, if B is HIGH, decrement
+	increment				// otherwise increment
 	
 B_CHANGED:
-	MOV OLD, r31		// update old value now that something changed
-	QBBC B_FELL,  CHB 	// Branch if CHB has toggled
-	QBA B_ROSE	
+	MOV OLD, r31			// update old value now that something changed
+	QBBC B_FELL,  CHB 		// Branch if CHB has fallen
+	QBBS INCREMENT, CHA		// ch B has risen, if A is HIGH, increment
+	decrement				// otherwise decrement
 	
+A_FELL:						// CHA has fallen, check CHB
+	QBBC DECREMENT, CHB		// if CHB is clear (low) decrement
+	increment				// CHB must be high, so decrement counter
 	
-	
-A_FELL:							// CHA has fallen, check CHB
-	QBBC B_LOW, CHB				// if CHB is clear (low) jump to B_LOW
-	decrement					// CHB must be high, so decrement counter
-	QBA CHECKPINS				// jump back to main CHECKPINS
-B_LOW:							// CHB is low, increment counter
-	increment
-	QBA CHECKPINS				// jump back to the main CHECKPINS
-	
+B_FELL:						// CHB has fallen, check CHA
+	QBBC INCREMENT, CHA		// if CHA is clear (low) decrement
+	decrement
 
-A_ROSE:							// CHA has risen, check CHB
-	QBBS B_HIGH, CHB			// if CHB is set jump to B_HIGH
+	
+DECREMENT:
 	decrement
-	QBA CHECKPINS				// jump back to main CHECKPINS
-B_HIGH:							// CHB is high, increment counter
-	increment
-	QBA CHECKPINS				// jump back to the main CHECKPINS
-	
-	
-B_FELL:							// CHB has fallen, check CHA
-	QBBC A_LOW, CHA				// if CHA is clear (low) jump to A_LOW
-	increment
-	QBA CHECKPINS				// jump back to main CHECKPINS
-A_LOW:							// CHA is low, decrement counter
-	decrement
-	QBA CHECKPINS				// jump back to the main CHECKPINS
-	
 
-B_ROSE:							// CHB has risen, check CHB
-	QBBS A_LOW, CHA				// if CHA is clear (low) jump to A_LOW
+INCREMENT:
 	increment
-	QBA CHECKPINS				// jump back to main CHECKPINS
-A_HIGH:							// CHB is low, increment counter
-	decrement
-	QBA CHECKPINS				// jump back to the main CHECKPINS
-	
 
 		
 	HALT	// we should never actually get here

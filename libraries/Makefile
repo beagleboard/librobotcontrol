@@ -8,7 +8,7 @@ CFLAGS := -Wall -fsingle-precision-constant -fPIC
 LFLAGS	:= -lm -lrt -lpthread -shared -lprussdrvd
 
 # add -DI2C_DEBUG for debugging
-DEFS = -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY
+#DEFS = -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY
 
 SOURCES := $(shell find ./ -name '*.c')
 INCLUDES := $(shell find ./ -name '*.h')
@@ -16,7 +16,7 @@ OBJECTS  := $(SOURCES:$%.c=$%.o)
 RM := rm -f
 CP := cp
 INSTALL_DIR = /usr/lib/
-INCLUDE_DIR = /usr/include
+INCLUDE_DIR = /usr/include/
 
 all:$(TARGET)
 	
@@ -39,21 +39,18 @@ $(phony all) : $(TARGET)
 .PHONY: install
 
 install:
-	@echo moving headers
-	@for dir in $(SUBDIRS) ; do \
-		mkdir -p $(INCLUDE_DIR)/$$dir  ;  \
-		install -m 0755 $$dir/*.h $(INCLUDE_DIR)/$$dir/ ; \
+	@echo "moving headers files to /usr/include"
+	@for f in $(includes) ; do \
+		$(CP) $$f $(INCLUDE_DIR) ; \
 	done
-	@install -m 0755 *.h $(INCLUDE_DIR)
+	@ $(CP) *.h $(INCLUDE_DIR)
 	
 	$(MAKE)
-	@install -m 0755 $(TARGET) $(INSTALL_DIR)
-	@install -m 0755 $(OBJECTS) $(INSTALL_DIR)
-	#@install -m 0755 pru/libprussdrv.so $(INSTALL_DIR)
-	@cp pru/prussdrv.h $(INCLUDE_DIR)
-	@cp pru/pruss_intc_mapping.h $(INCLUDE_DIR)
-	@cp -r mavlink/ $(INCLUDE_DIR)
-	@cp $(INSTALL_DIR)/$(TARGET) $(INSTALL_DIR)/lib$(TARGET)
+	@$(CP) $(TARGET) $(INSTALL_DIR)
+	@$(CP) $(OBJECTS) $(INSTALL_DIR)
+	@$(CP) pru/prussdrv.h $(INCLUDE_DIR)
+	@$(CP) pru/pruss_intc_mapping.h $(INCLUDE_DIR)
+	@$(CP) $(INSTALL_DIR)/$(TARGET) $(INSTALL_DIR)/lib$(TARGET)
 	@ldconfig
 	@echo "$(TARGET) installed to $(INSTALL_DIR)"
 	@echo

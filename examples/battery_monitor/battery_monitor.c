@@ -1,35 +1,52 @@
-/*
-	Battery Monitor Service for Robotics Cape or General BeagleBone use. This program illuminates a set of 4 LEDS on the Robotics Cape to indicate battery charge level of a 2S, 3S, or 4S Lithium Ion or Polymer Battery. Also shuts down BeagleBone when voltage dips too low to protect the battery from over-discharging.
-	
-	James Strawson 2014
-*/
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <unistd.h>
-// #include <SimpleGPIO.h>
+/******************************************************************************
+* battery_monitor.c
+*
+* see README.txt for details
+*******************************************************************************/
 
+#include <useful_includes.h>
 #include <robotics_cape.h>
+#include <robotics_cape_defs.h>
+#include <simple_gpio.h>
+#include <mmap_gpio_adc.h>
+#include <sys/file.h>
 
-//Critical Max voltages of packs used to detect number of cells in pack
-#define CELL_MAX			4.25	// set higher than actual to detect num cells
-#define VOLTAGE_FULL		4.0		// minimum V to consider battery full
+// Critical Max voltages of packs used to detect number of cells in pack
+#define LOCKFILE	"/run/battery_monitor.lock"
+#define CELL_MAX			4.25 // set higher than actual to detect num cells
+#define VOLTAGE_FULL		4.0	 // minimum V to consider battery full
 #define VOLTAGE_75			3.8	
-#define VOLTAGE_50			3.65
+#define VOLTAGE_50			3.6
 #define VOLTAGE_25			3.45	
-#define VOLTAGE_DISCONNECT	2		// Threshold for detecting disconnected battery
+#define VOLTAGE_DISCONNECT	2	 // Threshold for detecting disconnected battery
 
 int raw_adc;
-float pack_voltage;		 	// 2S pack voltage on JST XH 2S balance connector
-float cell_voltage;			// cell voltage from either 2S or external pack
-float jack_voltage;			// dc barrel jack, could be dc power supply or another battery
-float dc_supply_connected;  // if 12v is seen on the dc jack, assume it's a power supply
-int num_cells;				// 2 if only the 2S pack is used, otherwise it's the cells in external pack
-int external_pack_connected; // =1 if an external lithium pack connected to dc jack
-int internal_pack_connected; // =1 if a 2S lithium pack is connected to balance connector
+float pack_voltage;	// 2S pack voltage on JST XH 2S balance connector
+float cell_voltage;	// cell voltage from either 2S or external pack
+float jack_voltage;	// could be dc power supply or another battery
+
+float dc_supply_connected;  // if 12v is seen on the dc jack, 
+							// assume it's a power supply
+int num_cells; 	// 2 if only the 2S pack is used, 
+				//otherwise it's the cells in external pack
+int external_pack_connected; // =1 if an external pack is connected to dc jack
+int internal_pack_connected; // =1 if a pack is connected to balance connector
 int toggle = 0;
 int printing = 0;
 
 int main(){
+	
+	// we only want one instance running, so check the lockfile
+	int lockfile = open(LOCKFILE, O_CREAT | O_RDWR, 0666);
+	if(flock(lockfile, LOCK_EX | LOCK_NB)) {
+		printf("\nBattery_monitor already running in background\n");
+		printf("This program is started in the background at boot\n");
+		printf("and does not need to be run by the user.\n\n");
+		printf("Use check_battery instead.\n\n");
+		return -1;
+	}
+
+
 	// open the gpio channels for 4 battery indicator LEDs
 	gpio_export(BATT_LED_1);
 	gpio_export(BATT_LED_2);
@@ -41,8 +58,8 @@ int main(){
 	gpio_set_dir(BATT_LED_4, OUTPUT_PIN);
 	
 	// enable adc
-	initialize_adc();
-	initialize_gpio();
+	initialize_mmap_adc();
+	initialize_mmap_gpio();
 	
 	// first decide if the user has called this from a terminal
 	// or as a startup process
@@ -116,42 +133,42 @@ int main(){
 		
 		// now illuminate LEDs properly
 		if(cell_voltage<VOLTAGE_DISCONNECT){
-			digitalWrite(BATT_LED_1,LOW);
-			digitalWrite(BATT_LED_2,LOW);
-			digitalWrite(BATT_LED_3,LOW);
-			digitalWrite(BATT_LED_4,LOW);
+			mmap_gpio_write(BATT_LED_1,LOW);
+			mmap_gpio_write(BATT_LED_2,LOW);
+			mmap_gpio_write(BATT_LED_3,LOW);
+			mmap_gpio_write(BATT_LED_4,LOW);
 		}
 		else if(cell_voltage>VOLTAGE_FULL){
-			digitalWrite(BATT_LED_1,HIGH);
-			digitalWrite(BATT_LED_2,HIGH);
-			digitalWrite(BATT_LED_3,HIGH);
-			digitalWrite(BATT_LED_4,HIGH);
+			mmap_gpio_write(BATT_LED_1,HIGH);
+			mmap_gpio_write(BATT_LED_2,HIGH);
+			mmap_gpio_write(BATT_LED_3,HIGH);
+			mmap_gpio_write(BATT_LED_4,HIGH);
 		}
 		else if(cell_voltage>VOLTAGE_75){
-			digitalWrite(BATT_LED_1,HIGH);
-			digitalWrite(BATT_LED_2,HIGH);
-			digitalWrite(BATT_LED_3,HIGH);
-			digitalWrite(BATT_LED_4,LOW);
+			mmap_gpio_write(BATT_LED_1,HIGH);
+			mmap_gpio_write(BATT_LED_2,HIGH);
+			mmap_gpio_write(BATT_LED_3,HIGH);
+			mmap_gpio_write(BATT_LED_4,LOW);
 		}
 		else if(cell_voltage>VOLTAGE_50){
-			digitalWrite(BATT_LED_1,HIGH);
-			digitalWrite(BATT_LED_2,HIGH);
-			digitalWrite(BATT_LED_3,LOW);
-			digitalWrite(BATT_LED_4,LOW);
+			mmap_gpio_write(BATT_LED_1,HIGH);
+			mmap_gpio_write(BATT_LED_2,HIGH);
+			mmap_gpio_write(BATT_LED_3,LOW);
+			mmap_gpio_write(BATT_LED_4,LOW);
 		}
 		else if(cell_voltage>VOLTAGE_25){
-			digitalWrite(BATT_LED_1,HIGH);
-			digitalWrite(BATT_LED_2,LOW);
-			digitalWrite(BATT_LED_3,LOW);
-			digitalWrite(BATT_LED_4,LOW);
+			mmap_gpio_write(BATT_LED_1,HIGH);
+			mmap_gpio_write(BATT_LED_2,LOW);
+			mmap_gpio_write(BATT_LED_3,LOW);
+			mmap_gpio_write(BATT_LED_4,LOW);
 		}
 		else if(dc_supply_connected!=1){
 			// blink battery LEDs to warn extremely low battery
 			// but only if not charging
-			digitalWrite(BATT_LED_1,toggle);
-			digitalWrite(BATT_LED_2,toggle);
-			digitalWrite(BATT_LED_3,toggle);
-			digitalWrite(BATT_LED_4,toggle);
+			mmap_gpio_write(BATT_LED_1,toggle);
+			mmap_gpio_write(BATT_LED_2,toggle);
+			mmap_gpio_write(BATT_LED_3,toggle);
+			mmap_gpio_write(BATT_LED_4,toggle);
 			if(toggle){
 				toggle = 0;
 			}
@@ -161,10 +178,10 @@ int main(){
 		}
 		else{
 			// if we've gotten here, battery is extremely low but charging
-			digitalWrite(BATT_LED_1,HIGH);
-			digitalWrite(BATT_LED_2,LOW);
-			digitalWrite(BATT_LED_3,LOW);
-			digitalWrite(BATT_LED_4,LOW);
+			mmap_gpio_write(BATT_LED_1,HIGH);
+			mmap_gpio_write(BATT_LED_2,LOW);
+			mmap_gpio_write(BATT_LED_3,LOW);
+			mmap_gpio_write(BATT_LED_4,LOW);
 		}
 		
 		if(printing){

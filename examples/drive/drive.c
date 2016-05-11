@@ -56,8 +56,7 @@ typedef struct core_state_t{
 ************************************************************************/
 typedef enum input_mode_t {
 	NONE,
-	MAVLINK,
-	BLUETOOTH,
+//	BLUETOOTH,
 	DSM2
 }input_mode_t;
 

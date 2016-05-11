@@ -1,71 +1,58 @@
-// Sample Code for testing MPU-9150 operation
+// Sample Code for testing MPU-9250 IMU operation
 // James Strawson - 2013
 
 #include <robotics_cape.h>
-#define DEFAULT_SAMPLE_RATE	200  // This is also the fastest speed the DMP will do
+#include <useful_includes.h>
 
-int print_imu_data(){
-	mpudata_t mpu; //struct to read IMU data into
-	memset(&mpu, 0, sizeof(mpudata_t)); //make sure it's clean before starting
-	if (mpu9150_read(&mpu) == 0) {
-		printf("\r");
-		
-		printf("X: %0.1f Y: %0.1f Z: %0.1f ",
-		mpu.fusedEuler[VEC3_X] * RAD_TO_DEGREE, 
-		mpu.fusedEuler[VEC3_Y] * RAD_TO_DEGREE, 
-		mpu.fusedEuler[VEC3_Z] * RAD_TO_DEGREE);
-		
-		printf("Xg: %05d Yg: %05d Zg: %05d ",
-		mpu.rawGyro[VEC3_X], 
-		mpu.rawGyro[VEC3_Y], 
-		mpu.rawGyro[VEC3_Z]);
-		
-		// printf("Xa: %05d Ya: %05d Za: %05d ",
-		// mpu.calibratedAccel[VEC3_X], 
-		// mpu.calibratedAccel[VEC3_Y], 
-		// mpu.calibratedAccel[VEC3_Z]);
-		
-		// printf("Xm: %03d Ym: %03d Zm: %03d ",
-		// mpu.calibratedMag[VEC3_X], 
-		// mpu.calibratedMag[VEC3_Y], 
-		// mpu.calibratedMag[VEC3_Z]);
+int enable_accel=0;
+int enable_gyro=0;
+int enable_mag=0;
 
-		// printf("W: %0.2f X: %0.2f Y: %0.2f Z: %0.2f ",
-		// mpu.fusedQuat[QUAT_W],
-		// mpu.fusedQuat[QUAT_X],
-		// mpu.fusedQuat[QUAT_Y],
-		// mpu.fusedQuat[QUAT_Z]);
-		
-			
-		fflush(stdout);
-	}
-	return 0; 
-}
 
     
 int main(int argc, char *argv[]){
-	int sample_rate;
-	signed char orientation[9] = ORIENTATION_FLAT; 
-	//signed char orientation[9] = ORIENTATION_UPRIGHT;
+	imu_data_t data; //struct to hold new data
 	
-	if (argc==1){
-		sample_rate = DEFAULT_SAMPLE_RATE;
-    }
-	else{
-		sample_rate = atoi(argv[1]);
-		if((sample_rate>MAX_SAMPLE_RATE)||(sample_rate<MIN_SAMPLE_RATE)){
-			printf("sample rate should be between %d and %d\n", MIN_SAMPLE_RATE,MAX_SAMPLE_RATE);
-			return -1;
-		}
+	if(initialize_cape()){
+		printf("ERROR: failed to initialize_cape\n");
+		return -1;
 	}
 	
-	initialize_cape();
-	initialize_imu(sample_rate, orientation);
-	set_imu_interrupt_func(&print_imu_data); //start the interrupt handler
+	// use defaults for now
+	imu_config_t conf = get_default_imu_config();
+	conf.enable_magnetometer=0;
+	if(initialize_imu(&data, conf)){
+		printf("initialize_imu_failed\n");
+		return -1;
+	}
 	
-	//now just wait, print_imu_data will run
+	//now just wait, print_data will run
 	while (get_state() != EXITING) {
-		sleep(1);
+		printf("\r");
+		
+		if(read_accel_data(&data))
+			printf("read accel data failed\n");
+		else printf("A:%6.2f %6.2f %6.2f  ",data.accel[0],\
+								data.accel[1],data.accel[2]);
+								
+		if(read_gyro_data(&data))
+			printf("read gyro data failed\n");
+		else printf("G:%6.1f %6.1f %6.1f  ",data.gyro[0],\
+								 data.gyro[1],data.gyro[2]);
+								 
+		// if(read_mag_data(&data)){
+			// printf("read mag data failed\n");
+		// }
+		// printf("M:%5.1f %5.1f %5.1f  ",data.mag[0],\
+								 // data.mag[1],data.mag[2]);
+								
+		if(read_imu_temp(&data)){
+			printf("read temp data failed\n");
+		}
+		printf("T:%4.1f ", data.temp);
+														
+		fflush(stdout);
+		usleep(100000);
 	}
 	cleanup_cape();
 	return 0;
