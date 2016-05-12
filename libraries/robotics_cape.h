@@ -1,16 +1,20 @@
-/*
-	Robotics Cape API
-	James Strawson - 2016
-	
-	All functions return 0 on success or -1 on failure unless otherwise stated.
-*/
+/*******************************************************************************
+* robotics_cape.h
+*
+* This contains the complete Robotics Cape API. All functions declared here can 
+* be executed by linking to /usr/lib/robotics_cape.so
+*
+* All functions return 0 on success or -1 on failure unless otherwise stated.
+*
+* James Strawson - 2016
+*******************************************************************************/
 
 #ifndef ROBOTICS_CAPE
 #define ROBOTICS_CAPE
 
 #include <stdint.h> // for uint8_t types etc
 
-/******************************************************************************
+/*******************************************************************************
 * INITIALIZATION AND CLEANUP
 *
 * @ int initialize_cape() 
@@ -412,17 +416,69 @@ int   calibrate_dsm2();
 /******************************************************************************
 * 9-AXIS IMU
 *
-* @ struct imu_data_t 
+* The Robotics Cape features an Invensense MPU9250 9-axis IMU. This API allows
+* the user to configure this IMU in two modes: RANDOM and DMP
 *
-* This is the container for holding the sensor data from the IMU.
-* The user is intended to keep make their own instance of this struct and pass
-* its pointer to imu read functions;
+* RANDOM: The accelerometer, gyroscope, magnetometer, and thermometer can be
+* read directly at any time. To use this mode, call initialize_imu() with your
+* imu_config and imu_data structs as arguments as defined below. You can then
+* call read_accel_data, read_gyro_data, read_mag_data, or read_imu_temp
+* at any time to get the latest sensor values.
+*
+* DMP: Stands for Digital Motion Processor which is a feature of the MPU9250.
+* in this mode, the DMP will sample the sensors internally and fill a FIFO
+* buffer with the data at a fixed rate. Furthermore, the DMP will also calculate
+* a filtered orientation quaternion which is placed in the same buffer. When
+* new data is ready in the buffer, the IMU sends an interrupt to the BeagleBone
+* triggering the buffer read followed by the execution of a function of your
+* choosing set with the set_imu_interrupt_func() function.
+*
+* @ enum accel_fsr_t gyro_fsr_t
+* 
+* The user may choose from 4 full scale ranges of the accelerometer and
+* gyroscope. They have units of gravity (G) and degrees per second (DPS)
+* The defaults values are A_FSR_4G and G_FSR_1000DPS respectively.
+*
+* enum accel_dlpf_t gyro_dlpf_t 
+*
+* The user may choose from 7 digital low pass filter constants for the 
+* accelerometer and gyroscope. The filter runs at 1kz and helps to reduce sensor
+* noise when sampling more slowly. The default values are ACCEL_DLPF_184
+* GYRO_DLPF_250. Lower cut-off frequencies incur phase-loss in measurements.
 *
 * @ struct imu_config_t
 *
-* Configuration struct passed to initialize_imu. It is best to get defualts
-* values with the get_default_imu_config() function and modify from there.
+* Configuration struct passed to initialize_imu and initialize_imu_dmp. It is 
+* best to get the default config with get_default_imu_config() function and
+* modify from there.
 *
+* @ struct imu_data_t 
+*
+* This is the container for holding the sensor data from the IMU.
+* The user is intended to make their own instance of this struct and pass
+* its pointer to imu read functions.
+*
+* @ imu_config_t get_default_imu_config()
+* 
+* Returns an imu_config_t struct with default settings. Use this as a starting
+* point and modify as you wish.
+*
+* @ int initialize_imu(imu_data_t *data, imu_config_t conf)
+*
+* Sets up the IMU in random-read mode. First create an instance of the imu_data
+* struct to point to as initialize_imu will put useful data in it.
+* initialize_imu only reads from the config struct. After this, you may read
+* sensor data.
+*
+* @ int read_accel_data(imu_data_t *data)
+* @ int read_gyro_data(imu_data_t *data)
+* @ int read_mag_data(imu_data_t *data)
+* @ int read_imu_temp(imu_data_t* data)
+*
+* These are the functions for random sensor sampling at any time. Note that
+* if you wish to read the magnetometer then it must be enabled in the
+* configuration struct. Since the magnetometer requires additional setup and
+* is slower to read, it is disabled by default.
 *
 ******************************************************************************/
 typedef enum accel_fsr_t {
@@ -439,6 +495,16 @@ typedef enum gyro_fsr_t {
   G_FSR_2000DPS 
 } gyro_fsr_t;
 
+typedef enum accel_dlpf_t {
+	ACCEL_DLPF_460,
+	ACCEL_DLPF_184,
+	ACCEL_DLPF_92,
+	ACCEL_DLPF_41,
+	ACCEL_DLPF_20,
+	ACCEL_DLPF_10,
+	ACCEL_DLPF_5
+} accel_dlpf_t;
+
 typedef enum gyro_dlpf_t {
 	GYRO_DLPF_250,
 	GYRO_DLPF_184,
@@ -449,15 +515,6 @@ typedef enum gyro_dlpf_t {
 	GYRO_DLPF_5
 } gyro_dlpf_t;
 
-typedef enum accel_dlpf_t {
-	ACCEL_DLPF_460,
-	ACCEL_DLPF_184,
-	ACCEL_DLPF_92,
-	ACCEL_DLPF_41,
-	ACCEL_DLPF_20,
-	ACCEL_DLPF_10,
-	ACCEL_DLPF_5
-} accel_dlpf_t;
 
 typedef struct imu_config_t {
 	// full scale ranges for sensors
