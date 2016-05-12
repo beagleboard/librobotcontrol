@@ -6,10 +6,9 @@
 *
 *******************************************************************************/
 
-#include <useful_includes.h>
-#include <robotics_cape.h>
-#include <robotics_cape_revD_defs.h>
-#include <sys/select.h> // for read timeout
+#include "../useful_includes.h"
+#include "../robotics_cape.h"
+#include "../robotics_cape_defs.h"
 
 // used for setting interrupt input pin
 #include "../simple_gpio/simple_gpio.h" 

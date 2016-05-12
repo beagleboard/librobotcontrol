@@ -39,6 +39,7 @@ in their projects to clean up what would otherwise be a cluttered list of
 #include <sys/time.h>
 #include <arpa/inet.h>  // mavlink udp socket	
 #include <ctype.h>		// for isprint()
+#include <sys/select.h> // for read timeout
 
 /*******************************************************************************
 * Useful Constants
