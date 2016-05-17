@@ -1,4 +1,6 @@
 /*
+mmap_gpio_adc.c
+
 Copyright (c) 2014, James Strawson
 All rights reserved.
 
@@ -47,9 +49,9 @@ int mapped = 0; // boolean to check if mem mapped
 int gpio_initialized = 0;
 int adc_initialized = 0;
 
-/*********************************************
+/*******************************************************************************
 *   Shared Map Function
-*********************************************/
+*******************************************************************************/
 // map /dev/mem if it hasn't been done already
 int init_mmap() {
 	if(mapped){
@@ -61,7 +63,8 @@ int init_mmap() {
 		printf("Unable to open /dev/mem\n");
 		return -1;
 	}
-	map = (uint32_t*)mmap(NULL, MMAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, MMAP_OFFSET);
+	map = (uint32_t*)mmap(NULL, MMAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED,\
+															fd, MMAP_OFFSET);
 	if(map == MAP_FAILED) {
 		close(fd);
 		printf("Unable to map /dev/mem\n");
@@ -71,16 +74,16 @@ int init_mmap() {
 	return 0;
 }
 
-/*********************************************
+/*******************************************************************************
 *   GPIO
-*********************************************/
+*******************************************************************************/
 
 // initialize GPIO
 // by default gpio subsystems 0,1,&2 have clock signals on boot
 // this function exports a pin from the last subsystem (113) so the
 // gpio driver enables the clock signal so the rest of the gpio
 // functions here work.
-int initialize_gpio(){
+int initialize_mmap_gpio(){
 	// return immediately if gpio already initialized
 	if(gpio_initialized){
 		return 0;
@@ -99,7 +102,8 @@ int initialize_gpio(){
 		return -1;
 	}
 	volatile char *cm_per_base;
-	cm_per_base=mmap(0,CM_PER_PAGE_SIZE,PROT_READ|PROT_WRITE,MAP_SHARED,dev_mem,CM_PER);
+	cm_per_base=mmap(0,CM_PER_PAGE_SIZE,PROT_READ|PROT_WRITE,MAP_SHARED,\
+																dev_mem,CM_PER);
 	if(cm_per_base == (void *) -1) {
 		printf("Unable to mmap cm_per\n");
 		return -1;
@@ -134,8 +138,8 @@ int initialize_gpio(){
 
 // write HIGH or LOW to a pin
 // pinMUX must already be configured for output
-int digitalWrite(int pin, int state) {
-	if(initialize_gpio()){
+int mmap_gpio_write(int pin, int state) {
+	if(initialize_mmap_gpio()){
 		return -1;
 	}
 	if(pin<0 || pin>128){
@@ -169,8 +173,8 @@ int digitalWrite(int pin, int state) {
 
 // returns 1 or 0 for HIGH or LOW
 // pinMUX must already be configured for input
-int digitalRead(int pin) {
-	if(initialize_gpio()){
+int mmap_gpio_read(int pin) {
+	if(initialize_mmap_gpio()){
 		return -1;
 	}
 	if(pin<0 || pin>128){
@@ -207,7 +211,7 @@ int digitalRead(int pin) {
 // Initialize the Analog-Digital Converter
 // each channel is set up in software one-shot mode for general purpose reading
 // internal averaging set to 8 samples to reduce noise
-int initialize_adc() {
+int initialize_mmap_adc() {
 	if(adc_initialized){
 		return 0;
 	}
@@ -225,7 +229,8 @@ int initialize_adc() {
 	#ifdef DEBUG
 	printf("Checking clock signal has started\n"); 
 	#endif
-	while(!(map[(CM_WKUP+CM_WKUP_ADC_TSC_CLKCTRL-MMAP_OFFSET)/4] & MODULEMODE_ENABLE)) {
+	while(!(map[(CM_WKUP+CM_WKUP_ADC_TSC_CLKCTRL-MMAP_OFFSET)/4] & \
+														MODULEMODE_ENABLE)) {
 		usleep(10);
 		#ifdef DEBUG
 		printf("Waiting for CM_WKUP_ADC_TSC_CLKCTRL to enable with MODULEMODE_ENABLE\n"); 
@@ -277,7 +282,7 @@ int initialize_adc() {
 
 
 // Read in from an analog pin with oneshot mode
-int analogRead(int p) {
+int mmap_adc_read_raw(int ch) {
 		  
 	// clear the FIFO buffer just in case it's not empty
 	int output;
@@ -286,7 +291,7 @@ int analogRead(int p) {
 	}
 		
 	// enable step for the right pin
-	map[(ADC_STEPENABLE-MMAP_OFFSET)/4] |= (0x01<<(p+1));
+	map[(ADC_STEPENABLE-MMAP_OFFSET)/4] |= (0x01<<(ch+1));
 	
 	// wait for sample to appear in the FIFO buffer
 	while(!(map[(FIFO0COUNT-MMAP_OFFSET)/4] & FIFO_COUNT_MASK)){}

@@ -35,8 +35,8 @@ Bit 0 /
 		"P8.12",	/*QEP_2A*/
 		"P8.13",	/*PWM_2B*/
 		"P8.14",	/*BATT_LED_4*/
-		"P8.15",	/*QEP_4B*/
-		"P8.16",	/*QEP_4A*/
+		"P8.15",	/*PRU_ENCODER_B*/
+		"P8.16",	/*PRU_ENCODER_A*/
 		"P8.17",	/*BATT_LED_1*/
 		"P8.19",	/*PWM_2A*/
 		"P8.26",	/*BATT_LED_3*/
@@ -133,11 +133,11 @@ fragment@0 {
 			0x1A4 0x31  /* P9_27,EQEP0B, MODE1 */  
 			0x0D4 0x32  /* P8_33,EQEP1B, MODE2 */
 			0x0D0 0x32  /* P8_35,EQEP1A, MODE2 */
-			0x030 0x3C  /* P8_12,EQEP2A_in, MODE4 */
-			0x034 0x3C  /* P8_11,EQEP2B_in, MODE4 */
+			0x030 0x34  /* P8_12,EQEP2A_in, MODE4 */
+			0x034 0x34  /* P8_11,EQEP2B_in, MODE4 */
 			
 			/* PRU encoder input */
-			0x03c 0x36	/* P8_15,PRU0_r31_15,MODE6 */
+			0x03c 0x36	/* P8_15,PRU0_r31_15,MODE6 */ 
 			0x038 0x36	/* P8_16,PRU0_r31_16,MODE6 */
 			
 			/* PRU Servo output */

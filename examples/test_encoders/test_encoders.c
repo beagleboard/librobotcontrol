@@ -1,14 +1,18 @@
-// Basic Program to Test Encoders
-// Prints out current encoder ticks for all 4 channels
-// James Strawson - 2013
+/*******************************************************************************
+* test_encoders.c
+*
+* Prints out current encoder ticks for all 4 channels
+* channels 1-3 are counted using eQEP 0-2. Channel 4 is counted by PRU0
+*******************************************************************************/
 
 #include <robotics_cape.h>
+#include <useful_includes.h>
 
 int main(){
 	initialize_cape();
 	
-	set_led(GREEN,HIGH);
-	set_led(RED,HIGH);
+	set_led(GREEN,ON);
+	set_led(RED,ON);
 
 	printf("\n   Raw encoder positions\n");
 	printf("   ch1   ch2   ch3   ch4\n");
