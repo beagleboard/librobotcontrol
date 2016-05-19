@@ -12,8 +12,8 @@
 #include <useful_includes.h>
 
 #define BUF_SIZE 	32
-#define TIMEOUT_MS 	500
-#define BAUDRATE	115200
+#define TIMEOUT_S 	0.5
+#define BAUDRATE 	115200
 
 void print_usage(){
 	printf("please give either 0,1,2 or 5, as an argument corresponding\n");
@@ -27,7 +27,7 @@ int main(int argc, char *argv[]){
 	int ret; // return value
 	int bus; // which bus to use
 	
-	// parse arguments
+	// Parse arguments
 	if(argc!=2){ //argc==2 actually means one argument given
 		print_usage();
 		return -1;
@@ -39,37 +39,29 @@ int main(int argc, char *argv[]){
 		return -1;
 	}
 	
-	// begin
+	// Initialization
 	initialize_cape();
 	printf("\ntesting UART bus %d\n\n", bus);
-	if(initialize_uart(bus, BAUDRATE)){
+	if(initialize_uart(bus, BAUDRATE, TIMEOUT_S)){
 		printf("Failed to initialize_uart%d\n", bus);
 		cleanup_cape();
 		return -1;
 	}
 	
-	// flush and write the test string
+	// Flush and Write
 	printf("Sending  %d bytes: %s \n", bytes, test_str);
 	flush_uart(bus);
 	uart_send_bytes(bus, bytes, &test_str[0]);
 	
-	// now read it back with 100ms timeout
+	// Read 
 	memset(buf, 0, BUF_SIZE);
-	ret = uart_read_bytes(bus, bytes, &buf[0], TIMEOUT_MS);
-	if(ret<0){
-		printf("Error reading bus\n");
-	}
-	else if(ret==0){
-		printf("timeout reached, %d bytes read\n", ret);
-	}
-	else{
-		printf("Received %d bytes: %s \n", ret, buf);
-	}
+	ret = uart_read_bytes(bus, bytes, &buf[0]);
+	if(ret<0) printf("Error reading bus\n");
+	else if(ret==0)printf("timeout reached, %d bytes read\n", ret);
+	else printf("Received %d bytes: %s \n", ret, buf);
 	
 	// close up
 	close_uart(bus);
-	
-	// exit cleanly
 	cleanup_cape();
 	return 0;
 }

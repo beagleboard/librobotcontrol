@@ -12,6 +12,9 @@
 #define MIN_BUS 0
 #define MAX_BUS 5
 
+// Most bytes to read at once. This is the size of the Sitara UART FIFO buffer.
+#define MAX_READ_LEN 128
+
 /*******************************************************************************
 * Local Global Variables
 *******************************************************************************/
@@ -24,15 +27,20 @@ char *paths[6] = { \
 	"/dev/ttyO4", \
 	"/dev/ttyO5" };
 
-int fd[6];
-
+int fd[6]; // file descriptors for all ports
+float bus_timeout_s[6]; // user-requested timeout in seconds for each port
 
 /*******************************************************************************
 * int initialize_uart(int bus, int baudrate)
 * 
+* bus needs to be between MIN_BUS and MAX_BUS which here is 0 & 5.
+* baudrate must be one of the standard speeds in the UART spec. 115200 and 
+* 57600 are most common.
+* timeout is in seconds and must be >=0.1
+*
 * returns -1 for failure or 0 for success
 *******************************************************************************/ 
-int initialize_uart(int bus, int baudrate){
+int initialize_uart(int bus, int baudrate, float timeout_s){
 
 	struct termios config;
 	speed_t speed; //baudrate
@@ -40,6 +48,10 @@ int initialize_uart(int bus, int baudrate){
 	// sanity checks
 	if(bus<MIN_BUS || bus>MAX_BUS){
 		printf("ERROR: uart bus must be between %d & %d\n", MIN_BUS, MAX_BUS);
+		return -1;
+	}
+	if(timeout_s<0.1){
+		printf("ERROR: timeout must be >=0.1 seconds\n");
 		return -1;
 	}
 	
@@ -120,8 +132,13 @@ int initialize_uart(int bus, int baudrate){
     config.c_oflag=0;
     config.c_cflag= CS8|CREAD|CLOCAL;   // 8n1, see termios.h for more info
     config.c_lflag=0;
-    config.c_cc[VTIME]=0; // no timeout condition
-	config.c_cc[VMIN]=1;  // only return if something is in the buffer
+	// convert float timeout in seconds to int timeout in tenths of a second
+    config.c_cc[VTIME]=lround(timeout_s*10);
+	// if VTIME>0 & VMIN>0, read() will return when either the requested number
+	// of bytes are ready or when VMIN bytes are ready, whichever is smaller.
+	// since we set VMIN to the size of the buffer, read() should always return
+	// when the user's requested number of bytes are ready.
+	config.c_cc[VMIN]=MAX_READ_LEN; //
 	
 	
 	if(cfsetispeed(&config, speed) < 0) {
@@ -140,6 +157,7 @@ int initialize_uart(int bus, int baudrate){
 	}
 	
 	initialized[bus] = 1;
+	bus_timeout_s[bus]=timeout_s;
 	
 	flush_uart(bus);
 	return 0;
@@ -262,42 +280,52 @@ int uart_send_byte(int bus, char data){
 		
 
 /*******************************************************************************
-* int uart_read_bytes(int bus, int bytes, char* buf, int timeout_ms)
+* int uart_read_bytes(int bus, int bytes, char* buf)
 *
 * This is a blocking function call. It will only return once the desired number
 * of bytes has been read from the buffer or if the global flow state defined
 * in robotics_cape.h is set to EXITING.
+* Due to the Sitara's UART FIFO buffer, MAX_READ_LEN (128bytes) is the largest
+* packet that can be read with a single call to read(). For reads larger than 
+* 128bytes, we run a loop instead.
 *******************************************************************************/
-int uart_read_bytes(int bus, int bytes, char* buf, int timeout_ms){
-	int ret; // holder for return values
-	fd_set set; // for select()
-	struct timeval timeout;
-	int bytes_read; // number of bytes read so far
-	int bytes_left; // number of bytes still need to be read
-	
+int uart_read_bytes(int bus, int bytes, char* buf){
 	// sanity checks
 	if(bus<MIN_BUS || bus>MAX_BUS){
 		printf("ERROR: uart bus must be between %d & %d\n", MIN_BUS, MAX_BUS);
 		return -1;
 	}
 	if(bytes<1){
-		printf("ERROR: number of bytes to send must be >1\n");
+		printf("ERROR: number of bytes to read must be >1\n");
 		return -1;
 	}
 	if(initialized[bus]==0){
 		printf("ERROR: uart%d must be initialized first\n", bus);
 		return -1;
 	}
+	if(bytes<=MAX_READ_LEN){
+		// small read, return in one read() call
+		return read(fd[bus], buf, bytes);
+	}
+
+	// any read under 128 bytes should have returned by now.
+	// everything below this line is for longer extended reads >128 bytes
+	
+	int ret; // holder for return values
+	fd_set set; // for select()
+	struct timeval timeout;
+	int bytes_read; // number of bytes read so far
+	int bytes_left; // number of bytes still need to be read
 	
 	bytes_read = 0;
 	bytes_left = bytes;
-	
+
 	// set up the timeout OUTSIDE of the read loop. We will likely be calling
 	// select() multiple times and that will decrease the timeout struct each
 	// time ensuring the TOTAL timeout requested by the user is honoured instead
 	// of the timeout value compounding each loop.
-	timeout.tv_sec = timeout_ms/1000;
-	timeout.tv_usec = (timeout_ms % 1000) * 1000;
+	timeout.tv_sec = (int)bus_timeout_s[bus];
+	timeout.tv_usec = (int)(1000000*fmod(bus_timeout_s[bus],1));
 	
 	// exit the read loop once enough bytes have been read
 	// or the global flow state becomes EXITING. This prevents programs
@@ -337,6 +365,75 @@ int uart_read_bytes(int bus, int bytes, char* buf, int timeout_ms){
 			}
 		}
 	}
+	
 	return bytes_read;
 }
+
+/*******************************************************************************
+* int uart_read_line(int bus, int max_bytes, char* buf)
+*
+* Function for reading a line of characters ending in '\n' newline character.
+* This is a blocking function call. It will only return on these conditions:
+* - a '\n' new line character was read, this is discarded.
+* - max_bytes were read, this prevents overflowing a user buffer.
+* - timeout declared in initialize_uart() is reached
+* - Global flow state in robotics_cape.h is set to EXITING.
+*******************************************************************************/
+int uart_read_line(int bus, int max_bytes, char* buf){
+	int ret; // holder for return values
+	char temp;
+	fd_set set; // for select()
+	struct timeval timeout;
+	int bytes_read=0; // number of bytes read so far
+
+	// set up the timeout OUTSIDE of the read loop. We will likely be calling
+	// select() multiple times and that will decrease the timeout struct each
+	// time ensuring the TOTAL timeout requested by the user is honoured instead
+	// of the timeout value compounding each loop.
+	timeout.tv_sec = (int)bus_timeout_s[bus];
+	timeout.tv_usec = (int)(1000000*fmod(bus_timeout_s[bus],1));
+	
+	// exit the read loop once enough bytes have been read
+	// or the global flow state becomes EXITING. This prevents programs
+	// getting stuck here and not exiting properly
+	while(bytes_read<max_bytes && get_state()!=EXITING){
+		FD_ZERO(&set); /* clear the set */
+		FD_SET(fd[bus], &set); /* add our file descriptor to the set */
+		ret = select(fd[bus] + 1, &set, NULL, NULL, &timeout);
+		if(ret == -1){
+			// select returned and error. EINTR means interrupted by SIGINT
+			// aka ctrl-c. Don't print anything as this happens normally
+			// in case of EINTR/Ctrl-C just return how many bytes got read up 
+			// until then without raising alarms.
+			if(errno!=EINTR){
+				printf("uart select() error: %s\n", strerror(errno));
+				return -1;
+			}
+			return bytes_read;  
+		}
+		else if(ret == 0){
+			// timeout
+			return bytes_read;
+		}
+		else{
+			// There was data to read. Read one bytes;
+			ret=read(fd[bus], &temp, 1);
+			if(ret<0){
+				printf("ERROR: uart read() returned %d\n", ret);
+				return -1;
+			}
+			else if(ret==1){
+				// success, actually read something
+				if(temp=='\n') return bytes_read;
+				else{
+					*(buf+bytes_read)=temp;
+					bytes_read++;
+				}	
+			}
+		}
+	}
+	
+	return bytes_read;
+}
+
 

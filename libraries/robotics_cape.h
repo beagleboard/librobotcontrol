@@ -681,13 +681,14 @@ int deselect_spi1_slave(int slave);
 /*******************************************************************************
 * UART
 *******************************************************************************/
-int initialize_uart(int bus, int speed);
+int initialize_uart(int bus, int speed, float timeout);
 int close_uart(int bus);
 int get_uart_fd(int bus);
 int flush_uart(int bus);
 int uart_send_bytes(int bus, int bytes, char* data);
 int uart_send_byte(int bus, char data);
-int uart_read_bytes(int bus, int bytes, char* buf, int timeout_ms);
+int uart_read_bytes(int bus, int bytes, char* buf);
+int uart_read_line(int bus, int max_bytes, char* buf);
 
 
 /*******************************************************************************
