@@ -5,7 +5,8 @@
 * This is called by the Auto_Run_Script.sh on boot to make sure the cape works
 * before loading your project.
 *******************************************************************************/
-#include <robotics_cape.h>
+#include <../robotics_cape.h>
+#include <../useful_includes.h>
 
 int main(){
 	if(initialize_cape()<0){

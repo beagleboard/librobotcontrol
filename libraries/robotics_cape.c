@@ -29,7 +29,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 *******************************************************************************/
 
-//#define DEBUG
+// #define DEBUG
 
 #include "useful_includes.h"
 #include "robotics_cape.h"
@@ -47,6 +47,7 @@ either expressed or implied, of the FreeBSD Project.
 enum state_t state = UNINITIALIZED;
 int pause_btn_state, mode_btn_state;
 static unsigned int *prusharedMem_32int_ptr;
+int pru_initialized; // set to 1 by initialize_cape, checked by cleanup_cape
 
 
 /*******************************************************************************
@@ -84,7 +85,9 @@ pthread_t mode_released_thread;
 * should be the first thing your program calls
 *******************************************************************************/
 int initialize_cape(){
-	FILE *fd; 		
+	FILE *fd; 	
+	int ret;
+
 	printf("\n");
 
 	// check if another project was using resources
@@ -116,7 +119,6 @@ int initialize_cape(){
 		return -1;
 	}
 	pid_t current_pid = getpid();
-	printf("Current Process ID: %d\n", (int)current_pid);
 	fprintf(fd,"%d",(int)current_pid);
 	fflush(fd);
 	fclose(fd);
@@ -128,7 +130,7 @@ int initialize_cape(){
 	}
 	
 	// initialize mmap io libs
-	printf("Initializing subsystems\n");
+	printf("Initializing: ");
 	printf("GPIO");
 	fflush(stdout);
 
@@ -157,10 +159,6 @@ int initialize_cape(){
 	gpio_set_dir(MOT_STBY, OUTPUT_PIN);
 	gpio_export(PAIRING_PIN);
 	gpio_set_dir(PAIRING_PIN, OUTPUT_PIN);
-	gpio_export(SPI1_SS1_GPIO_PIN);
-	gpio_set_dir(SPI1_SS1_GPIO_PIN, OUTPUT_PIN);
-	gpio_export(SPI1_SS2_GPIO_PIN);
-	gpio_set_dir(SPI1_SS2_GPIO_PIN, OUTPUT_PIN);
 	gpio_export(INTERRUPT_PIN);
 	gpio_set_dir(INTERRUPT_PIN, INPUT_PIN);
 	gpio_export(SERVO_PWR);
@@ -217,22 +215,32 @@ int initialize_cape(){
 	// Load binary into PRU
 	printf(" PRU\n");
 	fflush(stdout);
-	if(initialize_pru()){
+#ifdef DEBUG  	// if in debug mode print everything
+	ret=initialize_pru();
+#else  // otherwise supress the annoying prints
+	ret=suppress_stderr(&initialize_pru); 
+#endif
+	if(ret<0){
 		printf("ERROR: PRU init FAILED\n");
+		pru_initialized = 0;
 		return -1;
 	}
-	
+	pru_initialized=1;
+		
 	// Start Signal Handler
+	#ifdef DEBUG
 	printf("Initializing exit signal handler\n");
+	#endif
 	signal(SIGINT, shutdown_signal_handler);	
 	signal(SIGTERM, shutdown_signal_handler);	
 	
 	// Print current battery voltage
-	printf("Battery Voltage: %2.2fV\n", get_battery_voltage());
-	
+	printf("Battery: %2.2fV  ", get_battery_voltage());
+	printf("Process ID: %d\n", (int)current_pid);
+
 	// all done
 	set_state(PAUSED);
-	printf("\nRobotics Cape Initialized\n");
+	printf("Robotics Cape Initialized\n\n");
 
 	return 0;
 }
@@ -295,12 +303,15 @@ int cleanup_cape(){
 	#endif
 	stop_dsm2_service();
 	
-	#ifdef DEBUG
-	printf("turning off PRU\n");
-	#endif
-	prussdrv_pru_disable(0);
-	prussdrv_pru_disable(1);
-    prussdrv_exit();
+	// only turn off pru if it was enbaled, otherwise segfaults
+	if(pru_initialized){	
+		#ifdef DEBUG
+		printf("turning off PRU\n");
+		#endif
+		prussdrv_pru_disable(0);
+		prussdrv_pru_disable(1);
+		prussdrv_exit();
+	}
 	
 	#ifdef DEBUG
 	printf("deleting PID file\n");
@@ -421,7 +432,7 @@ int blink_led(led_t led, float hz, float period){
 int initialize_button_handlers(){
 	
 	#ifdef DEBUG
-	printf("setting up mode & pause gpio pins\n");
+	printf("\nsetting up mode & pause gpio pins\n");
 	#endif
 	//set up mode pi
 	if(gpio_export(MODE_BTN)){
@@ -864,7 +875,7 @@ int set_encoder_pos(int ch, int val){
 *******************************************************************************/
 float get_battery_voltage(){
 	float v = (get_adc_volt(LIPO_ADC_CH)*V_DIV_RATIO)-LIPO_OFFSET; 
-	if(v<0.0) v = 0.0;
+	if(v<0.3) v = 0.0;
 	return v;
 }
 
@@ -876,15 +887,15 @@ float get_battery_voltage(){
 *******************************************************************************/
 float get_dc_jack_voltage(){
 	float v = (get_adc_volt(DC_JACK_ADC_CH)*V_DIV_RATIO)-DC_JACK_OFFSET; 
-	if(v<0.0) v = 0.0;
+	if(v<0.3) v = 0.0;
 	return v;
 }
 
-/*****************************************************************
+/*******************************************************************************
 * int get_adc_raw(int ch)
 *
 * returns the raw adc reading
-*****************************************************************/
+*******************************************************************************/
 int get_adc_raw(int ch){
 	if(ch<0 || ch>6){
 		printf("analog pin must be in 0-6\n");
@@ -893,11 +904,11 @@ int get_adc_raw(int ch){
 	return mmap_adc_read_raw((uint8_t)ch);
 }
 
-/*****************************************************************
+/*******************************************************************************
 * float get_adc_volt(int ch)
 * 
 * returns an actual voltage for an adc channel
-*****************************************************************/
+*******************************************************************************/
 float get_adc_volt(int ch){
 	if(ch<0 || ch>6){
 		printf("analog pin must be in 0-6\n");
@@ -908,97 +919,84 @@ float get_adc_volt(int ch){
 }
 
 
-//// PRU Servo control and encoder counting 
-/*****************************************************************
+
+/*******************************************************************************
+* int initialize_pru()
 * 
-* 
-* 
-*****************************************************************/
+* Configures the PRU and loads the servo and encoder binaries. Importantly 
+* it stores locally a pointer to the PRU shared memory which is used by the 
+* servo and encoder functions in this C file.
+*******************************************************************************/
 int initialize_pru(){
-	
 	// start pru
-	#ifdef DEBUG
-	printf("calling prussdrv_init()\n");
-	#endif
     prussdrv_init();
 	
     // Open PRU Interrupt
-	#ifdef DEBUG
-	printf("calling prussdrv_open\n");
-	#endif
-    if (prussdrv_open(PRU_EVTOUT_0)){
+	if(prussdrv_open(PRU_EVTOUT_0)<0){
         printf("prussdrv_open open failed\n");
         return -1;
     }
-
     // Get the interrupt initialized
-	#ifdef DEBUG
-	printf("calling prussdrv_pruintc_init\n");
-	#endif
-	
 	tpruss_intc_initdata pruss_intc_initdata = PRUSS_INTC_INITDATA;
     prussdrv_pruintc_init(&pruss_intc_initdata);
-
 	// get pointer to PRU shared memory
 	void* sharedMem = NULL;
     prussdrv_map_prumem(PRUSS0_SHARED_DATARAM, &sharedMem);
     prusharedMem_32int_ptr = (unsigned int*) sharedMem;
 	memset(prusharedMem_32int_ptr, 0, 9*4);
-	
 	// launch binaries
 	prussdrv_exec_program(SERVO_PRU_NUM, PRU_SERVO_BIN);
 	prussdrv_exec_program(ENCODER_PRU_NUM, PRU_ENCODER_BIN);
-
-    return(0);
+	
+    return 0;
 }
 
-/*****************************************************************
+/*******************************************************************************
 * int enable_servo_power_rail()
 * 
-* 
-*****************************************************************/
+* Turns on the 6V power regulator to the servo power rail.
+*******************************************************************************/
 int enable_servo_power_rail(){
 	return mmap_gpio_write(SERVO_PWR, HIGH);
 }
 
-/*****************************************************************
+/*******************************************************************************
 * int disable_servo_power_rail()
 * 
-* 
-*****************************************************************/
+* Turns off the 6V power regulator to the servo power rail.
+*******************************************************************************/
 int disable_servo_power_rail(){
 	return mmap_gpio_write(SERVO_PWR, LOW);
 }
 
-/*****************************************************************
+/*******************************************************************************
+* int send_servo_pulse_us(int ch, int us)
 * 
-* 
-* 
-*****************************************************************/
+* Sends a single pulse of duration us (microseconds) to a single channel (ch)
+* This must be called regularly (>40hz) to keep servo or ESC awake.
+*******************************************************************************/
 int send_servo_pulse_us(int ch, int us){
 	// Sanity Checks
 	if(ch<1 || ch>SERVO_CHANNELS){
-		printf("ERROR: Servo Channel must be between 1 & %d \n", SERVO_CHANNELS);
+		printf("ERROR: Servo Channel must be between 1&%d\n", SERVO_CHANNELS);
 		return -1;
-	}
-	if(prusharedMem_32int_ptr == NULL){
+	} if(prusharedMem_32int_ptr == NULL){
 		printf("ERROR: PRU servo Controller not initialized\n");
 		return -1;
 	}
-
 	// PRU runs at 200Mhz. find #loops needed
 	unsigned int num_loops = ((us*200.0)/PRU_SERVO_LOOP_INSTRUCTIONS); 
-	
 	// write to PRU shared memory
 	prusharedMem_32int_ptr[ch-1] = num_loops;
 	return 0;
 }
 
-/*****************************************************************
+/*******************************************************************************
+* int send_servo_pulse_us_all(int us)
 * 
-* 
-* 
-*****************************************************************/
+* Sends a single pulse of duration us (microseconds) to all channels.
+* This must be called regularly (>40hz) to keep servos or ESCs awake.
+*******************************************************************************/
 int send_servo_pulse_us_all(int us){
 	int i;
 	for(i=1;i<=SERVO_CHANNELS; i++){
@@ -1007,14 +1005,14 @@ int send_servo_pulse_us_all(int us){
 	return 0;
 }
 
-/*****************************************************************
+/*******************************************************************************
+* int send_servo_pulse_normalized(int ch, float input)
 * 
-* 
-* 
-*****************************************************************/
+*
+*******************************************************************************/
 int send_servo_pulse_normalized(int ch, float input){
 	if(ch<1 || ch>SERVO_CHANNELS){
-		printf("ERROR: Servo Channel must be between 1 & %d \n", SERVO_CHANNELS);
+		printf("ERROR: Servo Channel must be between 1&%d\n", SERVO_CHANNELS);
 		return -1;
 	}
 	if(input<-1.5 || input>1.5){
@@ -1025,11 +1023,11 @@ int send_servo_pulse_normalized(int ch, float input){
 	return send_servo_pulse_us(ch, micros);
 }
 
-/*****************************************************************
+/*******************************************************************************
+* int send_servo_pulse_normalized_all(float input)
 * 
 * 
-* 
-*****************************************************************/
+*******************************************************************************/
 int send_servo_pulse_normalized_all(float input){
 	int i;
 	for(i=1;i<=SERVO_CHANNELS; i++){
@@ -1038,14 +1036,14 @@ int send_servo_pulse_normalized_all(float input){
 	return 0;
 }
 
-/*****************************************************************
+/*******************************************************************************
+* int send_esc_pulse_normalized(int ch, float input)
 * 
 * 
-* 
-*****************************************************************/
+*******************************************************************************/
 int send_esc_pulse_normalized(int ch, float input){
 	if(ch<1 || ch>SERVO_CHANNELS){
-		printf("ERROR: Servo Channel must be between 1 & %d \n", SERVO_CHANNELS);
+		printf("ERROR: Servo Channel must be between 1&%d\n", SERVO_CHANNELS);
 		return -1;
 	}
 	if(input<0.0 || input>1.0){
@@ -1056,11 +1054,11 @@ int send_esc_pulse_normalized(int ch, float input){
 	return send_servo_pulse_us(ch, micros);
 }
 
-/*****************************************************************
+/*******************************************************************************
+* int send_esc_pulse_normalized_all(float input)
 * 
 * 
-* 
-*****************************************************************/
+*******************************************************************************/
 int send_esc_pulse_normalized_all(float input){
 	int i;
 	for(i=1;i<=SERVO_CHANNELS; i++){
@@ -1070,170 +1068,31 @@ int send_esc_pulse_normalized_all(float input){
 }
 
 
-
-
-/*****************************************************************
-* 
-* 
-* 
-*****************************************************************/
-char *byte_to_binary(unsigned char x){
-    static char b[9];
-    b[0] = '\0';
-    unsigned char z;
-    for (z = 128; z > 0; z >>= 1){
-        if(x&z)
-			strcat(b, "1");
-		else
-			strcat(b, "0");
-    }
-    return b;
-}
-
-// find the difference between two timespec structs
-// used with sleep_ns() function and accurately timed loops
-/*****************************************************************
-* 
-* 
-* 
-*****************************************************************/
-timespec diff(timespec start, timespec end){
-	timespec temp;
-	if ((end.tv_nsec-start.tv_nsec)<0) {
-		temp.tv_sec = end.tv_sec-start.tv_sec-1;
-		temp.tv_nsec = 1000000000L+end.tv_nsec-start.tv_nsec;
-	} else {
-		temp.tv_sec = end.tv_sec-start.tv_sec;
-		temp.tv_nsec = end.tv_nsec-start.tv_nsec;
-	}
-	return temp;
-}
-
-/*****************************************************************
-* uint64_t microsSinceEpoch()
-* 
-* handy function for getting current time in microseconds
-* so you don't have to deal with timespec structs
-*****************************************************************/
-uint64_t microsSinceEpoch(){
-	struct timeval tv;
-	uint64_t micros = 0;
-	gettimeofday(&tv, NULL);  
-	micros =  ((uint64_t)tv.tv_sec) * 1000000 + tv.tv_usec;
-	return micros;
-}
-
-
-// Mavlink easy setup for UDP
-// This function mostly taken from Bryan Godbolt's mavlink_udp example
-struct sockaddr_in initialize_mavlink_udp(char gc_ip_addr[],  int *udp_sock){
-	struct sockaddr_in gcAddr;
-	char target_ip[100];
-	struct sockaddr_in locAddr;
-	int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	
-	strcpy(target_ip, gc_ip_addr);
-	memset(&locAddr, 0, sizeof(locAddr));
-	locAddr.sin_family = AF_INET;
-	locAddr.sin_addr.s_addr = INADDR_ANY;
-	locAddr.sin_port = htons(14551); //uav listening port for mavlink
-	/* Bind the socket to port 14551 - necessary to receive packets from qgroundcontrol */ 
-	if (-1 == bind(sock,(struct sockaddr *)&locAddr, sizeof(struct sockaddr))){
-		perror("error bind failed");
-		close(sock);
-		exit(EXIT_FAILURE);
-    }
-
-	memset(&gcAddr, 0, sizeof(gcAddr));
-	gcAddr.sin_family = AF_INET;
-	gcAddr.sin_addr.s_addr = inet_addr(target_ip);
-	gcAddr.sin_port = htons(14550);
-	*udp_sock = sock;
-	printf("Initialized Mavlink with Ground Control address ");
-	printf(target_ip);
-	printf("\n");
-	return gcAddr;
-}
-
-
-//// SPI1   see test_adns9800 example
-int initialize_spi1(){ // returns a file descriptor to spi device
-	int spi1_fd;
-	spi1_fd = open("/dev/spidev2.0", O_RDWR); // actually spi1
-    if (spi1_fd<=0) {  
-        printf("/dev/spidev2.0 not found\n"); 
-        return -1; 
-    } 
-	mmap_gpio_write(SPI1_SS1_GPIO_PIN, HIGH);
-	mmap_gpio_write(SPI1_SS2_GPIO_PIN, HIGH);
-	
-	return spi1_fd;
-}
-
-int select_spi1_slave(int slave){
-	switch(slave){
-		case 1:
-			mmap_gpio_write(SPI1_SS2_GPIO_PIN, HIGH);
-			return mmap_gpio_write(SPI1_SS1_GPIO_PIN, LOW);
-		case 2:
-			mmap_gpio_write(SPI1_SS1_GPIO_PIN, HIGH);
-			return mmap_gpio_write(SPI1_SS2_GPIO_PIN, LOW);
-		default:
-			printf("SPI slave number must be 1 or 2\n");
-			return -1;
-	}
-}	
-int deselect_spi1_slave(int slave){
-	switch(slave){
-		case 1:
-			return mmap_gpio_write(SPI1_SS1_GPIO_PIN, HIGH);
-		case 2:
-			return mmap_gpio_write(SPI1_SS2_GPIO_PIN, HIGH);
-		default:
-			printf("SPI slave number must be 1 or 2\n");
-			return -1;
-	}
-}	
-
-// catch Ctrl-C signal and change system state
-// all threads should watch for get_state()==EXITING and shut down cleanly
+/*******************************************************************************
+* shutdown_signal_handler(int signo)
+*
+* catch Ctrl-C signal and change system state to EXITING
+* all threads should watch for get_state()==EXITING and shut down cleanly
+*******************************************************************************/
 void shutdown_signal_handler(int signo){
 	if (signo == SIGINT){
 		set_state(EXITING);
 		printf("\nreceived SIGINT Ctrl-C\n");
- 	}
-	if (signo == SIGTERM){
+ 	}else if (signo == SIGTERM){
 		set_state(EXITING);
 		printf("\nreceived SIGTERM\n");
  	}
 }
 
-/*****************************************************************
-*	saturate_float(float* val, float min, float max)
-*
-*	bounds val to +- limit
-*	return one if saturation occurred, otherwise zero
-******************************************************************/
-int saturate_float(float* val, float min, float max){
-	if(*val>max){
-		*val = max;
-		return 1;
-	}
-	else if(*val<min){	
-		*val = min;
-		return 1;
-	}
-	return 0;
-}
 
-/*****************************************************************
+/*******************************************************************************
 *	is_cape_loaded()
 *
 *	check to make sure robotics cape overlay is loaded
 *	return 1 if cape is loaded
 *	return -1 if cape_mgr is missing
 * 	return 0 if mape_mgr is present but cape is missing
-******************************************************************/
+*******************************************************************************/
 int is_cape_loaded(){
 	int ret;
 	
@@ -1327,15 +1186,6 @@ int kill_robot(){
 	
 	// return -1 indicating the program had to be killed
 	return -1;
-}
-
-/*******************************************************************************
-* int null_func()
-* function pointers for events initialized to null_func()
-* instead of containing a null pointer
-*******************************************************************************/
-int null_func(){
-	return 0;
 }
 
 

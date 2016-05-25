@@ -13,6 +13,8 @@
 #define ROBOTICS_CAPE
 
 #include <stdint.h> // for uint8_t types etc
+typedef struct timespec	timespec;
+typedef struct timeval timeval;
 
 /*******************************************************************************
 * INITIALIZATION AND CLEANUP
@@ -61,7 +63,7 @@ typedef enum state_t {
 	EXITING
 } state_t;
 
-enum state_t get_state();
+state_t get_state();
 int set_state(state_t new_state);
 
 
@@ -136,8 +138,6 @@ int blink_led(led_t led, float hz, float period);
 * For simple tasks like pausing the robot, the user is encouraged to assign
 * their function to be called when the button is released as this provides 
 * a more natural user experience aligning with consumer product functionality.
-*
-
 * 
 * The user can also just do a basic call to get_pause_button_state() or
 * get_mode_buttom_state() which returns the enumerated type RELEASED or 
@@ -402,6 +402,7 @@ int send_servo_pulse_us_all(int us);
 ******************************************************************************/
 int   initialize_dsm2();
 int   is_new_dsm2_data();
+int   is_dsm2_active();
 int   set_new_dsm2_data_func(int (*func)(void));
 int   get_dsm2_ch_raw(int channel);
 float get_dsm2_ch_normalized(int channel);
@@ -578,11 +579,7 @@ int read_imu_temp(imu_data_t* data);
 // // interrupt-driven sampling mode functions
 // int initialize_imu_dmp(imu_data_t *data, imu_config_t conf);
 // int set_imu_interrupt_func(int (*func)(void), imu_data_t* data);
-// int stop_imu_interrupt_func();
-
-
-// reset IMU, use before re-initializing with different settings
-
+// int stop_imu_interrupt_func();	
 
 
 /*******************************************************************************
@@ -661,21 +658,25 @@ int i2c_send_byte(int bus, uint8_t data);
 
 
 
-// /*******************************************************************************
-// * SPI - Serial Peripheral Interface
-// *
-// * The Sitara's SPI1 bus is broken out on two JST SH 6-pin sockets
-// * labeled SPI1.1 and SPI1.2 These share clock and serial IO signals.
-// * However, each socket has its own slave select line allowing two
-// * 
-// *******************************************************************************/
-// int initialize_spi1(uint8_t mode, uint32_t speed);
+/*******************************************************************************
+* SPI - Serial Peripheral Interface
+*
+* The Sitara's SPI1 bus is broken out on two JST SH 6-pin sockets
+* labeled SPI1.1 and SPI1.2 These share clock and serial IO signals.
+* However, each socket has its own slave select line allowing two
+* 
+*******************************************************************************/
+int initialize_spi1(int mode, int speed_hz);
+int get_spi1_fd();
+int close_spi1();
 int select_spi1_slave(int slave);
 int deselect_spi1_slave(int slave);	
-// int spi1_send_bytes(uint8_t length, uint8_t* data);
-// int spi1_send_byte(uint8_t data);
-// unsigned char spi_read_reg(int fd, unsigned char reg_addr);
-// unsigned char spi_write_reg(int fd, unsigned char reg_addr);
+int spi1_send_bytes(char* data, int bytes);
+int spi1_read_bytes(char* data, int bytes);
+int spi1_write_reg_byte(char reg_addr, char data);
+char spi1_read_reg_byte(char reg_addr);
+int spi1_read_reg_bytes(char reg_addr, char* data, int bytes);
+int spi1_transfer(char* tx_data, int tx_bytes, char* rx_data);
 
 
 /*******************************************************************************
@@ -709,17 +710,77 @@ int uart_read_line(int bus, int max_bytes, char* buf);
 int kill_robot();
 
 /*******************************************************************************
-* General use Functions
+* Useful Functions
+*
+* This is a collection of miscellaneous useful functions that are part of the
+* robotics cape library. These do not necessarily interact with hardware.
+*
+* @ int null_func()
+*
+* A simple function that returns 0. This exists so function pointers can be 
+* set to do nothing such as button and imu interrupt handlers.
+*
+* @ saturate_float(float* val, float min, float max)
+*
+* Modifies val to be bounded between between min and max. Returns 1 if 
+* saturation occurred, 0 if val was already in bound, and -1 if min was falsely
+* larger than max.
+*
+* @ char *byte_to_binary(char x)
+* 
+* This returns a string (char*) of '1' and '0' representing a character.
+* For example, print "00101010" with printf(byte_to_binary(42));
+*
+* @ timespec timespec_diff(timespec start, timespec end)
+* 
+* Returns the time difference between two timespec structs as another timespec.
+* Convenient for use with nanosleep() function and accurately timed loops.
+* Unlike timespec_sub defined in time.h, timespec_diff does not care which came 
+* first, A or B. A positive difference in time is always returned.
+*
+* @ uint64_t timespec_to_micros(timespec ts)
+* 
+* Returns a number of microseconds corresponding to a timespec struct.
+* Useful because timespecs are annoying.
+* 
+* @ uint64_t timeval_to_micros(timeval ts)
+* 
+* Returns a number of microseconds corresponding to a timespec struct.
+* Useful because timespecs are annoying.
+*
+* @ uint64_t micros_since_epoch()
+* 
+* handy function for getting current time in microseconds
+* so you don't have to deal with timespec structs
+*
+* @ int suppress_stdout(int (*func)(void))
+*
+* Executes a functiton func with all outputs to stdout suppressed. func must
+* take no arguments and must return an integer. Adapt this source to your
+* liking if you need to pass arguments. For example, if you have a function
+* int foo(), call it with supressed output to stdout as follows:
+* int ret = suppress_stdout(&foo);
+*
+* @ int suppress_stderr(int (*func)(void))
+* 
+* executes a functiton func with all outputs to stderr suppressed. func must
+* take no arguments and must return an integer. Adapt this source to your
+* liking if you need to pass arguments. For example, if you have a function
+* int foo(), call it with supressed output to stderr as follows:
+* int ret = suppress_stderr(&foo);
 *******************************************************************************/
+int null_func();
 int saturate_float(float* val, float min, float max);
-int null_func();	// good for making interrupt handlers do nothing
-char *byte_to_binary(unsigned char x); // for diagnostic prints
-typedef struct timespec	timespec;
-timespec diff(timespec start, timespec end); // subtract timespec structs 
-uint64_t microsSinceEpoch();
+char *byte_to_binary(unsigned char x);
+timespec timespec_diff(timespec A, timespec B);
+uint64_t timespec_to_micros(timespec ts);
+uint64_t timeval_to_micros(timeval tv);
+uint64_t micros_since_epoch();
+int suppress_stdout(int (*func)(void));
+int suppress_stderr(int (*func)(void));
 
 
 
-#endif
+#endif //ROBOTICS_CAPE
 
 

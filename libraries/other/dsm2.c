@@ -13,11 +13,9 @@
 // used for setting interrupt input pin
 #include "../simple_gpio/simple_gpio.h" 
 
-
 // uncomment debug defines to print raw data for debugging
 //#define DEBUG_DSM2
 //#define DEBUG_DSM2_RAW
-
 
 #define MAX_DSM2_CHANNELS 9
 #define GPIO_PIN_BIND 30 //P9.11 gpio_0[30]
@@ -25,6 +23,10 @@
 #define PAUSE 115	//microseconds
 #define DEFAULT_MIN 1142
 #define DEFAULT_MAX 1858
+
+#define DSM2_UART_BUS 		4
+#define DSM2_BAUD_RATE 		115200
+#define DSM2_PACKET_SIZE 	16
 
 /*******************************************************************************
 * Local Global Variables
@@ -35,13 +37,13 @@ int rc_maxes[MAX_DSM2_CHANNELS];
 int rc_mins[MAX_DSM2_CHANNELS];
 int num_channels; // actual number of channels being sent
 int resolution; // 10 or 11
-int tty4_fd;
 int new_dsm2_flag;
 int dsm2_frame_rate;
 uint64_t last_time;
 pthread_t uart4_thread;
 int listening; // for calibration routine only
 int (*dsm2_ready_func)();
+int is_dsm2_active_flag; 
 
 /*******************************************************************************
 * Local Function Declarations
@@ -92,7 +94,13 @@ int initialize_dsm2(){
 	running = 1; // lets uarts 4 thread know it can run
 	num_channels = 0;
 	last_time = 0;
+	is_dsm2_active_flag = 0;
 	set_new_dsm2_data_func(&null_func);
+	
+	if(initialize_uart(DSM2_UART_BUS, DSM2_BAUD_RATE, 0.1)){
+		printf("Error, failed to initialize UART%d for DSM2\n", DSM2_UART_BUS);
+	}
+	
 	pthread_create(&uart4_thread, NULL, uart4_checker, (void*) NULL);
 	printf("DSM2 Thread Started\n");
 	
@@ -185,6 +193,16 @@ int get_num_dsm2_channels(){
 }
 
 /*******************************************************************************
+* @ int is_dsm2_active()
+* 
+* returns 1 if packets are arriving in good health without timeouts.
+* returns 0 otherwise.
+*******************************************************************************/
+int is_dsm2_active(){
+	return is_dsm2_active_flag;
+}
+
+/*******************************************************************************
 * @ int ms_since_last_dsm2_packet()
 * 
 * returns the number of milliseconds since the last dsm2 packet was received.
@@ -196,7 +214,7 @@ int ms_since_last_dsm2_packet(){
 		return -1;
 	}
 	// otherwise in normal operation just subtract last time from new time
-	uint64_t current_time = microsSinceEpoch();
+	uint64_t current_time = micros_since_epoch();
 	
 	return (int)((current_time-last_time)/1000);
 }
@@ -205,105 +223,41 @@ int ms_since_last_dsm2_packet(){
 * @ void* uart4_checker(void *ptr)
 * 
 * This is a local function that is started as a background thread by 
-* initialize_dsm2(). This monitors the serial port and itnerprets data
+* initialize_dsm2(). This monitors the serial port and interprets data
 * for each packet, it determines 10 or 11 bit resolution
 * Radios with more than 7 channels split data across multiple packets. Thus, 
-* new data is not committed untill a full set of channel data is received.
+* new data is not committed until a full set of channel data is received.
 *******************************************************************************/
 void* uart4_checker(void *ptr){
-	fd_set set; // for select()
-	int ret;  // return value for select()
-	struct timeval timeout;
-	char buf[64]; // large serial buffer to catch doubled up packets
-	int i,j;
+	char buf[DSM2_PACKET_SIZE]; // large serial buffer to catch doubled up packets
+	int i, ret;
 	int new_values[MAX_DSM2_CHANNELS]; // hold new values before committing
 	
-	//set up sart/stop bit and 115200 baud
-	struct termios config;
-	memset(&config,0,sizeof(config));
-	config.c_iflag=0;
-	config.c_iflag=0;
-    config.c_oflag=0;
-    config.c_cflag= CS8|CREAD|CLOCAL;   // 8n1, see termios.h for more info
-    config.c_lflag=0;
-    config.c_cc[VTIME]=0; // no timeout condition
-	config.c_cc[VMIN]=1;  // only return if something is in the buffer
+	flush_uart(DSM2_UART_BUS); // flush the buffer
 	
-	// open for blocking reads
-	if ((tty4_fd = open(UART4_PATH, O_RDWR | O_NOCTTY)) < 0) {
-		printf("error opening uart4\n");
-	}
-	// Spektrum and Orange recievers are 115200 baud
-	if(cfsetispeed(&config, B115200) < 0) {
-		printf("cannot set uart4 baud rate\n");
-		return NULL;
-	}
-	if(tcsetattr(tty4_fd, TCSAFLUSH, &config) < 0) { 
-		printf("cannot set uart4 attributes\n");
-		return NULL;
-	}
-	
-
 	// running will become 0 when stop_dsm2_service() is called
 	// mostly likely that will be called by cleanup_cape()
-	while(running){
-		
+	while(running && get_state()!=EXITING){
 		memset(&buf, 0, sizeof(buf)); // clear buffer
-		
-		//i = read(tty4_fd,&buf,sizeof(buf)); // blocking read
-		FD_ZERO(&set); /* clear the set */
-		FD_SET(tty4_fd, &set); /* add our file descriptor to the set */
-		timeout.tv_sec = 0;
-		timeout.tv_usec = 100000; // 0.1 second timeout
-		ret = select(tty4_fd + 1, &set, NULL, NULL, &timeout);
-		if(ret == -1){
-			#ifdef DEBUG_DSM2
-			printf("ERROR with select(tty4_fd)\n");
-			#endif
+		// read the buffer and decide what to do
+		ret = uart_read_bytes(DSM2_UART_BUS, DSM2_PACKET_SIZE, buf);
+		if(ret<0){ //error
+			printf("ERROR reading uart %d\n", DSM2_UART_BUS);
+			is_dsm2_active_flag=0;
 			goto end;
 		}
-		else if(ret == 0){
-			#ifdef DEBUG_DSM2
-			printf("UART4 DSM2 timeout, transmitter probably off\n");
-			#endif
+		else if(ret==0){//timeout
+			is_dsm2_active_flag=0; // indicate connection is no longer active
 			goto end;
 		}
-		else{
-			i=read(tty4_fd, &buf, 64); /* there was data to read */
-		}
-		
-		if(i<0){
-			#ifdef DEBUG_DSM2
-			printf("error, read returned -1\n");
-			#endif
-			
-			goto end;
-		}
-		else if(i>16){
-			#ifdef DEBUG_DSM2
-			printf("error: read too many bytes.\n");
-			#endif
+		else if (ret>0 && ret<DSM2_PACKET_SIZE){ // partial packet
+			// try to get back in sync
+			flush_uart(DSM2_UART_BUS); // flush the buffer
 			goto end;
 		}
 		
-		//incomplete packet read, wait and read the rest of the buffer
-		else if(i<16){	
-			// packet takes about 1.4ms at 115200 baud. sleep for 2.0
-			usleep(2000); 
-			//read the rest
-			j = read(tty4_fd,&buf[i],sizeof(buf)-i); // blocking read
-			
-			//if the rest of the packet failed to arrive, error
-			if(j+i != 16){
-				#ifdef DEBUG_DSM2
-				printf("error: wrong sized packet\n");
-				#endif
-				
-				goto end;
-			}
-		}
-		// if we've gotten here, we have a 16 byte packet
-		tcflush(tty4_fd,TCIOFLUSH);
+		// okay, must have a full packet now
+		
 		#ifdef DEBUG_DSM2
 			printf("read %d bytes, ", j+i);
 		#endif
@@ -378,7 +332,7 @@ read_packet:
 					value = (value/2) + 989; 
 				}
 				else{
-					printf("dsm2 mode incorrect\n");
+					printf("ERROR: dsm2 mode incorrect\n");
 					goto end;
 				}
 				
@@ -422,8 +376,9 @@ read_packet:
 			printf("all data complete now\n");
 			#endif
 			new_dsm2_flag=1;
+			is_dsm2_active_flag=1;
 			resolution = mode;
-			last_time = microsSinceEpoch();
+			last_time = micros_since_epoch();
 			for(i=0;i<num_channels;i++){
 				rc_channels[i]=new_values[i];
 				new_values[i]=0;
@@ -437,11 +392,8 @@ read_packet:
 		printf("\n");
 		#endif
 		
-end:
-		// wait a tiny bit. this isn't necessary since the blocking read on 
-		// the serial bus hands back resources to the cpu. However, in case
-		// something goes wrong with that this prevents spinlock
-		usleep(2000);
+end: ;
+
 	}
 	return NULL;
 }

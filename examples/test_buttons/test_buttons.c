@@ -10,24 +10,28 @@
 
 // pause button pressed interrupt function
 int on_pause_pressed(){
+	set_led(GREEN, ON);
 	printf("Pause Pressed\n");
 	return 0;
 }
 
 // pause button released interrupt function
 int on_pause_released(){
+	set_led(GREEN, OFF);
 	printf("Pause Released\n");
 	return 0;
 }
 
 // mode button pressed interrupt function
 int on_mode_pressed(){
+	set_led(RED, ON);
 	printf("Mode Pressed\n");
 	return 0;
 }
 
 // mode button released interrupt function
 int on_mode_released(){
+	set_led(RED,OFF);
 	printf("Mode Released\n");
 	return 0;
 }
