@@ -51,7 +51,8 @@ int cleanup_cape();		// call at the very end of main()
 * state to RUNNING to indicate to other threads that the program should now
 * behave in normal ongoing operational mode. Threads and loops should also
 * independently check for an EXITING state to know when to close and exit
-* cleanly when prompted by another thread.
+* cleanly when prompted by another thread. You may also call print_state()
+* to print the textual name of the state to the screen.
 *
 * All example programs use these functions. See the bare_minimum example 
 * for a skeleton outline.
@@ -65,6 +66,7 @@ typedef enum state_t {
 
 state_t get_state();
 int set_state(state_t new_state);
+int print_state();
 
 
 /*******************************************************************************
