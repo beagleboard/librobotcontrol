@@ -18,7 +18,7 @@
 #include <linux/spi/spidev.h>
 
 #define SPI1_PATH 			"/dev/spidev1.0"
-#define SPI_MAX_SPEED 		2000000 	// 2mhz
+#define SPI_MAX_SPEED 		24000000 	// 24mhz
 #define SPI_MIN_SPEED 		1000		// 1khz
 #define SPI_BITS_PER_WORD 	8
 #define SPI_BUF_SIZE		2		
@@ -112,7 +112,7 @@ int initialize_spi1(int mode, int speed_hz){
 		 close(fd);
 		 return -1;
 	}
-	
+
 	// store settings
     xfer[0].cs_change = 0; // don't toggle CS
     xfer[0].delay_usecs = 0;
