@@ -92,6 +92,16 @@ imu_config_t get_default_imu_config(){
 }
 
 /*******************************************************************************
+* int set_imu_config_to_defaults(*imu_config_t);
+*
+* resets an imu_config_t struct to default values
+*******************************************************************************/
+int set_imu_config_to_defaults(imu_config_t *conf){
+	*conf = get_default_imu_config();
+	return 0;
+}
+
+/*******************************************************************************
 * int initialize_imu(imu_config_t conf)
 *
 * Set up the imu for one-shot sampling of sensor data by user

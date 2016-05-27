@@ -572,6 +572,7 @@ typedef struct imu_data_t {
 
 // one-shot sampling mode functions
 imu_config_t get_default_imu_config();
+int set_imu_config_to_defaults(imu_config_t *conf);
 int initialize_imu(imu_data_t *data, imu_config_t conf);
 int read_accel_data(imu_data_t *data);
 int read_gyro_data(imu_data_t *data);
