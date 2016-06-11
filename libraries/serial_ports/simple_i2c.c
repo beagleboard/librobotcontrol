@@ -40,7 +40,7 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 // I2C1 is broken out on the external connector on robotics cape
 #define I2C1_FILE "/dev/i2c-2"
 #define I2C2_FILE "/dev/i2c-1"
-#define MAX_I2C_LENGTH   64
+#define MAX_I2C_LENGTH   128
 
 /******************************************************************
 * struct i2c_t 
@@ -217,16 +217,12 @@ int i2c_read_bytes(int bus, uint8_t regAddr, uint8_t length,\
 	}
 	
 	// then read the response
+	//usleep(300);
 	ret = read(i2c[bus].file, data, length);
-	if(ret!=length){
-		printf("i2c device returned %d bytes\n",ret);
-		printf("expected %d bytes instead\n",length);
-		return -1;
-	}
 
 	// return the in_use state to previous state.
 	i2c[bus].in_use = old_in_use;
-    return 0;
+    return ret;
 }
 
 /******************************************************************
@@ -241,7 +237,8 @@ int i2c_read_byte(int bus, uint8_t regAddr, uint8_t *data) {
 ******************************************************************/
 int i2c_read_words(int bus, uint8_t regAddr, uint8_t length,\
 												uint16_t *data) {
-    int ret;
+    int ret,i;
+	char buf[MAX_I2C_LENGTH];
 	
     // Boundary checks
 	if(bus!=1 && bus!=2){
@@ -249,7 +246,7 @@ int i2c_read_words(int bus, uint8_t regAddr, uint8_t length,\
 		return -1;
 	}
     if(length>(MAX_I2C_LENGTH/2)){
-        printf("i2c_read_words must be less than MAX_I2C_LENGTH\n"); 
+        printf("i2c_read_words length must be less than MAX_I2C_LENGTH/2\n"); 
 		return -1;
     }else if(length < 0){
         printf("read_words length must be greater than 0\n");
@@ -273,11 +270,16 @@ int i2c_read_words(int bus, uint8_t regAddr, uint8_t length,\
 	}
 
 	// then read the response
-	ret = read(i2c[bus].file, data, length*2);
+	ret = read(i2c[bus].file, buf, length*2);
 	if(ret!=(length*2)){
 		printf("i2c device returned %d bytes\n",ret);
 		printf("expected %d bytes instead\n",length);
 		return -1;
+	}
+	
+	// form words from bytes and put into user's data array
+	for(i=0;i<length;i++){
+		data[i] = (((uint16_t)buf[0])<<8 | buf[1]); 
 	}
 	
 	// return the in_use state to previous state.

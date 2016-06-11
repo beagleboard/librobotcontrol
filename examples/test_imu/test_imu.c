@@ -21,6 +21,7 @@ int main(int argc, char *argv[]){
 	// use defaults for now
 	imu_config_t conf = get_default_imu_config();
 	conf.enable_magnetometer=0;
+	
 	if(initialize_imu(&data, conf)){
 		printf("initialize_imu_failed\n");
 		return -1;

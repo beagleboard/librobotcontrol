@@ -125,13 +125,27 @@ int initialize_uart(int bus, int baudrate, float timeout_s){
 		return -1;
 	}
 	
+	// get current attributes
+	if (tcgetattr(fd[bus],&config)!=0){
+		close(fd[bus]);
+		printf("Cannot get uart attributes\n");
+		return -1;
+	}
+	
 	// set up tc config
-	memset(&config,0,sizeof(config));
-	config.c_iflag=0;
-	config.c_iflag=0;
-    config.c_oflag=0;
-    config.c_cflag= CS8|CREAD|CLOCAL;   // 8n1, see termios.h for more info
-    config.c_lflag=0;
+	//memset(&config,0,sizeof(config));
+	// config.c_iflag=0;
+    // config.c_oflag=0;
+	// config.c_lflag = 0;
+	// config.c_cflag = 0;
+	config.c_lflag &= ~ICANON;	// turn off canonical read
+	config.c_cflag &= ~PARENB;  // no parity
+	config.c_cflag &= ~CSTOPB;  // disable 2 stop bits (use just 1)
+	config.c_cflag &= ~CSIZE;  // wipe all size masks
+	config.c_cflag |= CS8;		// set size to 8 bit characters
+	config.c_cflag |= CREAD;    // enable reading
+    config.c_cflag |= CLOCAL;	// ignore modem status lines
+	
 	// convert float timeout in seconds to int timeout in tenths of a second
     config.c_cc[VTIME]=lround(timeout_s*10);
 	// if VTIME>0 & VMIN>0, read() will return when either the requested number
@@ -139,7 +153,7 @@ int initialize_uart(int bus, int baudrate, float timeout_s){
 	// since we set VMIN to the size of the buffer, read() should always return
 	// when the user's requested number of bytes are ready.
 	config.c_cc[VMIN]=MAX_READ_LEN; //
-	
+
 	
 	if(cfsetispeed(&config, speed) < 0) {
 		printf("ERROR: cannot set uart%d baud rate\n", bus);
@@ -150,11 +164,13 @@ int initialize_uart(int bus, int baudrate, float timeout_s){
 		return -1;
 	}
 	
-	
-	if(tcsetattr(fd[bus], TCSAFLUSH, &config) < 0) { 
+	tcflush(fd[bus],TCIOFLUSH);
+	if(tcsetattr(fd[bus], TCSANOW, &config) < 0) { 
 		printf("cannot set uart%d attributes\n", bus);
+		close(fd[bus]);
 		return -1;
 	}
+	tcflush(fd[bus],TCIOFLUSH);
 	
 	initialized[bus] = 1;
 	bus_timeout_s[bus]=timeout_s;
@@ -182,7 +198,7 @@ int close_uart(int bus){
 	if(initialized[bus]==0){
 		return 0;
 	}
-	
+	tcflush(fd[bus],TCIOFLUSH);
 	close(fd[bus]);
 	initialized[bus]=0;
 	return 0;
@@ -217,7 +233,7 @@ int get_uart_fd(int bus){
 /*******************************************************************************
 * int flush_uart(int bus)
 *
-* flushes (discards) any data received but not read.
+* flushes (discards) any data received but not read. Or written but not sent.
 *******************************************************************************/
 int flush_uart(int bus){
 	// sanity checks
@@ -229,7 +245,7 @@ int flush_uart(int bus){
 		printf("ERROR: uart%d must be initialized first\n", bus);
 		return -1;
 	}
-	return tcflush(fd[bus],TCIFLUSH);
+	return tcflush(fd[bus],TCIOFLUSH);
 }
 
 /*******************************************************************************

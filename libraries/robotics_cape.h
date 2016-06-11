@@ -499,7 +499,7 @@ typedef enum gyro_fsr_t {
 } gyro_fsr_t;
 
 typedef enum accel_dlpf_t {
-	ACCEL_DLPF_460,
+	ACCEL_DLPF_OFF,
 	ACCEL_DLPF_184,
 	ACCEL_DLPF_92,
 	ACCEL_DLPF_41,
@@ -509,7 +509,7 @@ typedef enum accel_dlpf_t {
 } accel_dlpf_t;
 
 typedef enum gyro_dlpf_t {
-	GYRO_DLPF_250,
+	GYRO_DLPF_OFF,
 	GYRO_DLPF_184,
 	GYRO_DLPF_92,
 	GYRO_DLPF_41,
@@ -533,7 +533,7 @@ typedef struct imu_config_t {
 	
 	// DMP settings, only used with DMP interrupt
 	int dmp_sample_rate;
-	signed char orientation[9]; //orientation matrix
+	signed short orientation; //orientation matrix
 	int dmp_interrupt_priority; // scheduler priority for handler
 } imu_config_t;
 
@@ -542,31 +542,26 @@ typedef struct imu_data_t {
 	float accel[3]; // units of m/s^2
 	float gyro[3];	// units of degrees/s
 	float mag[3];	// units of uT
-	float temp;		// units of degrees celcius
+	float temp;		// units of degrees Celsius
 	
 	// 16 bit raw adc readings from each sensor
 	int16_t raw_gyro[3];	
 	int16_t raw_accel[3];
 	
-	// FSR-derived ratios from raw to real units
+	// FSR-derived conversion ratios from raw to real units
 	float accel_to_ms2; // to m/s^2
 	float gyro_to_degs; // to degrees/s
-
-	// quaternion_t DMPQuat; 	// unitless
-	// quaternion_t fusedQuat; // unitless
-	// vector3d_t fusedEuler;  // units of degrees
-
-	// complementary filter constants used
-	// by imu_read_dmp
-	float lastDMPYaw;
-	float lastYaw;
 	
-	// steady state offsets loaded from calibration file
-	uint16_t rawGyroBias[3];
-	uint16_t rawAccelBias[3];
+	// everything below this line is available in DMP mode only
+	// quaternion and Euler angles from DMP based on ONLY Accel/Gyro
+	float dmp_quat[4]; 	// unitless
+	float dmp_euler[3];	// degrees roll/pitch/yaw
 	
-	// magnetometer factory sensitivity adjustment values
-	float mag_adjust[3];
+	// If magnetometer is enabled in DMP mode, the following quaternion and 
+	// Euler angles will be available which add magnetometer data to filter
+	float fused_quat[4]; 	// unitless
+	float fused_euler[3]; 	// units of degrees
+	float compass_heading;	// heading in degrees based purely on magnetometer
 } imu_data_t;
  
 
@@ -574,15 +569,16 @@ typedef struct imu_data_t {
 imu_config_t get_default_imu_config();
 int set_imu_config_to_defaults(imu_config_t *conf);
 int initialize_imu(imu_data_t *data, imu_config_t conf);
+int power_off_imu();
 int read_accel_data(imu_data_t *data);
 int read_gyro_data(imu_data_t *data);
 int read_mag_data(imu_data_t *data);
 int read_imu_temp(imu_data_t* data);
 
 // // interrupt-driven sampling mode functions
-// int initialize_imu_dmp(imu_data_t *data, imu_config_t conf);
-// int set_imu_interrupt_func(int (*func)(void), imu_data_t* data);
-// int stop_imu_interrupt_func();	
+int initialize_imu_dmp(imu_data_t *data, imu_config_t conf);
+int set_imu_interrupt_func(int (*func)(void));
+int stop_imu_interrupt_func();
 
 
 /*******************************************************************************
@@ -783,6 +779,30 @@ int suppress_stdout(int (*func)(void));
 int suppress_stderr(int (*func)(void));
 
 
+/*******************************************************************************
+* Vector and Quaternion Math
+*
+* These are useful for dealing with IMU orientation data and general vector math
+*
+* @
+*******************************************************************************/
+// defines for index location within vector and quaternion arrays
+#define VEC3_X		0
+#define VEC3_Y		1
+#define VEC3_Z		2
+#define QUAT_W		0
+#define QUAT_X		1
+#define QUAT_Y		2
+#define QUAT_Z		3
+
+float vector3DotProduct(float a[3], float b[3]);
+void vector3CrossProduct(float a[3], float b[3], float d[3]);
+float quaternionNorm(float q[4]);
+void quaternionNormalize(float q[4]);
+void quaternionToEuler(float q[4], float v[3]);
+void eulerToQuaternion(float v[3], float q[4]);
+void quaternionConjugate(float in[4], float out[4]);
+void quaternionMultiply(float a[4], float b[4], float out[4]);
 
 #endif //ROBOTICS_CAPE
 

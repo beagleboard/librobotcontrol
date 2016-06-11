@@ -14,14 +14,15 @@ identical but the latter has a different register map
 
 // internal DMP sample rate limits
 #define DMP_MAX_RATE 200
-#define DMP_MIN_RATE 5
-
+#define DMP_MIN_RATE 4
+#define IMU_POLL_TIMEOUT 300 // milliseconds
+#define MAX_FIFO_BUFFER	128
 
 /*******************************************************************
 * Example Common orientation matrices
 *******************************************************************/
 // Z pointing up, identity matrix 
-#define ORIENTATION_Z_UP {1,0,0, 0,1,0, 0,0,1} 
+#define ORIENTATION_Z_UP 136
 // Y-axis pointing up for BeagleMIP
 #define ORIENTATION_Y_UP {1,0,0, 0,0,-1, 0,1,0}; 
 // X-axis pointing up
@@ -151,9 +152,9 @@ identical but the latter has a different register map
 /*******************************************************************
 * CONFIG register bits
 *******************************************************************/
-#define FIFO_MODE_REPLACE_OLD	0x00<<6
+#define FIFO_MODE_REPLACE_OLD	0
 #define FIFO_MODE_KEEP_OLD		0x01<<6
-#define EXT_SYNC_SET_DISABLE	0x00<<3
+#define EXT_SYNC_SET_DISABLE	0
 
 
 /*******************************************************************
@@ -191,10 +192,10 @@ identical but the latter has a different register map
 * INT_PIN_CFG
 *******************************************************************/
 #define ACTL_ACTIVE_LOW			0x01<<7
-#define ACTL_ACTIVE_HIGH		0x00<<7
-#define INT_OPEN_DRAIN			0x01<<6
+#define ACTL_ACTIVE_HIGH		0
+#define INT_OPEN_DRAIN			0
 #define INT_PUSH_PULL			0x00<<6
-#define LATCH_INT_EN			0x01<<5
+#define LATCH_INT_EN			0
 #define INT_ANYRD_CLEAR			0x01<<4
 #define ACTL_FSYNC_ACTIVE_LOW	0x01<<3
 #define ACTL_FSYNC_ACTIVE_HIGH	0x00<<3
@@ -214,6 +215,12 @@ identical but the latter has a different register map
 #define FSYNC_INT_DIS			0x00<<3
 #define RAW_RDY_EN				0x01
 #define RAW_RDY_DIS				0x00
+
+/*******************************************************************
+* FIFO_EN register settings
+*******************************************************************/
+#define FIFO_SLV0_EN			0x01
+
 
 /*******************************************************************
 * PWR_MGMT_1 register settings

@@ -190,8 +190,9 @@ fragment@0 {
 			0x180 0x30 /*P9.26,uart1_rxd,MODE0,INPUT*/
 			
 			/* UART2 */
+			0x150 0x21	/*P9.22,uart2_rxd,MODE1 */
 			0x154 0x11	/*P9.21,uart2_txd,MODE1 */
-			0x150 0x31	/*P9.22,uart2_rxd,MODE1 */
+			
 			
 			/* UART5 */
 			0x0C4 0x34	/* P8.38,uart5_rxd,MODE4 */

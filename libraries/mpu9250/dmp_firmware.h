@@ -9,6 +9,10 @@
 #define MPU6500_MEM_R_W			0x6F
 #define DMP_LOAD_CHUNK			(16)
 #define DMP_CODE_SIZE           (3062)
+#define DMP_SAMPLE_RATE     	(200)
+
+#define DMP_INT_GESTURE     (0x01)
+#define DMP_INT_CONTINUOUS  (0x02)
 
 static const uint16_t dmp_start_addr = 0x0400;
 
