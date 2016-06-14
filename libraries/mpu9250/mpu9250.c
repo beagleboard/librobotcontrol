@@ -6,24 +6,22 @@
 * Credit to Kris Winer most of the framework and register definitions.
 *******************************************************************************/
 
-#include "../robotics_cape.h"
+#include "../robotics_cape_defs.h"
 #include "../useful_includes.h"
+#include "../robotics_cape.h"
 #include "../simple_gpio/simple_gpio.h"
 #include "mpu9250_defs.h"
 #include "dmp_firmware.h"
 #include "dmpKey.h"
 
+// uncomment #define DEBUG for helpful debug messages
 // #define DEBUG
-#define WARNINGS
-
-#define INTERRUPT_PIN 117  //gpio3.21 P9.25
-#define min(a, b) 	((a < b) ? a : b)
-
 
 // there should be 28 or 35 bytes in the FIFO if the magnetometer is disabled
 // or enabled.
 #define FIFO_LEN_NO_MAG 28
 #define FIFO_LEN_MAG	35
+#define YAW_MIX_FACTOR	20 // higher this is, the less weighting on magnetometer
 
 // error threshold checks
 #define QUAT_ERROR_THRESH       (1L<<24)
@@ -42,7 +40,10 @@ pthread_t imu_interrupt_thread;
 int (*imu_interrupt_func)();
 int interrupt_running;
 float mag_adjust[3];
+int last_read_successful;
+uint64_t last_interrupt_timestamp_micros;
 imu_data_t* data_ptr;
+int shutdown_interrupt_thread = 0;
 
 /*******************************************************************************
 *	config functions for internal use only
@@ -61,8 +62,6 @@ int mpu_read_mem(unsigned short mem_addr, unsigned short length,\
 												unsigned char *data);
 int dmp_load_motion_driver_firmware();
 int dmp_set_orientation(unsigned short orient);
-unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx);
-unsigned short inv_row_2_scale(const signed char *row);
 int dmp_enable_gyro_cal(unsigned char enable);
 int dmp_enable_lp_quat(unsigned char enable);
 int dmp_enable_6x_lp_quat(unsigned char enable);
@@ -74,6 +73,8 @@ int mpu_set_dmp_state(unsigned char enable);
 int set_int_enable(unsigned char enable);
 int dmp_set_interrupt_mode(unsigned char mode);
 int read_dmp_fifo();
+int data_fusion();
+int load_gyro_offets();
 
 void* imu_interrupt_handler(void* ptr);
 int (*imu_interrupt_func)(); // pointer to user-defined function
@@ -87,17 +88,19 @@ int (*imu_interrupt_func)(); // pointer to user-defined function
 imu_config_t get_default_imu_config(){
 	imu_config_t conf;
 	
+	// general stuff
 	conf.accel_fsr = A_FSR_4G;
 	conf.gyro_fsr = G_FSR_1000DPS;
 	conf.gyro_dlpf = GYRO_DLPF_184;
 	conf.accel_dlpf = ACCEL_DLPF_184;
 	conf.enable_magnetometer = 0;
+	
+	// DMP stuff
 	conf.dmp_sample_rate = 100;
 	conf.orientation = ORIENTATION_Z_UP;
-	
-	// conf.dmp_interrupt_priority = sched_get_priority_max(SCHED_FIFO) -5;
-	conf.dmp_interrupt_priority = sched_get_priority_max(SCHED_FIFO);
-	
+	conf.compass_mix_factor = 100;
+	conf.dmp_interrupt_priority = sched_get_priority_max(SCHED_FIFO) -1;
+	conf.show_warnings = 0;
 	return conf;
 }
 
@@ -123,8 +126,7 @@ int initialize_imu(imu_data_t *data, imu_config_t conf){
 	// do not proceed to prevent interfering with that process
 	if(i2c_get_in_use_state(IMU_BUS)){
 		printf("i2c bus claimed by another process\n");
-		printf("aborting initialize_imu()\n");
-		return -1;
+		printf("Continuing with initialize_imu() anyway.\n");
 	}
 	
 	// if it is not claimed, start the i2c bus
@@ -141,43 +143,59 @@ int initialize_imu(imu_data_t *data, imu_config_t conf){
 	config=conf;
 	
 	// restart the device so we start with clean registers
-	if(reset_mpu9250()){
+	if(reset_mpu9250()<0){
+		printf("ERROR: failed to reset_mpu9250\n");
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
 	
 	//check the who am i register to make sure the chip is alive
 	if(i2c_read_byte(IMU_BUS, WHO_AM_I_MPU9250, &c)<0){
 		printf("Reading WHO_AM_I_MPU9250 register failed\n");
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
 	if(c!=0x71){
 		printf("mpu9250 WHO AM I register should return 0x71\n");
 		printf("WHO AM I returned: 0x%x\n", c);
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
  
+	// load in gyro calibration offsets from disk
+	if(load_gyro_offets()<0){
+		printf("ERROR: failed to load gyro calibration offsets\n");
+		i2c_release_bus(IMU_BUS);
+		return -1;
+	}
+	
 	// Set sample rate = 1000/(1 + SMPLRT_DIV)
 	// here we use a divider of 0 for 1khz sample
 	if(i2c_write_byte(IMU_BUS, SMPLRT_DIV, 0x00)){
 		printf("I2C bus write error\n");
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
 	
 	// set full scale ranges and filter constants
 	if(set_gyro_fsr(conf.gyro_fsr, data)){
 		printf("failed to set gyro fsr\n");
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
 	if(set_accel_fsr(conf.accel_fsr, data)){
 		printf("failed to set accel fsr\n");
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
 	if(set_gyro_dlpf(conf.gyro_dlpf)){
 		printf("failed to set gyro dlpf\n");
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
 	if(set_accel_dlpf(conf.accel_dlpf)){
 		printf("failed to set accel_dlpf\n");
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
 	
@@ -185,6 +203,7 @@ int initialize_imu(imu_data_t *data, imu_config_t conf){
 	if(conf.enable_magnetometer){
 		if(initialize_magnetometer(data)){
 			printf("failed to initialize magnetometer\n");
+			i2c_release_bus(IMU_BUS);
 			return -1;
 		}
 	}
@@ -268,7 +287,12 @@ int read_mag_data(imu_data_t* data){
 	uint8_t st1;
 	uint8_t raw[7];
 	int16_t adc[3];
-	int ret;
+	
+	if(config.enable_magnetometer==0){
+		printf("ERROR: can't read magnetometer unless it is enabled in \n");
+		printf("imu_config_t struct before calling initialize_imu\n");
+		return -1;
+	}
 	
 	// magnetometer is actually a separate device with its
 	// own address inside the mpu9250
@@ -276,7 +300,10 @@ int read_mag_data(imu_data_t* data){
 	i2c_set_device_address(IMU_BUS, AK8963_ADDR);
 	
 	// read the data ready bit to see if there is new data
-	i2c_read_byte(IMU_BUS, AK8963_ST1, &st1);
+	if(i2c_read_byte(IMU_BUS, AK8963_ST1, &st1)<0){
+		printf("Error reading Magnetometer, i2c_bypass is probably not set\n");
+		return -1;
+	}
 	#ifdef DEBUG
 	printf("st1: %d", st1);
 	#endif
@@ -287,21 +314,17 @@ int read_mag_data(imu_data_t* data){
 		return 0;
 	}
 	
-	// Read the six raw data regs into data array
-	ret=i2c_read_bytes(IMU_BUS,AK8963_XOUT_L,7,&raw[0]); 
-	
-	if(ret){
+	// Read the six raw data regs into data array	
+	if(i2c_read_bytes(IMU_BUS,AK8963_XOUT_L,7,&raw[0])<0){
 		printf("read_mag_data failed\n");
 		return -1;
 	}
 	
 	// check if the readings saturated such as because
 	// of a local field source, discard data if so
-	if(raw[6]&DATA_OVERFLOW){
-		#ifdef DEBUG
-		printf("magnetometer saturated\n");
-		#endif
-		return 0;
+	if(raw[6]&MAGNETOMETER_SATURATION){
+		printf("ERROR: magnetometer saturated\n");
+		return -1;
 	}
 	
 	// Turn the MSB and LSB into a signed 16-bit value
@@ -313,11 +336,14 @@ int read_mag_data(imu_data_t* data){
 	#ifdef DEBUG
 	printf("raw mag:%d %d %d\n", adc[0], adc[1], adc[2]);
 	#endif
-	// multiply by the sensitivity adjustment and convert to
-	// units of uT micro Teslas
-	data->mag[0] = adc[0] * mag_adjust[0] * MAG_RAW_TO_uT;
-	data->mag[1] = adc[1] * mag_adjust[1] * MAG_RAW_TO_uT;
-	data->mag[2] = adc[2] * mag_adjust[2] * MAG_RAW_TO_uT;
+
+	// multiply by the sensitivity adjustment and convert to units of uT micro
+	// Teslas. Also correct the coordinate system as someone in invensense 
+	// thought it would be bright idea to have the magnetometer coordiate
+	// system aligned differently than the accelerometer and gyro.... -__-
+	data->mag[0] = adc[1] * mag_adjust[1] * MAG_RAW_TO_uT;
+	data->mag[1] = adc[0] * mag_adjust[0] * MAG_RAW_TO_uT;
+	data->mag[2] = -adc[2] * mag_adjust[2] * MAG_RAW_TO_uT;
 	
 	return 0;
 }
@@ -563,14 +589,8 @@ int initialize_magnetometer(imu_data_t* data){
 	i2c_write_byte(IMU_BUS, AK8963_CNTL, c);
 	usleep(100);
 	
-	
-	// Disable I2C bypass to go back to configuring the IMU
+	// go back to configuring the IMU, leave bypass on
 	i2c_set_device_address(IMU_BUS,IMU_ADDR);
-	if(mpu_set_bypass(0)){
-		printf("failed to set mpu9250 into bypass i2c mode\n");
-		return -1;
-	}
-		
 	
 	return 0;
 }
@@ -612,6 +632,8 @@ int power_down_magnetometer(){
 *	Power down the IMU
 *******************************************************************************/
 int power_off_imu(){
+	
+	shutdown_interrupt_thread = 1;
 	// set the device address
 	i2c_set_device_address(IMU_BUS, IMU_ADDR);
 	
@@ -625,6 +647,18 @@ int power_off_imu(){
 	if(i2c_write_byte(IMU_BUS, PWR_MGMT_1, MPU_SLEEP)){
 		printf("I2C write to MPU9250 Failed\n");
 		return -1;
+	}
+	
+	// wait for the interrupt thread to exit
+	//allow up to 1 second for thread cleanup
+	struct timespec thread_timeout;
+	clock_gettime(CLOCK_REALTIME, &thread_timeout);
+	thread_timeout.tv_sec += 1;
+	int thread_err = 0;
+	thread_err = pthread_timedjoin_np(imu_interrupt_thread, NULL, \
+															&thread_timeout);
+	if(thread_err == ETIMEDOUT){
+		printf("WARNING: imu_interrupt_thread exit timeout\n");
 	}
 	return 0;
 }
@@ -650,22 +684,21 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 	}
 	
 	//set up gpio interrupt pin connected to imu
-	if(gpio_export(INTERRUPT_PIN)){
-		printf("can't export gpio %d \n", INTERRUPT_PIN);
+	if(gpio_export(IMU_INTERRUPT_PIN)){
+		printf("can't export gpio %d \n", IMU_INTERRUPT_PIN);
 		return (-1);
 	}
-	gpio_set_dir(INTERRUPT_PIN, INPUT_PIN);
-	gpio_set_edge(INTERRUPT_PIN, "rising");
+	gpio_set_dir(IMU_INTERRUPT_PIN, INPUT_PIN);
+	gpio_set_edge(IMU_INTERRUPT_PIN, "falling");
 	
 	// make sure the bus is not currently in use by another thread
 	// do not proceed to prevent interfering with that process
 	if(i2c_get_in_use_state(IMU_BUS)){
-		printf("i2c bus claimed by another process\n");
-		printf("aborting initialize_imu()\n");
-		return -1;
+		printf("WARNING: i2c bus claimed by another process\n");
+		printf("Continuing with initialize_imu_dmp() anyway\n");
 	}
 	
-	// if it is not claimed, start the i2c bus
+	// start the i2c bus
 	if(i2c_init(IMU_BUS, IMU_ADDR)){
 		printf("initialize_imu_dmp failed at i2c_init\n");
 		return -1;
@@ -679,16 +712,26 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 	// restart the device so we start with clean registers
 	if(reset_mpu9250()<0){
 		printf("failed to reset_mpu9250()\n");
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
 	
 	//check the who am i register to make sure the chip is alive
 	if(i2c_read_byte(IMU_BUS, WHO_AM_I_MPU9250, &c)<0){
 		printf("i2c_read_byte failed\n");
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	} if(c!=0x71){
 		printf("mpu9250 WHO AM I register should return 0x71\n");
 		printf("WHO AM I returned: 0x%x\n", c);
+		i2c_release_bus(IMU_BUS);
+		return -1;
+	}
+	
+	// load in gyro calibration offsets from disk
+	if(load_gyro_offets()<0){
+		printf("ERROR: failed to load gyro calibration offsets\n");
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
 	
@@ -704,16 +747,11 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 	set_gyro_dlpf(config.gyro_dlpf);
 	set_accel_dlpf(config.accel_dlpf);
 	
-	// if(loadGyroCalibration()){
-	// printf("\nGyro Calibration File Doesn't Exist Yet\n");
-	// printf("Use calibrate_gyro example to create one\n");
-	// printf("Using 0 offset for now\n");
-	// };
-	
 	// Set fifo/sensor sample rate. Will have to set the DMP sample
 	// rate to match this shortly.
 	if(mpu_set_sample_rate(config.dmp_sample_rate)<0){
 		printf("ERROR: setting IMU sample rate\n");
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
 	
@@ -721,6 +759,7 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 	if(conf.enable_magnetometer){
 		if(initialize_magnetometer(data_ptr)){
 			printf("ERROR: failed to initialize_magnetometer\n");
+			i2c_release_bus(IMU_BUS);
 			return -1;
 		}
 	}
@@ -730,27 +769,33 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 	// set up the DMP
 	if(dmp_load_motion_driver_firmware()<0){
 		printf("failed to load DMP motion driver\n");
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
-	if(dmp_set_orientation(conf.orientation)<0){
+	if(dmp_set_orientation((unsigned short)conf.orientation)<0){
 		printf("ERROR: failed to set dmp orientation\n");
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
 	if(dmp_enable_feature(DMP_FEATURE_6X_LP_QUAT|DMP_FEATURE_SEND_RAW_ACCEL| \
 												DMP_FEATURE_SEND_RAW_GYRO)<0){
 		printf("ERROR: failed to enable DMP features\n");
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
 	if(dmp_set_fifo_rate(config.dmp_sample_rate)<0){
 		printf("ERROR: failed to set DMP fifo rate\n");
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
 	if(dmp_set_interrupt_mode(DMP_INT_CONTINUOUS)<0){
 		printf("ERROR: failed to set DMP interrupt mode to continuous\n");
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
 	if (mpu_set_dmp_state(1)<0) {
 		printf("ERROR: mpu_set_dmp_state(1) failed\n");
+		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
 	
@@ -769,12 +814,16 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 		packet_len += 7; // add 7 more bytes to the fifo reads
 	}
 	
+	// done with I2C for now
+	i2c_release_bus(IMU_BUS);
+	
 	#ifdef DEBUG
 	printf("packet_len: %d\n", packet_len);
 	#endif
 	
 	// start the interrupt handler thread
 	interrupt_running = 1;
+	shutdown_interrupt_thread = 0;
 	set_imu_interrupt_func(&null_func);
 	struct sched_param params;
 	params.sched_priority = config.dmp_interrupt_priority;
@@ -984,7 +1033,10 @@ int dmp_set_fifo_rate(unsigned short rate){
 /*******************************************************************************
 * int mpu_set_bypass(unsigned char bypass_on)
 * 
-* configures the USER_CTRL and INT_PIN_CFG registers
+* configures the USER_CTRL and INT_PIN_CFG registers to turn on and off the
+* i2c bypass mode for talking to the magnetometer. In random read mode this
+* is used to turn on the bypass and left as is. In DMP mode bypass is turned
+* off after configuration and the MPU fetches magnetometer data automatically.
 * USER_CTRL - based on global variable dsp_en
 * INT_PIN_CFG based on requested bypass state
 *******************************************************************************/
@@ -1001,8 +1053,7 @@ int mpu_set_bypass(uint8_t bypass_on){
     usleep(3000);
 	
 	// INT_PIN_CFG settings
-	tmp=0;
-	tmp |= LATCH_INT_EN;
+	tmp = LATCH_INT_EN | INT_ANYRD_CLEAR | ACTL_ACTIVE_LOW;
 	if(bypass_on)
 		tmp |= BYPASS_EN;
 	if (i2c_write_byte(IMU_BUS, INT_PIN_CFG, tmp))
@@ -1017,50 +1068,13 @@ int mpu_set_bypass(uint8_t bypass_on){
 }
 
 /*******************************************************************************
-* These next two functions convert the orientation matrix (see
-* gyro_orientation) to a scalar representation for use by the DMP.
-* NOTE: These functions are borrowed from InvenSense's MPL.
-*******************************************************************************/
-unsigned short inv_row_2_scale(const signed char *row){
-    unsigned short b;
-
-    if (row[0] > 0)
-        b = 0;
-    else if (row[0] < 0)
-        b = 4;
-    else if (row[1] > 0)
-        b = 1;
-    else if (row[1] < 0)
-        b = 5;
-    else if (row[2] > 0)
-        b = 2;
-    else if (row[2] < 0)
-        b = 6;
-    else
-        b = 7;      // error
-    return b;
-}
-
-unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx){
-    unsigned short scalar;
-    /*
-       XYZ  010_001_000 Identity Matrix
-       XZY  001_010_000
-       YXZ  010_000_001
-       YZX  000_010_001
-       ZXY  001_000_010
-       ZYX  000_001_010
-     */
-    scalar = inv_row_2_scale(mtx);
-    scalar |= inv_row_2_scale(mtx + 3) << 3;
-    scalar |= inv_row_2_scale(mtx + 6) << 6;
-    return scalar;
-}
-
-/*******************************************************************************
- *  @brief      Enable DMP features.
- *  @param[in]  mask    Mask of features to enable.
- *  @return     0 if successful.
+* int dmp_enable_feature(unsigned short mask)
+*
+* This is mostly taken from the Invensense DMP code and serves to turn on and
+* off DMP features based on the feature mask. We modified to remove some 
+* irrelevant features and set our own fifo-length variable. This probably
+* isn't necessary to remain in its current form as initialize_imu_dmp uses
+* a fixed set of features but we keep it as is since it works fine.
 *******************************************************************************/
 int dmp_enable_feature(unsigned short mask){
     unsigned char tmp[10];
@@ -1184,13 +1198,12 @@ int dmp_enable_feature(unsigned short mask){
 }
 
 /*******************************************************************************
- *  @brief      Calibrate the gyro data in the DMP.
- *  After eight seconds of no motion, the DMP will compute gyro biases and
- *  subtract them from the quaternion output. If @e dmp_enable_feature is
- *  called with @e DMP_FEATURE_SEND_CAL_GYRO, the biases will also be
- *  subtracted from the gyro output.
- *  @param[in]  enable  1 to enable gyro calibration.
- *  @return     0 if successful.
+* int dmp_enable_gyro_cal(unsigned char enable)
+*
+* Taken straight from the Invensense DMP code. This enabled the automatic gyro
+* calibration feature in the DMP. This this feature is fine for cell phones
+* but annoying in control systems we do not use it here and instead ask users
+* to run our own gyro_calibration routine.
 *******************************************************************************/
 int dmp_enable_gyro_cal(unsigned char enable){
     if (enable) {
@@ -1203,11 +1216,10 @@ int dmp_enable_gyro_cal(unsigned char enable){
 }
 
 /*******************************************************************************
- *  @brief       Generate 6-axis quaternions from the DMP.
- *  In this driver, the 3-axis and 6-axis DMP quaternion features are mutually
- *  exclusive.
- *  @param[in]   enable  1 to enable 6-axis quaternion.
- *  @return      0 if successful.
+* int dmp_enable_6x_lp_quat(unsigned char enable)
+*
+* Taken straight from the Invensense DMP code. This enabled quaternion filtering
+* with accelerometer and gyro filtering.
 *******************************************************************************/
 int dmp_enable_6x_lp_quat(unsigned char enable){
     unsigned char regs[4];
@@ -1226,11 +1238,10 @@ int dmp_enable_6x_lp_quat(unsigned char enable){
 }
 
 /*******************************************************************************
- *  @brief      Generate 3-axis quaternions from the DMP.
- *  In this driver, the 3-axis and 6-axis DMP quaternion features are mutually
- *  exclusive.
- *  @param[in]  enable  1 to enable 3-axis quaternion.
- *  @return     0 if successful.
+* int dmp_enable_lp_quat(unsigned char enable)
+*
+* sets the DMP to do gyro-only quaternion filtering. This is not actually used
+* here but remains as a vestige of the Invensense DMP code.
 *******************************************************************************/
 int dmp_enable_lp_quat(unsigned char enable){
     unsigned char regs[4];
@@ -1250,8 +1261,12 @@ int dmp_enable_lp_quat(unsigned char enable){
 }
 
 /*******************************************************************************
- *  @brief  Reset FIFO read/write pointers.
- *  @return 0 if successful.
+* int mpu_reset_fifo()
+*
+* This is mostly from the Invensense open source codebase but modified to also
+* allow magnetometer data to come in through the FIFO. This just turns off the
+* interrupt, resets fifo and DMP, then starts them again. Used once while 
+* initializing (probably no necessary) then again if the fifo gets too full.
 *******************************************************************************/
 int mpu_reset_fifo(void){
     uint8_t data;
@@ -1261,16 +1276,16 @@ int mpu_reset_fifo(void){
         return -1;
     if (i2c_write_byte(IMU_BUS, FIFO_EN, data))
         return -1;
-    if (i2c_write_byte(IMU_BUS, USER_CTRL, data))
-        return -1;
+    // if (i2c_write_byte(IMU_BUS, USER_CTRL, data))
+        // return -1;
 
 	data = BIT_FIFO_RST | BIT_DMP_RST;
 	if (i2c_write_byte(IMU_BUS, USER_CTRL, data))
 		return -1;
-	usleep(50000);
+	usleep(2500);
 	data = BIT_DMP_EN | BIT_FIFO_EN;
 	if (config.enable_magnetometer)
-		data |= BIT_AUX_IF_EN;
+		data |= I2C_MST_EN;
 	if (i2c_write_byte(IMU_BUS, USER_CTRL, data))
 		return -1;
 	
@@ -1287,15 +1302,13 @@ int mpu_reset_fifo(void){
     return 0;
 }
 
-/**
- *  @brief      Specify when a DMP interrupt should occur.
- *  A DMP interrupt can be configured to trigger on either of the two
- *  conditions below:
- *  \n a. One FIFO period has elapsed (set by @e mpu_set_sample_rate).
- *  \n b. A tap event has been detected.
- *  @param[in]  mode    DMP_INT_GESTURE or DMP_INT_CONTINUOUS.
- *  @return     0 if successful.
- */
+/*******************************************************************************
+* int dmp_set_interrupt_mode(unsigned char mode)
+* 
+* This is from the Invensense open source DMP code. It configures the DMP
+* to trigger an interrupt either every sample or only on gestures. Here we
+* only ever configure for continuous sampling.
+*******************************************************************************/
 int dmp_set_interrupt_mode(unsigned char mode){
     const unsigned char regs_continuous[11] =
         {0xd8, 0xb1, 0xb9, 0xf3, 0x8b, 0xa3, 0x91, 0xb6, 0x09, 0xb4, 0xd9};
@@ -1315,11 +1328,10 @@ int dmp_set_interrupt_mode(unsigned char mode){
 }
 
 /*******************************************************************************
- *  @brief      Enable/disable data ready interrupt.
- *  If the DMP is on, the DMP interrupt is enabled. Otherwise, the data ready
- *  interrupt is used.
- *  @param[in]  enable      1 to enable interrupt.
- *  @return     0 if successful.
+* int set_int_enable(unsigned char enable)
+* 
+* This is a vestige of the invensense mpu open source code and is probably
+* not necessary but remains here anyway.
 *******************************************************************************/
 int set_int_enable(unsigned char enable){
     unsigned char tmp;
@@ -1370,9 +1382,11 @@ int mpu_set_sample_rate(int rate){
 }
 
 /*******************************************************************************
- *  @brief      Enable/disable DMP support.
- *  @param[in]  enable  1 to turn on the DMP.
- *  @return     0 if successful.
+*  int mpu_set_dmp_state(unsigned char enable)
+* 
+* This turns on and off the DMP interrupt and resets the FIFO. This probably
+* isn't necessary as initialize_imu_dmp sets these registers but it remains 
+* here as a vestige of the invensense open source dmp code.
 *******************************************************************************/
 int mpu_set_dmp_state(unsigned char enable){
 
@@ -1401,26 +1415,58 @@ int mpu_set_dmp_state(unsigned char enable){
 }
 
 /*******************************************************************************
+* void* imu_interrupt_handler(void* ptr)
 *
+* Here is where the magic happens. This function runs as its own thread and 
+* monitors the gpio pin IMU_INTERRUPT_PIN with the blocking function call 
+* poll(). If a valid interrupt is received from the IMU then mark the timestamp,
+* read in the IMU data, and call the user-defined interrupt function if set.
 *******************************************************************************/
 void* imu_interrupt_handler(void* ptr){
 	struct pollfd fdset[1];
+	int ret;
 	char buf[64];
-	int imu_gpio_fd = gpio_fd_open(INTERRUPT_PIN);
+	int first_run = 1;
+	int imu_gpio_fd = gpio_fd_open(IMU_INTERRUPT_PIN);
+	if(imu_gpio_fd == -1){
+		printf("ERROR: can't open IMU_INTERRUPT_PIN gpio fd\n");
+		printf("aborting imu_interrupt_handler\n");
+		return NULL;
+	}
 	fdset[0].fd = imu_gpio_fd;
-	fdset[0].events = POLLPRI; // high-priority interrupt
+	fdset[0].events = POLLPRI;
 	// keep running until the program closes
-	while(get_state()!=EXITING) {
+	mpu_reset_fifo();
+	while(get_state()!=EXITING && shutdown_interrupt_thread != 1) {
 		// system hangs here until IMU FIFO interrupt
 		poll(fdset, 1, IMU_POLL_TIMEOUT); 
 		if (fdset[0].revents & POLLPRI) {
 			lseek(fdset[0].fd, 0, SEEK_SET);  
 			read(fdset[0].fd, buf, 64);
-			// try to load fifo
-			if(read_dmp_fifo()!=-1 && interrupt_running){
-				imu_interrupt_func(); // call the user function
+			
+			// interrupt received, mark the timestamp
+			last_interrupt_timestamp_micros = micros_since_epoch();
+			
+			// try to load fifo no matter the claim bus state
+			if(i2c_get_in_use_state(IMU_BUS)){
+				printf("WARNING: Something has claimed the I2C bus when an\n");
+				printf("IMU interrupt was received. Reading IMU anyway.\n");
 			}
+			i2c_claim_bus(IMU_BUS);
+			ret = read_dmp_fifo();
 			i2c_release_bus(IMU_BUS);
+			
+			// record if it was successful or not
+			if (ret==0) last_read_successful=1;
+			else last_read_successful=0;
+			
+			// call the user function if not the first run
+			if(first_run == 1){
+				first_run = 0;
+			}
+			else if(interrupt_running){
+				 imu_interrupt_func(); 
+			}
 		}
 	}
 	#ifdef DEBUG
@@ -1454,15 +1500,20 @@ int stop_imu_interrupt_func(){
 /*******************************************************************************
 * int read_dmp_fifo()
 *
-* reads the FIFO buffer and populates the data struct
+* Reads the FIFO buffer and populates the data struct. Here is where we see 
+* bad/empty/double packets due to i2c bus errors and the IMU failing to have
+* data ready in time. enabling warnings in the config struct will let this
+* function print out warnings when these conditions are detected. If write
+* errors are detected then this function tries some i2c transfers a second time.
 *******************************************************************************/
 int read_dmp_fifo(){
     unsigned char raw[MAX_FIFO_BUFFER];
 	long quat_q14[4], quat[4], quat_mag_sq;\
 	int16_t mag_adc[3];
     uint16_t fifo_count;
-	int ret;
+	int ret, is_new_mag_data;
 	int i = 0; // position in the buffer
+	static int first_run = 1; // set to 0 after first call
 	
     if (!dmp_en){
 		printf("only use mpu_read_fifo in dmp mode\n");
@@ -1479,70 +1530,76 @@ int read_dmp_fifo(){
 	// make sure the i2c address is set correctly. 
 	// this shouldn't take any time at all if already set
 	i2c_set_device_address(IMU_BUS, IMU_ADDR);
-	i2c_claim_bus(IMU_BUS);
 	
 	// check fifo count register to make sure new data is there
     if (i2c_read_word(IMU_BUS, FIFO_COUNTH, &fifo_count)<0){
-		#ifdef WARNINGS
-		printf("fifo_count i2c error: %s\n",strerror(errno));
-		#endif
+		if(config.show_warnings){
+			printf("fifo_count i2c error: %s\n",strerror(errno));
+		}
 		return -1;
 	}	
 	#ifdef DEBUG
 	printf("fifo_count: %d\n", fifo_count);
 	#endif
 	
-	// if no bytes were ready it was a bad read
-	// check again in case of i2c bus error
-	if(fifo_count == 0){
-		if (i2c_read_word(IMU_BUS, FIFO_COUNTH, &fifo_count)<0){
-			#ifdef WARNINGS
-			printf("fifo_count i2c error: %s\n",strerror(errno));
-			#endif
-			return -1;
-		}
-		if(fifo_count==0){
-			#ifdef WARNINGS
-			printf("mpu9250 false interrupt, no data to be read\n");
-			#endif
-			return -1;
-		}
-	}
-	
 	// if more than 2 packets are there, something really bad happened
 	// reset the fifo
 	if (fifo_count>2*packet_len){
-		#ifdef WARNINGS
-		printf("mpu9250 wrong fifo count: %d\n", fifo_count);
-		printf("resetting fifo\n");
-		#endif
+		if(config.show_warnings){
+			printf("mpu9250 wrong fifo count: %d\n", fifo_count);
+			printf("resetting fifo\n");
+		}
 		mpu_reset_fifo();
         return -1;
+	}
+	
+	// if one or two complete packets are not available, wait and try again
+	if(fifo_count!=packet_len && fifo_count<2*packet_len){
+		// printf("mpu9250 false interrupt, %d bytes available\n", fifo_count);
+		// printf("resetting FIFO\n");
+		// mpu_reset_fifo();
+		// return -1;
+				
+		usleep(2500);
+		if (i2c_read_word(IMU_BUS, FIFO_COUNTH, &fifo_count)<0){
+			if(config.show_warnings){
+				printf("fifo_count i2c error: %s\n",strerror(errno));
+			}
+			return -1;
+		}
+		
+		// still not enough bytes, must be bad read. 
+		if(fifo_count!=packet_len && fifo_count!=2*packet_len){
+			if(config.show_warnings && first_run!=1){
+				printf("%d bytes available, resetting FIFO: \n",fifo_count);
+				mpu_reset_fifo();
+			}
+			return -1;
+		}
 	}
 	
 	// if exactly 2 packets are there we just missed one (whoops)
 	// read both in and set the offset i to one packet length
 	// the last packet data will be read normally
-	else if (fifo_count == 2*packet_len){
-		#ifdef WARNINGS
-		printf("warning: mpu9250 fifo contains two packets\n");
-		#endif
+	if (fifo_count == 2*packet_len){
+		if(config.show_warnings){
+			printf("warning: mpu9250 fifo contains two packets\n");
+		}
 		i = packet_len;
 	}
-	else if (fifo_count == packet_len){
+	// exactly one packet available, set offset to 0
+	else if (fifo_count==FIFO_LEN_NO_MAG || packet_len==FIFO_LEN_MAG){
 		i = 0;
 	}
-	
-	// if the wrong amount of data is there, flush it through anyway
-	// This is faster than resetting the FIFO
+	// we should never get to this 'else' due to above logic but just in case
+	// we should exit now if a weird packet is received.
 	else{
-		#ifdef WARNINGS
-		printf("mpu9250 wrong fifo count: %d\n", fifo_count);
-		printf("flushing buffer\n");
-		#endif
-		i2c_read_bytes(IMU_BUS, FIFO_R_W, fifo_count, &raw[0]);
+		if(config.show_warnings){
+			printf("mpu9250 false interrupt, %d bytes available\n",fifo_count);
+		}
 		return -1;
 	}
+	
 
 	// read it in!
     ret = i2c_read_bytes(IMU_BUS, FIFO_R_W, fifo_count, &raw[0]);
@@ -1551,30 +1608,43 @@ int read_dmp_fifo(){
 		ret = i2c_read_bytes(IMU_BUS, FIFO_R_W, fifo_count, &raw[0]);
 	}
 	if(ret!=fifo_count){
-		#ifdef WARNINGS
-		printf("ERROR: failed to read fifo buffer register\n");
-		printf("read %d bytes, expected %d\n", ret, packet_len);
-		#endif
+		if(config.show_warnings){
+			printf("ERROR: failed to read fifo buffer register\n");
+			printf("read %d bytes, expected %d\n", ret, packet_len);
+		}
         return -1;
 	}
 	
-	// if the magnetometer data is not enabled, we can return now
+	// if there was magnetometer data try to read it
+	is_new_mag_data = 0;
 	if(packet_len==FIFO_LEN_MAG){
-		// Turn the MSB and LSB into a signed 16-bit value
-		// Data stored as little Endian
-		mag_adc[0] = (int16_t)(((int16_t)raw[i+1]<<8) | raw[i+0]);  
-		mag_adc[1] = (int16_t)(((int16_t)raw[i+3]<<8) | raw[i+2]);  
-		mag_adc[2] = (int16_t)(((int16_t)raw[i+5]<<8) | raw[i+4]); 
-		
-		// multiply by the sensitivity adjustment and convert to
-		// units of uT micro Teslas
-		data_ptr->mag[0] = mag_adc[0] * mag_adjust[0] * MAG_RAW_TO_uT;
-		data_ptr->mag[1] = mag_adc[1] * mag_adjust[1] * MAG_RAW_TO_uT;
-		data_ptr->mag[2] = mag_adc[2] * mag_adjust[2] * MAG_RAW_TO_uT;
-		
+		// check if the readings saturated such as because
+		// of a local field source, discard data if so
+		if(raw[i+6]&MAGNETOMETER_SATURATION){
+			printf("WARNING: magnetometer saturated\n");
+		}
+		else{
+			// Turn the MSB and LSB into a signed 16-bit value
+			// Data stored as little Endian
+			mag_adc[0] = (int16_t)(((int16_t)raw[i+1]<<8) | raw[i+0]);  
+			mag_adc[1] = (int16_t)(((int16_t)raw[i+3]<<8) | raw[i+2]);  
+			mag_adc[2] = (int16_t)(((int16_t)raw[i+5]<<8) | raw[i+4]); 
+			
+			// if the data is non-zero, save it
+			// multiply by the sensitivity adjustment and convert to units of 
+			// uT micro Teslas. Also correct the coordinate system as someone 
+			// in invensense thought it would be bright idea to have the 
+			// magnetometer coordiate system aligned differently than the 
+			// accelerometer and gyro.... -__-
+			if(mag_adc[0]!=0 || mag_adc[1]!=0 || mag_adc[2]!=0){
+				data_ptr->mag[0] = mag_adc[1] * mag_adjust[1] * MAG_RAW_TO_uT;
+				data_ptr->mag[1] = mag_adc[0] * mag_adjust[0] * MAG_RAW_TO_uT;
+				data_ptr->mag[2] = -mag_adc[2] * mag_adjust[2] * MAG_RAW_TO_uT;
+				is_new_mag_data = 1;
+			}
+		}
 		i+=7; // increase our position by 7 bytes
 	}
-	
 	
 	// parse the quaternion data from the buffer
 	quat[0] = ((long)raw[i+0] << 24) | ((long)raw[i+1] << 16) |
@@ -1601,7 +1671,9 @@ int read_dmp_fifo(){
 	quat_mag_sq = quat_q14[0] * quat_q14[0] + quat_q14[1] * quat_q14[1] +
 		quat_q14[2] * quat_q14[2] + quat_q14[3] * quat_q14[3];
 	if ((quat_mag_sq < QUAT_MAG_SQ_MIN) ||(quat_mag_sq > QUAT_MAG_SQ_MAX)){
-		printf("ERROR: Quaternion is outside of the acceptable threshold\n");
+		if(config.show_warnings){
+			printf("ERROR:Quaternion is outside of the acceptable threshold\n");
+		}
 		return -1;
 	}
 	// load in the quaternion to the data struct if it was good
@@ -1610,7 +1682,7 @@ int read_dmp_fifo(){
 	data_ptr->dmp_quat[QUAT_Y] = (float)quat[QUAT_Y];
 	data_ptr->dmp_quat[QUAT_Z] = (float)quat[QUAT_Z];
 	// fill in euler angles to the data struct
-	quaternionNormalize(data_ptr->dmp_quat);
+	normalizeQuaternion(data_ptr->dmp_quat);
 	quaternionToEuler(data_ptr->dmp_quat, data_ptr->dmp_euler);
 	
 	i+=16; // increase offset by 16 which was the quaternion size
@@ -1641,313 +1713,478 @@ int read_dmp_fifo(){
 	printf("finished reading gyro data\n");
 	#endif
 	
-	
+	// run data_fusion to filter yaw with compass if new mag data came in
+	if(is_new_mag_data){
+		#ifdef DEBUG
+		printf("running data_fusion\n");
+		#endif
+		data_fusion();
+	}
 
-
+	first_run = 0;
     return 0;
 }
 
-
-
-
-// int setXGyroOffset(int16_t offset) {
-	// uint16_t new = offset;
-	// const unsigned char msb = (unsigned char)((new&0xff00)>>8);
-	// const unsigned char lsb = (new&0x00ff);//get LSB
-	// //printf("writing: 0x%x 0x%x 0x%x \n", new, msb, lsb);
-	// linux_i2c_write(MPU_ADDR, MPU6050_RA_XG_OFFS_USRH, 1, &msb);
-	// return linux_i2c_write(MPU_ADDR, MPU6050_RA_XG_OFFS_USRL, 1, &lsb);
-// }
-
-// int setYGyroOffset(int16_t offset) {
-	// uint16_t new = offset;
-	// const unsigned char msb = (unsigned char)((new&0xff00)>>8);
-	// const unsigned char lsb = (new&0x00ff);//get LSB
-	// //printf("writing: 0x%x 0x%x 0x%x \n", new, msb, lsb);
-	// linux_i2c_write(MPU_ADDR, MPU6050_RA_YG_OFFS_USRH, 1, &msb);
-	// return linux_i2c_write(MPU_ADDR, MPU6050_RA_YG_OFFS_USRL, 1, &lsb);
-// }
-
-// int setZGyroOffset(int16_t offset) {
-	// uint16_t new = offset;
-	// const unsigned char msb = (unsigned char)((new&0xff00)>>8);
-	// const unsigned char lsb = (new&0x00ff);//get LSB
-	// //printf("writing: 0x%x 0x%x 0x%x \n", new, msb, lsb);
-	// linux_i2c_write(MPU_ADDR, MPU6050_RA_ZG_OFFS_USRH, 1, &msb);
-	// return linux_i2c_write(MPU_ADDR, MPU6050_RA_ZG_OFFS_USRL, 1, &lsb);
-// }
-
-// int loadGyroCalibration(){
-	// FILE *cal;
-	// char file_path[100];
-
-	// // construct a new file path string
-	// strcpy (file_path, CONFIG_DIRECTORY);
-	// strcat (file_path, GYRO_CAL_FILE);
+/*******************************************************************************
+* int data_fusion()
+*
+* This fuses the magnetometer data with the quaternion straight from the DMP
+* to correct the yaw heading to a compass heading. Much thanks to Pansenti for
+* open sourcing this routine. In addition to the Pansenti implementation I also
+* correct the magnetometer data for DMP orientation, initialize yaw with the
+* magnetometer to prevent initial rise time, and correct the yaw_mixing_factor
+* with the sample rate so the filter rise time remains constant with different
+* sample rates.
+*******************************************************************************/
+int data_fusion(){
+	float fusedEuler[3], magQuat[4], unfusedQuat[4];
+	float deltaDMPYaw, deltaMagYaw, newMagYaw, newYaw;
+	static float lastDMPYaw, lastYaw;
+	static int first_run = 1; // set to 0 after first call to this function
 	
-	// // open for reading
-	// cal = fopen(file_path, "r");
-	// if (cal == 0) {
-		// // calibration file doesn't exist yet
-		// return -1;
-	// }
-	// else{
-		// int xoffset, yoffset, zoffset;
-		// fscanf(cal,"%d\n%d\n%d\n", &xoffset, &yoffset, &zoffset);
-		// if(setXGyroOffset((int16_t)xoffset)){
-			// printf("problem setting gyro offset\n");
-			// return -1;
-		// }
-		// if(setYGyroOffset((int16_t)yoffset)){
-			// printf("problem setting gyro offset\n");
-			// return -1;
-		// }
-		// if(setZGyroOffset((int16_t)zoffset)){
-			// printf("problem setting gyro offset\n");
-			// return -1;
-		// }
-	// }
-	// fclose(cal);
-	// return 0;
-// }
+	// start by filling in the roll/pitch components of the fused euler
+	// angles from the DMP generatd angles. Ignore yaw for now, we have to
+	// filter that later. 
+	fusedEuler[VEC3_X] = data_ptr->dmp_euler[VEC3_X];
+	//fusedEuler[VEC3_Y] = -(data_ptr->dmp_euler[VEC3_Y]);
+	fusedEuler[VEC3_Y] = (data_ptr->dmp_euler[VEC3_Y]);
+	fusedEuler[VEC3_Z] = 0;
 
-// void tilt_compensate(quaternion_t magQ, quaternion_t unfusedQ)
-// {
-	// quaternion_t unfusedConjugateQ;
-	// quaternion_t tempQ;
+	// generate a quaternion rotation of just roll/pitch
+	eulerToQuaternion(fusedEuler, unfusedQuat);
 
-	// quaternionConjugate(unfusedQ, unfusedConjugateQ);
-	// quaternionMultiply(magQ, unfusedConjugateQ, tempQ);
-	// quaternionMultiply(unfusedQ, tempQ, magQ);
-// }
+	// find delta yaw from last time and record current dmp_yaw for next time
+	deltaDMPYaw = lastDMPYaw - data_ptr->dmp_euler[VEC3_Z];
+	lastDMPYaw = data_ptr->dmp_euler[VEC3_Z];
 
-// int data_fusion(imu_data_t *imu)
-// {
-	// quaternion_t dmp_quat;
-	// vector3d_t dmpEuler;
-	// quaternion_t magQuat;
-	// quaternion_t unfusedQuat;
-	// float deltaDMPYaw;
-	// float deltaMagYaw;
-	// float newMagYaw;
-	// float newYaw;
+	// create a quaternion vector from the current magnetic field vector
+	// in IMU body coordinate frame. Since the DMP quaternion is aligned with
+	// a particular orientation, we must be careful to orient the magnetometer
+	// data to match.
+	magQuat[QUAT_W] = 0;
+	switch(config.orientation){
+	case ORIENTATION_Z_UP:
+		magQuat[QUAT_X] = data_ptr->mag[VEC3_X];
+		magQuat[QUAT_Y] = data_ptr->mag[VEC3_Y];
+		magQuat[QUAT_Z] = data_ptr->mag[VEC3_Z];
+		break;
+	case ORIENTATION_Z_DOWN:
+		magQuat[QUAT_X] = -data_ptr->mag[VEC3_X];
+		magQuat[QUAT_Y] = data_ptr->mag[VEC3_Y];
+		magQuat[QUAT_Z] = -data_ptr->mag[VEC3_Z];
+		break;
+	case ORIENTATION_X_UP:
+		magQuat[QUAT_X] = data_ptr->mag[VEC3_Z];
+		magQuat[QUAT_Y] = data_ptr->mag[VEC3_Y];
+		magQuat[QUAT_Z] = data_ptr->mag[VEC3_X];
+		break;
+	case ORIENTATION_X_DOWN:
+		magQuat[QUAT_X] = -data_ptr->mag[VEC3_Z];
+		magQuat[QUAT_Y] = data_ptr->mag[VEC3_Y];
+		magQuat[QUAT_Z] = -data_ptr->mag[VEC3_X];
+		break;
+	case ORIENTATION_Y_UP:
+		magQuat[QUAT_X] = data_ptr->mag[VEC3_X];
+		magQuat[QUAT_Y] = -data_ptr->mag[VEC3_Z];
+		magQuat[QUAT_Z] = data_ptr->mag[VEC3_Y];
+		break;
+	case ORIENTATION_Y_DOWN:
+		magQuat[QUAT_X] = data_ptr->mag[VEC3_X];
+		magQuat[QUAT_Y] = data_ptr->mag[VEC3_Z];
+		magQuat[QUAT_Z] = -data_ptr->mag[VEC3_Y];
+		break;
+	default:
+		printf("ERROR: invalid orientation\n");
+		return -1;
+	}
+
+	// tilt that vector by the roll/pitch of the IMU to align magnetic field
+	// vector such that Z points vertically
+	tilt_compensate(magQuat, unfusedQuat, magQuat);
+
+	// from the aligned magnetic field vector, find a yaw heading
+	// check for validity and make sure the heading is positive
+	newMagYaw = -atan2f(magQuat[QUAT_Y], magQuat[QUAT_X]);
+	if (newMagYaw != newMagYaw) {
+		#ifdef WARNINGS
+		printf("newMagYaw NAN\n");
+		#endif
+		return -1;
+	}
+	if (newMagYaw < 0.0f) newMagYaw = TWO_PI + newMagYaw;
+	// record this heading in the user-accessible data struct
+	data_ptr->compass_heading = newMagYaw;
 	
-	// dmp_quat[QUAT_W] = (float)mpu->rawQuat[QUAT_W];
-	// dmp_quat[QUAT_X] = (float)mpu->rawQuat[QUAT_X];
-	// dmp_quat[QUAT_Y] = (float)mpu->rawQuat[QUAT_Y];
-	// dmp_quat[QUAT_Z] = (float)mpu->rawQuat[QUAT_Z];
-
-	// quaternionNormalize(dmp_quat);	
-	// quaternionToEuler(dmp_quat, dmpEuler);
-
-	// mpu->fusedEuler[VEC3_X] = dmpEuler[VEC3_X];
-	// mpu->fusedEuler[VEC3_Y] = -dmpEuler[VEC3_Y];
-	// mpu->fusedEuler[VEC3_Z] = 0;
-
-	// eulerToQuaternion(mpu->fusedEuler, unfusedQuat);
-
-	// deltaDMPYaw = -dmpEuler[VEC3_Z] + mpu->lastDMPYaw;
-	// mpu->lastDMPYaw = dmpEuler[VEC3_Z];
-
-	// magQuat[QUAT_W] = 0;
-	// magQuat[QUAT_X] = mpu->calibratedMag[VEC3_X];
-  	// magQuat[QUAT_Y] = mpu->calibratedMag[VEC3_Y];
-  	// magQuat[QUAT_Z] = mpu->calibratedMag[VEC3_Z];
-
-	// tilt_compensate(magQuat, unfusedQuat);
-
-	// newMagYaw = -atan2f(magQuat[QUAT_Y], magQuat[QUAT_X]);
-
-	// if (newMagYaw != newMagYaw) {
-		// printf("newMagYaw NAN\n");
-		// return -1;
-	// }
-
-	// if (newMagYaw < 0.0f)
-		// newMagYaw = TWO_PI + newMagYaw;
-
-	// newYaw = mpu->lastYaw + deltaDMPYaw;
-
-	// if (newYaw > TWO_PI)
-		// newYaw -= TWO_PI;
-	// else if (newYaw < 0.0f)
-		// newYaw += TWO_PI;
+	// if this is the first run, set yaw to the compass heading
+	if(first_run){
+		lastYaw = newMagYaw;
+		first_run = 0;
+	}
+	
+	// update the last filtered (fused) yaw by the amount the DMP yaw changed
+	// which is based purely on the gyro. Make sure it stays in 0-2PI
+	newYaw = lastYaw + deltaDMPYaw;
+	if (newYaw > TWO_PI) newYaw-=TWO_PI;
+	else if (newYaw < 0.0f)
+		newYaw += TWO_PI;
 	 
-	// deltaMagYaw = newMagYaw - newYaw;
+	// find difference between absolute compass heading and what the gyro
+	// predicts is our new heading. This should be very small in normal 
+	// operation but keep between +- PI anyway
+	deltaMagYaw = newMagYaw - newYaw;
+	if (deltaMagYaw >= PI)
+		deltaMagYaw -= TWO_PI;
+	else if (deltaMagYaw < -PI)
+		deltaMagYaw += TWO_PI;
+
+	// now find our final filtered newYaw by adding a fraction of the error
+	// to the gyro-predicted yaw, also check to avoid divide by 0
+	if (YAW_MIX_FACTOR == 0){
+		printf("ERROR: YAW_MIX_FACTOR must be >0\n");
+		return -1;
+	}
+	newYaw += deltaMagYaw * 100.0 \
+				/ ((float)YAW_MIX_FACTOR * (float)config.dmp_sample_rate);
+
+	// yet again, bound the yaw between 0 and 2PI and store for next time
+	if (newYaw > TWO_PI)
+		newYaw -= TWO_PI;
+	else if (newYaw < 0.0f)
+		newYaw += TWO_PI;
+	lastYaw = newYaw;
+
+	// Euler angles expect a yaw between -pi to pi so slide it again and
+	// store in the user-accessible fused euler angle
+	if (newYaw > PI)
+		newYaw -= TWO_PI;
+	data_ptr->fused_euler[VEC3_Z] = newYaw;
+	data_ptr->fused_euler[VEC3_X] = data_ptr->dmp_euler[VEC3_X];
+	data_ptr->fused_euler[VEC3_Y] = data_ptr->dmp_euler[VEC3_Y];
+
+	// Also generate a new quaternion from the filtered euler angles
+	eulerToQuaternion(data_ptr->fused_euler, data_ptr->fused_quat);
+	return 0;
+}
+
+/*******************************************************************************
+* int write_gyro_offsets_to_disk(int16_t offsets[3])
+*
+* Reads steady state gyro offsets from the disk and puts them in the IMU's 
+* gyro offset register. If no calibration file exists then make a new one.
+*******************************************************************************/
+int write_gyro_offets_to_disk(int16_t offsets[3]){
+	FILE *cal;
+	char file_path[100];
+
+	// construct a new file path string and open for writing
+	strcpy(file_path, CONFIG_DIRECTORY);
+	strcat(file_path, GYRO_CAL_FILE);
+	cal = fopen(file_path, "w");
+	// if opening for writing failed, the directory may not exist yet
+	if (cal == 0) {
+		mkdir(CONFIG_DIRECTORY, 0777);
+		cal = fopen(file_path, "w");
+		if (cal == 0){
+			printf("could not open config directory\n");
+			printf(CONFIG_DIRECTORY);
+			printf("\n");
+			return -1;
+		}
+	}
 	
-	// if (deltaMagYaw >= (float)M_PI)
-		// deltaMagYaw -= TWO_PI;
-	// else if (deltaMagYaw < -(float)M_PI)
-		// deltaMagYaw += TWO_PI;
+	// write to the file, close, and exit
+	if(fprintf(cal,"%d\n%d\n%d\n", offsets[0],offsets[1],offsets[2])<0){
+		printf("Failed to write gyro offsets to file\n");
+		fclose(cal);
+		return -1;
+	}
+	fclose(cal);
+	return 0;	
+	
+}
 
-	// if (yaw_mixing_factor > 0)
-		// newYaw += deltaMagYaw / yaw_mixing_factor;
+/*******************************************************************************
+* int load_gyro_offsets()
+*
+* Loads steady state gyro offsets from the disk and puts them in the IMU's 
+* gyro offset register. If no calibration file exists then make a new one.
+*******************************************************************************/
+int load_gyro_offets(){
+	FILE *cal;
+	char file_path[100];
+	uint8_t data[6];
+	int x,y,z;
+	
+	// construct a new file path string and open for reading
+	strcpy (file_path, CONFIG_DIRECTORY);
+	strcat (file_path, GYRO_CAL_FILE);
+	cal = fopen(file_path, "r");
+	
+	if (cal == 0) {
+		// calibration file doesn't exist yet
+		fclose(cal);
+		printf("WARNING: no gyro calibration data found\n");
+		printf("Please run calibrate_gyro\n\n");
+		return -1;
+	}
+	// read in data
+	fscanf(cal,"%d\n%d\n%d\n", &x,&y,&z);
+		
+	#ifdef DEBUG
+	printf("offsets: %d %d %d\n", x, y, z);
+	#endif
+	
+	// Divide by 4 to get 32.9 LSB per deg/s to conform to expected bias input 
+	// format. also make negative since we wish to subtract out the steady 
+	// state offset
+	data[0] = (-x/4  >> 8) & 0xFF; 
+	data[1] = (-x/4)       & 0xFF; 
+	data[2] = (-y/4  >> 8) & 0xFF;
+	data[3] = (-y/4)       & 0xFF;
+	data[4] = (-z/4  >> 8) & 0xFF;
+	data[5] = (-z/4)       & 0xFF;
 
-	// if (newYaw > TWO_PI)
-		// newYaw -= TWO_PI;
-	// else if (newYaw < 0.0f)
-		// newYaw += TWO_PI;
+	// Push gyro biases to hardware registers
+	if(i2c_write_bytes(IMU_BUS, XG_OFFSET_H, 6, &data[0])){
+		printf("ERROR: failed to load gyro offsets into IMU register\n");
+		return -1;
+	}
+	fclose(cal);
+	return 0;	
+}
 
-	// mpu->lastYaw = newYaw;
+/*******************************************************************************
+* int calibrate_gyro_routine()
+*
+* Initializes the IMU and samples the gyro for a short period to get steady
+* state gyro offsets. These offsets are then saved to disk for later use.
+*******************************************************************************/
+int calibrate_gyro_routine(){
+	uint8_t c, data[6];
+	int32_t gyro_sum[3] = {0, 0, 0};
+	int16_t offsets[3];
+	
+	// make sure the bus is not currently in use by another thread
+	// do not proceed to prevent interfering with that process
+	if(i2c_get_in_use_state(IMU_BUS)){
+		printf("i2c bus claimed by another process\n");
+		printf("aborting gyro calibration()\n");
+		return -1;
+	}
+	
+	// if it is not claimed, start the i2c bus
+	if(i2c_init(IMU_BUS, IMU_ADDR)){
+		printf("initialize_imu_dmp failed at i2c_init\n");
+		return -1;
+	}
+	
+	// claiming the bus does no guarantee other code will not interfere 
+	// with this process, but best to claim it so other code can check
+	// like we did above
+	i2c_claim_bus(IMU_BUS);
+	
+	// reset device, reset all registers
+	if(reset_mpu9250()<0){
+		printf("ERROR: failed to reset MPU9250\n");
+		return -1;
+	}
 
-	// if (newYaw > (float)M_PI)
-		// newYaw -= TWO_PI;
+	// set up the IMU specifically for calibration. 
+	i2c_write_byte(IMU_BUS, PWR_MGMT_1, 0x01);  
+	i2c_write_byte(IMU_BUS, PWR_MGMT_2, 0x00); 
+	usleep(200000);
+	
+	// // set bias registers to 0
+	// // Push gyro biases to hardware registers
+	// uint8_t zeros[] = {0,0,0,0,0,0};
+	// if(i2c_write_bytes(IMU_BUS, XG_OFFSET_H, 6, zeros)){
+		// printf("ERROR: failed to load gyro offsets into IMU register\n");
+		// return -1;
+	// }
 
-	// mpu->fusedEuler[VEC3_Z] = newYaw;
+	i2c_write_byte(IMU_BUS, INT_ENABLE, 0x00);  // Disable all interrupts
+	i2c_write_byte(IMU_BUS, FIFO_EN, 0x00);     // Disable FIFO
+	i2c_write_byte(IMU_BUS, PWR_MGMT_1, 0x00);  // Turn on internal clock source
+	i2c_write_byte(IMU_BUS, I2C_MST_CTRL, 0x00);// Disable I2C master
+	i2c_write_byte(IMU_BUS, USER_CTRL, 0x00);   // Disable FIFO and I2C master
+	i2c_write_byte(IMU_BUS, USER_CTRL, 0x0C);   // Reset FIFO and DMP
+	usleep(15000);
 
-	// eulerToQuaternion(mpu->fusedEuler, mpu->fusedQuat);
+	// Configure MPU9250 gyro and accelerometer for bias calculation
+	i2c_write_byte(IMU_BUS, CONFIG, 0x01);      // Set low-pass filter to 188 Hz
+	i2c_write_byte(IMU_BUS, SMPLRT_DIV, 0x04);  // Set sample rate to 200hz
+	// Set gyro full-scale to 250 degrees per second, maximum sensitivity
+	i2c_write_byte(IMU_BUS, GYRO_CONFIG, 0x00); 
+	// Set accelerometer full-scale to 2 g, maximum sensitivity	
+	i2c_write_byte(IMU_BUS, ACCEL_CONFIG, 0x00); 
+	// Configure FIFO to capture gyro data for bias calculation
+	i2c_write_byte(IMU_BUS, USER_CTRL, 0x40);   // Enable FIFO  
+	// Enable gyro sensors for FIFO (max size 512 bytes in MPU-9250)
+	c = FIFO_GYRO_X_EN|FIFO_GYRO_Y_EN|FIFO_GYRO_Z_EN;
+	i2c_write_byte(IMU_BUS, FIFO_EN, c); 
+	// 6 bytes per sample. 200hz. wait 0.4 seconds
+	usleep(400000);
 
-	// return 0;
-// }
+	// At end of sample accumulation, turn off FIFO sensor read
+	i2c_write_byte(IMU_BUS, FIFO_EN, 0x00);   
+	// read FIFO sample count and log number of samples
+	i2c_read_bytes(IMU_BUS, FIFO_COUNTH, 2, &data[0]); 
+	int16_t fifo_count = ((uint16_t)data[0] << 8) | data[1];
+	int samples = fifo_count/6;
 
-
-// // Function which accumulates gyro and accelerometer data after device initialization. It calculates the average
-// // of the at-rest readings and then loads the resulting offsets into accelerometer and gyro bias registers.
-// void calibrateMPU9250(float * dest1, float * dest2){  
-  // uint8_t data[12]; // data array to hold accelerometer and gyro x, y, z, data
-  // uint16_t ii, packet_count, fifo_count;
-  // int32_t gyro_bias[3] = {0, 0, 0}, accel_bias[3] = {0, 0, 0};
+	#ifdef DEBUG
+	printf("calibration samples: %d\n", samples);
+	#endif
+	
+	int i;
+	int16_t x,y,z;
+	for (i=0; i<samples; i++) {
+		// read data for averaging
+		if(i2c_read_bytes(IMU_BUS, FIFO_R_W, 6, data)<0){
+			printf("ERROR: failed to read FIFO\n");
+			return -1;
+		}
+		x = (int16_t)(((int16_t)data[0] << 8) | data[1]) ;
+		y = (int16_t)(((int16_t)data[2] << 8) | data[3]) ;
+		z = (int16_t)(((int16_t)data[4] << 8) | data[5]) ;
+		gyro_sum[0]  += (int32_t) x;
+		gyro_sum[1]  += (int32_t) y;
+		gyro_sum[2]  += (int32_t) z;
+	}
   
-// // reset device, reset all registers, clear gyro and accelerometer bias registers
-  // i2c_write_byte(IMU_BUS PWR_MGMT_1, 0x80); // Write a one to bit 7 reset bit; toggle reset device
-  // wait(0.1);  
-   
-// // get stable time source
-// // Set clock source to be PLL with x-axis gyroscope reference, bits 2:0 = 001
-  // i2c_write_byte(IMU_BUS PWR_MGMT_1, 0x01);  
-  // i2c_write_byte(IMU_BUS PWR_MGMT_2, 0x00); 
-  // wait(0.2);
-  
-// // Configure device for bias calculation
-  // i2c_write_byte(IMU_BUS INT_ENABLE, 0x00);   // Disable all interrupts
-  // i2c_write_byte(IMU_BUS FIFO_EN, 0x00);      // Disable FIFO
-  // i2c_write_byte(IMU_BUS PWR_MGMT_1, 0x00);   // Turn on internal clock source
-  // i2c_write_byte(IMU_BUS I2C_MST_CTRL, 0x00); // Disable I2C master
-  // i2c_write_byte(IMU_BUS USER_CTRL, 0x00);    // Disable FIFO and I2C master modes
-  // i2c_write_byte(IMU_BUS USER_CTRL, 0x0C);    // Reset FIFO and DMP
-  // wait(0.015);
-  
-// // Configure MPU9250 gyro and accelerometer for bias calculation
-  // i2c_write_byte(IMU_BUS CONFIG, 0x01);      // Set low-pass filter to 188 Hz
-  // i2c_write_byte(IMU_BUS SMPLRT_DIV, 0x00);  // Set sample rate to 1 kHz
-  // i2c_write_byte(IMU_BUS GYRO_CONFIG, 0x00);  // Set gyro full-scale to 250 degrees per second, maximum sensitivity
-  // i2c_write_byte(IMU_BUS ACCEL_CONFIG, 0x00); // Set accelerometer full-scale to 2 g, maximum sensitivity
+	#ifdef DEBUG
+	printf("gyro sums: %d %d %d\n", gyro_sum[0], gyro_sum[1], gyro_sum[2]);
+	#endif
+	
+	// done with I2C for now
+	i2c_release_bus(IMU_BUS);
+	
+	// average out the samples
+    offsets[0] = (int16_t) (gyro_sum[0]/(int32_t)samples);
+	offsets[1] = (int16_t) (gyro_sum[1]/(int32_t)samples);
+	offsets[2] = (int16_t) (gyro_sum[2]/(int32_t)samples);
  
-  // uint16_t  gyrosensitivity  = 131;   // = 131 LSB/degrees/sec
-  // uint16_t  accelsensitivity = 16384;  // = 16384 LSB/g
-
-// // Configure FIFO to capture accelerometer and gyro data for bias calculation
-  // i2c_write_byte(IMU_BUS USER_CTRL, 0x40);   // Enable FIFO  
-  // i2c_write_byte(IMU_BUS FIFO_EN, 0x78);     // Enable gyro and accelerometer sensors for FIFO (max size 512 bytes in MPU-9250)
-  // wait(0.04); // accumulate 40 samples in 80 milliseconds = 480 bytes
-
-// // At end of sample accumulation, turn off FIFO sensor read
-  // i2c_write_byte(IMU_BUS FIFO_EN, 0x00);        // Disable gyro and accelerometer sensors for FIFO
-  // i2c_read_bytes(IMU_ADDR, FIFO_COUNTH, 2, &data[0]); // read FIFO sample count
-  // fifo_count = ((uint16_t)data[0] << 8) | data[1];
-  // packet_count = fifo_count/12;// How many sets of full gyro and accelerometer data for averaging
-
-  // for (ii = 0; ii < packet_count; ii++) {
-    // int16_t accel_temp[3] = {0, 0, 0}, gyro_temp[3] = {0, 0, 0};
-    // i2c_read_bytes(IMU_ADDR, FIFO_R_W, 12, &data[0]); // read data for averaging
-    // accel_temp[0] = (int16_t) (((int16_t)data[0] << 8) | data[1]  ) ;  // Form signed 16-bit integer for each sample in FIFO
-    // accel_temp[1] = (int16_t) (((int16_t)data[2] << 8) | data[3]  ) ;
-    // accel_temp[2] = (int16_t) (((int16_t)data[4] << 8) | data[5]  ) ;    
-    // gyro_temp[0]  = (int16_t) (((int16_t)data[6] << 8) | data[7]  ) ;
-    // gyro_temp[1]  = (int16_t) (((int16_t)data[8] << 8) | data[9]  ) ;
-    // gyro_temp[2]  = (int16_t) (((int16_t)data[10] << 8) | data[11]) ;
-    
-    // accel_bias[0] += (int32_t) accel_temp[0]; // Sum individual signed 16-bit biases to get accumulated signed 32-bit biases
-    // accel_bias[1] += (int32_t) accel_temp[1];
-    // accel_bias[2] += (int32_t) accel_temp[2];
-    // gyro_bias[0]  += (int32_t) gyro_temp[0];
-    // gyro_bias[1]  += (int32_t) gyro_temp[1];
-    // gyro_bias[2]  += (int32_t) gyro_temp[2];
-            
-// }
-    // accel_bias[0] /= (int32_t) packet_count; // Normalize sums to get average count biases
-    // accel_bias[1] /= (int32_t) packet_count;
-    // accel_bias[2] /= (int32_t) packet_count;
-    // gyro_bias[0]  /= (int32_t) packet_count;
-    // gyro_bias[1]  /= (int32_t) packet_count;
-    // gyro_bias[2]  /= (int32_t) packet_count;
-    
-  // if(accel_bias[2] > 0L) {accel_bias[2] -= (int32_t) accelsensitivity;}  // Remove gravity from the z-axis accelerometer bias calculation
-  // else {accel_bias[2] += (int32_t) accelsensitivity;}
+	printf("offsets: %d %d %d\n", offsets[0], offsets[1], offsets[2]);
  
-// // Construct the gyro biases for push to the hardware gyro bias registers, which are reset to zero upon device startup
-  // data[0] = (-gyro_bias[0]/4  >> 8) & 0xFF; // Divide by 4 to get 32.9 LSB per deg/s to conform to expected bias input format
-  // data[1] = (-gyro_bias[0]/4)       & 0xFF; // Biases are additive, so change sign on calculated average gyro biases
-  // data[2] = (-gyro_bias[1]/4  >> 8) & 0xFF;
-  // data[3] = (-gyro_bias[1]/4)       & 0xFF;
-  // data[4] = (-gyro_bias[2]/4  >> 8) & 0xFF;
-  // data[5] = (-gyro_bias[2]/4)       & 0xFF;
+	// write to disk
+	if(write_gyro_offets_to_disk(offsets)<0){
+		return -1;
+	}
+	return 0;
+}
 
-// /// Push gyro biases to hardware registers
-// /*  i2c_write_byte(IMU_BUS XG_OFFSET_H, data[0]);
-  // i2c_write_byte(IMU_BUS XG_OFFSET_L, data[1]);
-  // i2c_write_byte(IMU_BUS YG_OFFSET_H, data[2]);
-  // i2c_write_byte(IMU_BUS YG_OFFSET_L, data[3]);
-  // i2c_write_byte(IMU_BUS ZG_OFFSET_H, data[4]);
-  // i2c_write_byte(IMU_BUS ZG_OFFSET_L, data[5]);
-// */
-  // dest1[0] = (float) gyro_bias[0]/(float) gyrosensitivity; // construct gyro bias in deg/s for later manual subtraction
-  // dest1[1] = (float) gyro_bias[1]/(float) gyrosensitivity;
-  // dest1[2] = (float) gyro_bias[2]/(float) gyrosensitivity;
+/*******************************************************************************
+* unsigned short inv_row_2_scale(signed char row[])
+*
+* takes a single row on a rotation matrix and returns the associated scalar
+* for use by inv_orientation_matrix_to_scalar.
+*******************************************************************************/
+unsigned short inv_row_2_scale(signed char row[]){
+    unsigned short b;
 
-// // Construct the accelerometer biases for push to the hardware accelerometer bias registers. These registers contain
-// // factory trim values which must be added to the calculated accelerometer biases; on boot up these registers will hold
-// // non-zero values. In addition, bit 0 of the lower byte must be preserved since it is used for temperature
-// // compensation calculations. Accelerometer bias registers expect bias input as 2048 LSB per g, so that
-// // the accelerometer biases calculated above must be divided by 8.
+    if (row[0] > 0)
+        b = 0;
+    else if (row[0] < 0)
+        b = 4;
+    else if (row[1] > 0)
+        b = 1;
+    else if (row[1] < 0)
+        b = 5;
+    else if (row[2] > 0)
+        b = 2;
+    else if (row[2] < 0)
+        b = 6;
+    else
+        b = 7;      // error
+    return b;
+}
 
-  // int32_t accel_bias_reg[3] = {0, 0, 0}; // A place to hold the factory accelerometer trim biases
-  // i2c_read_bytes(IMU_ADDR, XA_OFFSET_H, 2, &data[0]); // Read factory accelerometer trim values
-  // accel_bias_reg[0] = (int16_t) ((int16_t)data[0] << 8) | data[1];
-  // i2c_read_bytes(IMU_ADDR, YA_OFFSET_H, 2, &data[0]);
-  // accel_bias_reg[1] = (int16_t) ((int16_t)data[0] << 8) | data[1];
-  // i2c_read_bytes(IMU_ADDR, ZA_OFFSET_H, 2, &data[0]);
-  // accel_bias_reg[2] = (int16_t) ((int16_t)data[0] << 8) | data[1];
-  
-  // uint32_t mask = 1uL; // Define mask for temperature compensation bit 0 of lower byte of accelerometer bias registers
-  // uint8_t mask_bit[3] = {0, 0, 0}; // Define array to hold mask bit for each accelerometer bias axis
-  
-  // for(ii = 0; ii < 3; ii++) {
-    // if(accel_bias_reg[ii] & mask) mask_bit[ii] = 0x01; // If temperature compensation bit is set, record that fact in mask_bit
-  // }
+/*******************************************************************************
+* unsigned short inv_orientation_matrix_to_scalar(signed char mtx[])
+*
+* This take in a rotation matrix and returns the corresponding 16 bit short
+* which is sent to the DMP to set the orientation. This function is actually
+* not used in normal operation and only served to retrieve the orientation
+* scalars once to populate the imu_orientation_t enum during development.
+*******************************************************************************/
+unsigned short inv_orientation_matrix_to_scalar(signed char mtx[]){
+    unsigned short scalar;
 
-  // // Construct total accelerometer bias, including calculated average accelerometer bias from above
-  // accel_bias_reg[0] -= (accel_bias[0]/8); // Subtract calculated averaged accelerometer bias scaled to 2048 LSB/g (16 g full scale)
-  // accel_bias_reg[1] -= (accel_bias[1]/8);
-  // accel_bias_reg[2] -= (accel_bias[2]/8);
- 
-  // data[0] = (accel_bias_reg[0] >> 8) & 0xFF;
-  // data[1] = (accel_bias_reg[0])      & 0xFF;
-  // data[1] = data[1] | mask_bit[0]; // preserve temperature compensation bit when writing back to accelerometer bias registers
-  // data[2] = (accel_bias_reg[1] >> 8) & 0xFF;
-  // data[3] = (accel_bias_reg[1])      & 0xFF;
-  // data[3] = data[3] | mask_bit[1]; // preserve temperature compensation bit when writing back to accelerometer bias registers
-  // data[4] = (accel_bias_reg[2] >> 8) & 0xFF;
-  // data[5] = (accel_bias_reg[2])      & 0xFF;
-  // data[5] = data[5] | mask_bit[2]; // preserve temperature compensation bit when writing back to accelerometer bias registers
+    scalar = inv_row_2_scale(mtx);
+    scalar |= inv_row_2_scale(mtx + 3) << 3;
+    scalar |= inv_row_2_scale(mtx + 6) << 6;
+    return scalar;
+}
 
-// // Apparently this is not working for the acceleration biases in the MPU-9250
-// // Are we handling the temperature correction bit properly?
-// // Push accelerometer biases to hardware registers
-// /*  i2c_write_byte(IMU_BUS XA_OFFSET_H, data[0]);
-  // i2c_write_byte(IMU_BUS XA_OFFSET_L, data[1]);
-  // i2c_write_byte(IMU_BUS YA_OFFSET_H, data[2]);
-  // i2c_write_byte(IMU_BUS YA_OFFSET_L, data[3]);
-  // i2c_write_byte(IMU_BUS ZA_OFFSET_H, data[4]);
-  // i2c_write_byte(IMU_BUS ZA_OFFSET_L, data[5]);
-// */
-// // Output scaled accelerometer biases for manual subtraction in the main program
-   // dest2[0] = (float)accel_bias[0]/(float)accelsensitivity; 
-   // dest2[1] = (float)accel_bias[1]/(float)accelsensitivity;
-   // dest2[2] = (float)accel_bias[2]/(float)accelsensitivity;
-// }
+/*******************************************************************************
+* void print_orientation_info()
+*
+* this function purely serves to print out orientation values and rotation
+* matrices which form the imu_orientation_t enum. This is not called inside
+* this C file and is not exposed to the user.
+*******************************************************************************/
+void print_orientation_info(){
+	printf("\n");
+	//char mtx[9];
+	unsigned short orient;
+	
+	// Z-UP (identity matrix)
+	signed char zup[] = {1,0,0, 0,1,0, 0,0,1};
+	orient = inv_orientation_matrix_to_scalar(zup);
+	printf("Z-UP: %d\n", orient);
+	
+	// Z-down
+	signed char zdown[] = {-1,0,0, 0,1,0, 0,0,-1};
+	orient = inv_orientation_matrix_to_scalar(zdown);
+	printf("Z-down: %d\n", orient);
+	
+	// X-up
+	signed char xup[] = {0,0,-1, 0,1,0, 1,0,0};
+	orient = inv_orientation_matrix_to_scalar(xup);
+	printf("x-up: %d\n", orient);
+	
+	// X-down
+	signed char xdown[] = {0,0,1, 0,1,0, -1,0,0};
+	orient = inv_orientation_matrix_to_scalar(xdown);
+	printf("x-down: %d\n", orient);
+	
+	// Y-up
+	signed char yup[] = {1,0,0, 0,0,-1, 0,1,0};
+	orient = inv_orientation_matrix_to_scalar(yup);
+	printf("y-up: %d\n", orient);
+	
+	// Y-down
+	signed char ydown[] = {1,0,0, 0,0,1, 0,-1,0};
+	orient = inv_orientation_matrix_to_scalar(ydown);
+	printf("y-down: %d\n", orient);
+}
+
+/*******************************************************************************
+* int was_last_read_successful()
+*
+* Occasionally bad data is read from the IMU, but the user's imu interrupt 
+* function is always called on every interrupt to keep discrete filters
+* running at a steady clock. In the event of a bad read, old data is always
+* available in the user's imu_data_t struct and the user can call 
+* was_last_read_successful() to see if the data was updated or not.
+*******************************************************************************/
+int was_last_read_successful(){
+	return last_read_successful;
+}
+
+/*******************************************************************************
+* uint64_t micros_since_last_interrupt()
+*
+* Immediately after the IMU triggers an interrupt saying new data is ready,
+* a timestamp is logged in microseconds. The user's imu_interrupt_function
+* will be called after all data has been read in through the I2C bus and 
+* the user's imu_data_t struct has been populated. If the user wishes to see
+* how long it has been since that interrupt was received they may use this
+* function.
+*******************************************************************************/
+uint64_t micros_since_last_interrupt(){
+	return micros_since_epoch() - last_interrupt_timestamp_micros;
+}
 
 
-
-
-
+// Phew, that was a lot of code....

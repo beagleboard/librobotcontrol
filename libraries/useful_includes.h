@@ -46,11 +46,13 @@ in their projects to clean up what would otherwise be a cluttered list of
 *******************************************************************************/
 #define DEG_TO_RAD 		0.0174532925199
 #define RAD_TO_DEG 	 	57.295779513
-#define PI				3.141592653
+#define PI				(float)M_PI
+#define TWO_PI			(2.0f * (float)M_PI)
 
 /*******************************************************************************
 * Useful Macros
 *******************************************************************************/
 #define ARRAY_SIZE(array) sizeof(array)/sizeof(array[0])
+#define min(a, b) 	((a < b) ? a : b)
 
 #endif // USEFUL_INCLUDES

@@ -43,7 +43,7 @@ float quaternionNorm(float q[4]){
 				q[QUAT_Y] * q[QUAT_Y] + q[QUAT_Z] * q[QUAT_Z]);
 }
 
-void quaternionNormalize(float q[4]){
+void normalizeQuaternion(float q[4]){
 	float length = quaternionNorm(q);
 
 	if (length == 0)
@@ -83,9 +83,17 @@ void eulerToQuaternion(float v[3], float q[4]){
 	q[QUAT_Y] = cosX2 * sinY2 * cosZ2 + sinX2 * cosY2 * sinZ2;
 	q[QUAT_Z] = cosX2 * cosY2 * sinZ2 - sinX2 * sinY2 * cosZ2;
 
-	quaternionNormalize(q);
+	normalizeQuaternion(q);
 }
 
+void tilt_compensate(float in[4], float tilt[4], float out[4]){
+	float tiltConjugate[4];
+	float tempQ[4];
+
+	quaternionConjugate(tilt, tiltConjugate);
+	quaternionMultiply(in, tiltConjugate, tempQ);
+	quaternionMultiply(tilt, tempQ, out);
+}
 
 void quaternionConjugate(float in[4], float out[4]){
 	out[QUAT_W] = in[QUAT_W];

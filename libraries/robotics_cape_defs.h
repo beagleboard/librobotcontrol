@@ -9,12 +9,9 @@
 #ifndef ROBOTICS_CAPE_DEFS
 #define ROBOTICS_CAPE_DEFS
 
-//// MPU9150 IMU
-#define ORIENTATION_UPRIGHT {1,0,0, 0,0,-1, 0,1,0}; // Ethernet pointing up for BeagleMIP
-#define ORIENTATION_FLAT    {1,0,0, 0,1,0, 0,0,1} // BB flat on table for BealgeQuad
-#define GYRO_FSR			2000				  // default full scale range (deg/s)
-#define ACCEL_FSR			2					  // default full scale range  (g)
-
+// I2C bus associations
+#define IMU_BUS 	2
+#define BMP_BUS 	2
 
 // Calibration File Locations
 #define CONFIG_DIRECTORY "/etc/robotics/"
@@ -45,10 +42,11 @@
 #define MOTOR_CHANNELS	4
 #define PWM_FREQ 25000
 
-//// Button pins
+//// input pins
 // gpio # for gpio_a.b = (32*a)+b
 #define PAUSE_BTN 69 	//gpio2.5 P8.9
 #define MODE_BTN  68	//gpio2.4 P8.10
+#define IMU_INTERRUPT_PIN 117  //gpio3.21 P9.25
 
 //// gpio output pins 
 #define RED_LED 	66	//gpio2.2	P8.7

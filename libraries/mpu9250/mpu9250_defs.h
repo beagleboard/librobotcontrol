@@ -15,18 +15,9 @@ identical but the latter has a different register map
 // internal DMP sample rate limits
 #define DMP_MAX_RATE 200
 #define DMP_MIN_RATE 4
-#define IMU_POLL_TIMEOUT 300 // milliseconds
+#define IMU_POLL_TIMEOUT 50 // milliseconds
 #define MAX_FIFO_BUFFER	128
 
-/*******************************************************************
-* Example Common orientation matrices
-*******************************************************************/
-// Z pointing up, identity matrix 
-#define ORIENTATION_Z_UP 136
-// Y-axis pointing up for BeagleMIP
-#define ORIENTATION_Y_UP {1,0,0, 0,0,-1, 0,1,0}; 
-// X-axis pointing up
-#define ORIENTATION_X_UP {0,0,-1, 0,1,0, 1,0,0}; 
 
 /******************************************************************
 * register offsets
@@ -195,7 +186,7 @@ identical but the latter has a different register map
 #define ACTL_ACTIVE_HIGH		0
 #define INT_OPEN_DRAIN			0
 #define INT_PUSH_PULL			0x00<<6
-#define LATCH_INT_EN			0
+#define LATCH_INT_EN			0x01<<5
 #define INT_ANYRD_CLEAR			0x01<<4
 #define ACTL_FSYNC_ACTIVE_LOW	0x01<<3
 #define ACTL_FSYNC_ACTIVE_HIGH	0x00<<3
@@ -219,6 +210,13 @@ identical but the latter has a different register map
 /*******************************************************************
 * FIFO_EN register settings
 *******************************************************************/
+#define FIFO_TEMP_EN			0x01<<7
+#define FIFO_GYRO_X_EN			0x01<<6
+#define FIFO_GYRO_Y_EN			0x01<<5
+#define FIFO_GYRO_Z_EN			0x01<<4
+#define FIFO_ACCEL_EN			0x01<<3
+#define FIFO_SLV2_EN			0x01<<2
+#define FIFO_SLV1_EN			0x01<<1
 #define FIFO_SLV0_EN			0x01
 
 
@@ -293,7 +291,7 @@ identical but the latter has a different register map
 /******************************************************************
 * Magnetometer AK8963_ST2 register definitions
 ******************************************************************/
-#define DATA_OVERFLOW	0x01<<3
+#define MAGNETOMETER_SATURATION	0x01<<3
 
 /******************************************************************
 * Magnetometer AK8963_ST1 register definitions

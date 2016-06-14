@@ -518,6 +518,14 @@ typedef enum gyro_dlpf_t {
 	GYRO_DLPF_5
 } gyro_dlpf_t;
 
+typedef enum imu_orientation_t {
+	ORIENTATION_Z_UP 	= 136,
+	ORIENTATION_Z_DOWN 	= 396,
+	ORIENTATION_X_UP 	= 14,
+	ORIENTATION_X_DOWN 	= 266,
+	ORIENTATION_Y_UP 	= 112,
+	ORIENTATION_Y_DOWN 	= 336
+} imu_orientation_t;
 
 typedef struct imu_config_t {
 	// full scale ranges for sensors
@@ -533,8 +541,12 @@ typedef struct imu_config_t {
 	
 	// DMP settings, only used with DMP interrupt
 	int dmp_sample_rate;
-	signed short orientation; //orientation matrix
+	imu_orientation_t orientation; //orientation matrix
+	// higher mix_factor means less weight the compass has on fused_euler
+	int compass_mix_factor; // must be >0
 	int dmp_interrupt_priority; // scheduler priority for handler
+	int show_warnings;	// set to 1 to enable showing of i2c_bus warnings
+
 } imu_config_t;
 
 typedef struct imu_data_t {
@@ -554,31 +566,58 @@ typedef struct imu_data_t {
 	
 	// everything below this line is available in DMP mode only
 	// quaternion and Euler angles from DMP based on ONLY Accel/Gyro
-	float dmp_quat[4]; 	// unitless
-	float dmp_euler[3];	// degrees roll/pitch/yaw
+	float dmp_quat[4]; 	// normalized quaternion
+	float dmp_euler[3];	// radians roll/pitch/yaw
 	
 	// If magnetometer is enabled in DMP mode, the following quaternion and 
 	// Euler angles will be available which add magnetometer data to filter
-	float fused_quat[4]; 	// unitless
-	float fused_euler[3]; 	// units of degrees
-	float compass_heading;	// heading in degrees based purely on magnetometer
+	float fused_quat[4]; 	// normalized quaternion
+	float fused_euler[3]; 	// radians roll/pitch/yaw
+	float compass_heading;	// heading in radians based purely on magnetometer
 } imu_data_t;
  
-
-// one-shot sampling mode functions
+// General functions
 imu_config_t get_default_imu_config();
 int set_imu_config_to_defaults(imu_config_t *conf);
-int initialize_imu(imu_data_t *data, imu_config_t conf);
+int calibrate_gyro_routine();
 int power_off_imu();
+
+// one-shot sampling mode functions
+int initialize_imu(imu_data_t *data, imu_config_t conf);
 int read_accel_data(imu_data_t *data);
 int read_gyro_data(imu_data_t *data);
 int read_mag_data(imu_data_t *data);
 int read_imu_temp(imu_data_t* data);
 
-// // interrupt-driven sampling mode functions
+// interrupt-driven sampling mode functions
 int initialize_imu_dmp(imu_data_t *data, imu_config_t conf);
 int set_imu_interrupt_func(int (*func)(void));
 int stop_imu_interrupt_func();
+int was_last_read_successful();
+uint64_t micros_since_last_interrupt();
+
+/*******************************************************************************
+* BMP280 Barometer
+*
+* The robotics cape features a barometer for measuring altitude. 
+*
+* int initialize_barometer()
+*******************************************************************************/
+typedef enum bmp_oversample_t{
+	BMP_OVERSAMPLE_1,
+	BMP_OVERSAMPLE_2,
+	BMP_OVERSAMPLE_4,
+	BMP_OVERSAMPLE_8,
+	BMP_OVERSAMPLE_16
+} bmp_oversample_t;
+
+int initialize_barometer(bmp_oversample_t oversampling);
+int power_down_barometer();
+int read_barometer();
+float bmp_get_temperature_c();
+float bmp_get_pressure_pa();
+float bmp_get_altitude_m();
+int set_sea_level_pressure_pa(float pa);
 
 
 /*******************************************************************************
@@ -783,8 +822,6 @@ int suppress_stderr(int (*func)(void));
 * Vector and Quaternion Math
 *
 * These are useful for dealing with IMU orientation data and general vector math
-*
-* @
 *******************************************************************************/
 // defines for index location within vector and quaternion arrays
 #define VEC3_X		0
@@ -798,12 +835,153 @@ int suppress_stderr(int (*func)(void));
 float vector3DotProduct(float a[3], float b[3]);
 void vector3CrossProduct(float a[3], float b[3], float d[3]);
 float quaternionNorm(float q[4]);
-void quaternionNormalize(float q[4]);
+void normalizeQuaternion(float q[4]);
 void quaternionToEuler(float q[4], float v[3]);
 void eulerToQuaternion(float v[3], float q[4]);
+void tilt_compensate(float in[4], float tilt[4], float out[4]);
 void quaternionConjugate(float in[4], float out[4]);
 void quaternionMultiply(float a[4], float b[4], float out[4]);
 
+/*******************************************************************************
+* Ring Buffer
+*
+* Ring buffers are FIFO (first in first out) buffers of fixed length which
+* efficiently boot out the oldest value when full. They are particularly well
+* suited for storing the last n values in a discrete time filter.
+*
+* The user creates their own instance of a buffer and passes a pointer to the
+* these ring_buf functions to perform normal operations. 
+
+* @ int reset_ring_buf(ring_buf* buf)
+*
+* sets all values in the buffer to 0 and sets the buffer position back to 0
+*
+* @ int insert_new_ring_buf_value(ring_buf* buf, float val)
+* 
+* Puts a new float into the ring buffer. If the buffer was full then the oldest
+* value in the buffer is automatically removed.
+*
+* @ float get_ring_buf_value(ring_buf* buf, int position)
+*
+* returns the float which is 'position' steps behind the last value placed in
+* the buffer. If 'position' is given as 0 then the most recent value is
+* returned. 'Position' obviously can't be larger than buffer_size minus 1
+*******************************************************************************/
+#define RING_BUF_SIZE 32
+
+typedef struct ring_buf{
+	float data[RING_BUF_SIZE];
+	int index;
+} ring_buf;
+
+int reset_ring_buf(ring_buf* buf);
+int insert_new_ring_buf_value(ring_buf* buf, float val);
+float get_ring_buf_value(ring_buf* buf, int position);
+
+
+/*******************************************************************************
+* Discrete SISO Filter
+*
+* This is a collection of functions for generating and implementing discrete 
+* SISO filters for arbitrary transfer functions. 
+*
+* @ struct dicrete_filter
+*
+* This is the heart of the library. For each implemented filter the user must
+* create a single instance of a discrete_filter struct. Each instance contains
+* transfer function constants and
+* memory about IO 
+* data a discrete_filter instance has a fixed size but contains pointers to 
+* dynamic arrays thus it is best to generate an instance using one of the generate functions here
+*******************************************************************************/
+
+typedef struct discrete_filter{
+	int order;
+	float dt;
+	// input scaling factor usually =1, useful for fast controller tuning
+	float prescaler; 
+	float numerator[RING_BUF_SIZE];	// points to array of numerator constants
+	float denominator[RING_BUF_SIZE];	// points to array 
+	int saturation_en;
+	float saturation_min;
+	float saturation_max;
+	int saturation_flag;
+	ring_buf in_buf;
+	ring_buf out_buf;
+	
+	float last_input;
+	float last_output;
+} discrete_filter;
+
+
+/* 
+--- March Filter ---
+march the filter forward in time one step with new input data
+returns new output which could also be accessed with filter.current_output
+*/
+float marchFilter(discrete_filter* filter, float new_input);
+
+
+/* 
+--- Saturate Filter ---
+limit the output of filter to be between min&max
+returns 1 if saturation was hit 
+returns 0 if output was within bounds
+*/
+int saturateFilter(discrete_filter* filter, float min, float max);
+
+/*
+--- Zero Filter ---
+reset all input and output history to 0
+*/
+int zeroFilter(discrete_filter* filter);
+
+/*
+get_previous_input
+returns an input with offset 'steps'
+steps = 0 returns last input
+*/
+int get_previous_input(discrete_filter* filter, int steps);
+
+/*
+get_previous_output
+returns a previous output with offset 'steps'
+steps = 0 returns last output
+*/
+int get_previous_output(discrete_filter* filter, int steps);
+
+/*
+--- Generate Filter ---
+Dynamically allocate memory for a filter of specified order
+and set transfer function constants.
+Note: A normalized transfer function should have a leading 1 
+in the denominator but can be !=1 in this library
+*/
+discrete_filter generateFilter(int order, float dt,float numerator[],float denominator[]);
+
+						
+
+// time_constant is seconds to rise 63.4% 
+discrete_filter generateFirstOrderLowPass(float dt, float time_constant);
+
+// time_constant is seconds to decay 63.4% 
+discrete_filter generateFirstOrderHighPass(float dt, float time_constant);
+
+// integrator scaled to loop dt
+discrete_filter generateIntegrator(float dt);
+
+
+// discrete-time implementation of a parallel PID controller with derivative filter
+// similar to Matlab pid command
+//
+// N is the pole location for derivative filter. Must be greater than 2*DT
+// smaller N gives faster filter decay
+discrete_filter generatePID(float kp, float ki, float kd, float Tf, float dt);
+
+// print order, numerator, and denominator constants
+int printFilterDetails(discrete_filter* filter);
+
+	
 #endif //ROBOTICS_CAPE
 
 
