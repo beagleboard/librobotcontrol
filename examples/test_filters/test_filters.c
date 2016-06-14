@@ -21,9 +21,9 @@ int main(){
 	int counter = 0;
 
 	printf("\nInitializing Filters\n\n");
-	printf("Sample Rate: %dhz ", SAMPLE_RATE);
-	printf("Time Constant: %5.2f ", TIME_CONSTANT);
-	printf("dt: %6.5f \n", dt);
+	printf("  Sample Rate: %dhz ", SAMPLE_RATE);
+	printf(" Time Constant: %5.2f ", TIME_CONSTANT);
+	printf(" dt: %6.2f \n\n", dt);
 	
 	low_pass   = generateFirstOrderLowPass(dt, TIME_CONSTANT);
 	high_pass  = generateFirstOrderHighPass(dt, TIME_CONSTANT);
@@ -34,8 +34,8 @@ int main(){
 	reset_filter(&integrator);
 
 	// print header
-	printf(" input u  |");
-	printf(" lowpass  |");
+	printf("  input u |");
+	printf("  lowpass |");
 	printf(" highpass |");
 	printf("complement|");
 	printf("integrator|");
@@ -49,15 +49,15 @@ int main(){
 		i  = march_filter(&integrator, u);
 		
 		printf("\r");
-		printf(" %7.2f  |", u);
-		printf(" %7.2f  |", lp);
-		printf(" %7.2f  |", hp);
-		printf(" %7.2f  |", lp+hp);
-		printf(" %7.2f  |", i);
+		printf("%7.2f   |", u);
+		printf("%7.2f   |", lp);
+		printf("%7.2f   |", hp);
+		printf("%7.2f   |", lp+hp);
+		printf("%7.2f   |", i);
 		fflush(stdout);
 		
 		counter++;
-		if(counter>((SAMPLE_RATE*10)-1)){
+		if(counter >= SAMPLE_RATE*10){
 			counter = 0;
 			if(u>0) u = 0;
 			else u = 1;

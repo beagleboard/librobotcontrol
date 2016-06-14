@@ -25,12 +25,10 @@ float march_filter(discrete_filter* filter, float new_input){
 	// evaluate the difference equation
 	float new_output = 0;
 	float input_i, output_i;
-	//for(i=0; i<(filter->order+1); i++){
 	for(i=0; i<=(filter->order); i++){
 		input_i = get_ring_buf_value(&filter->in_buf,i);
 		new_output += filter->prescaler * filter->numerator[i] * input_i;
 	}
-	//for(i=0; i<(filter->order); i++){
 	for(i=1; i<=(filter->order); i++){
 		output_i = get_ring_buf_value(&filter->out_buf,i-1);
 		new_output -= filter->denominator[i] * output_i; 
