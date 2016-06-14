@@ -919,7 +919,7 @@ typedef struct discrete_filter{
 march the filter forward in time one step with new input data
 returns new output which could also be accessed with filter.current_output
 */
-float marchFilter(discrete_filter* filter, float new_input);
+float march_filter(discrete_filter* filter, float new_input);
 
 
 /* 
@@ -928,13 +928,13 @@ limit the output of filter to be between min&max
 returns 1 if saturation was hit 
 returns 0 if output was within bounds
 */
-int saturateFilter(discrete_filter* filter, float min, float max);
+int saturate_filter(discrete_filter* filter, float min, float max);
 
 /*
 --- Zero Filter ---
 reset all input and output history to 0
 */
-int zeroFilter(discrete_filter* filter);
+int reset_filter(discrete_filter* filter);
 
 /*
 get_previous_input
@@ -957,7 +957,7 @@ and set transfer function constants.
 Note: A normalized transfer function should have a leading 1 
 in the denominator but can be !=1 in this library
 */
-discrete_filter generateFilter(int order, float dt,float numerator[],float denominator[]);
+discrete_filter generate_filter(int order, float dt,float numerator[],float denominator[]);
 
 						
 
@@ -979,7 +979,7 @@ discrete_filter generateIntegrator(float dt);
 discrete_filter generatePID(float kp, float ki, float kd, float Tf, float dt);
 
 // print order, numerator, and denominator constants
-int printFilterDetails(discrete_filter* filter);
+int print_filter_details(discrete_filter* filter);
 
 	
 #endif //ROBOTICS_CAPE

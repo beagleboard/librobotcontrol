@@ -38,7 +38,7 @@ int insert_new_ring_buf_value(ring_buf* buf, float val){
 	if(new_index>=RING_BUF_SIZE){
 		new_index = 0;
 	}
-	buf->data[buf->index] = buf->index;
+	buf->data[new_index] = val;
 	buf->index = new_index;
 	return 0;
 }
@@ -56,7 +56,7 @@ float get_ring_buf_value(ring_buf* buf, int position){
 		printf("ERROR: pos must be between 0 & %d\n", RING_BUF_SIZE-1);
 		return -1;
 	}
-	int return_index = buf->index - position - 1;
+	int return_index = buf->index - position;
 	if(return_index<0){
 		return_index += RING_BUF_SIZE;
 	}
