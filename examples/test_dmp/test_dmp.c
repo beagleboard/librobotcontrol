@@ -1,6 +1,6 @@
 /*******************************************************************************
 * Sample Code for testing MPU-9250 IMU operation with DMP and interrupts
-// James Strawson - 2016
+* James Strawson - 2016
 *******************************************************************************/
 
 #include <useful_includes.h>
@@ -12,7 +12,7 @@ int show_gyro  = 0;
 int enable_mag = 0;
 int show_temp  = 0;
 int show_quat  = 0;
-int show_euler = 0;
+int show_tb = 0;
 int orientation_menu = 0;
 //struct to hold new data
 imu_data_t data; 
@@ -37,9 +37,9 @@ void print_usage(){
 	printf("-m		Enable Magnetometer\n");
 	printf("-a		Print Accelerometer Data\n");
 	printf("-g		Print Gyro Data\n");
-	printf("-e		Print Euler Angles\n");
+	printf("-t		Print TaitBryan Angles\n");
 	printf("-q		Print Quaternion Vector\n");
-	printf("-t		Print Thermometer Data\n");
+	printf("-T		Print Thermometer Data\n");
 	printf("-w		Print I2C bus warnings\n");
 	printf("-o		Show a menu to select IMU orientation\n");
 	printf("-h		Print this help message\n\n");
@@ -58,19 +58,19 @@ int print_data(){
 	printf(" ");
 	
 	if(enable_mag){
-		printf("   %6.1f   |", data.compass_heading*RAD_TO_DEG);
+		printf("   %6.1f   |", data.compass_heading);
 		if(show_quat){
-			// print quaternion
+			// print fused quaternion
 			printf(" %4.1f %4.1f %4.1f %4.1f |", 	data.fused_quat[QUAT_W], \
 													data.fused_quat[QUAT_X], \
 													data.fused_quat[QUAT_Y], \
 													data.fused_quat[QUAT_Z]);
 		}
-		if(show_euler){
-			// print Euler angles
-			printf(" %5.2f %5.2f %5.2f |",			data.fused_euler[0], \
-													data.fused_euler[1], \
-													data.fused_euler[2]);
+		if(show_tb){
+			// print fused TaitBryan Angles
+			printf(" %5.2f %5.2f %5.2f |",		data.fused_TaitBryan[TB_PITCH_X],\
+												data.fused_TaitBryan[TB_ROLL_Y], \
+												data.fused_TaitBryan[TB_YAW_Z]);
 		}
 	} else{
 		if(show_quat){
@@ -80,11 +80,11 @@ int print_data(){
 													data.dmp_quat[QUAT_Y], \
 													data.dmp_quat[QUAT_Z]);
 		}
-		if(show_euler){
-			// print Euler angles
-			printf(" %5.2f %5.2f %5.2f |",			data.dmp_euler[0], \
-													data.dmp_euler[1], \
-													data.dmp_euler[2]);
+		if(show_tb){
+			// print TaitBryan angles
+			printf(" %5.2f %5.2f %5.2f |",			data.dmp_TaitBryan[TB_PITCH_X],\
+													data.dmp_TaitBryan[TB_ROLL_Y], \
+													data.dmp_TaitBryan[TB_YAW_Z]);
 		}
 	}
 	if(show_accel){
@@ -118,12 +118,12 @@ int print_data(){
 void print_header(){
 	printf(" ");
 	if(enable_mag){
-		printf("Compass(deg)|");
+		printf("Compass(rad)|");
 		if(show_quat) printf("   Fused Quaternion  |");
-		if(show_euler) printf(" Fused Euler (rad) |");
+		if(show_tb) printf("FusedTaitBryan(rad)|");
 	} else{
 		if(show_quat) printf("    DMP Quaternion   |");
-		if(show_euler) printf("  DMP Euler (rad)  |");
+		if(show_tb) printf("DMP TaitBryan (rad)|");
 	}
 	if(show_accel) printf("   Accel XYZ (g)   |");
 	if(show_gyro) printf("  Gyro XYZ (deg/s) |");
@@ -204,12 +204,12 @@ int main(int argc, char *argv[]){
 	
 	// parse arguments
 	opterr = 0;
-	while ((c=getopt(argc, argv, "s:magrqethwf:o"))!=-1 && argc>1){
+	while ((c=getopt(argc, argv, "s:magrqtThwf:o"))!=-1 && argc>1){
 		switch (c){
 		case 's': // sample rate option
 			sample_rate = atoi(optarg);
 			if(sample_rate>200 || sample_rate<4){
-				printf("sample_rate but be between 4 & 200");
+				printf("sample_rate must be between 4 & 200");
 				return -1;
 			}
 			conf.dmp_sample_rate = sample_rate;
@@ -231,11 +231,11 @@ int main(int argc, char *argv[]){
 			show_something = 1;
 			show_quat = 1;
 			break;
-		case 'e': // show euler angle option
+		case 't': // show TaitBryan angle option
 			show_something = 1;
-			show_euler = 1;
+			show_tb = 1;
 			break;
-		case 't': // read thermometer option
+		case 'T': // read thermometer option
 			show_something = 1;
 			show_temp = 1;
 			break;

@@ -1422,7 +1422,7 @@ int mpu_set_dmp_state(unsigned char enable){
 * poll(). If a valid interrupt is received from the IMU then mark the timestamp,
 * read in the IMU data, and call the user-defined interrupt function if set.
 *******************************************************************************/
-void* imu_interrupt_handler(void* ptr){
+void* imu_interrupt_handler(void* ptr){ 
 	struct pollfd fdset[1];
 	int ret;
 	char buf[64];
@@ -1683,7 +1683,7 @@ int read_dmp_fifo(){
 	data_ptr->dmp_quat[QUAT_Z] = (float)quat[QUAT_Z];
 	// fill in euler angles to the data struct
 	normalizeQuaternion(data_ptr->dmp_quat);
-	quaternionToEuler(data_ptr->dmp_quat, data_ptr->dmp_euler);
+	quaternionToTaitBryan(data_ptr->dmp_quat, data_ptr->dmp_TaitBryan);
 	
 	i+=16; // increase offset by 16 which was the quaternion size
 	
@@ -1745,17 +1745,17 @@ int data_fusion(){
 	// start by filling in the roll/pitch components of the fused euler
 	// angles from the DMP generatd angles. Ignore yaw for now, we have to
 	// filter that later. 
-	fusedEuler[VEC3_X] = data_ptr->dmp_euler[VEC3_X];
-	//fusedEuler[VEC3_Y] = -(data_ptr->dmp_euler[VEC3_Y]);
-	fusedEuler[VEC3_Y] = (data_ptr->dmp_euler[VEC3_Y]);
-	fusedEuler[VEC3_Z] = 0;
+	fusedEuler[TB_PITCH_X] = data_ptr->dmp_TaitBryan[TB_PITCH_X];
+	//fusedEuler[TB_ROLL_Y] = -(data_ptr->dmp_TaitBryan[TB_ROLL_Y]);
+	fusedEuler[TB_ROLL_Y] = (data_ptr->dmp_TaitBryan[TB_ROLL_Y]);
+	fusedEuler[TB_YAW_Z] = 0;
 
 	// generate a quaternion rotation of just roll/pitch
-	eulerToQuaternion(fusedEuler, unfusedQuat);
+	TaitBryanToQuaternion(fusedEuler, unfusedQuat);
 
 	// find delta yaw from last time and record current dmp_yaw for next time
-	deltaDMPYaw = lastDMPYaw - data_ptr->dmp_euler[VEC3_Z];
-	lastDMPYaw = data_ptr->dmp_euler[VEC3_Z];
+	deltaDMPYaw = lastDMPYaw - data_ptr->dmp_TaitBryan[TB_YAW_Z];
+	lastDMPYaw = data_ptr->dmp_TaitBryan[TB_YAW_Z];
 
 	// create a quaternion vector from the current magnetic field vector
 	// in IMU body coordinate frame. Since the DMP quaternion is aligned with
@@ -1764,34 +1764,34 @@ int data_fusion(){
 	magQuat[QUAT_W] = 0;
 	switch(config.orientation){
 	case ORIENTATION_Z_UP:
-		magQuat[QUAT_X] = data_ptr->mag[VEC3_X];
-		magQuat[QUAT_Y] = data_ptr->mag[VEC3_Y];
-		magQuat[QUAT_Z] = data_ptr->mag[VEC3_Z];
+		magQuat[QUAT_X] = data_ptr->mag[TB_PITCH_X];
+		magQuat[QUAT_Y] = data_ptr->mag[TB_ROLL_Y];
+		magQuat[QUAT_Z] = data_ptr->mag[TB_YAW_Z];
 		break;
 	case ORIENTATION_Z_DOWN:
-		magQuat[QUAT_X] = -data_ptr->mag[VEC3_X];
-		magQuat[QUAT_Y] = data_ptr->mag[VEC3_Y];
-		magQuat[QUAT_Z] = -data_ptr->mag[VEC3_Z];
+		magQuat[QUAT_X] = -data_ptr->mag[TB_PITCH_X];
+		magQuat[QUAT_Y] = data_ptr->mag[TB_ROLL_Y];
+		magQuat[QUAT_Z] = -data_ptr->mag[TB_YAW_Z];
 		break;
 	case ORIENTATION_X_UP:
-		magQuat[QUAT_X] = data_ptr->mag[VEC3_Z];
-		magQuat[QUAT_Y] = data_ptr->mag[VEC3_Y];
-		magQuat[QUAT_Z] = data_ptr->mag[VEC3_X];
+		magQuat[QUAT_X] = data_ptr->mag[TB_YAW_Z];
+		magQuat[QUAT_Y] = data_ptr->mag[TB_ROLL_Y];
+		magQuat[QUAT_Z] = data_ptr->mag[TB_PITCH_X];
 		break;
 	case ORIENTATION_X_DOWN:
-		magQuat[QUAT_X] = -data_ptr->mag[VEC3_Z];
-		magQuat[QUAT_Y] = data_ptr->mag[VEC3_Y];
-		magQuat[QUAT_Z] = -data_ptr->mag[VEC3_X];
+		magQuat[QUAT_X] = -data_ptr->mag[TB_YAW_Z];
+		magQuat[QUAT_Y] = data_ptr->mag[TB_ROLL_Y];
+		magQuat[QUAT_Z] = -data_ptr->mag[TB_PITCH_X];
 		break;
 	case ORIENTATION_Y_UP:
-		magQuat[QUAT_X] = data_ptr->mag[VEC3_X];
-		magQuat[QUAT_Y] = -data_ptr->mag[VEC3_Z];
-		magQuat[QUAT_Z] = data_ptr->mag[VEC3_Y];
+		magQuat[QUAT_X] = data_ptr->mag[TB_PITCH_X];
+		magQuat[QUAT_Y] = -data_ptr->mag[TB_YAW_Z];
+		magQuat[QUAT_Z] = data_ptr->mag[TB_ROLL_Y];
 		break;
 	case ORIENTATION_Y_DOWN:
-		magQuat[QUAT_X] = data_ptr->mag[VEC3_X];
-		magQuat[QUAT_Y] = data_ptr->mag[VEC3_Z];
-		magQuat[QUAT_Z] = -data_ptr->mag[VEC3_Y];
+		magQuat[QUAT_X] = data_ptr->mag[TB_PITCH_X];
+		magQuat[QUAT_Y] = data_ptr->mag[TB_YAW_Z];
+		magQuat[QUAT_Z] = -data_ptr->mag[TB_ROLL_Y];
 		break;
 	default:
 		printf("ERROR: invalid orientation\n");
@@ -1811,9 +1811,10 @@ int data_fusion(){
 		#endif
 		return -1;
 	}
-	if (newMagYaw < 0.0f) newMagYaw = TWO_PI + newMagYaw;
+	
 	// record this heading in the user-accessible data struct
 	data_ptr->compass_heading = newMagYaw;
+	if (newMagYaw < 0.0f) newMagYaw = TWO_PI + newMagYaw;
 	
 	// if this is the first run, set yaw to the compass heading
 	if(first_run){
@@ -1857,12 +1858,12 @@ int data_fusion(){
 	// store in the user-accessible fused euler angle
 	if (newYaw > PI)
 		newYaw -= TWO_PI;
-	data_ptr->fused_euler[VEC3_Z] = newYaw;
-	data_ptr->fused_euler[VEC3_X] = data_ptr->dmp_euler[VEC3_X];
-	data_ptr->fused_euler[VEC3_Y] = data_ptr->dmp_euler[VEC3_Y];
+	data_ptr->fused_TaitBryan[TB_YAW_Z] = newYaw;
+	data_ptr->fused_TaitBryan[TB_PITCH_X] = data_ptr->dmp_TaitBryan[TB_PITCH_X];
+	data_ptr->fused_TaitBryan[TB_ROLL_Y] = data_ptr->dmp_TaitBryan[TB_ROLL_Y];
 
 	// Also generate a new quaternion from the filtered euler angles
-	eulerToQuaternion(data_ptr->fused_euler, data_ptr->fused_quat);
+	TaitBryanToQuaternion(data_ptr->fused_TaitBryan, data_ptr->fused_quat);
 	return 0;
 }
 
@@ -1922,7 +1923,6 @@ int load_gyro_offets(){
 	
 	if (cal == 0) {
 		// calibration file doesn't exist yet
-		fclose(cal);
 		printf("WARNING: no gyro calibration data found\n");
 		printf("Please run calibrate_gyro\n\n");
 		return -1;
