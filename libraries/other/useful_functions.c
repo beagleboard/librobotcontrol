@@ -19,6 +19,16 @@ int null_func(){
 }
 
 /*******************************************************************************
+* float get_random_float()
+*
+* returns a random floating point number between -1 and 1
+*******************************************************************************/
+float get_random_float(){
+	unsigned int a = (rand()&0x007fffff) | 0x40000000;
+    return (*((float*)&a) - 3.0f);
+}
+
+/*******************************************************************************
 * @ saturate_float(float* val, float min, float max)
 *
 * Modifies val to be bounded between between min and max. Returns 1 if 

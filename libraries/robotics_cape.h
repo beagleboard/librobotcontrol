@@ -758,6 +758,12 @@ int kill_robot();
 * A simple function that returns 0. This exists so function pointers can be 
 * set to do nothing such as button and imu interrupt handlers.
 *
+* @ float get_random_float()
+*
+* Returns a random floating point value between -1 and 1. This is here because
+* the rand() function from stdlib.h only returns and integer. This is an
+* optimized routine using bitwise operation instead of floating point division.
+*
 * @ saturate_float(float* val, float min, float max)
 *
 * Modifies val to be bounded between between min and max. Returns 1 if 
@@ -808,6 +814,7 @@ int kill_robot();
 * int ret = suppress_stderr(&foo);
 *******************************************************************************/
 int null_func();
+float get_random_float();
 int saturate_float(float* val, float min, float max);
 char *byte_to_binary(unsigned char x);
 timespec timespec_diff(timespec A, timespec B);
@@ -1029,29 +1036,93 @@ typedef struct vector_t{
 } vector_t;
 
 
-
+// Basic Matrix creation, modification, and access
 matrix_t createMatrix(int rows, int cols);
 matrix_t duplicateMatrix(matrix_t A);
-matrix_t createSqrMatrix(int n);
+matrix_t createSquareMatrix(int n);
+matrix_t createRandomMatrix(int rows, int cols);
+matrix_t createIdentityMatrix(int dim);
+matrix_t createDiagonalMatrix(vector_t v);
+matrix_t createMatrixOfOnes(int dim);
 int setMatrixEntry(matrix_t* A, int row, int col, float val);
 float getMatrixEntry(matrix_t A, int row, int col);
 void printMatrix(matrix_t A);
+void printMatrixSciNotation(matrix_t A);
 void destroyMatrix(matrix_t* A);
 
+// Basic Vector creation, modification, and access
 vector_t createVector(int n);
 vector_t duplicateVector(vector_t v);
+vector_t createRandomVector(int len);
+vector_t createVectorOfOnes(int len);
 int setVectorEntry(vector_t* v, int pos, float val);
 float getVectorEntry(vector_t v, int pos);
 void printVector(vector_t v);
+void printVectorSciNotation(vector_t v);
 void destroyVector(vector_t* v);
 
-
-matrix_t matrixMultiply(matrix_t* A, matrix_t* B);
-int matrixMultiplyScalar(matrix_t* A, float s);
+// Matrix Multiplication, Addition, and other transforms
+matrix_t matrixMultiply(matrix_t A, matrix_t B);
+int matrixTimesScalar(matrix_t* A, float s);
+int vectorTimesScalar(vector_t* v, float s);
+vector_t matrixTimesColVec(matrix_t A, vector_t v);
+vector_t rowVecTimesMatrix(vector_t v, matrix_t A);
 matrix_t matrixAdd(matrix_t A, matrix_t B);
-float matrixDet(matrix_t A);
-matrix_t matrixInv(matrix_t A);
+int transposeMatrix(matrix_t* A);
+
+// vector operations
+float vectorNorm(vector_t v);
+vector_t vectorProjection(vector_t v, vector_t e);
+matrix_t outerProduct(vector_t v1, vector_t v2);
+float dotProduct(vector_t v1, vector_t v2);
+vector_t crossProduct3D(vector_t v1, vector_t v2);
+
+// Advanced matrix operations
+float matrixDeterminant(matrix_t A);
+int matrixInv(matrix_t* A);
+matrix_t Householder(vector_t v);
+int QRdecomposition(matrix_t A, matrix_t*Q, matrix_t* R);
+
+// linear system solvers
 vector_t linSolve(matrix_t A, vector_t b);
+vector_t linSolveQR(matrix_t A, vector_t b);
+
+
+
+
+/*******************************************************************************
+* CPU Frequency Control
+*
+* @ int set_cpu_frequency(cpu_frequency_t freq)
+*
+* Sets the CPU frequency to either a fixed value or to onedemand automatic
+* scaling mode. Returns 0 on success, -1 on failure.
+*
+* @ cpu_frequency_t get_cpu_frequency()
+*
+* Returns the current clock speed of the Beaglebone's Sitara processor in the
+* form of the provided enumerated type. It will never return the FREQ_ONDEMAND
+* value as the intention of this function is to see the clock speed as set by
+* either the user or the ondemand governor itself.
+*
+* @ int print_cpu_frequency()
+*
+* Prints the current frequency to the screen. For example "300MHZ".
+* Returns 0 on success or -1 on failure.
+*******************************************************************************/
+
+typedef enum cpu_frequency_t{
+	FREQ_ONDEMAND,
+	FREQ_300MHZ,
+	FREQ_600MHZ,
+	FREQ_800MHZ,
+	FREQ_1000MHZ
+} cpu_frequency_t;
+
+int set_cpu_frequency(cpu_frequency_t freq);
+cpu_frequency_t get_cpu_frequency();
+int print_cpu_frequency();
+
 	
 #endif //ROBOTICS_CAPE
 

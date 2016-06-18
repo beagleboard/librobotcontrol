@@ -1,11 +1,16 @@
 Battery Monitor for Robotics Cape
-James Strawson - 2014
+James Strawson - 2016
 
-Project Description:
-Battery monitor service for Robotics Cape. This program starts automatically on 
-boot with Auto_Run_Script.sh in order to illuminate the set of 4 battery 
-indicator LEDS on the Robotics Cape to indicate battery charge level of a 2S, 
-3S, or 4S Lithium Ion or Polymer Battery. This program also shuts down 
-BeagleBone cleanly and therefore the last running robotics project cleanly when 
-the 2S battery voltage becomes close to the under-voltage protection cut-off.
-	
+
+This battery monitor service is started automatically on boot by 
+Auto_Run_Script.sh in order to illuminate the set of 4 battery indicator LEDS 
+on the Robotics Cape to display battery charge level. It is primarily intended
+to monitor the charge status of a 2-cell lithium battery plugged into the white
+3-pin JST-XH connector and illuminate the indicator LEDs appropriately. 
+
+However, if a 2,3 or 4 cell lithium battery is connected to the DC input jack 
+and the white 3-pin JST-XH connector is left disconnected then it will 
+illuminate the battery indicator LEDs to reflect the charge status of the 
+battery connected to the DC input jack.
+
+

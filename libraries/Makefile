@@ -38,12 +38,12 @@ $(OBJECTS): %.o : %.c
 $(phony all) : $(TARGET)
 .PHONY: install
 
+
 install:
 	@echo "moving headers files to /usr/include"
-	@for f in $(includes) ; do \
-		$(CP) $$f $(INCLUDE_DIR) ; \
+	@for f in $(INCLUDES) ; do \
+		$(CP) --parents $$f $(INCLUDE_DIR) ; \
 	done
-	@ $(CP) *.h $(INCLUDE_DIR)
 	
 	$(MAKE)
 	@$(CP) $(TARGET) $(INSTALL_DIR)

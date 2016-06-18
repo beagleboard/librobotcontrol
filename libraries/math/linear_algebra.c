@@ -58,8 +58,88 @@ matrix_t duplicateMatrix(matrix_t A){
 *
 * 
 *******************************************************************************/
-matrix_t createSqrMatrix(int n){
+matrix_t createSquareMatrix(int n){
 	matrix_t A = createMatrix(n,n);
+	return A;
+}
+
+/*******************************************************************************
+* 
+*
+* 
+*******************************************************************************/
+matrix_t createRandomMatrix(int rows, int cols){
+	int i,j;
+	matrix_t A;
+	if(rows<1 || cols<1){
+		printf("error creating matrix, row or col must be >=1");
+		return A;
+	}
+	A = createMatrix(rows, cols);
+	for(i=0;i<rows;i++){
+		for(j=0;j<cols;j++){
+			A.data[i][j]=get_random_float();
+		}
+	}
+	return A;
+}
+
+/*******************************************************************************
+* matrix_t createIdentityMatrix(int dim)
+*
+* 
+*******************************************************************************/
+matrix_t createIdentityMatrix(int dim){
+	int i;
+	matrix_t A;
+	if(dim<1){
+		printf("error creating matrix, dim must be >=1");
+		return A;
+	}
+	A = createSquareMatrix(dim);
+	for(i=0;i<dim;i++){
+		A.data[i][i]=1;
+	}
+	return A;
+}
+
+/*******************************************************************************
+* matrix_t createDiagonalMatrix(vector_t v)
+*
+* 
+*******************************************************************************/
+matrix_t createDiagonalMatrix(vector_t v){
+	int i;
+	matrix_t A;
+	if(!v.initialized){
+		printf("error creating matrix, vector_t v not initialized");
+		return A;
+	}
+	A = createSquareMatrix(v.len);
+	for(i=0;i<v.len;i++){
+		A.data[i][i]=v.data[i];
+	}
+	return A;
+}
+
+/*******************************************************************************
+* matrix_t createMatrixOfOnes(int dim)
+*
+* 
+*******************************************************************************/
+matrix_t createMatrixOfOnes(int dim){
+	int i,j;
+	matrix_t A;
+	if(dim<1){
+		printf("error creating matrix, dim must be >=1");
+		return A;
+	}
+	A = createSquareMatrix(dim);
+	for(i=0;i<dim;i++){
+		for(j=0;j<dim;j++){
+			A.data[i][j]=1;
+		}
+	}
 	return A;
 }
 
@@ -121,14 +201,32 @@ void printMatrix(matrix_t A){
 		printf("ERROR: matrix not initialized yet\n");
 		return;
 	}
-	printf("\n");
 	for(i=0;i<A.rows;i++){
 		for(j=0;j<A.cols;j++){
-			printf("%f\t",A.data[i][j]);
+			printf("%7.3f  ",A.data[i][j]);
 		}	
 		printf("\n");
 	}
-	printf("\n");
+	return;
+}	
+
+/*******************************************************************************
+* 
+*
+* 
+*******************************************************************************/
+void printMatrixSciNotation(matrix_t A){
+	int i,j;
+	if(!A.initialized){
+		printf("ERROR: matrix not initialized yet\n");
+		return;
+	}
+	for(i=0;i<A.rows;i++){
+		for(j=0;j<A.cols;j++){
+			printf("%11.4e  ",A.data[i][j]);
+		}	
+		printf("\n");
+	}
 	return;
 }	
 
@@ -188,6 +286,44 @@ vector_t duplicateVector(vector_t v){
 *
 * 
 *******************************************************************************/
+vector_t createRandomVector(int len){
+	int i;
+	vector_t v;
+	if(len<1){
+		printf("error creating vector, len must be >=1");
+		return v;
+	}
+	v = createVector(len);
+	for(i=0;i<len;i++){
+		v.data[i]=get_random_float();
+	}
+	return v;
+}
+
+/*******************************************************************************
+* 
+*
+* 
+*******************************************************************************/
+vector_t createVectorOfOnes(int len){
+	int i;
+	vector_t v;
+	if(len<1){
+		printf("error creating vector, len must be >=1");
+		return v;
+	}
+	v = createVector(len);
+	for(i=0;i<len;i++){
+		v.data[i]=1;
+	}
+	return v;
+}
+
+/*******************************************************************************
+* 
+*
+* 
+*******************************************************************************/
 int setVectorEntry(vector_t* v, int pos, float val){
 	if(v==NULL){
 		printf("ERROR: v is null pointer\n");
@@ -233,9 +369,26 @@ void printVector(vector_t v){
 		printf("ERROR: vector not initialized yet\n");
 		return;
 	}
-	printf("\n");
 	for(i=0;i<v.len;i++){
-		printf("%f\t",v.data[i]);
+		printf("%7.3f  ",v.data[i]);
+	}
+	printf("\n");
+	return;
+}	
+
+/*******************************************************************************
+* 
+*
+* 
+*******************************************************************************/
+void printVectorSciNotation(vector_t v){
+	int i;
+	if(!v.initialized){
+		printf("ERROR: vector not initialized yet\n");
+		return;
+	}
+	for(i=0;i<v.len;i++){
+		printf("%.4e  ",v.data[i]);
 	}
 	printf("\n");
 	return;
@@ -260,24 +413,24 @@ void destroyVector(vector_t* v){
 *
 * 
 *******************************************************************************/
-matrix_t matrixMultiply(matrix_t* A, matrix_t* B){
+matrix_t matrixMultiply(matrix_t A, matrix_t B){
 	int i,j,k;
 	float sum = 0;
 	matrix_t out;
-	if(!A->initialized||!B->initialized){
+	if(!A.initialized||!B.initialized){
 		printf("ERROR: matrix not initialized yet\n");
 		return out;
 	}
-	if (A->cols != B->rows){
+	if (A.cols != B.rows){
 		printf("ERROR: Invalid matrix sizes");
 		return out;
 	}
-	out = createMatrix(A->rows, B->cols);	
-	for(i=0;i<(A->rows);i++){
-		for(j=0;j<(B->cols);j++){	
-			for(k=0;k<(A->cols);k++){
+	out = createMatrix(A.rows, B.cols);	
+	for(i=0;i<(A.rows);i++){
+		for(j=0;j<(B.cols);j++){	
+			for(k=0;k<(A.cols);k++){
 				// do the matrix multiplication
-				sum = sum + A->data[i][k]*B->data[k][j];
+				sum = sum + A.data[i][k]*B.data[k][j];
 			}
 			// save mult sum to new location
 			out.data[i][j] = sum;
@@ -292,7 +445,7 @@ matrix_t matrixMultiply(matrix_t* A, matrix_t* B){
 *
 * 
 *******************************************************************************/
-int matrixMultiplyScalar(matrix_t* A, float s){
+int matrixTimesScalar(matrix_t* A, float s){
 	int i,j;
 	if(!A->initialized){
 		printf("ERROR: matrix not initialized yet\n");
@@ -305,6 +458,77 @@ int matrixMultiplyScalar(matrix_t* A, float s){
 	}
 	return 0;
 }
+
+/*******************************************************************************
+* 
+*
+* 
+*******************************************************************************/
+int vectorTimesScalar(vector_t* v, float s){
+	int i;
+	if(!v->initialized){
+		printf("ERROR: vector not initialized yet\n");
+		return -1;
+	}
+	for(i=0;i<(v->len);i++){	
+		v->data[i] = s*v->data[i];
+	}
+	return 0;
+}
+
+/*******************************************************************************
+* 
+*
+* 
+*******************************************************************************/
+vector_t matrixTimesColVec(matrix_t A, vector_t v){
+	int i,j;
+	vector_t out;
+	if(!A.initialized || !v.initialized){
+		printf("ERROR: matrix or vector not initialized yet\n");
+		return out;
+	}
+	if(A.cols != v.len){
+		printf("ERROR: dimensions do not match\n");
+		return out;
+	}
+	out = createVector(A.rows);
+	
+	for(i=0;i<A.rows;i++){
+		for(j=0;j<A.cols;j++){	
+			out.data[i] += v.data[j]*A.data[i][j];
+		}
+	}
+	return out;
+}
+
+/*******************************************************************************
+* 
+*
+* 
+*******************************************************************************/
+vector_t rowVecTimesMatrix(vector_t v, matrix_t A){
+	int i,j;
+	vector_t out;
+	if(!A.initialized || !v.initialized){
+		printf("ERROR: matrix or vector not initialized yet\n");
+		return out;
+	}
+	if(A.rows != v.len){
+		printf("ERROR: dimensions do not match\n");
+		return out;
+	}
+	
+	out = createVector(A.cols);
+	for(i=0;i<A.cols;i++){
+		for(j=0;j<A.rows;j++){	
+			out.data[i] += v.data[j]*A.data[j][i];
+		}
+	}
+	return out;
+}
+
+
 
 /*******************************************************************************
 * 
@@ -331,9 +555,152 @@ matrix_t matrixAdd(matrix_t A, matrix_t B){
 	return  out;
 }
 
+/*******************************************************************************
+* 
+*
+* 
+*******************************************************************************/
+int transposeMatrix(matrix_t* A){
+	int i,j;
+	if(!A->initialized){
+		printf("ERROR: matrix not initialized yet\n");
+		return -1;
+	}
+	// swap rows and cols
+	matrix_t temp = createMatrix(A->cols, A->rows);
+	for(i=0;i<(A->rows);i++){
+		for(j=0;j<(A->cols);j++){	
+			temp.data[i][j] = A->data[j][i];
+		}
+	}
+	// unallocate the original matrix A and set its data pointer to point
+	// to the newly allocated memory
+	destroyMatrix(A);
+	*A=temp;
+	return  0;
+}
 
 
+/*******************************************************************************
+* float vectorNorm(vector_t v)
+*
+* 
+*******************************************************************************/
+float vectorNorm(vector_t v){
+	float out = 0;
+	int i;
+	if(!v.initialized){
+		printf("ERROR: vector not initialized yet\n");
+		return -1;
+	}
+	for(i=0;i<v.len;i++){
+		out = out + v.data[i]*v.data[i];
+	}
+	return sqrt(out);
+}
 
+/*******************************************************************************
+* Projects vector v onto e
+* 
+* 
+*******************************************************************************/
+vector_t vectorProjection(vector_t v, vector_t e){
+	
+	int i;
+	float factor;
+	vector_t out;
+	
+	if(!v.initialized || !e.initialized){
+	printf("ERROR: vectors not initialized yet\n");
+	return out;
+	}
+	if(v.len != e.len){
+	printf("ERROR: vectors not of same dimension\n");
+	return out;
+	}
+	out = createVector(v.len);
+	
+	factor = dotProduct(v,e)/dotProduct(e,e);
+	for(i=0;i<v.len;i++){
+		out.data[i] = factor * e.data[i];
+	}
+	
+	return out;
+}
+
+
+/*******************************************************************************
+* v1 x v2 = v1^T v2
+* 
+* 
+*******************************************************************************/
+matrix_t outerProduct(vector_t v1, vector_t v2){
+	
+	int i, j;
+	int m = v1.len;
+	int n = v2.len;
+	matrix_t out;
+	
+	if(!v1.initialized || !v2.initialized){
+	printf("ERROR: vectors not initialized yet\n");
+	return out;
+	}
+
+	out = createMatrix(m,n);
+	
+	for(i=0;i<m;i++){
+		for(j=0;j<n;j++){
+			out.data[j][i] = v1.data[i]*v2.data[j];
+		}
+	}
+	return out;
+}
+
+/*******************************************************************************
+* 
+*
+* 
+*******************************************************************************/
+float dotProduct(vector_t v1, vector_t v2){
+	float out;
+	int i;
+	
+	if(!v1.initialized || !v2.initialized){
+		printf("ERROR: vector not initialized yet\n");
+		return -1;
+	}
+	if(v1.len != v2.len){
+		printf("ERROR: vector dimensions do not match\n");
+		return -1;
+	}
+	for(i=0; i<v1.len; i++){
+		out = out + (v1.data[i] * v2.data[i]);
+	}
+	return out;
+}
+
+/*******************************************************************************
+* 
+*
+* 
+*******************************************************************************/
+vector_t crossProduct3D(vector_t v1, vector_t v2){
+	vector_t out;
+	if(!v1.initialized || !v2.initialized){
+		printf("ERROR: vector not initialized yet\n");
+		return out;
+	}
+	if((v1.len != 3) || (v2.len != 3)){
+		printf("ERROR: vectors not of dimension 3\n");
+		return out;
+	}
+	
+	out = createVector(v1.len);
+	out.data[0] = (v1.data[1]*v2.data[2]) - (v1.data[2]*v2.data[1]);
+	out.data[1] = (v1.data[2]*v2.data[0]) - (v1.data[0]*v2.data[2]);
+	out.data[2] = (v1.data[0]*v2.data[1]) - (v1.data[1]*v2.data[0]);
+	return out;	
+}
 
 
 /*******************************************************************************
@@ -341,7 +708,7 @@ matrix_t matrixAdd(matrix_t A, matrix_t B){
 *
 * 
 *******************************************************************************/
-float matrixDet(matrix_t A){
+float matrixDeterminant(matrix_t A){
 	int i,j,k;
 	float ratio, det;
 	if(!A.initialized){
@@ -375,63 +742,144 @@ float matrixDet(matrix_t A){
 *
 * 
 *******************************************************************************/
-matrix_t matrixInv(matrix_t A){
+int matrixInv(matrix_t* A){
 	int i,j,ii,jj,i1,j1;
 	float det,coDet;
 	matrix_t out, cofactors;
-	if(!A.initialized){
+	if(!A->initialized){
 		printf("ERROR: matrix not initialized yet\n");
-		return out;
+		return -1;
 	}
-	det = matrixDet(A);
+	det = matrixDeterminant(*A);
 	
 	printf("det = %f\n",det);
 	if (det == 0){
 		printf("Error: Matrix is not invertable");
-		return out;
+		return -1;
 	}
-	out = createSqrMatrix(A.rows);
-	cofactors = createSqrMatrix(A.rows - 1);
+	out = createSquareMatrix(A->rows);
+	cofactors = createSquareMatrix(A->rows - 1);
 	
-	for (i=0;i<A.rows;i++){					// current row of A to test
-		for (j=0;j<A.rows;j++){				// current col of A to test
+	for (i=0;i<A->rows;i++){				// current row of A to test
+		for (j=0;j<A->rows;j++){			// current col of A to test
 
 			i1 = 0;							// index for cofactor row
-			for (ii=0;ii<A.rows;ii++){		// count up thru # of rows of A
+			for (ii=0;ii<A->rows;ii++){		// count up thru # of rows of A
 				if (ii == i) continue;		// if = to current row of A.. skip
 										
 				j1 = 0;						// index for cofactor col
-				for (jj=0;jj<A.rows;jj++){	// count up thru # of cols of A
+				for (jj=0;jj<A->rows;jj++){	// count up thru # of cols of A
 					if (jj == j) continue;	// if = to current col of A.. skip
 					// place proper element in new matrix
-					cofactors.data[i1][j1] = A.data[ii][jj]; 	
+					cofactors.data[i1][j1] = A->data[ii][jj]; 	
 					j1++;
 				}
 				i1++;
 			}
-			coDet = matrixDet(cofactors);
+			coDet = matrixDeterminant(cofactors);
 			// saves as transpose
 			out.data[j][i] = (pow(-1.0,i+j+2.0) * coDet)/det; 	
 		}
 	}
 	destroyMatrix(&cofactors);
+	destroyMatrix(A);
+	*A=out;
+	return 0;
+}
+
+/*******************************************************************************
+* 
+*
+* 
+*******************************************************************************/
+matrix_t Householder(vector_t v){
+	
+	int i, j;
+	float tau;
+	matrix_t out;
+	
+	if(!v.initialized){
+	printf("ERROR: vector not initialized yet\n");
+	return out;
+	}
+	
+	out = createSquareMatrix(v.len);
+	for(i=0;i<v.len;i++){
+		out.data[i][i] = 1;
+	}
+	
+	tau = 2*dotProduct(v,v);
+	
+	for(i=0;i<v.len;i++){
+		for(j=0;j<v.len;j++){
+			out.data[i][j] -= tau * v.data[i]*v.data[j];
+		}
+	}
 	return out;
 }
 
+/*******************************************************************************
+* 
+*
+* 
+*******************************************************************************/
+int QRdecomposition(matrix_t A, matrix_t*Q, matrix_t* R){
+	
+	int i, j, k, s;
+	int m = A.rows;
+	int n = A.cols;
 
+	vector_t xtemp;
+	matrix_t Qt, Rt, Qi, F;
+	
+	if(!A.initialized){
+	printf("ERROR: matrix not initialized yet\n");
+	return -1;
+	}
+	
+	destroyMatrix(Q);
+	destroyMatrix(R);
+	Qt = createMatrix(m,m);
+	for(i=0;i<m;i++){					// initialize Qt as I
+		Qt.data[i][i] = 1;
+	}
+	Rt = duplicateMatrix(A);			// duplicate A to Rt
 
-//==============================================================================
-// return 1 if system not solving
-// nDim - system dimension
-// pfMatr - matrix with coefficients
-// pfVect - vector with free members
-// xout - vector with system solution
-// pfMatr becames trianglular after function call
-// pfVect changes after function call
-//
-// Developer:
-//
-//==============================================================================
+	for(i=0;i<n;i++){					// iterate through columns of A
+		xtemp = createVector(m-i);		// allocate length, decreases with i
+		
+		for(j=i;j<m;j++){						// take col of -R from diag down
+			xtemp.data[j-i] = -Rt.data[j][i]; 	
+		}
+		if(Rt.data[i][i] > 0)	s = -1;			// check the sign
+		else					s = 1;
+		xtemp.data[0] += s*vectorNorm(xtemp);	// add norm to 1st element
+		
+		Qi = createSquareMatrix(m);			// initialize Qi
+		F  = createSquareMatrix(m-i);			// initialize shrinking Householder
+		F  = Householder(xtemp);			// fill in Househodor
+		
+		for(j=0;j<i;j++){
+			Qi.data[j][j] = 1;				// fill in partial I matrix
+		}
+		for(j=i;j<m;j++){					// fill in remainder (Householder)
+			for(k=i;k<m;k++){
+				Qi.data[j][k] = F.data[j-i][k-i];
+			}
+		}
+		Qt = matrixMultiply(Qi,Qt);			// multiply new Qi to old Qtemp
+		Rt = matrixMultiply(Qi,Rt);			// same with Rtemp
+		
+		destroyMatrix(&Qi);					// free allocation
+		destroyMatrix(&F);
+		destroyVector(&xtemp);
+	}
+	transposeMatrix(&Qt);
+	*Q = Qt;
+	*R = Rt;
+	return 0;
+}
+
 /*******************************************************************************
 * vector_t linSolve(matrix_t A, vector_t b)
 *
@@ -504,6 +952,48 @@ vector_t linSolve(matrix_t A, vector_t b){
 	return xout;
 }
 
+/*******************************************************************************
+* vector_t linSolveQR(matrix_t A, vector_t b)
+*
+* Gives a least-squares solution to the system AX=b for non-square A using QR.
+*
+*  Ax=b
+* QRx=b
+*  Rx=Q'b  (because Q'Q=I)
+*  x=(R^-1)Q'b
+*******************************************************************************/
+vector_t linSolveQR(matrix_t A, vector_t b){
+	vector_t xout, Qb;
+	matrix_t Q,R;
+		
+	if(!A.initialized || !b.initialized){
+		printf("ERROR: matrix or vector not initialized yet\n");
+		return xout;
+	}
+	// do QR decomposition
+	if(QRdecomposition(A,&Q,&R)<0){
+		printf("failed to perform QR decomposition on A\n");
+		return xout;
+	}
+	// transpose Q matrix
+	if(transposeMatrix(&Q)<0){
+		printf("ERROR: failed to transpose Q\n");
+		return xout;
+	}
+	// invert R
+	if(matrixInv(&R)<0){
+		printf("ERROR: failed to invert R\n");
+		return xout;
+	}
+	// multiply through
+	Qb = matrixTimesColVec(Q,b);
+	destroyMatrix(&Q);
+	xout = matrixTimesColVec(R,Qb);
+	destroyMatrix(&R);
+	destroyVector(&Qb);
+	
+	return xout;
+}
 
 
 
