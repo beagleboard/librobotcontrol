@@ -995,6 +995,95 @@ vector_t linSolveQR(matrix_t A, vector_t b){
 	return xout;
 }
 
+/*******************************************************************************
+* int fitEllipsoid(matrix_t points, vector_t* center, vector_t* lengths)
+*
+* Fits an ellipsoid to a set of points in 3D space. The principle axes of the
+* fitted ellipsoid align with the global coordinate system. Therefore there are
+* 6 degrees of freedom defining the ellipsoid: the x,y,z coordinates of the
+* centroid and the lengths from the centroid to the surfance in each of the 3
+* directions. 
+*
+* matrix_t points is a tall matrix with 3 columns and at least 6 rows. Each row
+* must contain the xy&z components of each individual point to be fit. If only 
+* 6 rows are provided, the resulting ellipsoid will be an exact fit. Otherwise
+* the result is a least-squares fit to the overdefined dataset.
+*
+* vector_t* center is a pointer to a user-created vector which will contain the
+* x,y,z position of the centroid of the fit ellipsoid.
+*
+* vector_t* lengths is a pointer to a user-created vector which will be 
+* populated with the 3 distances from the surface to the centroid in each of the 
+* 3 directions.
+*******************************************************************************/
+int fitEllipsoid(matrix_t points, vector_t* center, vector_t* lengths){
+	int i;
+	int p = points.rows;
+	if(!points.initialized){
+		printf("ERROR: matrix_t points not initialized\n");
+		return -1;
+	}
+	if(points.cols!=3){
+		printf("ERROR: matrix_t points must have 3 columns\n");
+		return -1;
+	}
+	if(p<6){
+		printf("ERROR: matrix_t points must have at least 6 rows\n");
+		return -1;
+	}
+	
+	vector_t b = createVectorOfOnes(p);
+	matrix_t A = createMatrix(p,6);
+	for(i=0;i<p;i++){
+		A.data[i][0] = points.data[i][0] * points.data[i][0];
+		A.data[i][1] = points.data[i][0];
+		A.data[i][2] = points.data[i][1] * points.data[i][1];
+		A.data[i][3] = points.data[i][1];
+		A.data[i][4] = points.data[i][2] * points.data[i][2];
+		A.data[i][5] = points.data[i][2];
+	}
+	
+	vector_t f = linSolveQR(A,b);
+	destroyMatrix(&A);
+	destroyVector(&b);
+	
+	// fill in center vector.
+	destroyVector(center);
+	*center = createVector(3);
+	center->data[0] = -f.data[1]/(2*f.data[0]);
+	center->data[1] = -f.data[3]/(2*f.data[2]);
+	center->data[2] = -f.data[5]/(2*f.data[4]);
+	
+	// Solve for lengths
+	A = createSquareMatrix(3);
+	b = createVector(3);
+	
+	// fill in A
+	A.data[0][0] = (f.data[0] * center->data[0] * center->data[0]) + 1.0;
+	A.data[0][1] = (f.data[0] * center->data[1] * center->data[1]);
+	A.data[0][2] = (f.data[0] * center->data[2] * center->data[2]);
+	
+	A.data[1][0] = (f.data[2] * center->data[0] * center->data[0]);
+	A.data[1][1] = (f.data[2] * center->data[1] * center->data[1]) + 1.0;
+	A.data[1][2] = (f.data[2] * center->data[2] * center->data[2]);
+	
+	A.data[2][0] = (f.data[4] * center->data[0] * center->data[0]);
+	A.data[2][1] = (f.data[4] * center->data[1] * center->data[1]);
+	A.data[2][2] = (f.data[4] * center->data[2] * center->data[2]) + 1.0;
+	
+	// fill in b
+	b.data[0] = f.data[0];
+	b.data[1] = f.data[2];
+	b.data[2] = f.data[4];
 
+	// solve for lengths
+	destroyVector(lengths);
+	*lengths = linSolve(A, b);
+	
+	// cleanup
+	destroyMatrix(&A);
+	destroyVector(&b);
+	return 0;
+}
 
 

@@ -1086,7 +1086,7 @@ int QRdecomposition(matrix_t A, matrix_t*Q, matrix_t* R);
 // linear system solvers
 vector_t linSolve(matrix_t A, vector_t b);
 vector_t linSolveQR(matrix_t A, vector_t b);
-
+int fitEllipsoid(matrix_t points, vector_t* center, vector_t* lengths);
 
 
 
