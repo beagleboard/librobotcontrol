@@ -39,7 +39,9 @@ int packet_len;
 pthread_t imu_interrupt_thread;
 int (*imu_interrupt_func)();
 int interrupt_running;
-float mag_adjust[3];
+float mag_factory_adjust[3];
+float mag_offsets[3];
+float mag_scales[3];
 int last_read_successful;
 uint64_t last_interrupt_timestamp_micros;
 imu_data_t* data_ptr;
@@ -53,7 +55,7 @@ int set_gyro_fsr(gyro_fsr_t fsr, imu_data_t* data);
 int set_accel_fsr(accel_fsr_t, imu_data_t* data);
 int set_gyro_dlpf(gyro_dlpf_t);
 int set_accel_dlpf(accel_dlpf_t);
-int initialize_magnetometer(imu_data_t* data);
+int initialize_magnetometer();
 int power_down_magnetometer();
 int mpu_set_bypass(unsigned char bypass_on);
 int mpu_write_mem(unsigned short mem_addr, unsigned short length,\
@@ -75,7 +77,8 @@ int dmp_set_interrupt_mode(unsigned char mode);
 int read_dmp_fifo();
 int data_fusion();
 int load_gyro_offets();
-
+int load_mag_calibration();
+int write_mag_cal_to_disk(float offsets[3], float scale[3]);
 void* imu_interrupt_handler(void* ptr);
 int (*imu_interrupt_func)(); // pointer to user-defined function
 
@@ -201,7 +204,7 @@ int initialize_imu(imu_data_t *data, imu_config_t conf){
 	
 	// initialize the magnetometer too if requested in config
 	if(conf.enable_magnetometer){
-		if(initialize_magnetometer(data)){
+		if(initialize_magnetometer()){
 			printf("failed to initialize magnetometer\n");
 			i2c_release_bus(IMU_BUS);
 			return -1;
@@ -287,6 +290,7 @@ int read_mag_data(imu_data_t* data){
 	uint8_t st1;
 	uint8_t raw[7];
 	int16_t adc[3];
+	float factory_cal_data[3];
 	
 	if(config.enable_magnetometer==0){
 		printf("ERROR: can't read magnetometer unless it is enabled in \n");
@@ -341,9 +345,18 @@ int read_mag_data(imu_data_t* data){
 	// Teslas. Also correct the coordinate system as someone in invensense 
 	// thought it would be bright idea to have the magnetometer coordiate
 	// system aligned differently than the accelerometer and gyro.... -__-
-	data->mag[0] = adc[1] * mag_adjust[1] * MAG_RAW_TO_uT;
-	data->mag[1] = adc[0] * mag_adjust[0] * MAG_RAW_TO_uT;
-	data->mag[2] = -adc[2] * mag_adjust[2] * MAG_RAW_TO_uT;
+	factory_cal_data[0] = adc[1] * mag_factory_adjust[1] * MAG_RAW_TO_uT;
+	factory_cal_data[1] = adc[0] * mag_factory_adjust[0] * MAG_RAW_TO_uT;
+	factory_cal_data[2] = -adc[2] * mag_factory_adjust[2] * MAG_RAW_TO_uT;
+	
+	// now apply out own calibration, but first make sure we don't accidentally
+	// multiply by zero in case of uninitialized scale factors
+	if(mag_scales[0]==0.0) mag_scales[0]=1.0;
+	if(mag_scales[1]==0.0) mag_scales[1]=1.0;
+	if(mag_scales[2]==0.0) mag_scales[2]=1.0;
+	data->mag[0] = (factory_cal_data[0]-mag_offsets[0])*mag_scales[0];
+	data->mag[1] = (factory_cal_data[1]-mag_offsets[1])*mag_scales[1];
+	data->mag[2] = (factory_cal_data[2]-mag_offsets[2])*mag_scales[2];
 	
 	return 0;
 }
@@ -539,12 +552,12 @@ int set_accel_dlpf(accel_dlpf_t dlpf){
 }
 
 /*******************************************************************************
-* int initialize_magnetometer(imu_data_t* data)
+* int initialize_magnetometer()
 *
-* configure the magnetometer and load sensitivity adjustment
-* values into the data struct for use by future reads
+* configure the magnetometer for 100hz reads, also reads in the factory
+* sensitivity values into the global variables;
 *******************************************************************************/
-int initialize_magnetometer(imu_data_t* data){
+int initialize_magnetometer(){
 	uint8_t raw[3];  // calibration data stored here
 	
 	i2c_set_device_address(IMU_BUS, IMU_ADDR);
@@ -575,9 +588,9 @@ int initialize_magnetometer(imu_data_t* data){
 	}
 
 	// Return sensitivity adjustment values
-	mag_adjust[0]=(float)(raw[0]-128)/256.0f + 1.0f;   
-	mag_adjust[1]=(float)(raw[1]-128)/256.0f + 1.0f;  
-	mag_adjust[2]=(float)(raw[2]-128)/256.0f + 1.0f; 
+	mag_factory_adjust[0]=(float)(raw[0]-128)/256.0f + 1.0f;   
+	mag_factory_adjust[1]=(float)(raw[1]-128)/256.0f + 1.0f;  
+	mag_factory_adjust[2]=(float)(raw[2]-128)/256.0f + 1.0f; 
 	
 	// Power down magnetometer again
 	i2c_write_byte(IMU_BUS, AK8963_CNTL, MAG_POWER_DN); 
@@ -757,7 +770,7 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 	
 	// initialize the magnetometer too if requested in config
 	if(conf.enable_magnetometer){
-		if(initialize_magnetometer(data_ptr)){
+		if(initialize_magnetometer()){
 			printf("ERROR: failed to initialize_magnetometer\n");
 			i2c_release_bus(IMU_BUS);
 			return -1;
@@ -1514,7 +1527,7 @@ int read_dmp_fifo(){
 	int ret, is_new_mag_data;
 	int i = 0; // position in the buffer
 	static int first_run = 1; // set to 0 after first call
-	
+	float factory_cal_data[3]; // just temp holder for mag data
     if (!dmp_en){
 		printf("only use mpu_read_fifo in dmp mode\n");
         return -1;
@@ -1637,10 +1650,23 @@ int read_dmp_fifo(){
 			// magnetometer coordiate system aligned differently than the 
 			// accelerometer and gyro.... -__-
 			if(mag_adc[0]!=0 || mag_adc[1]!=0 || mag_adc[2]!=0){
-				data_ptr->mag[0] = mag_adc[1] * mag_adjust[1] * MAG_RAW_TO_uT;
-				data_ptr->mag[1] = mag_adc[0] * mag_adjust[0] * MAG_RAW_TO_uT;
-				data_ptr->mag[2] = -mag_adc[2] * mag_adjust[2] * MAG_RAW_TO_uT;
-				is_new_mag_data = 1;
+		// multiply by the sensitivity adjustment and convert to units of uT
+		// Also correct the coordinate system as someone in invensense 
+		// thought it would be a bright idea to have the magnetometer coordiate
+		// system aligned differently than the accelerometer and gyro.... -__-
+		factory_cal_data[0] = mag_adc[1]*mag_factory_adjust[1] * MAG_RAW_TO_uT;
+		factory_cal_data[1] = mag_adc[0]*mag_factory_adjust[0] * MAG_RAW_TO_uT;
+		factory_cal_data[2] = -mag_adc[2]*mag_factory_adjust[2] * MAG_RAW_TO_uT;
+	
+		// now apply out own calibration, but first make sure we don't 
+		// accidentally multiply by zero in case of uninitialized scale factors
+		if(mag_scales[0]==0.0) mag_scales[0]=1.0;
+		if(mag_scales[1]==0.0) mag_scales[1]=1.0;
+		if(mag_scales[2]==0.0) mag_scales[2]=1.0;
+		data_ptr->mag[0] = (factory_cal_data[0]-mag_offsets[0])*mag_scales[0];
+		data_ptr->mag[1] = (factory_cal_data[1]-mag_offsets[1])*mag_scales[1];
+		data_ptr->mag[2] = (factory_cal_data[2]-mag_offsets[2])*mag_scales[2];
+		is_new_mag_data = 1;
 			}
 		}
 		i+=7; // increase our position by 7 bytes
@@ -2184,6 +2210,237 @@ int was_last_read_successful(){
 *******************************************************************************/
 uint64_t micros_since_last_interrupt(){
 	return micros_since_epoch() - last_interrupt_timestamp_micros;
+}
+
+/*******************************************************************************
+* int write_mag_cal_to_disk(float offsets[3], float scale[3])
+*
+* Reads steady state gyro offsets from the disk and puts them in the IMU's 
+* gyro offset register. If no calibration file exists then make a new one.
+*******************************************************************************/
+int write_mag_cal_to_disk(float offsets[3], float scale[3]){
+	FILE *cal;
+	char file_path[100];
+	int ret;
+	
+	// construct a new file path string and open for writing
+	strcpy(file_path, CONFIG_DIRECTORY);
+	strcat(file_path, MAG_CAL_FILE);
+	cal = fopen(file_path, "w");
+	// if opening for writing failed, the directory may not exist yet
+	if (cal == 0) {
+		mkdir(CONFIG_DIRECTORY, 0777);
+		cal = fopen(file_path, "w");
+		if (cal == 0){
+			printf("could not open config directory\n");
+			printf(CONFIG_DIRECTORY);
+			printf("\n");
+			return -1;
+		}
+	}
+	
+	// write to the file, close, and exit
+	ret = fprintf(cal,"%f\n%f\n%f\n%f\n%f\n%f\n", 	offsets[0],\
+													offsets[1],\
+													offsets[2],\
+													scale[0],\
+													scale[1],\
+													scale[2]);
+	if(ret<0){
+		printf("Failed to write mag calibration to file\n");
+		fclose(cal);
+		return -1;
+	}
+	fclose(cal);
+	return 0;	
+	
+}
+
+/*******************************************************************************
+* int load_mag_calibration()
+*
+* Loads steady state magnetometer offsets and scale from the disk into global
+* variables for correction later by read_magnetometer and FIFO read functions
+*******************************************************************************/
+int load_mag_calibration(){
+	FILE *cal;
+	char file_path[100];
+	float x,y,z,sx,sy,sz;
+	
+	// construct a new file path string and open for reading
+	strcpy (file_path, CONFIG_DIRECTORY);
+	strcat (file_path, MAG_CAL_FILE);
+	cal = fopen(file_path, "r");
+	
+	if (cal == 0) {
+		// calibration file doesn't exist yet
+		printf("WARNING: no magnetometer calibration data found\n");
+		printf("Please run calibrate_mag\n\n");
+		return -1;
+	}
+	// read in data
+	fscanf(cal,"%f\n%f\n%f\n%f\n%f\n%f\n", &x,&y,&z,&sx,&sy,&sz);
+		
+	#ifdef DEBUG
+	printf("magcal: %f %f %f %f %f %f\n", x,y,z,sx,sy,sz);
+	#endif
+	
+	// write to global variables fo use by read_mag_data
+	mag_offsets[0]=x;
+	mag_offsets[1]=y;
+	mag_offsets[2]=z;
+	mag_scales[0]=sx;
+	mag_scales[1]=sy;
+	mag_scales[2]=sz;
+
+	fclose(cal);
+	return 0;	
+}
+
+/*******************************************************************************
+* int calibrate_mag_routine()
+*
+* Initializes the IMU and samples the magnetometer untill sufficient samples
+* have been collected from each octant. From there, fit an ellipse to the data 
+* and save the correct offsets and scales to the disk which will later be
+* applied to correct the uncallibrated magnetometer data to map calibrationed
+* field vectors to a sphere.
+*******************************************************************************/
+int calibrate_mag_routine(){
+	const int samples = 200;
+	const int sample_rate_hz = 20;
+	int i;
+	uint8_t c;
+	float new_scale[3];
+	imu_data_t imu_data; // to collect magnetometer data
+	
+	// make sure the bus is not currently in use by another thread
+	// do not proceed to prevent interfering with that process
+	if(i2c_get_in_use_state(IMU_BUS)){
+		printf("i2c bus claimed by another process\n");
+		printf("aborting gyro calibration()\n");
+		return -1;
+	}
+	
+	// if it is not claimed, start the i2c bus
+	if(i2c_init(IMU_BUS, IMU_ADDR)){
+		printf("initialize_imu_dmp failed at i2c_init\n");
+		return -1;
+	}
+	
+	// claiming the bus does no guarantee other code will not interfere 
+	// with this process, but best to claim it so other code can check
+	// like we did above
+	i2c_claim_bus(IMU_BUS);
+	
+	// reset device, reset all registers
+	if(reset_mpu9250()<0){
+		printf("ERROR: failed to reset MPU9250\n");
+		return -1;
+	}
+	//check the who am i register to make sure the chip is alive
+	if(i2c_read_byte(IMU_BUS, WHO_AM_I_MPU9250, &c)<0){
+		printf("Reading WHO_AM_I_MPU9250 register failed\n");
+		i2c_release_bus(IMU_BUS);
+		return -1;
+	}
+	if(c!=0x71){
+		printf("mpu9250 WHO AM I register should return 0x71\n");
+		printf("WHO AM I returned: 0x%x\n", c);
+		i2c_release_bus(IMU_BUS);
+		return -1;
+	}
+	if(initialize_magnetometer()){
+		printf("ERROR: failed to initialize_magnetometer\n");
+		i2c_release_bus(IMU_BUS);
+		return -1;
+	}
+	
+	// set local calibration to initial values and prepare variables
+	mag_offsets[0] = 0.0;
+	mag_offsets[1] = 0.0;
+	mag_offsets[2] = 0.0;
+	mag_scales[0]  = 1.0;
+	mag_scales[1]  = 1.0;
+	mag_scales[2]  = 1.0;
+	matrix_t A = createMatrix(samples,3);
+	i = 0;
+		
+	// sample data
+	while(i<samples && get_state()!=EXITING){
+		if(read_mag_data(&imu_data)<0){
+			printf("ERROR: failed to read magnetometer\n");
+			break;
+		}
+		// make sure the data is non-zero
+		if(imu_data.mag[0]==0 && imu_data.mag[1]==0 && imu_data.mag[2]==0){
+			printf("ERROR: retreived all zeros from magnetometer\n");
+			break;	
+		}
+		// save data to matrix for ellipse fitting
+		A.data[i][0] = imu_data.mag[0];
+		A.data[i][1] = imu_data.mag[1];
+		A.data[i][2] = imu_data.mag[2];
+		i++;
+		
+		// print "keep going" every second
+		if(i%sample_rate_hz == 0){
+			printf("keep spinning\n");
+		}
+		
+		usleep(1000000/sample_rate_hz);
+	}
+		
+	// done with I2C for now
+	power_off_imu();
+	i2c_release_bus(IMU_BUS);
+	
+	// if data collection loop exited without getting enough data, warn the
+	// user and return -1, otherwise keep going normally
+	if(i<samples){
+		printf("exiting calibrate_mag_routine without saving new data\n");
+		return -1;
+	}
+	
+	// make empty vectors for ellipsoid fitting to populate
+	vector_t center,lengths;
+ 
+ 	if(fitEllipsoid(A,&center,&lengths)<0){
+ 		printf("failed to fit ellipsoid to magnetometer data\n");
+ 		destroyMatrix(&A);
+ 		return -1;
+ 	}
+ 	destroyMatrix(&A); // empty memory, we are done with A
+ 	
+ 	// do some sanity checks to make sure data is reasonable
+ 	if(fabs(center.data[0])>70 || fabs(center.data[1])>70 || \
+ 											fabs(center.data[2])>70){
+ 		printf("ERROR: center of fitted ellipsoid out of bounds\n");
+ 		destroyVector(&center);
+ 		destroyVector(&lengths);
+ 		return -1;
+ 	}
+ 	if(lengths.data[0]>140 || lengths.data[0]<5 || \
+ 	   lengths.data[1]>140 || lengths.data[1]<5 || \
+ 	   lengths.data[2]>140 || lengths.data[2]<5){
+ 		printf("ERROR: length of fitted ellipsoid out of bounds\n");
+ 		destroyVector(&center);
+ 		destroyVector(&lengths);
+ 		return -1;
+ 	}
+ 	
+	// all seems well, calculate scaling factors to map ellipse legnths to
+	// a sphere of radius 70uT, this scale will later be multiplied by the
+	// factory corrected data
+	new_scale[0] = 70.0/lengths.data[0];
+	new_scale[1] = 70.0/lengths.data[1];
+	new_scale[2] = 70.0/lengths.data[2];
+	
+	// write to disk
+	if(write_mag_cal_to_disk(center.data,new_scale)<0){
+		return -1;
+	}
+	return 0;
 }
 
 

@@ -396,7 +396,7 @@ int send_servo_pulse_us_all(int us);
 * Puts a satellite receiver in bind mode. Use the bind_dsm2 example program
 * instead of calling this in your own program.
 *
-* int calibrate_dsm2()
+* int calibrate_dsm2_routine()
 *
 * Starts a calibration routine. 
 *
@@ -413,7 +413,7 @@ int   get_dsm2_frame_resolution();
 int   get_num_dsm2_channels();
 int   stop_dsm2_service();
 int   bind_dsm2();
-int   calibrate_dsm2();
+int   calibrate_dsm2_routine();
 
 
 /******************************************************************************
@@ -580,6 +580,7 @@ typedef struct imu_data_t {
 imu_config_t get_default_imu_config();
 int set_imu_config_to_defaults(imu_config_t *conf);
 int calibrate_gyro_routine();
+int calibrate_mag_routine();
 int power_off_imu();
 
 // one-shot sampling mode functions
@@ -812,6 +813,13 @@ int kill_robot();
 * liking if you need to pass arguments. For example, if you have a function
 * int foo(), call it with supressed output to stderr as follows:
 * int ret = suppress_stderr(&foo);
+*
+* @ continue_or_quit()
+*
+* This is a blocking function which returns 0 if the user presses ENTER.
+* otherwise it returns -1 on any other keypress. If ctrl-C is pressed it will
+* additionally set the global state to EXITITING. This is useful for checking
+* if the user wishes to continue with a process or quit.
 *******************************************************************************/
 int null_func();
 float get_random_float();
@@ -823,6 +831,7 @@ uint64_t timeval_to_micros(timeval tv);
 uint64_t micros_since_epoch();
 int suppress_stdout(int (*func)(void));
 int suppress_stderr(int (*func)(void));
+int continue_or_quit();
 
 
 /*******************************************************************************

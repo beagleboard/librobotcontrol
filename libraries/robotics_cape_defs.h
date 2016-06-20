@@ -17,7 +17,7 @@
 #define CONFIG_DIRECTORY "/etc/robotics/"
 #define DSM2_CAL_FILE	"dsm2.cal"
 #define GYRO_CAL_FILE 	"gyro.cal"
-#define IMU_CAL_FILE	"imu.cal"
+#define MAG_CAL_FILE	"mag.cal"
 
 // Cape name for device tree overlay
 #define CAPE_NAME 	"RoboticsCape"

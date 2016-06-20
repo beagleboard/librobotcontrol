@@ -14,8 +14,8 @@
 #include "../simple_gpio/simple_gpio.h" 
 
 // uncomment debug defines to print raw data for debugging
-//#define DEBUG_DSM2
-//#define DEBUG_DSM2_RAW
+//#define DEBUG
+//#define DEBUG_RAW
 
 #define MAX_DSM2_CHANNELS 9
 #define GPIO_PIN_BIND 30 //P9.11 gpio_0[30]
@@ -86,7 +86,9 @@ int initialize_dsm2(){
 		for(i=0;i<MAX_DSM2_CHANNELS;i++){
 			fscanf(cal,"%d %d", &rc_mins[i],&rc_maxes[i]);
 		}
+		#ifdef DEBUG
 		printf("DSM2 Calibration Loaded\n");
+		#endif
 	}
 	fclose(cal);
 	
@@ -102,8 +104,9 @@ int initialize_dsm2(){
 	}
 	
 	pthread_create(&uart4_thread, NULL, uart4_checker, (void*) NULL);
+	#ifdef DEBUG
 	printf("DSM2 Thread Started\n");
-	
+	#endif
 	return 0;
 }
 
@@ -258,11 +261,11 @@ void* uart4_checker(void *ptr){
 		
 		// okay, must have a full packet now
 		
-		#ifdef DEBUG_DSM2
+		#ifdef DEBUG
 			printf("read %d bytes, ", j+i);
 		#endif
 		
-		#ifdef DEBUG_DSM2_RAW
+		#ifdef DEBUG_RAW
 		printf("read %d bytes, ", j+i);
 		for(i=0; i<8; i++){
 			printf(byte_to_binary(buf[i*2]));
@@ -292,7 +295,7 @@ void* uart4_checker(void *ptr){
 				// maximum 9 channels, if the channel id exceeds that,
 				// we must be reading it wrong, swap to 11ms mode
 				if((ch_id+1)>MAX_DSM2_CHANNELS){
-					#ifdef DEBUG_DSM2
+					#ifdef DEBUG
 					printf("2048/11ms ");
 					#endif
 					
@@ -301,7 +304,7 @@ void* uart4_checker(void *ptr){
 				}
 			}
 		}
-		#ifdef DEBUG_DSM2
+		#ifdef DEBUG
 			printf("1024/22ms ");
 		#endif
 
@@ -336,16 +339,16 @@ read_packet:
 					goto end;
 				}
 				
-				#ifdef DEBUG_DSM2
+				#ifdef DEBUG
 				printf("%d %d  ",ch_id,value);
 				#endif
 				
 				if((ch_id+1)>9){
-					#ifdef DEBUG_DSM2
+					#ifdef DEBUG
 					printf("error: bad channel id\n");
 					#endif
 					
-					#ifndef DEBUG_DSM2
+					#ifndef DEBUG
 					goto end;
 					#endif
 				}
@@ -365,14 +368,14 @@ read_packet:
 		for(i=0;i<num_channels;i++){
 			if (new_values[i]==0){
 				is_complete=0;
-				#ifdef DEBUG_DSM2
+				#ifdef DEBUG
 				printf("waiting for rest of data in next packet\n");
 				#endif
 				break;
 			}
 		}
 		if(is_complete){
-			#ifdef DEBUG_DSM2
+			#ifdef DEBUG
 			printf("all data complete now\n");
 			#endif
 			new_dsm2_flag=1;
@@ -388,7 +391,7 @@ read_packet:
 			dsm2_ready_func();
 		}
 		
-		#ifdef DEBUG_DSM2
+		#ifdef DEBUG
 		printf("\n");
 		#endif
 		
@@ -398,7 +401,12 @@ end: ;
 	return NULL;
 }
 
-
+/*******************************************************************************
+* @ int stop_dsm2_service()
+* 
+* signals the uart4_thread to stop and allows up to 1 second for the thread to 
+* shut down before returning.
+*******************************************************************************/
 int stop_dsm2_service(){
 	int ret = 0;
 	
@@ -609,7 +617,7 @@ int write_default_dsm2_cal_file(){
 
 
 /*******************************************************************************
-* int calibrate_dsm2()
+* int calibrate_dsm2_routine()
 *
 * routine for measuring the min and max values from a transmitter on each
 * channel and save to disk for future use.
@@ -617,14 +625,20 @@ int write_default_dsm2_cal_file(){
 * if the user forgot to move one of the channels during the calibration process
 * then defualt values are also saved.
 *******************************************************************************/
-int calibrate_dsm2(){
-	int i;
+int calibrate_dsm2_routine(){
+	int i,ret;
 	
-	printf("\n\nTurn on your Transmitter and connect receiver.\n");
-	printf("Move all sticks and switches through their range of motion.\n");
-	printf("Raw min/max positions will display below.\n");
-	printf("Press Enter to save and exit.\n\n");
-
+	if(initialize_dsm2()){
+		printf("ERROR: failed to initialize_dsm2\n");
+		return -1;
+	}
+		
+	// display instructions
+	printf("\nRaw dsm2 data should display below if the transmitter and\n");
+	printf("receiver are paired and working. Move all channels through\n");
+	printf("their range of motion and the minimum and maximum values will\n");
+	printf("be recorded. When you are finished moving all channels,\n");
+	printf("press ENTER to save the data or any other key to abort.\n\n");		
 	
 	// start listening
 	listening = 1;
@@ -632,12 +646,18 @@ int calibrate_dsm2(){
 	pthread_create(&listening_thread, NULL, listen_func, (void*) NULL);
 	
 	// wait for user to hit enter
-	while(getchar() != '\n'){
-	}
+	ret = continue_or_quit();
 	
 	//stop listening
 	listening=0;
 	pthread_join(listening_thread, NULL);
+	stop_dsm2_service();
+	
+	// abort if user hit something other than enter
+	if(ret<0){
+		printf("aborting calibrate_dsm2 routine\n");
+		return -1;
+	}
 	
 	//if it looks like new data came in, write calibration file
 	if((rc_mins[0]==0) || (rc_mins[0]==rc_maxes[0])){ 
@@ -684,8 +704,8 @@ int calibrate_dsm2(){
 /*******************************************************************************
 * void *listen_func(void *params)
 *
-* this is started as a background thread by calibrate_dsm2(). Only used during
-* calibration to monitor data as it comes in.
+* this is started as a background thread by calibrate_dsm2_routine(). 
+* Only used during calibration to monitor data as it comes in.
 *******************************************************************************/
 void *listen_func(void *params){
 	//wait for data to start

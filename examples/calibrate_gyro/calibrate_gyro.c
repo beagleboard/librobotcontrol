@@ -1,7 +1,11 @@
-// calibrate_gyro.c
-// James Strawson - 2014
-
-// This routine samples the gyro for a second and saves a .cal file containing the offsets
+/*******************************************************************************
+* calibrate_gyro.c
+* James Strawson - 2016
+*
+* This program exists as an interface to the calibrate_gyro_routine which
+* manages collecting gyroscope data for averaging to find the steady state
+* offsets.
+*******************************************************************************/
 
 #include <robotics_cape.h>
 #include <useful_includes.h>
@@ -13,9 +17,14 @@ int main(){
 	}
 	
 	printf("\nThis program will generate a new gyro calibration file\n");
-	printf("keep your beaglebone very still and hit enter to calibrate\n");
-	while( getchar() != '\n' );
+	printf("keep your beaglebone very still for this procedure.\n");
+	printf("Press ENTER to continue or anything else to quit\n");
+	if(continue_or_quit()<0){
+		cleanup_cape();
+		return -1;
+	}
 	
+	printf("Starting calibration routine\n");
 	if(calibrate_gyro_routine()<0){
 		printf("Failed to complete gyro calibration\n");
 		return -1;
