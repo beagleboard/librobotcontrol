@@ -40,7 +40,7 @@ int resolution; // 10 or 11
 int new_dsm2_flag;
 int dsm2_frame_rate;
 uint64_t last_time;
-pthread_t uart4_thread;
+pthread_t serial_parser_thread;
 int listening; // for calibration routine only
 int (*dsm2_ready_func)();
 int is_dsm2_active_flag; 
@@ -48,15 +48,15 @@ int is_dsm2_active_flag;
 /*******************************************************************************
 * Local Function Declarations
 *******************************************************************************/
-int write_default_dsm2_cal_file();
-void* uart4_checker(void *ptr); //background thread
-void* listen_func(void *params);
+int load_default_calibration();
+void* serial_parser(void *ptr); //background thread
+void* calibration_listen_func(void *params);
 
 /*******************************************************************************
 * int initialize_dsm2()
 * 
 * returns -1 for failure or 0 for success
-* This starts the background thread uart4_thread which listens
+* This starts the background thread serial_parser_thread which listens
 * for serials packets on that interface.
 *******************************************************************************/ 
 int initialize_dsm2(){
@@ -75,12 +75,8 @@ int initialize_dsm2(){
 	if (cal == NULL) {
 		printf("\nDSM2 Calibration File Doesn't Exist Yet\n");
 		printf("Run calibrate_dsm2 example to create one\n");
-		printf("Creating default file for now\n");
-		write_default_dsm2_cal_file();
-		cal = fopen(file_path, "r");
-		for(i=0;i<MAX_DSM2_CHANNELS;i++){
-			fscanf(cal,"%d %d", &rc_mins[i],&rc_maxes[i]);
-		}
+		printf("Using default values for now\n");
+		load_default_calibration();
 	}
 	else{
 		for(i=0;i<MAX_DSM2_CHANNELS;i++){
@@ -89,8 +85,9 @@ int initialize_dsm2(){
 		#ifdef DEBUG
 		printf("DSM2 Calibration Loaded\n");
 		#endif
+		fclose(cal);
 	}
-	fclose(cal);
+	
 	
 	dsm2_frame_rate = 0; // zero until mode is detected on first packet
 	running = 1; // lets uarts 4 thread know it can run
@@ -103,7 +100,7 @@ int initialize_dsm2(){
 		printf("Error, failed to initialize UART%d for DSM2\n", DSM2_UART_BUS);
 	}
 	
-	pthread_create(&uart4_thread, NULL, uart4_checker, (void*) NULL);
+	pthread_create(&serial_parser_thread, NULL, serial_parser, (void*) NULL);
 	#ifdef DEBUG
 	printf("DSM2 Thread Started\n");
 	#endif
@@ -223,7 +220,7 @@ int ms_since_last_dsm2_packet(){
 }
 
 /*******************************************************************************
-* @ void* uart4_checker(void *ptr)
+* @ void* serial_parser(void *ptr)
 * 
 * This is a local function that is started as a background thread by 
 * initialize_dsm2(). This monitors the serial port and interprets data
@@ -231,7 +228,7 @@ int ms_since_last_dsm2_packet(){
 * Radios with more than 7 channels split data across multiple packets. Thus, 
 * new data is not committed until a full set of channel data is received.
 *******************************************************************************/
-void* uart4_checker(void *ptr){
+void* serial_parser(void *ptr){
 	char buf[DSM2_PACKET_SIZE]; // large serial buffer to catch doubled up packets
 	int i, ret;
 	int new_values[MAX_DSM2_CHANNELS]; // hold new values before committing
@@ -404,22 +401,23 @@ end: ;
 /*******************************************************************************
 * @ int stop_dsm2_service()
 * 
-* signals the uart4_thread to stop and allows up to 1 second for the thread to 
-* shut down before returning.
+* signals the serial_parser_thread to stop and allows up to 1 second for the 
+* thread to  shut down before returning.
 *******************************************************************************/
 int stop_dsm2_service(){
 	int ret = 0;
 	
 	if (running){
-		running = 0; // this tells uart4_thread loop to stop
-		// allow up to 1 second for thread cleanup
-		struct timespec thread_timeout;
+		running = 0; // this tells serial_parser_thread loop to stop
+		// allow up to 0.3 seconds for thread cleanup
+		timespec thread_timeout;
 		clock_gettime(CLOCK_REALTIME, &thread_timeout);
-		thread_timeout.tv_sec += 1;
+		timespec_add(&thread_timeout, 0.3);
 		int thread_err = 0;
-		thread_err = pthread_timedjoin_np(uart4_thread, NULL, &thread_timeout);
+		thread_err = pthread_timedjoin_np(serial_parser_thread, NULL, 
+															   &thread_timeout);
 		if(thread_err == ETIMEDOUT){
-			printf("WARNING: dsm2 uart4_thread exit timeout\n");
+			printf("WARNING: dsm2 serial_parser_thread exit timeout\n");
 			ret = -1;
 		}
 	}
@@ -581,40 +579,65 @@ enter:
 }
 
 /*******************************************************************************
-* int write_default_dsm2_cal_file()
+* int load_default_calibration()
 *
 * internal function, writes default values to the config file. Generally only
 * used once the first time initialize_dsm2 is called after a clean install
 *******************************************************************************/
-int write_default_dsm2_cal_file(){
+int load_default_calibration(){
 	int i;
-	// construct a new file path string
-	char file_path[100];
-	strcpy (file_path, CONFIG_DIRECTORY);
-	strcat (file_path, DSM2_CAL_FILE);
-	
-	// open for writing
-	FILE* cal;
-	cal = fopen(file_path, "w+");
-	if (cal == NULL) {
-		mkdir(CONFIG_DIRECTORY, 0777);
-		cal = fopen(file_path, "w");
-		if (cal == 0){
-			printf("could not open config directory: ");
-			printf(CONFIG_DIRECTORY);
-			printf("\n");
-			return -1;
-		}
-	}
-
 	for(i=0;i<MAX_DSM2_CHANNELS;i++){
-		fprintf(cal, "%d %d\n",DEFAULT_MIN, DEFAULT_MAX);
+		rc_mins[i]=DEFAULT_MIN;
+		rc_maxes[i]=DEFAULT_MAX;
 	}
-	fflush(cal);
-	fclose(cal);
 	return 0;
 }
 
+/*******************************************************************************
+* void *calibration_listen_func(void *params)
+*
+* this is started as a background thread by calibrate_dsm2_routine(). 
+* Only used during calibration to monitor data as it comes in.
+*******************************************************************************/
+void *calibration_listen_func(void *params){
+	//wait for data to start
+	printf("waiting for dsm2 connection");
+	get_dsm2_ch_raw(1); // flush the data ready flag with a read
+	while(!is_new_dsm2_data()){
+		if(get_state()==EXITING || listening==0){
+			return 0;
+		}
+		usleep(5000); 
+	}
+	
+	//start limits at first value
+	int j;
+	for(j=0;j<MAX_DSM2_CHANNELS;j++){
+		rc_mins[j]=get_dsm2_ch_raw(j+1);
+		rc_maxes[j]=get_dsm2_ch_raw(j+1);
+	}
+	
+	// record limits until user presses enter
+	while(listening && get_state()!=EXITING){
+		printf("\r");
+		if (is_new_dsm2_data()){
+			for(j=0;j<MAX_DSM2_CHANNELS;j++){
+				if(get_dsm2_ch_raw(j+1) > 0){ //record only non-zero channels
+					if(get_dsm2_ch_raw(j+1)>rc_maxes[j]){
+						rc_maxes[j] = get_dsm2_ch_raw(j+1);
+					}
+					else if(get_dsm2_ch_raw(j+1)<rc_mins[j]){
+						rc_mins[j] = get_dsm2_ch_raw(j+1);
+					}
+					printf("%d:%d ",j+1,get_dsm2_ch_raw(j+1));
+				}
+			}
+			fflush(stdout);
+		}
+		usleep(10000); 
+	}
+	return 0;
+}
 
 /*******************************************************************************
 * int calibrate_dsm2_routine()
@@ -628,10 +651,18 @@ int write_default_dsm2_cal_file(){
 int calibrate_dsm2_routine(){
 	int i,ret;
 	
-	if(initialize_dsm2()){
-		printf("ERROR: failed to initialize_dsm2\n");
-		return -1;
+	dsm2_frame_rate = 0; // zero until mode is detected on first packet
+	running = 1; // lets uarts 4 thread know it can run
+	num_channels = 0;
+	last_time = 0;
+	is_dsm2_active_flag = 0;
+	set_new_dsm2_data_func(&null_func);
+	
+	if(initialize_uart(DSM2_UART_BUS, DSM2_BAUD_RATE, 0.1)){
+		printf("Error, failed to initialize UART%d for DSM2\n", DSM2_UART_BUS);
 	}
+	
+	pthread_create(&serial_parser_thread, NULL, serial_parser, (void*) NULL);
 		
 	// display instructions
 	printf("\nRaw dsm2 data should display below if the transmitter and\n");
@@ -643,15 +674,16 @@ int calibrate_dsm2_routine(){
 	// start listening
 	listening = 1;
 	pthread_t  listening_thread;
-	pthread_create(&listening_thread, NULL, listen_func, (void*) NULL);
+	pthread_create(&listening_thread, NULL, calibration_listen_func, (void*) NULL);
 	
 	// wait for user to hit enter
 	ret = continue_or_quit();
 	
 	//stop listening
 	listening=0;
-	pthread_join(listening_thread, NULL);
 	stop_dsm2_service();
+	pthread_join(listening_thread, NULL);
+	
 	
 	// abort if user hit something other than enter
 	if(ret<0){
@@ -701,47 +733,4 @@ int calibrate_dsm2_routine(){
 	return 0;
 }
 
-/*******************************************************************************
-* void *listen_func(void *params)
-*
-* this is started as a background thread by calibrate_dsm2_routine(). 
-* Only used during calibration to monitor data as it comes in.
-*******************************************************************************/
-void *listen_func(void *params){
-	//wait for data to start
-	printf("waiting for dsm2 connection");
-	while(!is_new_dsm2_data()){
-		if(get_state()==EXITING || listening==0){
-			return 0;
-		}
-		usleep(5000); 
-	}
-	
-	//start limits at current value
-	int j;
-	for(j=0;j<MAX_DSM2_CHANNELS;j++){
-		rc_mins[j]=get_dsm2_ch_raw(j+1);
-		rc_maxes[j]=get_dsm2_ch_raw(j+1);
-	}
-	
-	// record limits until user presses enter
-	while(listening && get_state()!=EXITING){
-		printf("\r");
-		if (is_new_dsm2_data()){
-			for(j=0;j<MAX_DSM2_CHANNELS;j++){
-				if(get_dsm2_ch_raw(j+1) > 0){ //record only non-zero channels
-					if(get_dsm2_ch_raw(j+1)>rc_maxes[j]){
-						rc_maxes[j] = get_dsm2_ch_raw(j+1);
-					}
-					else if(get_dsm2_ch_raw(j+1)<rc_mins[j]){
-						rc_mins[j] = get_dsm2_ch_raw(j+1);
-					}
-					printf("%d:%d ",j+1,get_dsm2_ch_raw(j+1));
-				}
-			}
-			fflush(stdout);
-		}
-		usleep(10000); 
-	}
-	return 0;
-}
+

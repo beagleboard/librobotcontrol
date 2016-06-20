@@ -106,6 +106,31 @@ timespec timespec_diff(timespec A, timespec B){
 }
 
 /*******************************************************************************
+* @ int timespec_add(timespec* start, float seconds)
+* 
+* Adds an amount of time in seconds to a timespec struct. The time added is a
+* floating point value to make respresenting fractions of a second easier.
+* the timespec is passed as a pointer so it can be modified in place.
+* Seconds may be negative. 
+*******************************************************************************/
+void timespec_add(timespec* start, float seconds){
+	int s = (int)seconds; // round down by truncation
+	start->tv_sec += s;
+	start->tv_nsec += (seconds-s)*1000000000;
+	
+	if (start->tv_nsec>=1000000000){
+		start->tv_nsec -= 1000000000;
+		start->tv_sec += 1;
+	}
+	else if (start->tv_nsec<0){
+		start->tv_nsec += 1000000000;
+		start->tv_sec -= 1;
+	}
+	
+	return;
+}
+
+/*******************************************************************************
 * @ uint64_t timespec_to_micros(timespec ts)
 * 
 * Returns a number of microseconds corresponding to a timespec struct.

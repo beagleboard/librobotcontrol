@@ -783,6 +783,11 @@ int kill_robot();
 * Unlike timespec_sub defined in time.h, timespec_diff does not care which came 
 * first, A or B. A positive difference in time is always returned.
 *
+* @ void timespec_add(timespec* start, float seconds);
+*
+* Adds a floating point number of seconds to a timespec struct. This saves
+* yet more tedious manipulation of timespec structs.
+*
 * @ uint64_t timespec_to_micros(timespec ts)
 * 
 * Returns a number of microseconds corresponding to a timespec struct.
@@ -826,6 +831,7 @@ float get_random_float();
 int saturate_float(float* val, float min, float max);
 char *byte_to_binary(unsigned char x);
 timespec timespec_diff(timespec A, timespec B);
+void timespec_add(timespec* start, float seconds);
 uint64_t timespec_to_micros(timespec ts);
 uint64_t timeval_to_micros(timeval tv);
 uint64_t micros_since_epoch();

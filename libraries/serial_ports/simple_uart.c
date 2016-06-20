@@ -28,7 +28,7 @@ char *paths[6] = { \
 	"/dev/ttyO5" };
 
 int fd[6]; // file descriptors for all ports
-float bus_timeout_s[6]; // user-requested timeout in seconds for each port
+float bus_timeout_s[6]; // user-requested timeout in seconds for each bus
 
 /*******************************************************************************
 * int initialize_uart(int bus, int baudrate)
@@ -147,13 +147,14 @@ int initialize_uart(int bus, int baudrate, float timeout_s){
     config.c_cflag |= CLOCAL;	// ignore modem status lines
 	
 	// convert float timeout in seconds to int timeout in tenths of a second
-    config.c_cc[VTIME]=lround(timeout_s*10);
+    config.c_cc[VTIME] = timeout_s*10;
+    //config.c_cc[VTIME]=0;
 	// if VTIME>0 & VMIN>0, read() will return when either the requested number
 	// of bytes are ready or when VMIN bytes are ready, whichever is smaller.
 	// since we set VMIN to the size of the buffer, read() should always return
 	// when the user's requested number of bytes are ready.
-	config.c_cc[VMIN]=MAX_READ_LEN; //
-
+	//config.c_cc[VMIN]=MAX_READ_LEN; //
+	config.c_cc[VMIN] = 0;
 	
 	if(cfsetispeed(&config, speed) < 0) {
 		printf("ERROR: cannot set uart%d baud rate\n", bus);
@@ -306,6 +307,7 @@ int uart_send_byte(int bus, char data){
 * 128bytes, we run a loop instead.
 *******************************************************************************/
 int uart_read_bytes(int bus, int bytes, char* buf){
+	int bytes_to_read;
 	// sanity checks
 	if(bus<MIN_BUS || bus>MAX_BUS){
 		printf("ERROR: uart bus must be between %d & %d\n", MIN_BUS, MAX_BUS);
@@ -321,6 +323,7 @@ int uart_read_bytes(int bus, int bytes, char* buf){
 	}
 	if(bytes<=MAX_READ_LEN){
 		// small read, return in one read() call
+		// this uses built-in timeout instead of select()
 		return read(fd[bus], buf, bytes);
 	}
 
@@ -369,7 +372,11 @@ int uart_read_bytes(int bus, int bytes, char* buf){
 			// There was data to read. Read up to the number of bytes left
 			// and no more. This most likely will return fewer bytes than
 			// bytes_left, but we will loop back to get the rest.
-			ret=read(fd[bus], buf+bytes_read, bytes_left);
+			
+			// read no more than MAX_READ_LEN at a time
+			if(bytes_left>MAX_READ_LEN)	bytes_to_read = MAX_READ_LEN;
+			else bytes_to_read = bytes_left;
+			ret=read(fd[bus], buf+bytes_read, bytes_to_read);
 			if(ret<0){
 				printf("ERROR: uart read() returned %d\n", ret);
 				return -1;
