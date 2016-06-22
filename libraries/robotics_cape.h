@@ -1041,6 +1041,7 @@ typedef struct matrix_t{
 	int rows;
 	int cols;
 	float** data;
+	float* dynamic;
 	int initialized;
 } matrix_t;
 
@@ -1094,9 +1095,11 @@ vector_t crossProduct3D(vector_t v1, vector_t v2);
 
 // Advanced matrix operations
 float matrixDeterminant(matrix_t A);
-int matrixInv(matrix_t* A);
+int LUPdecomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P);
+int QRdecomposition(matrix_t A, matrix_t* Q, matrix_t* R);
+int invertMatrix(matrix_t* A);
 matrix_t Householder(vector_t v);
-int QRdecomposition(matrix_t A, matrix_t*Q, matrix_t* R);
+
 
 // linear system solvers
 vector_t linSolve(matrix_t A, vector_t b);

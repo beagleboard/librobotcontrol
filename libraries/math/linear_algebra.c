@@ -23,10 +23,15 @@ matrix_t createMatrix(int rows, int cols){
 	}
 	A.rows = rows;
 	A.cols = cols;
-	A.data = (float**)malloc(rows * sizeof(float*));
-		for (i=0; i<rows; i++)
-			A.data[i] = (float*)calloc(cols, sizeof(float));
-		
+	// allocate contiguous memory
+	A.data = (float**)malloc(rows*sizeof(float*));
+	void* ptr = calloc(rows*cols, sizeof(float));
+	A.data[0] = (float*)ptr;
+	// manually fill in the pointer to each row
+	for (i=1; i<rows; i++){
+		A.data[i] = (float*)(ptr + i*cols*sizeof(float));
+	}	
+	
 	A.initialized = 1;
 	return A;
 }
@@ -197,8 +202,12 @@ float getMatrixEntry(matrix_t A, int row, int col){
 *******************************************************************************/
 void printMatrix(matrix_t A){
 	int i,j;
-	if(!A.initialized){
+	if(A.initialized!=1){
 		printf("ERROR: matrix not initialized yet\n");
+		return;
+	}
+	if(A.rows<1 || A.cols<1){
+		printf("ERROR: rows and cols must be >=1\n");
 		return;
 	}
 	for(i=0;i<A.rows;i++){
@@ -206,6 +215,7 @@ void printMatrix(matrix_t A){
 			printf("%7.3f  ",A.data[i][j]);
 		}	
 		printf("\n");
+		fflush(stdout);
 	}
 	return;
 }	
@@ -231,14 +241,16 @@ void printMatrixSciNotation(matrix_t A){
 }	
 
 /*******************************************************************************
-* 
+* void destroyMatrix(matrix_t* A)
 *
 * 
 *******************************************************************************/
 void destroyMatrix(matrix_t* A){
-	int i;
-	for (i=0; i<A->rows; i++) free(A->data[i]);
-	free(A->data);
+	if(A->initialized==1 && A->rows>0 && A->cols>0){
+		free(A->data[0]);
+		free(A->data);
+	}
+	A->data = 0;
 	A->rows = 0;
 	A->cols = 0;
 	A->initialized = 0;
@@ -716,7 +728,7 @@ float matrixDeterminant(matrix_t A){
 		return -1;
 	}
 	if (A.rows != A.cols){
-		printf("Error: Matrix is not square");
+		printf("Error: Matrix is not square\n");
 		return -1;
 	}
 	matrix_t temp = duplicateMatrix(A);
@@ -732,58 +744,71 @@ float matrixDeterminant(matrix_t A){
     }
 	det = 1; //storage for determinant
     for(i=0;i<A.rows;i++) det = det*temp.data[i][i];
+
 	destroyMatrix(&temp);
     return det;  
 }
 
-
 /*******************************************************************************
-* 
+* int LUPdecomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P)
 *
-* 
+* LUP decomposition with partial pivoting 
 *******************************************************************************/
-int matrixInv(matrix_t* A){
-	int i,j,ii,jj,i1,j1;
-	float det,coDet;
-	matrix_t out, cofactors;
-	if(!A->initialized){
+int LUPdecomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P){
+	int i, j, k, m, index;
+	float s1, s2, temp;
+	m = A.cols;
+	destroyMatrix(L);
+	destroyMatrix(U);
+	destroyMatrix(P);
+	matrix_t Lt, Ut, Pt;
+	if(!A.initialized){
 		printf("ERROR: matrix not initialized yet\n");
 		return -1;
 	}
-	det = matrixDeterminant(*A);
-	
-	printf("det = %f\n",det);
-	if (det == 0){
-		printf("Error: Matrix is not invertable");
+	if(A.cols != A.rows){
+		printf("ERROR: matrix is not square\n");
 		return -1;
 	}
-	out = createSquareMatrix(A->rows);
-	cofactors = createSquareMatrix(A->rows - 1);
-	
-	for (i=0;i<A->rows;i++){				// current row of A to test
-		for (j=0;j<A->rows;j++){			// current col of A to test
-
-			i1 = 0;							// index for cofactor row
-			for (ii=0;ii<A->rows;ii++){		// count up thru # of rows of A
-				if (ii == i) continue;		// if = to current row of A.. skip
-										
-				j1 = 0;						// index for cofactor col
-				for (jj=0;jj<A->rows;jj++){	// count up thru # of cols of A
-					if (jj == j) continue;	// if = to current col of A.. skip
-					// place proper element in new matrix
-					cofactors.data[i1][j1] = A->data[ii][jj]; 	
-					j1++;
-				}
-				i1++;
+	Lt = createIdentityMatrix(m);
+	Ut = createSquareMatrix(m);
+	Pt = createIdentityMatrix(m);
+	for(i=0;i<m-1;i++){
+		index = i;
+		for(j=i;j<m;j++){
+			if(fabs(A.data[j][i]) > fabs(A.data[index][i]));
+				index = j;
+		}
+		if(index != i){
+			for(j=0;j<m;j++){
+				temp 				= A.data[index][j];
+				A.data[index][j] 	= A.data[i][j];
+				A.data[i][j]		= temp;
+				temp				= Pt.data[index][j];
+				Pt.data[index][j]	= Pt.data[i][j];
+				Pt.data[i][j]		= temp;	
 			}
-			coDet = matrixDeterminant(cofactors);
-			// saves as transpose
-			out.data[j][i] = (pow(-1.0,i+j+2.0) * coDet)/det; 	
+		}			
+	}
+	for(i=0;i<m;i++){
+		for(j=0;j<m;j++){
+			s1 = 0;
+			s2 = 0;
+			for(k=0;k<i;k++){
+				s1 += Ut.data[k][j] * Lt.data[i][k];
+			}
+			for(k=0;k<j;k++){
+				s2 += Ut.data[k][j] * Lt.data[i][k];
+			}
+			
+			if(j>=i)	Ut.data[i][j] = A.data[i][j] - s1;
+			
+			if(i>=j)	Lt.data[i][j] = (A.data[i][j] - s2)/Ut.data[j][j];	
 		}
 	}
-	destroyMatrix(&cofactors);
-	destroyMatrix(A);
-	*A=out;
+	*L = Lt;
+	*U = Ut;
+	*P = Pt;
 	return 0;
 }
 
@@ -792,57 +817,26 @@ int matrixInv(matrix_t* A){
 *
 * 
 *******************************************************************************/
-matrix_t Householder(vector_t v){
-	
-	int i, j;
-	float tau;
-	matrix_t out;
-	
-	if(!v.initialized){
-	printf("ERROR: vector not initialized yet\n");
-	return out;
-	}
-	
-	out = createSquareMatrix(v.len);
-	for(i=0;i<v.len;i++){
-		out.data[i][i] = 1;
-	}
-	
-	tau = 2*dotProduct(v,v);
-	
-	for(i=0;i<v.len;i++){
-		for(j=0;j<v.len;j++){
-			out.data[i][j] -= tau * v.data[i]*v.data[j];
-		}
-	}
-	return out;
-}
-
-/*******************************************************************************
-* 
-*
-* 
-*******************************************************************************/
-int QRdecomposition(matrix_t A, matrix_t*Q, matrix_t* R){
-	
+int QRdecomposition(matrix_t A, matrix_t* Q, matrix_t* R){
 	int i, j, k, s;
 	int m = A.rows;
 	int n = A.cols;
-
 	vector_t xtemp;
 	matrix_t Qt, Rt, Qi, F;
 	
 	if(!A.initialized){
-	printf("ERROR: matrix not initialized yet\n");
-	return -1;
+		printf("ERROR: matrix not initialized yet\n");
+		return -1;
 	}
 	
 	destroyMatrix(Q);
 	destroyMatrix(R);
+	
 	Qt = createMatrix(m,m);
 	for(i=0;i<m;i++){					// initialize Qt as I
 		Qt.data[i][i] = 1;
 	}
+	
 	Rt = duplicateMatrix(A);			// duplicate A to Rt
 
 	for(i=0;i<n;i++){					// iterate through columns of A
@@ -881,10 +875,89 @@ int QRdecomposition(matrix_t A, matrix_t*Q, matrix_t* R){
 }
 
 /*******************************************************************************
+* 
+*
+* 
+*******************************************************************************/
+int invertMatrix(matrix_t* A){
+	int i,j,k,l;
+	int m = A->cols;
+	if(!A->initialized){
+		printf("ERROR: matrix not initialized yet\n");
+		return -1;
+	}
+	if(A->cols != A->rows){
+		printf("ERROR: matrix is not square\n");
+		return -1;
+	}
+	
+	matrix_t L,U,P;
+	LUPdecomposition(*A,&L,&U,&P);
+	
+	matrix_t Li = createIdentityMatrix(m);
+	matrix_t Ui = createSquareMatrix(m);
+	matrix_t out = createSquareMatrix(m);
+	
+	for(j=0;j<m;j++){
+		Ui.data[j][j] = 1 / U.data[j][j];
+		for(i=j-1;i>=0;i--){
+			for(k=i+1;k<=j;k++){
+				Ui.data[i][j] -= U.data[i][k] * Ui.data[k][j];
+			}
+			Ui.data[i][j] *= Ui.data[i][i];
+		}
+	}
+	for(l=m-1;l>0;l--){					// loop size
+		for(j=0;j<l;j++){				// j index from 0 to loop size
+			for(i=j+1;i<m;i++){			// i index 
+				Li.data[i][j] = -L.data[i][j];
+				for(k=j+1;k<i-1;k++){
+					Li.data[i][j] -= -L.data[i][k] * Li.data[k][j];
+				}
+			}
+		}
+	}
+	out = matrixMultiply(matrixMultiply(Ui, Li),P);
+	*A = out;
+	return 0;
+}
+
+/*******************************************************************************
+* 
+*
+* 
+*******************************************************************************/
+matrix_t Householder(vector_t v){
+	int i, j;
+	float tau;
+	matrix_t out;
+	
+	if(!v.initialized){
+		printf("ERROR: vector not initialized yet\n");
+		return out;
+	}
+	
+	out = createSquareMatrix(v.len);
+	for(i=0;i<v.len;i++){
+		out.data[i][i] = 1;
+	}
+	
+	tau = 2.0/dotProduct(v,v);
+	
+	for(i=0;i<v.len;i++){
+		for(j=0;j<v.len;j++){
+			out.data[i][j] -= tau * v.data[i]*v.data[j];
+		}
+	}
+	return out;
+}
+
+
+
+/*******************************************************************************
 * vector_t linSolve(matrix_t A, vector_t b)
 *
-* This is a feeble attempt to duplicate the functionality of Matlab's A\b method
-* for solving linear equations. It returns the vector x that solves Ax=b
+* Returns the vector x that solves Ax=b
 * Thank you to  Henry Guennadi Levkin for open sourcing this routine.
 *******************************************************************************/
 vector_t linSolve(matrix_t A, vector_t b){
@@ -960,12 +1033,11 @@ vector_t linSolve(matrix_t A, vector_t b){
 *  Ax=b
 * QRx=b
 *  Rx=Q'b  (because Q'Q=I)
-*  x=(R^-1)Q'b
+*  then solve for x with gaussian elimination
 *******************************************************************************/
 vector_t linSolveQR(matrix_t A, vector_t b){
 	vector_t xout, Qb;
 	matrix_t Q,R;
-		
 	if(!A.initialized || !b.initialized){
 		printf("ERROR: matrix or vector not initialized yet\n");
 		return xout;
@@ -980,15 +1052,12 @@ vector_t linSolveQR(matrix_t A, vector_t b){
 		printf("ERROR: failed to transpose Q\n");
 		return xout;
 	}
-	// invert R
-	if(matrixInv(&R)<0){
-		printf("ERROR: failed to invert R\n");
-		return xout;
-	}
 	// multiply through
 	Qb = matrixTimesColVec(Q,b);
 	destroyMatrix(&Q);
-	xout = matrixTimesColVec(R,Qb);
+	printf("before linSolve\n");
+	xout = linSolve(R,Qb);
+	printf("before linSolve\n");
 	destroyMatrix(&R);
 	destroyVector(&Qb);
 	
@@ -1043,7 +1112,9 @@ int fitEllipsoid(matrix_t points, vector_t* center, vector_t* lengths){
 		A.data[i][5] = points.data[i][2];
 	}
 	
+	printf("before linsolveqr\n");
 	vector_t f = linSolveQR(A,b);
+	printf("after linsolveqr\n");
 	destroyMatrix(&A);
 	destroyVector(&b);
 	
@@ -1085,5 +1156,4 @@ int fitEllipsoid(matrix_t points, vector_t* center, vector_t* lengths){
 	destroyVector(&b);
 	return 0;
 }
-
 
