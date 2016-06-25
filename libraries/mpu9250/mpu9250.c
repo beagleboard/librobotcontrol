@@ -21,7 +21,6 @@
 // or enabled.
 #define FIFO_LEN_NO_MAG 28
 #define FIFO_LEN_MAG	35
-#define YAW_MIX_FACTOR	20 // higher this is, the less weighting on magnetometer
 
 // error threshold checks
 #define QUAT_ERROR_THRESH       (1L<<24)
@@ -101,7 +100,7 @@ imu_config_t get_default_imu_config(){
 	// DMP stuff
 	conf.dmp_sample_rate = 100;
 	conf.orientation = ORIENTATION_Z_UP;
-	conf.compass_mix_factor = 100;
+	conf.compass_time_constant = 5;
 	conf.dmp_interrupt_priority = sched_get_priority_max(SCHED_FIFO) -1;
 	conf.show_warnings = 0;
 	return conf;
@@ -605,6 +604,8 @@ int initialize_magnetometer(){
 	// go back to configuring the IMU, leave bypass on
 	i2c_set_device_address(IMU_BUS,IMU_ADDR);
 	
+	// load in magnetometer calibration
+	load_mag_calibration();
 	return 0;
 }
 
@@ -785,6 +786,11 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
+	if(dmp_set_fifo_rate(config.dmp_sample_rate)<0){
+		printf("ERROR: failed to set DMP fifo rate\n");
+		i2c_release_bus(IMU_BUS);
+		return -1;
+	}
 	if(dmp_set_orientation((unsigned short)conf.orientation)<0){
 		printf("ERROR: failed to set dmp orientation\n");
 		i2c_release_bus(IMU_BUS);
@@ -796,13 +802,13 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
-	if(dmp_set_fifo_rate(config.dmp_sample_rate)<0){
-		printf("ERROR: failed to set DMP fifo rate\n");
+	if(dmp_set_interrupt_mode(DMP_INT_CONTINUOUS)<0){
+		printf("ERROR: failed to set DMP interrupt mode to continuous\n");
 		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
-	if(dmp_set_interrupt_mode(DMP_INT_CONTINUOUS)<0){
-		printf("ERROR: failed to set DMP interrupt mode to continuous\n");
+	if(dmp_set_fifo_rate(config.dmp_sample_rate)<0){
+		printf("ERROR: failed to set DMP fifo rate\n");
 		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
@@ -1018,21 +1024,23 @@ int dmp_set_fifo_rate(unsigned short rate){
     unsigned short div;
     unsigned char tmp[8];
 
-    if (rate > DMP_SAMPLE_RATE){
+    if (rate > DMP_MAX_RATE){
         return -1;
 	}
 	
 	// set the samplerate divider
+	/*
     div = 1000 / rate - 1;
 	if(i2c_write_byte(IMU_BUS, SMPLRT_DIV, div)){
 		printf("I2C bus write error\n");
 		return -1;
 	} 
+	*/
 	
 	// set the DMP scaling factors
-	//div = DMP_SAMPLE_RATE / rate - 1;
+	div = DMP_MAX_RATE / rate - 1;
 	//div = (1000 / rate) - 1;
-	div = 0; // DMP and FIFO will be at the same rate always
+	//div = 3; // DMP and FIFO will be at the same rate always
     tmp[0] = (unsigned char)((div >> 8) & 0xFF);
     tmp[1] = (unsigned char)(div & 0xFF);
     if (mpu_write_mem(D_0_22, 2, tmp))
@@ -1150,34 +1158,10 @@ int dmp_enable_feature(unsigned short mask){
         }
         mpu_write_mem(CFG_GYRO_RAW_DATA, 4, tmp);
     }
-
-    // if (mask & DMP_FEATURE_TAP) {
-        // /* Enable tap. */
-        // tmp[0] = 0xF8;
-        // mpu_write_mem(CFG_20, 1, tmp);
-        // dmp_set_tap_thresh(TAP_XYZ, 250);
-        // dmp_set_tap_axes(TAP_XYZ);
-        // dmp_set_tap_count(1);
-        // dmp_set_tap_time(100);
-        // dmp_set_tap_time_multi(500);
-
-        // dmp_set_shake_reject_thresh(GYRO_SF, 200);
-        // dmp_set_shake_reject_time(40);
-        // dmp_set_shake_reject_timeout(10);
-    // } else {
-        // tmp[0] = 0xD8;
-        // mpu_write_mem(CFG_20, 1, tmp);
-    // }
 	
 	// disable tap feature
 	tmp[0] = 0xD8;
 	mpu_write_mem(CFG_20, 1, tmp);
-
-	
-    // if (mask & DMP_FEATURE_ANDROID_ORIENT) {
-        // tmp[0] = 0xD9;
-    // } else
-        // tmp[0] = 0xD8;
 	
 	// disable orientation feature
 	tmp[0] = 0xD8;
@@ -1762,14 +1746,20 @@ int read_dmp_fifo(){
 * with the sample rate so the filter rise time remains constant with different
 * sample rates.
 *******************************************************************************/
+d_filter_t low_pass, high_pass; // for magnetometer Yaw filtering
+
 int data_fusion(){
 	float fusedEuler[3], magQuat[4], unfusedQuat[4];
-	float deltaDMPYaw, deltaMagYaw, newMagYaw, newYaw;
-	static float lastDMPYaw, lastYaw;
+	static float newMagYaw = 0;
+	static float newDMPYaw = 0;
+	float lastDMPYaw, lastMagYaw, newYaw; 
+	static float dmp_spin_counter = 0;
+	static float mag_spin_counter = 0;
 	static int first_run = 1; // set to 0 after first call to this function
 	
+	
 	// start by filling in the roll/pitch components of the fused euler
-	// angles from the DMP generatd angles. Ignore yaw for now, we have to
+	// angles from the DMP generated angles. Ignore yaw for now, we have to
 	// filter that later. 
 	fusedEuler[TB_PITCH_X] = data_ptr->dmp_TaitBryan[TB_PITCH_X];
 	//fusedEuler[TB_ROLL_Y] = -(data_ptr->dmp_TaitBryan[TB_ROLL_Y]);
@@ -1778,10 +1768,6 @@ int data_fusion(){
 
 	// generate a quaternion rotation of just roll/pitch
 	TaitBryanToQuaternion(fusedEuler, unfusedQuat);
-
-	// find delta yaw from last time and record current dmp_yaw for next time
-	deltaDMPYaw = lastDMPYaw - data_ptr->dmp_TaitBryan[TB_YAW_Z];
-	lastDMPYaw = data_ptr->dmp_TaitBryan[TB_YAW_Z];
 
 	// create a quaternion vector from the current magnetic field vector
 	// in IMU body coordinate frame. Since the DMP quaternion is aligned with
@@ -1830,6 +1816,7 @@ int data_fusion(){
 
 	// from the aligned magnetic field vector, find a yaw heading
 	// check for validity and make sure the heading is positive
+	lastMagYaw = newMagYaw; // save from last loop
 	newMagYaw = -atan2f(magQuat[QUAT_Y], magQuat[QUAT_X]);
 	if (newMagYaw != newMagYaw) {
 		#ifdef WARNINGS
@@ -1837,53 +1824,48 @@ int data_fusion(){
 		#endif
 		return -1;
 	}
-	
-	// record this heading in the user-accessible data struct
 	data_ptr->compass_heading = newMagYaw;
-	if (newMagYaw < 0.0f) newMagYaw = TWO_PI + newMagYaw;
+	// save DMP last from time and record newDMPYaw for this time
+	lastDMPYaw = newDMPYaw;
+	newDMPYaw = data_ptr->dmp_TaitBryan[TB_YAW_Z];
 	
-	// if this is the first run, set yaw to the compass heading
+	// the outputs from atan2 and dmp are between -PI and PI.
+	// for our filters to run smoothly, we can't have them jump between -PI
+	// to PI when doing a complete spin. Therefore we check for a skip and 
+	// increment or decrement the spin counter
+	if(newMagYaw-lastMagYaw < -PI) mag_spin_counter++;
+	else if (newMagYaw-lastMagYaw > PI) mag_spin_counter--;
+	if(newDMPYaw-lastDMPYaw < -PI) dmp_spin_counter++;
+	else if (newDMPYaw-lastDMPYaw > PI) dmp_spin_counter--;
+	
+	// if this is the first run, set up filters
 	if(first_run){
-		lastYaw = newMagYaw;
+		lastMagYaw = newMagYaw;
+		lastDMPYaw = newDMPYaw;
+		mag_spin_counter = 0;
+		dmp_spin_counter = 0;
+		
+		// generate complementary filters
+		float dt = 1.0/config.dmp_sample_rate;
+		low_pass  = generateFirstOrderLowPass(dt,config.compass_time_constant);
+		high_pass = generateFirstOrderHighPass(dt,config.compass_time_constant);
+		prefill_filter_inputs(&low_pass,newMagYaw);
+		prefill_filter_outputs(&low_pass,newMagYaw);
+		prefill_filter_inputs(&high_pass,newDMPYaw);
 		first_run = 0;
 	}
 	
-	// update the last filtered (fused) yaw by the amount the DMP yaw changed
-	// which is based purely on the gyro. Make sure it stays in 0-2PI
-	newYaw = lastYaw + deltaDMPYaw;
-	if (newYaw > TWO_PI) newYaw-=TWO_PI;
-	else if (newYaw < 0.0f)
-		newYaw += TWO_PI;
-	 
-	// find difference between absolute compass heading and what the gyro
-	// predicts is our new heading. This should be very small in normal 
-	// operation but keep between +- PI anyway
-	deltaMagYaw = newMagYaw - newYaw;
-	if (deltaMagYaw >= PI)
-		deltaMagYaw -= TWO_PI;
-	else if (deltaMagYaw < -PI)
-		deltaMagYaw += TWO_PI;
-
-	// now find our final filtered newYaw by adding a fraction of the error
-	// to the gyro-predicted yaw, also check to avoid divide by 0
-	if (YAW_MIX_FACTOR == 0){
-		printf("ERROR: YAW_MIX_FACTOR must be >0\n");
-		return -1;
-	}
-	newYaw += deltaMagYaw * 100.0 \
-				/ ((float)YAW_MIX_FACTOR * (float)config.dmp_sample_rate);
-
-	// yet again, bound the yaw between 0 and 2PI and store for next time
-	if (newYaw > TWO_PI)
-		newYaw -= TWO_PI;
-	else if (newYaw < 0.0f)
-		newYaw += TWO_PI;
-	lastYaw = newYaw;
+	// new Yaw is the sum of low and high pass complementary filters.
+	newYaw = march_filter(&low_pass,newMagYaw+(TWO_PI*mag_spin_counter)) \
+			+ march_filter(&high_pass,newDMPYaw+(TWO_PI*dmp_spin_counter));
+			
+	newYaw = fmodf(newYaw,TWO_PI); // remove the effect of the spins
+	if (newYaw > PI) newYaw -= TWO_PI; // bound between +- PI
+	else if (newYaw < -PI) newYaw += TWO_PI; // bound between +- PI
 
 	// Euler angles expect a yaw between -pi to pi so slide it again and
 	// store in the user-accessible fused euler angle
-	if (newYaw > PI)
-		newYaw -= TWO_PI;
+	
 	data_ptr->fused_TaitBryan[TB_YAW_Z] = newYaw;
 	data_ptr->fused_TaitBryan[TB_PITCH_X] = data_ptr->dmp_TaitBryan[TB_PITCH_X];
 	data_ptr->fused_TaitBryan[TB_ROLL_Y] = data_ptr->dmp_TaitBryan[TB_ROLL_Y];
@@ -1906,11 +1888,11 @@ int write_gyro_offets_to_disk(int16_t offsets[3]){
 	// construct a new file path string and open for writing
 	strcpy(file_path, CONFIG_DIRECTORY);
 	strcat(file_path, GYRO_CAL_FILE);
-	cal = fopen(file_path, "w");
+	cal = fopen(file_path, "w+");
 	// if opening for writing failed, the directory may not exist yet
 	if (cal == 0) {
 		mkdir(CONFIG_DIRECTORY, 0777);
-		cal = fopen(file_path, "w");
+		cal = fopen(file_path, "w+");
 		if (cal == 0){
 			printf("could not open config directory\n");
 			printf(CONFIG_DIRECTORY);
@@ -2226,11 +2208,11 @@ int write_mag_cal_to_disk(float offsets[3], float scale[3]){
 	// construct a new file path string and open for writing
 	strcpy(file_path, CONFIG_DIRECTORY);
 	strcat(file_path, MAG_CAL_FILE);
-	cal = fopen(file_path, "w");
+	cal = fopen(file_path, "w+");
 	// if opening for writing failed, the directory may not exist yet
 	if (cal == 0) {
 		mkdir(CONFIG_DIRECTORY, 0777);
-		cal = fopen(file_path, "w");
+		cal = fopen(file_path, "w+");
 		if (cal == 0){
 			printf("could not open config directory\n");
 			printf(CONFIG_DIRECTORY);
@@ -2276,6 +2258,12 @@ int load_mag_calibration(){
 		// calibration file doesn't exist yet
 		printf("WARNING: no magnetometer calibration data found\n");
 		printf("Please run calibrate_mag\n\n");
+		mag_offsets[0]=0.0;
+		mag_offsets[1]=0.0;
+		mag_offsets[2]=0.0;
+		mag_scales[0]=1.0;
+		mag_scales[1]=1.0;
+		mag_scales[2]=1.0;
 		return -1;
 	}
 	// read in data
@@ -2307,12 +2295,14 @@ int load_mag_calibration(){
 * field vectors to a sphere.
 *******************************************************************************/
 int calibrate_mag_routine(){
-	const int samples = 200;
-	const int sample_rate_hz = 20;
+	const int samples = 250;
+	const int sample_rate_hz = 15;
 	int i;
 	uint8_t c;
 	float new_scale[3];
 	imu_data_t imu_data; // to collect magnetometer data
+	config = get_default_imu_config();
+	config.enable_magnetometer = 1;
 	
 	// make sure the bus is not currently in use by another thread
 	// do not proceed to prevent interfering with that process
@@ -2390,10 +2380,13 @@ int calibrate_mag_routine(){
 		
 		usleep(1000000/sample_rate_hz);
 	}
-		
+	
 	// done with I2C for now
 	power_off_imu();
 	i2c_release_bus(IMU_BUS);
+	
+	printf("\n\nOkay Stop!\n");
+	printf("Calculating calibration constants.....");
 	
 	// if data collection loop exited without getting enough data, warn the
 	// user and return -1, otherwise keep going normally
@@ -2404,7 +2397,6 @@ int calibrate_mag_routine(){
 	
 	// make empty vectors for ellipsoid fitting to populate
 	vector_t center,lengths;
- 
  	if(fitEllipsoid(A,&center,&lengths)<0){
  		printf("failed to fit ellipsoid to magnetometer data\n");
  		destroyMatrix(&A);
@@ -2429,12 +2421,19 @@ int calibrate_mag_routine(){
  		return -1;
  	}
  	
-	// all seems well, calculate scaling factors to map ellipse legnths to
+	// all seems well, calculate scaling factors to map ellipse lengths to
 	// a sphere of radius 70uT, this scale will later be multiplied by the
 	// factory corrected data
 	new_scale[0] = 70.0/lengths.data[0];
 	new_scale[1] = 70.0/lengths.data[1];
 	new_scale[2] = 70.0/lengths.data[2];
+	
+	printf("Offsets X: %7.3f Y: %7.3f Z: %7.3f\n", 	center.data[0],\
+													center.data[1],\
+													center.data[2]);
+	printf("Scales  X: %7.3f Y: %7.3f Z: %7.3f\n", 	new_scale[0],\
+													new_scale[1],\
+													new_scale[2]);
 	
 	// write to disk
 	if(write_mag_cal_to_disk(center.data,new_scale)<0){

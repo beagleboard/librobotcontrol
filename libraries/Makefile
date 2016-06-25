@@ -4,11 +4,10 @@ SUBDIRS = $(shell find * -type d -print)
 CC = gcc
 LINKER   := gcc
 TOUCH 	 := $(shell touch *)
-CFLAGS := -Wall -fsingle-precision-constant -fPIC
+CFLAGS := -Wall -fsingle-precision-constant -fPIC -march=armv7-a -mtune=cortex-a8 -mfloat-abi=hard -mfpu=neon
 LFLAGS	:= -lm -lrt -lpthread -shared -lprussdrvd
 
-# add -DI2C_DEBUG for debugging
-#DEFS = -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY
+#DEFS = 
 
 SOURCES := $(shell find ./ -name '*.c')
 INCLUDES := $(shell find ./ -name '*.h')

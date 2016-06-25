@@ -18,7 +18,7 @@
 /*******************************************************************************
 * ring_buf_t create_ring_buf(int size)
 *
-* 
+* Allocated memory for a ring buffer and initializes the ring_buf_t struct
 *******************************************************************************/
 ring_buf_t create_ring_buf(int size){
 	ring_buf_t buf;
@@ -33,6 +33,7 @@ ring_buf_t create_ring_buf(int size){
 		return buf;
 	}
 	buf.size = size;
+	buf.index = 0;
 	buf.initialized = 1;
 	return buf;
 }
@@ -45,6 +46,7 @@ ring_buf_t create_ring_buf(int size){
 *******************************************************************************/
 int destroy_ring_buf(ring_buf_t* buf){
 	free(buf->data);
+	buf->data = NULL;
 	buf->initialized=0;
 	return 0;
 }
@@ -55,6 +57,10 @@ int destroy_ring_buf(ring_buf_t* buf){
 * sets all values in the buffer to 0 and sets the buffer position back to 0
 *******************************************************************************/
 int reset_ring_buf(ring_buf_t* buf){
+	if(buf->initialized !=1){
+		printf("ERROR: trying to reset an uninitialized ring buffer\n");
+		return -1;
+	}
 	memset(buf->data, 0, buf->size*sizeof(float));
 	buf->index = 0;
 	return 0;
@@ -67,8 +73,12 @@ int reset_ring_buf(ring_buf_t* buf){
 * value in the buffer is automatically removed.
 *******************************************************************************/
 int insert_new_ring_buf_value(ring_buf_t* buf, float val){
+	if(buf->initialized !=1){
+		printf("ERROR: trying add value to uninitialized ring buffer\n");
+		return -1;
+	}
 	int new_index = buf->index + 1;
-	if(new_index>=buf->size){
+	if(new_index >= buf->size){
 		new_index = 0;
 	}
 	buf->data[new_index] = val;
@@ -87,6 +97,10 @@ float get_ring_buf_value(ring_buf_t* buf, int position){
 	// sanity range check
 	if((position<0) || (position>buf->size-1)){
 		printf("ERROR: pos must be between 0 & %d\n", buf->size-1);
+		return -1;
+	}
+	if(buf->initialized !=1){
+		printf("ERROR: trying to read value from uninitialized ring buffer\n");
 		return -1;
 	}
 	int return_index = buf->index - position;

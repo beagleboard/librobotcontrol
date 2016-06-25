@@ -25,7 +25,6 @@ d_filter_t generate_filter(int order,float dt,float num[],float den[]){
 		printf("ERROR: order must be greater than 1\n");
 		return filter;
 	}
-	
 	filter.order = order;
 	filter.prescaler = 1;
 	filter.newest_input = 0;
@@ -34,17 +33,27 @@ d_filter_t generate_filter(int order,float dt,float num[],float den[]){
 	filter.saturation_min = 0;
 	filter.saturation_max = 0;
 	filter.saturation_flag = 0;
-	int i = 0;
-	// fill in transfer function coefficients 
-	for(i=0; i<(order+1); i++){
-		filter.numerator[i] = num[i];
-		filter.denominator[i] = den[i];
-	}
-	// reset_ring_buf(&filter.in_buf);
-	// reset_ring_buf(&filter.out_buf);
-	filter.in_buf =  create_ring_buf(order+1);
-	filter.out_buf =  create_ring_buf(order+1);
+	filter.numerator   = createVectorFromArray(order+1, num);
+	filter.denominator = createVectorFromArray(order+1, den);
+	filter.in_buf 	   = create_ring_buf(order+1);
+	filter.out_buf     = create_ring_buf(order+1);
+	filter.initialized = 1;
 	return filter;
+}
+
+/*******************************************************************************
+* int destroy_filter(d_filter_t* filter)
+*
+* free the memory allocated by the filter's buffers and coefficient vectors.
+*******************************************************************************/
+int destroy_filter(d_filter_t* filter){
+	if(filter->initialized == 0) return -1;
+	destroy_ring_buf(&(filter->in_buf));
+	destroy_ring_buf(&(filter->out_buf));
+	destroyVector(&(filter->numerator));
+	destroyVector(&(filter->denominator));
+	filter->initialized = 0;
+	return 0;
 }
 
 /*******************************************************************************
@@ -59,6 +68,11 @@ d_filter_t generate_filter(int order,float dt,float num[],float den[]){
 float march_filter(d_filter_t* filter, float new_input){
 	int i = 0;
 	
+	if(filter->initialized != 1){
+		printf("ERROR: filter not initialized yet\n");
+		return -1;
+	}
+	
 	insert_new_ring_buf_value(&filter->in_buf, new_input);
 	filter->newest_input = new_input;
 
@@ -67,15 +81,15 @@ float march_filter(d_filter_t* filter, float new_input){
 	float input_i, output_i;
 	for(i=0; i<=(filter->order); i++){
 		input_i = get_ring_buf_value(&filter->in_buf,i);
-		new_output += filter->prescaler * filter->numerator[i] * input_i;
+		new_output += filter->prescaler * filter->numerator.data[i] * input_i;
 	}
 	for(i=1; i<=(filter->order); i++){
 		output_i = get_ring_buf_value(&filter->out_buf,i-1);
-		new_output -= filter->denominator[i] * output_i; 
+		new_output -= filter->denominator.data[i] * output_i; 
 	}
 	
 	// scale in case denominator doesn't have a leading 1
-	new_output = new_output/filter->denominator[0];
+	new_output = new_output/filter->denominator.data[0];
 	
 	// saturate and set flag
 	if(filter->saturation_en){
@@ -134,6 +148,10 @@ int enable_saturation(d_filter_t* filter, float min, float max){
 * Returns 1 if the filter saturated the last time step. Returns 0 otherwise.
 *******************************************************************************/
 int did_filter_t_saturate(d_filter_t* filter){
+	if(filter->initialized != 1){
+		printf("ERROR: filter not initialized yet\n");
+		return -1;
+	}
 	return filter->saturation_flag;
 	return 0;
 }
@@ -175,6 +193,44 @@ float newest_filter_output(d_filter_t* filter){
 *******************************************************************************/
 float newest_filter_input(d_filter_t* filter){
 	return filter->newest_input;
+}
+
+/*******************************************************************************
+* prefill_filter_inputs(d_filter_t* filter, float in)
+*
+* fills all previous inputs to the filter as if they had been equal to 'in'
+* used when initializing filters to non-zero values
+*******************************************************************************/
+int prefill_filter_inputs(d_filter_t* filter, float in){
+	int i;
+	if(filter->initialized != 1){
+		printf("ERROR: filter not initialized yet\n");
+		return -1;
+	}
+	for(i=0;i<filter->order;i++){
+		insert_new_ring_buf_value(&(filter->in_buf), in);
+	}
+	filter->newest_input = in;
+	return 0;
+}
+
+/*******************************************************************************
+* prefill_filter_outputs(d_filter_t* filter, float out)
+*
+* fills all previous inputs to the filter as if they had been equal to 'in'
+* used when initializing filters to non-zero values
+*******************************************************************************/
+int prefill_filter_outputs(d_filter_t* filter, float out){
+	int i;
+	if(filter->initialized != 1){
+		printf("ERROR: filter not initialized yet\n");
+		return -1;
+	}
+	for(i=0;i<filter->order;i++){
+		insert_new_ring_buf_value(&(filter->out_buf), out);
+	}
+	filter->newest_output = out;
+	return 0;
 }
 
 
@@ -260,22 +316,26 @@ d_filter_t generatePID(float kp, float ki, float kd, float Tf, float dt){
 *******************************************************************************/
 int print_filter_details(d_filter_t* filter){
 	int i;
+	if(filter->initialized != 1){
+		printf("ERROR: filter not initialized yet\n");
+		return -1;
+	}
 	printf("\n");
 	printf("\nOrder: %d\n", filter->order);
 	
 	printf("num: ");
 	for(i=0; i<=filter->order; i++){
-		printf("%0.3f  ", filter->numerator[i]);
+		printf("%0.3f  ", filter->numerator.data[i]);
 	}
 	
 	printf("\n    ");
-	for(i=0; i<=filter->order; i++){
+	for(i=0; i <= filter->order; i++){
 		printf("-------");
 	}
 	
 	printf("\nden: ");
-	for(i=0; i<=filter->order; i++){
-		printf("%0.3f  ", filter->denominator[i]);
+	for(i=0; i <= filter->order; i++){
+		printf("%0.3f  ", filter->denominator.data[i]);
 	}
 	printf("\n");
 	return 0;

@@ -43,6 +43,8 @@ int main(){
 
 	// Keep Running until program state changes to EXITING
 	u=1;
+	prefill_filter_outputs(&low_pass,u);
+	prefill_filter_inputs(&low_pass, u);
 	while(get_state() != EXITING){
 		lp = march_filter(&low_pass, u);
 		hp = march_filter(&high_pass, u);

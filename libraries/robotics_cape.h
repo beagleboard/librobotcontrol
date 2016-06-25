@@ -543,7 +543,7 @@ typedef struct imu_config_t {
 	int dmp_sample_rate;
 	imu_orientation_t orientation; //orientation matrix
 	// higher mix_factor means less weight the compass has on fused_TaitBryan
-	int compass_mix_factor; // must be >0
+	int compass_time_constant; 	// time constant for filtering fused yaw
 	int dmp_interrupt_priority; // scheduler priority for handler
 	int show_warnings;	// set to 1 to enable showing of i2c_bus warnings
 
@@ -749,6 +749,39 @@ int uart_read_line(int bus, int max_bytes, char* buf);
 int kill_robot();
 
 /*******************************************************************************
+* CPU Frequency Control
+*
+* @ int set_cpu_frequency(cpu_frequency_t freq)
+*
+* Sets the CPU frequency to either a fixed value or to onedemand automatic
+* scaling mode. Returns 0 on success, -1 on failure.
+*
+* @ cpu_frequency_t get_cpu_frequency()
+*
+* Returns the current clock speed of the Beaglebone's Sitara processor in the
+* form of the provided enumerated type. It will never return the FREQ_ONDEMAND
+* value as the intention of this function is to see the clock speed as set by
+* either the user or the ondemand governor itself.
+*
+* @ int print_cpu_frequency()
+*
+* Prints the current frequency to the screen. For example "300MHZ".
+* Returns 0 on success or -1 on failure.
+*******************************************************************************/
+
+typedef enum cpu_frequency_t{
+	FREQ_ONDEMAND,
+	FREQ_300MHZ,
+	FREQ_600MHZ,
+	FREQ_800MHZ,
+	FREQ_1000MHZ
+} cpu_frequency_t;
+
+int set_cpu_frequency(cpu_frequency_t freq);
+cpu_frequency_t get_cpu_frequency();
+int print_cpu_frequency();
+
+/*******************************************************************************
 * Useful Functions
 *
 * This is a collection of miscellaneous useful functions that are part of the
@@ -839,7 +872,6 @@ int suppress_stdout(int (*func)(void));
 int suppress_stderr(int (*func)(void));
 int continue_or_quit();
 
-
 /*******************************************************************************
 * Vector and Quaternion Math
 *
@@ -863,6 +895,84 @@ void quaternionConjugate(float in[4], float out[4]);
 void quaternionMultiply(float a[4], float b[4], float out[4]);
 float vector3DotProduct(float a[3], float b[3]);
 void vector3CrossProduct(float a[3], float b[3], float d[3]);
+
+/*******************************************************************************
+* Linear Algebra
+*
+*
+*******************************************************************************/
+
+typedef struct matrix_t{
+	int rows;
+	int cols;
+	float** data;
+	float* dynamic;
+	int initialized;
+} matrix_t;
+
+typedef struct vector_t{
+	int len;
+	float* data;
+	int initialized;
+} vector_t;
+
+
+// Basic Matrix creation, modification, and access
+matrix_t createMatrix(int rows, int cols);
+matrix_t duplicateMatrix(matrix_t A);
+matrix_t createSquareMatrix(int n);
+matrix_t createRandomMatrix(int rows, int cols);
+matrix_t createIdentityMatrix(int dim);
+matrix_t createDiagonalMatrix(vector_t v);
+matrix_t createMatrixOfOnes(int dim);
+int setMatrixEntry(matrix_t* A, int row, int col, float val);
+float getMatrixEntry(matrix_t A, int row, int col);
+void printMatrix(matrix_t A);
+void printMatrixSciNotation(matrix_t A);
+void destroyMatrix(matrix_t* A);
+
+// Basic Vector creation, modification, and access
+vector_t createVector(int n);
+vector_t duplicateVector(vector_t v);
+vector_t createRandomVector(int len);
+vector_t createVectorOfOnes(int len);
+vector_t createVectorFromArray(int len, float array[]);
+int setVectorEntry(vector_t* v, int pos, float val);
+float getVectorEntry(vector_t v, int pos);
+void printVector(vector_t v);
+void printVectorSciNotation(vector_t v);
+void destroyVector(vector_t* v);
+
+// Matrix Multiplication, Addition, and other transforms
+matrix_t matrixMultiply(matrix_t A, matrix_t B);
+int matrixTimesScalar(matrix_t* A, float s);
+int vectorTimesScalar(vector_t* v, float s);
+vector_t matrixTimesColVec(matrix_t A, vector_t v);
+vector_t rowVecTimesMatrix(vector_t v, matrix_t A);
+matrix_t matrixAdd(matrix_t A, matrix_t B);
+int transposeMatrix(matrix_t* A);
+
+// vector operations
+float vectorNorm(vector_t v);
+vector_t vectorProjection(vector_t v, vector_t e);
+matrix_t outerProduct(vector_t v1, vector_t v2);
+float dotProduct(vector_t v1, vector_t v2);
+vector_t crossProduct3D(vector_t v1, vector_t v2);
+int polyConv(vector_t v1, vector_t v2, vector_t* out);
+int polyPower(vector_t v, int order, vector_t* out);
+
+// Advanced matrix operations
+float matrixDeterminant(matrix_t A);
+int LUPdecomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P);
+int QRdecomposition(matrix_t A, matrix_t* Q, matrix_t* R);
+int invertMatrix(matrix_t* A);
+matrix_t Householder(vector_t v);
+
+// linear system solvers
+vector_t linSolve(matrix_t A, vector_t b);
+vector_t linSolveQR(matrix_t A, vector_t b);
+int fitEllipsoid(matrix_t points, vector_t* center, vector_t* lengths);
+
 
 /*******************************************************************************
 * Ring Buffer
@@ -995,27 +1105,29 @@ float get_ring_buf_value(ring_buf_t* buf, int position);
 *
 * Prints the order, numerator, and denominator coefficients for debugging.
 *******************************************************************************/
-#define MAX_SISO_ORDER 16
 
 typedef struct d_filter_t{
 	int order;
 	float dt;
 	// input scaling factor usually =1, useful for fast controller tuning
 	float prescaler; 
-	float numerator[MAX_SISO_ORDER];	// points to array of numerator constants
-	float denominator[MAX_SISO_ORDER];	// points to array 
+	vector_t numerator;	// numerator coefficients 
+	vector_t denominator;	// denominator coefficients 
 	int saturation_en;
 	float saturation_min;
 	float saturation_max;
 	int saturation_flag;
-	ring_buf_t in_buf;
+	ring_buf_t in_buf;			// dynamically allocated buffers
 	ring_buf_t out_buf;
 	
 	float newest_input;
 	float newest_output;
+	
+	int initialized;
 } d_filter_t;
 
-d_filter_t generate_filter(int order,float dt,float num[],float den[]);
+d_filter_t generate_filter(int order, float dt, float num[], float den[]);
+int destroy_filter(d_filter_t* filter);
 float march_filter(d_filter_t* filter, float new_input);
 int reset_filter(d_filter_t* filter);
 int enable_saturation(d_filter_t* filter, float min, float max);
@@ -1024,122 +1136,13 @@ float previous_filter_input(d_filter_t* filter, int steps);
 float previous_filter_output(d_filter_t* filter, int steps);
 float newest_filter_output(d_filter_t* filter);
 float newest_filter_input(d_filter_t* filter);
+int prefill_filter_inputs(d_filter_t* filter, float in);
+int prefill_filter_outputs(d_filter_t* filter, float out);
 d_filter_t generateFirstOrderLowPass(float dt, float time_constant);
 d_filter_t generateFirstOrderHighPass(float dt, float time_constant);
 d_filter_t generateIntegrator(float dt);
 d_filter_t generatePID(float kp, float ki, float kd, float Tf, float dt);
 int print_filter_details(d_filter_t* filter);
-
-
-/*******************************************************************************
-* Linear Algebra
-*
-*
-*******************************************************************************/
-
-typedef struct matrix_t{
-	int rows;
-	int cols;
-	float** data;
-	float* dynamic;
-	int initialized;
-} matrix_t;
-
-typedef struct vector_t{
-	int len;
-	float* data;
-	int initialized;
-} vector_t;
-
-
-// Basic Matrix creation, modification, and access
-matrix_t createMatrix(int rows, int cols);
-matrix_t duplicateMatrix(matrix_t A);
-matrix_t createSquareMatrix(int n);
-matrix_t createRandomMatrix(int rows, int cols);
-matrix_t createIdentityMatrix(int dim);
-matrix_t createDiagonalMatrix(vector_t v);
-matrix_t createMatrixOfOnes(int dim);
-int setMatrixEntry(matrix_t* A, int row, int col, float val);
-float getMatrixEntry(matrix_t A, int row, int col);
-void printMatrix(matrix_t A);
-void printMatrixSciNotation(matrix_t A);
-void destroyMatrix(matrix_t* A);
-
-// Basic Vector creation, modification, and access
-vector_t createVector(int n);
-vector_t duplicateVector(vector_t v);
-vector_t createRandomVector(int len);
-vector_t createVectorOfOnes(int len);
-int setVectorEntry(vector_t* v, int pos, float val);
-float getVectorEntry(vector_t v, int pos);
-void printVector(vector_t v);
-void printVectorSciNotation(vector_t v);
-void destroyVector(vector_t* v);
-
-// Matrix Multiplication, Addition, and other transforms
-matrix_t matrixMultiply(matrix_t A, matrix_t B);
-int matrixTimesScalar(matrix_t* A, float s);
-int vectorTimesScalar(vector_t* v, float s);
-vector_t matrixTimesColVec(matrix_t A, vector_t v);
-vector_t rowVecTimesMatrix(vector_t v, matrix_t A);
-matrix_t matrixAdd(matrix_t A, matrix_t B);
-int transposeMatrix(matrix_t* A);
-
-// vector operations
-float vectorNorm(vector_t v);
-vector_t vectorProjection(vector_t v, vector_t e);
-matrix_t outerProduct(vector_t v1, vector_t v2);
-float dotProduct(vector_t v1, vector_t v2);
-vector_t crossProduct3D(vector_t v1, vector_t v2);
-
-// Advanced matrix operations
-float matrixDeterminant(matrix_t A);
-int LUPdecomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P);
-int QRdecomposition(matrix_t A, matrix_t* Q, matrix_t* R);
-int invertMatrix(matrix_t* A);
-matrix_t Householder(vector_t v);
-
-
-// linear system solvers
-vector_t linSolve(matrix_t A, vector_t b);
-vector_t linSolveQR(matrix_t A, vector_t b);
-int fitEllipsoid(matrix_t points, vector_t* center, vector_t* lengths);
-
-
-
-/*******************************************************************************
-* CPU Frequency Control
-*
-* @ int set_cpu_frequency(cpu_frequency_t freq)
-*
-* Sets the CPU frequency to either a fixed value or to onedemand automatic
-* scaling mode. Returns 0 on success, -1 on failure.
-*
-* @ cpu_frequency_t get_cpu_frequency()
-*
-* Returns the current clock speed of the Beaglebone's Sitara processor in the
-* form of the provided enumerated type. It will never return the FREQ_ONDEMAND
-* value as the intention of this function is to see the clock speed as set by
-* either the user or the ondemand governor itself.
-*
-* @ int print_cpu_frequency()
-*
-* Prints the current frequency to the screen. For example "300MHZ".
-* Returns 0 on success or -1 on failure.
-*******************************************************************************/
-
-typedef enum cpu_frequency_t{
-	FREQ_ONDEMAND,
-	FREQ_300MHZ,
-	FREQ_600MHZ,
-	FREQ_800MHZ,
-	FREQ_1000MHZ
-} cpu_frequency_t;
-
-int set_cpu_frequency(cpu_frequency_t freq);
-cpu_frequency_t get_cpu_frequency();
-int print_cpu_frequency();
 
 	
 #endif //ROBOTICS_CAPE

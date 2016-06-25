@@ -239,8 +239,8 @@ int suppress_stderr(int (*func)(void)){
 *******************************************************************************/
 int continue_or_quit(){
 	// set stdin to non-canonical raw mode to capture all button presses 
+	fflush(stdin);
 	system("stty raw");
-	
   	int c=getchar();
   	int ret = -1; // set to 0 if enter is pressed
 	if(c==3){

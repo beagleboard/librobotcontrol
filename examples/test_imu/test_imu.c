@@ -1,14 +1,14 @@
-// Sample Code for testing MPU-9250 IMU operation
-// James Strawson - 2013
-
-#include <robotics_cape.h>
+/*******************************************************************************
+* test_imu.c
+* James Strawson 2016
+*
+* This serves as an example of how to read the IMU with direct reads to the
+* sensor registers. To use the DMP or interrupt-driven timing see test_dmp.c
+*******************************************************************************/
 #include <useful_includes.h>
+#include <robotics_cape.h>
 
-int enable_accel=0;
-int enable_gyro=0;
-int enable_mag=0;
-
-int main(int argc, char *argv[]){
+int main(){
 	imu_data_t data; //struct to hold new data
 	
 	if(initialize_cape()){
@@ -16,7 +16,7 @@ int main(int argc, char *argv[]){
 		return -1;
 	}
 	
-	// use defaults for now
+	// use defaults for now, except also enable magnetometer.
 	imu_config_t conf = get_default_imu_config();
 	conf.enable_magnetometer=1;
 	
@@ -27,7 +27,7 @@ int main(int argc, char *argv[]){
 	
 	// print a header
 	printf("\n");
-	printf(" Acceleration XYZ(g) |");
+	printf("   Accel XYZ(m/s^2)  |");
 	printf("   Gyro XYZ (deg/s)  |");
 	printf("  Mag Field XYZ(uT)  |");
 	printf(" Temp (C)");

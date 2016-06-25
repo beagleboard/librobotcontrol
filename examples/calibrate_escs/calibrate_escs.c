@@ -24,30 +24,38 @@ int main(){
 	printf("\nDISCONNECT PROPELLERS FROM MOTORS\n");
 	printf("DISCONNECT POWER FROM ESCS\n");
 	printf("press enter to start sending max pulse width\n");
-	while(getchar() != '\n');
-	
+	if(continue_or_quit()<0){
+		printf("aborting calibrate_escs\n");
+		goto END;
+	}
 	
 	//Send full throttle until the user hits enter
 	width = 1;
 	pthread_t  send_pulse_thread;
 	pthread_create(&send_pulse_thread, NULL, send_pulses, (void*) NULL);
-	
 	printf("\n");
 	printf("Now reapply power to the ESCs.\n");
 	printf("Press enter again after the ESCs finish chirping\n");
 	set_led(GREEN,1);
-	fflush(stdin);
-	while( getchar() != '\n' );
+	if(continue_or_quit()<0){
+		printf("aborting calibrate_escs\n");
+		goto END;
+	}
 	
 	// now set lower bound
 	printf("\n");
 	printf("Sending minimum width pulses\n");
 	printf("Press enter again after the ESCs chirping to finish calibration\n");
 	width = 0;
-	while( getchar() != '\n' );
+	if(continue_or_quit()<0){
+		printf("aborting calibrate_escs\n");
+		goto END;
+	}
+	
 
 	// cleanup and close
 	printf("\nCalibration complete, check with test_servos\n");
+END:
 	set_state(EXITING); // this tells the send_pulses thread to stop
 	pthread_join(send_pulse_thread, NULL); // wait for it to stop
 	
