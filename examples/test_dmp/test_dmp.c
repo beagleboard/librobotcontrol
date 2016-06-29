@@ -33,7 +33,6 @@ void print_usage(){
 	printf("\n Options\n");
 	printf("-s {rate}	Set sample rate in HZ (default 100)\n");
 	printf("		Sample rate must be a divisor of 200\n");
-	printf("-f {factor}	Set compass mix factor (default 100)\n");
 	printf("-m		Enable Magnetometer\n");
 	printf("-a		Print Accelerometer Data\n");
 	printf("-g		Print Gyro Data\n");
@@ -50,42 +49,40 @@ void print_usage(){
 /*******************************************************************************
 * int print_data()
 *
-* This is the IMU interrupt function. 
+* This is the IMU interrupt function.  
 *******************************************************************************/
 int print_data(){
-	set_led(GREEN,1);
 	printf("\r");
 	printf(" ");
 	
 	if(enable_mag){
 		printf("   %6.1f   |", data.compass_heading);
-		if(show_quat){
-			// print fused quaternion
-			printf(" %4.1f %4.1f %4.1f %4.1f |", 	data.fused_quat[QUAT_W], \
-													data.fused_quat[QUAT_X], \
-													data.fused_quat[QUAT_Y], \
-													data.fused_quat[QUAT_Z]);
-		}
-		if(show_tb){
-			// print fused TaitBryan Angles
-			printf(" %5.2f %5.2f %5.2f |",		data.fused_TaitBryan[TB_PITCH_X],\
-												data.fused_TaitBryan[TB_ROLL_Y], \
-												data.fused_TaitBryan[TB_YAW_Z]);
-		}
-	} else{
-		if(show_quat){
-			// print quaternion
-			printf(" %4.1f %4.1f %4.1f %4.1f |",	data.dmp_quat[QUAT_W], \
-													data.dmp_quat[QUAT_X], \
-													data.dmp_quat[QUAT_Y], \
-													data.dmp_quat[QUAT_Z]);
-		}
-		if(show_tb){
-			// print TaitBryan angles
-			printf(" %5.2f %5.2f %5.2f |",			data.dmp_TaitBryan[TB_PITCH_X],\
-													data.dmp_TaitBryan[TB_ROLL_Y], \
-													data.dmp_TaitBryan[TB_YAW_Z]);
-		}
+	}
+	if(show_quat && enable_mag){
+		// print fused quaternion
+		printf(" %4.1f %4.1f %4.1f %4.1f |", 	data.fused_quat[QUAT_W], \
+												data.fused_quat[QUAT_X], \
+												data.fused_quat[QUAT_Y], \
+												data.fused_quat[QUAT_Z]);
+	}
+	else if(show_quat){
+		// print quaternion
+		printf(" %4.1f %4.1f %4.1f %4.1f |",	data.dmp_quat[QUAT_W], \
+												data.dmp_quat[QUAT_X], \
+												data.dmp_quat[QUAT_Y], \
+												data.dmp_quat[QUAT_Z]);
+	}
+	if(show_tb && enable_mag){
+		// print fused TaitBryan Angles
+		printf(" %5.2f %5.2f %5.2f |",		data.fused_TaitBryan[TB_PITCH_X],\
+											data.fused_TaitBryan[TB_ROLL_Y], \
+											data.fused_TaitBryan[TB_YAW_Z]);
+	}
+	else if(show_tb){
+		// print TaitBryan angles
+		printf(" %5.2f %5.2f %5.2f |",		data.dmp_TaitBryan[TB_PITCH_X],\
+											data.dmp_TaitBryan[TB_ROLL_Y], \
+											data.dmp_TaitBryan[TB_YAW_Z]);
 	}
 	if(show_accel){
 		printf(" %5.2f %5.2f %5.2f |",		data.accel[0],\
@@ -105,7 +102,6 @@ int print_data(){
 	}
 													
 	fflush(stdout);
-	set_led(GREEN,0);
 	return 0;
 }
 
@@ -204,7 +200,7 @@ int main(int argc, char *argv[]){
 	
 	// parse arguments
 	opterr = 0;
-	while ((c=getopt(argc, argv, "s:magrqtThwf:o"))!=-1 && argc>1){
+	while ((c=getopt(argc, argv, "s:magrqtThwo"))!=-1 && argc>1){
 		switch (c){
 		case 's': // sample rate option
 			sample_rate = atoi(optarg);
@@ -238,13 +234,6 @@ int main(int argc, char *argv[]){
 		case 'T': // read thermometer option
 			show_something = 1;
 			show_temp = 1;
-			break;
-		case 'f': // compass mix factor option
-			sample_rate = atoi(optarg);
-			if(sample_rate>200 || sample_rate<4){
-				printf("sample_rate but be between 4 & 200");
-				return -1;
-			}
 			break;
 		case 'w': // print warnings
 			conf.show_warnings=1;

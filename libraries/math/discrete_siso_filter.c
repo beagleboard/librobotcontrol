@@ -12,17 +12,17 @@
 #define DEBUG
 
 /*******************************************************************************
-* d_filter_t generateFilter(int order,float dt,float num[],float den[])
+* d_filter_t create_filter(int order, float dt, float* num, float* den)
 *
 * Allocate memory for a filter of specified order & fill with transfer
 * function constants. Use enable_saturation immediately after this if you want
 * to enable automatic saturation.
 *******************************************************************************/
-d_filter_t generate_filter(int order,float dt,float num[],float den[]){
+d_filter_t create_filter(int order, float dt, float* num, float* den){
 	d_filter_t filter;
 	
 	if(order<1){
-		printf("ERROR: order must be greater than 1\n");
+		printf("ERROR: order must be >=1\n");
 		return filter;
 	}
 	filter.order = order;
@@ -33,8 +33,8 @@ d_filter_t generate_filter(int order,float dt,float num[],float den[]){
 	filter.saturation_min = 0;
 	filter.saturation_max = 0;
 	filter.saturation_flag = 0;
-	filter.numerator   = createVectorFromArray(order+1, num);
-	filter.denominator = createVectorFromArray(order+1, den);
+	filter.numerator   = create_vector_from_array(order+1, num);
+	filter.denominator = create_vector_from_array(order+1, den);
 	filter.in_buf 	   = create_ring_buf(order+1);
 	filter.out_buf     = create_ring_buf(order+1);
 	filter.initialized = 1;
@@ -50,8 +50,8 @@ int destroy_filter(d_filter_t* filter){
 	if(filter->initialized == 0) return -1;
 	destroy_ring_buf(&(filter->in_buf));
 	destroy_ring_buf(&(filter->out_buf));
-	destroyVector(&(filter->numerator));
-	destroyVector(&(filter->denominator));
+	destroy_vector(&(filter->numerator));
+	destroy_vector(&(filter->denominator));
 	filter->initialized = 0;
 	return 0;
 }
@@ -233,82 +233,6 @@ int prefill_filter_outputs(d_filter_t* filter, float out){
 	return 0;
 }
 
-
-/*******************************************************************************
-* d_filter_t generateFirstOrderLowPass(float dt, float time_constant)
-*
-* Returns a configured and ready to use d_filter_t_t struct with a first order
-* low pass transfer function. dt is in units of seconds and time_constant is 
-* the number of seconds it takes to rise to 63.4% of a steady-state input.
-*******************************************************************************/
-d_filter_t generateFirstOrderLowPass(float dt, float time_constant){
-	const float lp_const = dt/time_constant;
-	float numerator[]   = {lp_const, 0};
-	float denominator[] = {1, lp_const-1};
-	return generate_filter(1,dt,numerator,denominator);
-}
-
-/*******************************************************************************
-* d_filter_t generateFirstOrderHighPass(float dt, float time_constant)
-*
-* Returns a configured and ready to use d_filter_t_t struct with a first order
-* high pass transfer function. dt is in units of seconds and time_constant is 
-* the number of seconds it takes to decay by 63.4% of a steady-state input.
-*******************************************************************************/
-d_filter_t generateFirstOrderHighPass(float dt, float time_constant){
-	float hp_const = dt/time_constant;
-	float numerator[] = {1-hp_const, hp_const-1};
-	float denominator[] = {1,hp_const-1};
-	return generate_filter(1,dt,numerator,denominator);
-}
-
-/*******************************************************************************
-* d_filter_t generateIntegrator(float dt)
-*
-* Returns a configured and ready to use d_filter_t_t struct with the transfer
-* function for a first order time integral.
-*******************************************************************************/
-d_filter_t generateIntegrator(float dt){
-	float numerator[]   = {0, dt};
-	float denominator[] = {1, -1};
-	return generate_filter(1,dt,numerator,denominator);
-}
-
-/*******************************************************************************
-* d_filter_t generatePID(float kp, float ki, float kd, float Tf, float dt)
-*
-* discrete-time implementation of a parallel PID controller with rolloff.
-* This is equivalent to the Matlab function: C = pid(Kp,Ki,Kd,Tf,Ts)
-*
-* We cannot implement a pure differentiator with a discrete transfer function
-* so this filter has high frequency rolloff with time constant Tf. Smaller Tf
-* results in less rolloff, but Tf must be greater than dt/2 for stability.
-*******************************************************************************/
-d_filter_t generatePID(float kp, float ki, float kd, float Tf, float dt){
-	if(Tf <= dt/2){
-		printf("WARNING: Tf must be > dt/2 for stability\n");
-		Tf=dt; // set to reasonable value
-	}
-	// if ki==0, return a PD filter with rolloff
-	if(ki==0){
-		float numerator[] = {(kp*Tf+kd)/Tf, 
-							-(((ki*dt-kp)*(dt-Tf))+kd)/Tf};
-		float denominator[] = 	{1, 
-								-(Tf-dt)/Tf};
-		return generate_filter(1,dt,numerator,denominator);
-	}
-	//otherwise PID with roll off
-	else{
-		float numerator[] = {(kp*Tf+kd)/Tf, 
-							(ki*dt*Tf + kp*(dt-Tf) - kp*Tf - 2.0*kd)/Tf,
-							(((ki*dt-kp)*(dt-Tf))+kd)/Tf};
-		float denominator[] = 	{1, 
-								(dt-(2.0*Tf))/Tf, 
-								(Tf-dt)/Tf};
-		return generate_filter(2,dt,numerator,denominator);
-	}
-}
-
 /*******************************************************************************
 * int print_filter_details(d_filter_t* filter)
 *
@@ -340,3 +264,128 @@ int print_filter_details(d_filter_t* filter){
 	printf("\n");
 	return 0;
 }
+
+/*******************************************************************************
+* int multiply_filters(d_filter_t f1, d_filter_t f2, d_filter_t* out)
+*
+* 
+*******************************************************************************/
+int multiply_filters(d_filter_t f1, d_filter_t f2, d_filter_t* out){
+	if(f1.initialized!=1 || f2.initialized!=1){
+		printf("ERROR: filter not initialized\n");
+		return -1;
+	}
+	if(f1.dt != f2.dt){
+		printf("ERROR: filter timestep dt must match when multiplying.\n");
+		return -1;
+	}
+	// order of new system is sum of old orders
+	int new_order = f1.order + f2.order;
+	
+	// multiply out the transfer function coefficients
+	vector_t newnum,newden;
+	if(polynomial_convolution(f1.numerator,f2.numerator,&newnum)<0){
+		printf("ERROR:failed to multiply numerator polynomials\n");
+		return -1;
+	}
+	if(polynomial_convolution(f1.denominator,f2.denominator,&newden)<0){
+		printf("ERROR:failed to multiply denominator polynomials\n");
+		return -1;
+	}
+	
+	*out = create_filter(new_order, f1.dt, &newnum.data[0], &newden.data[0]);
+	return 0;
+}
+
+/*******************************************************************************
+* d_filter_t create_first_order_low_pass(float dt, float time_constant)
+*
+* Returns a configured and ready to use d_filter_t_t struct with a first order
+* low pass transfer function. dt is in units of seconds and time_constant is 
+* the number of seconds it takes to rise to 63.4% of a steady-state input.
+*******************************************************************************/
+d_filter_t create_first_order_low_pass(float dt, float time_constant){
+	const float lp_const = dt/time_constant;
+	float numerator[]   = {lp_const, 0};
+	float denominator[] = {1, lp_const-1};
+	return create_filter(1,dt,numerator,denominator);
+}
+
+/*******************************************************************************
+* d_filter_t create_first_order_high_pass(float dt, float time_constant)
+*
+* Returns a configured and ready to use d_filter_t_t struct with a first order
+* high pass transfer function. dt is in units of seconds and time_constant is 
+* the number of seconds it takes to decay by 63.4% of a steady-state input.
+*******************************************************************************/
+d_filter_t create_first_order_high_pass(float dt, float time_constant){
+	float hp_const = dt/time_constant;
+	float numerator[] = {1-hp_const, hp_const-1};
+	float denominator[] = {1,hp_const-1};
+	return create_filter(1,dt,numerator,denominator);
+}
+
+/*******************************************************************************
+* d_filter_t create_integrator(float dt)
+*
+* Returns a configured and ready to use d_filter_t_t struct with the transfer
+* function for a first order time integral.
+*******************************************************************************/
+d_filter_t create_integrator(float dt){
+	float numerator[]   = {0, dt};
+	float denominator[] = {1, -1};
+	return create_filter(1,dt,numerator,denominator);
+}
+
+/*******************************************************************************
+* d_filter_t create_double_integrator(float dt)
+*
+* Returns a configured and ready to use d_filter_t_t struct with the transfer
+* function for a first order time integral.
+*******************************************************************************/
+d_filter_t create_double_integrator(float dt){
+	float numerator[]   = {0, 0, dt*dt};
+	float denominator[] = {1, -2, 1};
+	return create_filter(2,dt,numerator,denominator);
+}
+
+/*******************************************************************************
+* d_filter_t create_pid(float kp, float ki, float kd, float Tf, float dt)
+*
+* discrete-time implementation of a parallel PID controller with rolloff.
+* This is equivalent to the Matlab function: C = pid(Kp,Ki,Kd,Tf,Ts)
+*
+* We cannot implement a pure differentiator with a discrete transfer function
+* so this filter has high frequency rolloff with time constant Tf. Smaller Tf
+* results in less rolloff, but Tf must be greater than dt/2 for stability.
+*******************************************************************************/
+d_filter_t create_pid(float kp, float ki, float kd, float Tf, float dt){
+	if(Tf <= dt/2){
+		printf("WARNING: Tf must be > dt/2 for stability\n");
+		Tf=dt; // set to reasonable value
+	}
+	// if ki==0, return a PD filter with rolloff
+	if(ki==0){
+		float numerator[] = {(kp*Tf+kd)/Tf, 
+							-(((ki*dt-kp)*(dt-Tf))+kd)/Tf};
+		float denominator[] = 	{1, 
+								-(Tf-dt)/Tf};
+		return create_filter(1,dt,numerator,denominator);
+	}
+	//otherwise PID with roll off
+	else{
+		float numerator[] = {(kp*Tf+kd)/Tf, 
+							(ki*dt*Tf + kp*(dt-Tf) - kp*Tf - 2.0*kd)/Tf,
+							(((ki*dt-kp)*(dt-Tf))+kd)/Tf};
+		float denominator[] = 	{1, 
+								(dt-(2.0*Tf))/Tf, 
+								(Tf-dt)/Tf};
+		return create_filter(2,dt,numerator,denominator);
+	}
+}
+
+
+
+
+
+

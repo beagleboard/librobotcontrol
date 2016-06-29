@@ -93,8 +93,8 @@ imu_config_t get_default_imu_config(){
 	// general stuff
 	conf.accel_fsr = A_FSR_4G;
 	conf.gyro_fsr = G_FSR_1000DPS;
-	conf.gyro_dlpf = GYRO_DLPF_184;
-	conf.accel_dlpf = ACCEL_DLPF_184;
+	conf.gyro_dlpf = GYRO_DLPF_92;
+	conf.accel_dlpf = ACCEL_DLPF_92;
 	conf.enable_magnetometer = 0;
 	
 	// DMP stuff
@@ -755,15 +755,9 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 	config = conf;
 	data_ptr = data;
 	
-	// set full scale ranges and filter constants
-	set_gyro_fsr(config.gyro_fsr, data_ptr);
-	set_accel_fsr(config.accel_fsr, data_ptr);
-	set_gyro_dlpf(config.gyro_dlpf);
-	set_accel_dlpf(config.accel_dlpf);
-	
-	// Set fifo/sensor sample rate. Will have to set the DMP sample
-	// rate to match this shortly.
-	if(mpu_set_sample_rate(config.dmp_sample_rate)<0){
+	// Set sensor sample rate to 200hz which is max the dmp can do.
+	// DMP will divide this frequency down further itself
+	if(mpu_set_sample_rate(200)<0){
 		printf("ERROR: setting IMU sample rate\n");
 		i2c_release_bus(IMU_BUS);
 		return -1;
@@ -779,7 +773,17 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 	}
 	else power_down_magnetometer();
 	
+	// set full scale ranges. It seems the DMP only scales the gyro properly
+	// at 2000DPS. I'll assume the same is true for accel and use 2G like their
+	// example
+	set_gyro_fsr(G_FSR_2000DPS, data_ptr);
+	set_accel_fsr(A_FSR_2G, data_ptr);
+
+	// set the user-configurable DLPF
+	set_gyro_dlpf(config.gyro_dlpf);
+	set_accel_dlpf(config.accel_dlpf);
 	
+
 	// set up the DMP
 	if(dmp_load_motion_driver_firmware()<0){
 		printf("failed to load DMP motion driver\n");
@@ -791,6 +795,8 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
+	// Set fifo/sensor sample rate. Will have to set the DMP sample
+	// rate to match this shortly.
 	if(dmp_set_orientation((unsigned short)conf.orientation)<0){
 		printf("ERROR: failed to set dmp orientation\n");
 		i2c_release_bus(IMU_BUS);
@@ -804,11 +810,6 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 	}
 	if(dmp_set_interrupt_mode(DMP_INT_CONTINUOUS)<0){
 		printf("ERROR: failed to set DMP interrupt mode to continuous\n");
-		i2c_release_bus(IMU_BUS);
-		return -1;
-	}
-	if(dmp_set_fifo_rate(config.dmp_sample_rate)<0){
-		printf("ERROR: failed to set DMP fifo rate\n");
 		i2c_release_bus(IMU_BUS);
 		return -1;
 	}
@@ -1028,26 +1029,18 @@ int dmp_set_fifo_rate(unsigned short rate){
         return -1;
 	}
 	
-	// set the samplerate divider
-	/*
-    div = 1000 / rate - 1;
-	if(i2c_write_byte(IMU_BUS, SMPLRT_DIV, div)){
-		printf("I2C bus write error\n");
-		return -1;
-	} 
-	*/
-	
 	// set the DMP scaling factors
 	div = DMP_MAX_RATE / rate - 1;
-	//div = (1000 / rate) - 1;
-	//div = 3; // DMP and FIFO will be at the same rate always
     tmp[0] = (unsigned char)((div >> 8) & 0xFF);
     tmp[1] = (unsigned char)(div & 0xFF);
-    if (mpu_write_mem(D_0_22, 2, tmp))
+    if (mpu_write_mem(D_0_22, 2, tmp)){
+    	printf("ERROR: writing dmp sample rate reg");
         return -1;
-    if (mpu_write_mem(CFG_6, 12, (unsigned char*)regs_end))
+    }
+    if (mpu_write_mem(CFG_6, 12, (unsigned char*)regs_end)){
+    	printf("ERROR: writing dmp regs_end");
         return -1;
-
+    }
     return 0;
 }
 
@@ -1392,10 +1385,10 @@ int mpu_set_dmp_state(unsigned char enable){
         set_int_enable(0);
         /* Disable bypass mode. */
         mpu_set_bypass(0);
-		if(mpu_set_sample_rate(config.dmp_sample_rate)){
-			printf("ERROR in mpu_set_dmp_date can't change sample rate\n");
-			return -1;
-		}
+		// if(mpu_set_sample_rate(config.dmp_sample_rate)){
+		// 	printf("ERROR in mpu_set_dmp_date can't change sample rate\n");
+		// 	return -1;
+		// }
         /* Remove FIFO elements. */
         i2c_write_byte(IMU_BUS, FIFO_EN , 0);
         /* Enable DMP interrupt. */
@@ -1847,11 +1840,12 @@ int data_fusion(){
 		
 		// generate complementary filters
 		float dt = 1.0/config.dmp_sample_rate;
-		low_pass  = generateFirstOrderLowPass(dt,config.compass_time_constant);
-		high_pass = generateFirstOrderHighPass(dt,config.compass_time_constant);
+		low_pass =create_first_order_low_pass(dt,config.compass_time_constant);
+		high_pass=create_first_order_high_pass(dt,config.compass_time_constant);
 		prefill_filter_inputs(&low_pass,newMagYaw);
 		prefill_filter_outputs(&low_pass,newMagYaw);
 		prefill_filter_inputs(&high_pass,newDMPYaw);
+		prefill_filter_outputs(&high_pass,0);
 		first_run = 0;
 	}
 	
@@ -2353,7 +2347,7 @@ int calibrate_mag_routine(){
 	mag_scales[0]  = 1.0;
 	mag_scales[1]  = 1.0;
 	mag_scales[2]  = 1.0;
-	matrix_t A = createMatrix(samples,3);
+	matrix_t A = create_matrix(samples,3);
 	i = 0;
 		
 	// sample data
@@ -2397,27 +2391,27 @@ int calibrate_mag_routine(){
 	
 	// make empty vectors for ellipsoid fitting to populate
 	vector_t center,lengths;
- 	if(fitEllipsoid(A,&center,&lengths)<0){
+ 	if(fit_ellipsoid(A,&center,&lengths)<0){
  		printf("failed to fit ellipsoid to magnetometer data\n");
- 		destroyMatrix(&A);
+ 		destroy_matrix(&A);
  		return -1;
  	}
- 	destroyMatrix(&A); // empty memory, we are done with A
+ 	destroy_matrix(&A); // empty memory, we are done with A
  	
  	// do some sanity checks to make sure data is reasonable
  	if(fabs(center.data[0])>70 || fabs(center.data[1])>70 || \
  											fabs(center.data[2])>70){
  		printf("ERROR: center of fitted ellipsoid out of bounds\n");
- 		destroyVector(&center);
- 		destroyVector(&lengths);
+ 		destroy_vector(&center);
+ 		destroy_vector(&lengths);
  		return -1;
  	}
  	if(lengths.data[0]>140 || lengths.data[0]<5 || \
  	   lengths.data[1]>140 || lengths.data[1]<5 || \
  	   lengths.data[2]>140 || lengths.data[2]<5){
  		printf("ERROR: length of fitted ellipsoid out of bounds\n");
- 		destroyVector(&center);
- 		destroyVector(&lengths);
+ 		destroy_vector(&center);
+ 		destroy_vector(&lengths);
  		return -1;
  	}
  	

@@ -32,12 +32,25 @@ typedef struct timeval timeval;
 *
 * This removes the pid file and closes file pointers cleanly. 
 * 
+* * @ int kill_robot()
+*
+* This function is used by initialize_cape to make sure any existing program
+* using the robotics cape lib is stopped. The user doesn't need to integrate
+* this in their own program as initialize_cape calls it. However, the user may
+* call the kill_robot example program from the command line to close whatever
+* program is running in the background.
+* return values:
+* -2 : invalid contents in PID_FILE
+* -1 : existing project failed to close cleanly and had to be killed
+*  0 : No existing program is running
+*  1 : An existing program was running but it shut down cleanly.
 *
 * All example programs use these functions. See the bare_minimum example 
 * for a skeleton outline.
 *******************************************************************************/
-int initialize_cape();
-int cleanup_cape();		// call at the very end of main()
+int initialize_cape(); 	// call at the beginning of main()
+int cleanup_cape();		// call at the end of main()
+int kill_robot();		// not usually necessary, use kill_robot example instead
 
 
 /*******************************************************************************
@@ -732,23 +745,6 @@ int uart_read_line(int bus, int max_bytes, char* buf);
 
 
 /*******************************************************************************
-* @ int kill_robot()
-*
-* This function is used by initialize_cape to make sure any existing program
-* using the robotics cape lib is stopped. The user doesn't need to integrate
-* this in their own program as initialize_cape calls it. However, the user may
-* call the kill_robot example program from the command line to close whatever
-* program is running in the background.
-* 
-* return values:
-* -2 : invalid contents in PID_FILE
-* -1 : existing project failed to close cleanly and had to be killed
-*  0 : No existing program is running
-*  1 : An existing program was running but it shut down cleanly.
-*******************************************************************************/
-int kill_robot();
-
-/*******************************************************************************
 * CPU Frequency Control
 *
 * @ int set_cpu_frequency(cpu_frequency_t freq)
@@ -768,7 +764,6 @@ int kill_robot();
 * Prints the current frequency to the screen. For example "300MHZ".
 * Returns 0 on success or -1 on failure.
 *******************************************************************************/
-
 typedef enum cpu_frequency_t{
 	FREQ_ONDEMAND,
 	FREQ_300MHZ,
@@ -893,7 +888,7 @@ void TaitBryanToQuaternion(float v[3], float q[4]);
 void tilt_compensate(float in[4], float tilt[4], float out[4]);
 void quaternionConjugate(float in[4], float out[4]);
 void quaternionMultiply(float a[4], float b[4], float out[4]);
-float vector3DotProduct(float a[3], float b[3]);
+float vector3vector_dot_product(float a[3], float b[3]);
 void vector3CrossProduct(float a[3], float b[3], float d[3]);
 
 /*******************************************************************************
@@ -901,12 +896,10 @@ void vector3CrossProduct(float a[3], float b[3], float d[3]);
 *
 *
 *******************************************************************************/
-
 typedef struct matrix_t{
 	int rows;
 	int cols;
 	float** data;
-	float* dynamic;
 	int initialized;
 } matrix_t;
 
@@ -916,62 +909,61 @@ typedef struct vector_t{
 	int initialized;
 } vector_t;
 
-
 // Basic Matrix creation, modification, and access
-matrix_t createMatrix(int rows, int cols);
-matrix_t duplicateMatrix(matrix_t A);
-matrix_t createSquareMatrix(int n);
-matrix_t createRandomMatrix(int rows, int cols);
-matrix_t createIdentityMatrix(int dim);
-matrix_t createDiagonalMatrix(vector_t v);
-matrix_t createMatrixOfOnes(int dim);
-int setMatrixEntry(matrix_t* A, int row, int col, float val);
-float getMatrixEntry(matrix_t A, int row, int col);
-void printMatrix(matrix_t A);
-void printMatrixSciNotation(matrix_t A);
-void destroyMatrix(matrix_t* A);
+matrix_t create_matrix(int rows, int cols);
+void destroy_matrix(matrix_t* A);
+matrix_t duplicate_matrix(matrix_t A);
+matrix_t create_square_matrix(int n);
+matrix_t create_random_matrix(int rows, int cols);
+matrix_t create_identity_matrix(int dim);
+matrix_t create_diagonal_matrix(vector_t v);
+matrix_t create_matrix_of_ones(int dim);
+int set_matrix_entry(matrix_t* A, int row, int col, float val);
+float get_matrix_entry(matrix_t A, int row, int col);
+void print_matrix(matrix_t A);
+void print_matrix_sci_notation(matrix_t A);
 
 // Basic Vector creation, modification, and access
-vector_t createVector(int n);
-vector_t duplicateVector(vector_t v);
-vector_t createRandomVector(int len);
-vector_t createVectorOfOnes(int len);
-vector_t createVectorFromArray(int len, float array[]);
-int setVectorEntry(vector_t* v, int pos, float val);
-float getVectorEntry(vector_t v, int pos);
-void printVector(vector_t v);
-void printVectorSciNotation(vector_t v);
-void destroyVector(vector_t* v);
+vector_t create_vector(int n);
+void destroy_vector(vector_t* v);
+vector_t duplicate_vector(vector_t v);
+vector_t create_random_vector(int len);
+vector_t create_vector_of_ones(int len);
+vector_t create_vector_from_array(int len, float* array);
+int set_vector_entry(vector_t* v, int pos, float val);
+float get_vector_entry(vector_t v, int pos);
+void print_vector(vector_t v);
+void print_vector_sci_notation(vector_t v);
 
-// Matrix Multiplication, Addition, and other transforms
-matrix_t matrixMultiply(matrix_t A, matrix_t B);
-int matrixTimesScalar(matrix_t* A, float s);
-int vectorTimesScalar(vector_t* v, float s);
-vector_t matrixTimesColVec(matrix_t A, vector_t v);
-vector_t rowVecTimesMatrix(vector_t v, matrix_t A);
-matrix_t matrixAdd(matrix_t A, matrix_t B);
-int transposeMatrix(matrix_t* A);
+// Multiplication, Addition, and other transforms
+int multiply_matrices(matrix_t A, matrix_t Bm, matrix_t* out);
+int matrix_times_scalar(matrix_t* A, float s);
+int vector_times_scalar(vector_t* v, float s);
+vector_t matrix_times_col_vec(matrix_t A, vector_t v);
+vector_t row_vec_times_matrix(vector_t v, matrix_t A);
+int add_matrices(matrix_t A, matrix_t B, matrix_t* out);
+int transpose_matrix(matrix_t* A);
 
 // vector operations
-float vectorNorm(vector_t v);
-vector_t vectorProjection(vector_t v, vector_t e);
-matrix_t outerProduct(vector_t v1, vector_t v2);
-float dotProduct(vector_t v1, vector_t v2);
-vector_t crossProduct3D(vector_t v1, vector_t v2);
-int polyConv(vector_t v1, vector_t v2, vector_t* out);
-int polyPower(vector_t v, int order, vector_t* out);
+float vector_norm(vector_t v);
+vector_t vector_projection(vector_t v, vector_t e);
+matrix_t vector_outer_product(vector_t v1, vector_t v2);
+float vector_dot_product(vector_t v1, vector_t v2);
+vector_t cross_product_3d(vector_t v1, vector_t v2);
+int polynomial_convolution(vector_t v1, vector_t v2, vector_t* out);
+int polynomial_power(vector_t v, int order, vector_t* out);
 
 // Advanced matrix operations
-float matrixDeterminant(matrix_t A);
-int LUPdecomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P);
-int QRdecomposition(matrix_t A, matrix_t* Q, matrix_t* R);
-int invertMatrix(matrix_t* A);
-matrix_t Householder(vector_t v);
+float matrix_determinant(matrix_t A);
+int LUP_decomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P);
+int QR_decomposition(matrix_t A, matrix_t* Q, matrix_t* R);
+int invert_matrix(matrix_t A, matrix_t* out);
+matrix_t householder_matrix(vector_t v);
 
 // linear system solvers
-vector_t linSolve(matrix_t A, vector_t b);
-vector_t linSolveQR(matrix_t A, vector_t b);
-int fitEllipsoid(matrix_t points, vector_t* center, vector_t* lengths);
+vector_t lin_system_solve(matrix_t A, vector_t b);
+vector_t lin_system_solve_qr(matrix_t A, vector_t b);
+int fit_ellipsoid(matrix_t points, vector_t* center, vector_t* lengths);
 
 
 /*******************************************************************************
@@ -1029,7 +1021,7 @@ float get_ring_buf_value(ring_buf_t* buf, int position);
 * You may read values directly from your own instance of the d_filter_t struct.
 * To modify the contents of the filter please use the functions provided here.
 *
-* @ d_filter_t generateFilter(int order,float dt,float num[],float den[])
+* @ d_filter_t create_filter(int order,float dt,float num[],float den[])
 *
 * Allocate memory for a filter of specified order & fill with transfer
 * function constants. Use enable_saturation immediately after this if you want
@@ -1075,24 +1067,24 @@ float get_ring_buf_value(ring_buf_t* buf, int position);
 * Returns the most recent input to the filter. Alternatively the user could
 * access the value from their d_filter_t_t struct with filter.newest_input
 *
-* @ d_filter_t generateFirstOrderLowPass(float dt, float time_constant)
+* @ d_filter_t create_first_order_low_pass(float dt, float time_constant)
 *
 * Returns a configured and ready to use d_filter_t_t struct with a first order
 * low pass transfer function. dt is in units of seconds and time_constant is 
 * the number of seconds it takes to rise to 63.4% of a steady-state input.
 *
-* @ d_filter_t generateFirstOrderHighPass(float dt, float time_constant)
+* @ d_filter_t create_first_order_high_pass(float dt, float time_constant)
 *
 * Returns a configured and ready to use d_filter_t_t struct with a first order
 * high pass transfer function. dt is in units of seconds and time_constant is 
 * the number of seconds it takes to decay by 63.4% of a steady-state input.
 *
-* @ d_filter_t generateIntegrator(float dt)
+* @ d_filter_t create_integrator(float dt)
 *
 * Returns a configured and ready to use d_filter_t_t struct with the transfer
 * function for a first order time integral.
 *
-* @ d_filter_t generatePID(float kp, float ki, float kd, float Tf, float dt)
+* @ d_filter_t create_pid(float kp, float ki, float kd, float Tf, float dt)
 *
 * discrete-time implementation of a parallel PID controller with rolloff.
 * This is equivalent to the Matlab function: C = pid(Kp,Ki,Kd,Tf,Ts)
@@ -1126,7 +1118,7 @@ typedef struct d_filter_t{
 	int initialized;
 } d_filter_t;
 
-d_filter_t generate_filter(int order, float dt, float num[], float den[]);
+d_filter_t create_filter(int order, float dt, float* num, float* den);
 int destroy_filter(d_filter_t* filter);
 float march_filter(d_filter_t* filter, float new_input);
 int reset_filter(d_filter_t* filter);
@@ -1138,11 +1130,14 @@ float newest_filter_output(d_filter_t* filter);
 float newest_filter_input(d_filter_t* filter);
 int prefill_filter_inputs(d_filter_t* filter, float in);
 int prefill_filter_outputs(d_filter_t* filter, float out);
-d_filter_t generateFirstOrderLowPass(float dt, float time_constant);
-d_filter_t generateFirstOrderHighPass(float dt, float time_constant);
-d_filter_t generateIntegrator(float dt);
-d_filter_t generatePID(float kp, float ki, float kd, float Tf, float dt);
 int print_filter_details(d_filter_t* filter);
+int multiply_filters(d_filter_t f1, d_filter_t f2, d_filter_t* out);
+d_filter_t create_first_order_low_pass(float dt, float time_constant);
+d_filter_t create_first_order_high_pass(float dt, float time_constant);
+d_filter_t create_integrator(float dt);
+d_filter_t create_double_integrator(float dt);
+d_filter_t create_pid(float kp, float ki, float kd, float Tf, float dt);
+
 
 	
 #endif //ROBOTICS_CAPE

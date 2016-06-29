@@ -25,9 +25,9 @@ int main(){
 	printf(" Time Constant: %5.2f ", TIME_CONSTANT);
 	printf(" dt: %6.2f \n\n", dt);
 	
-	low_pass   = generateFirstOrderLowPass(dt, TIME_CONSTANT);
-	high_pass  = generateFirstOrderHighPass(dt, TIME_CONSTANT);
-	integrator = generateIntegrator(dt);
+	low_pass   = create_first_order_low_pass(dt, TIME_CONSTANT);
+	high_pass  = create_first_order_high_pass(dt, TIME_CONSTANT);
+	integrator = create_integrator(dt);
 
 	reset_filter(&low_pass);
 	reset_filter(&high_pass);
@@ -43,9 +43,9 @@ int main(){
 
 	// Keep Running until program state changes to EXITING
 	u=1;
-	prefill_filter_outputs(&low_pass,u);
-	prefill_filter_inputs(&low_pass, u);
 	while(get_state() != EXITING){
+		// march all filters one step forward with u as the common input.
+		// new outputs saved as lp,hp,and i. complement is lp+hp
 		lp = march_filter(&low_pass, u);
 		hp = march_filter(&high_pass, u);
 		i  = march_filter(&integrator, u);
@@ -58,6 +58,7 @@ int main(){
 		printf("%7.2f   |", i);
 		fflush(stdout);
 		
+		// toggle u between 0 and 1 every 10 seconds
 		counter++;
 		if(counter >= SAMPLE_RATE*10){
 			counter = 0;
