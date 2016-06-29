@@ -54,7 +54,11 @@ int main(){
 	print_matrix(Ainv);
 	
 	// multiply A times A inverse
-	matrix_t AA = multiply_matrices(A,Ainv);
+	matrix_t AA;
+	if(multiply_matrices(A,Ainv,&AA)){
+		printf("ERROR: can't multiply matrices\n");
+		return -1;
+	}
 	printf("\nA * A^(-1):\n");
 	print_matrix(AA);
 	
@@ -71,7 +75,7 @@ int main(){
 	// If b are the coefficients of a polynomial, get the coefficients of the
 	// new polynomial b^2
 	vector_t bb;
-	polyPower(b,2,&bb);
+	polynomial_power(b,2,&bb);
 	printf("Coefficients of polynomial b times itself\n");
 	print_vector(bb);
 	
