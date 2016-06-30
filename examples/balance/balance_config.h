@@ -10,67 +10,63 @@
 #ifndef BALANCE_CONFIG
 #define BALANCE_CONFIG
 
-#define CONFIG_TABLE\
-	X(float,  	bb_mount_angle,			0.40		) \
-	X(float,  	gearbox, 				35.577		) \
-	X(float,  	encoder_res,			60			) \
-	X(float,  	wheel_radius, 			0.034		) \
-	X(float,  	track_width, 			0.035		) \
-													  \
-	X(float,  	K_D1, 					1.0			) \
-    X(float,  	numD1_0, 				-6.289		) \
-    X(float,  	numD1_1, 				11.91		) \
-    X(float,  	numD1_2, 				-5.634		) \
-	X(float,  	denD1_0, 				1			) \
-    X(float,  	denD1_1, 				-1.702		) \
-    X(float,  	denD1_2, 				0.702		) \
-													  \
-	X(float,  	K_D2, 					0.7			) \
-    X(float,  	numD2_0, 				0.3858		) \
-    X(float,  	numD2_1, 				-0.3853		) \
-    X(float,  	numD2_2, 				0.0			) \
-    X(float,  	denD2_0, 				1.0 		) \
-    X(float,  	denD2_1, 				-0.9277		) \
-    X(float,  	denD2_2, 				0.0			) \
-	X(float,  	theta_ref_max, 			0.37		) \
-													  \
-	X(float,  	KP_steer, 				1.0			) \
-	X(float,  	KD_steer,				0.1			) \
-													  \
-	X(int,  	motor_channel_L, 		4			) \
-	X(int,  	motor_channel_R,		1			) \
-	X(int,  	encoder_channel_L, 		3			) \
-	X(int,  	encoder_channel_R, 		2			) \
-													  \
-	X(float,  	drive_rate_novice, 		16			) \
-	X(float,  	turn_rate_novice, 		6			) \
-	X(float,  	drive_rate_advanced, 	26			) \
-	X(float,  	turn_rate_advanced, 	10			) \
-													  \
-	X(float,  	tip_angle, 				0.75		) \
-	X(float,  	start_angle, 			0.3			) \
-	X(float,  	start_delay, 			0.5			) \
-	X(float,  	pickup_detection_time, 	0.65		) \
-	X(float,  	v_nominal, 				7.4			) \
-													  \
-	X(int,  	enable_dsm2, 	 	 	1			) \
-	X(int,  	dsm2_drive_polarity,	1			) \
-	X(int,  	dsm2_turn_polarity,  	-1			) \
-	X(int,		dsm2_drive_ch, 	 	 	3			) \
-	X(int,  	dsm2_turn_ch, 	 	 	2			) \
-	X(int,  	dsm2_mode_ch, 	 	 	5			) \
-	X(int,  	dsm2_timeout_ms, 	 	500			) \
-	
+#define SAMPLE_RATE_HZ 200	// main filter and control loop speed
+#define DT 0.005       		// 1/sample_rate
 
-	
-// balance_config_t struct type definition
-#define X(type, fmt, name, default) type name ;
-typedef struct balance_config_t { CONFIG_TABLE } balance_config_t;
-#undef X
+// Structural properties of eduMiP
+#define 	CAPE_MOUNT_ANGLE		0.40
+#define 	GEARBOX 				35.577
+#define 	ENCODER_RES				60
+#define 	WHEEL_RADIUS_M			0.034
+#define 	TRACK_WIDTH_M			0.035
+#define 	V_NOMINAL				7.4
 
-// now create an instance of this struct filled with defaults
-#define X(type, name, default) default ,
-balance_config_t config = { CONFIG_TABLE };
-#undef X
+// inner loop controller
+#define 	D1_K					1.0	
+#define 	D1_ORDER				2
+#define 	D1_NUM					{-6.289, 11.910, -5.634 }
+#define 	D1_DEN					{ 1.000, -1.702,  0.702 }
+
+// outer loop controller
+#define 	D2_K					0.7
+#define		D2_ORDER				1
+#define 	D2_NUM					{ 0.3858, -0.3853 }
+#define 	D2_DEN					{ 1.0000, -0.9277 }
+#define 	D2_SATURATION			0.37
+
+// steering controller
+#define 	D3_KP					1.0
+#define 	D3_KI					0.05
+#define 	D3_KD					0.1
+
+// electrical hookups
+#define 	MOTOR_CHANNEL_L 		4
+#define 	MOTOR_CHANNEL_R 		1
+#define 	MOTOR_POLARITY_L 		1
+#define 	MOTOR_POLARITY_R 		-1
+#define 	ENCODER_CHANNEL_L 		3
+#define 	ENCODER_CHANNEL_R 		2
+#define 	ENCODER_POLARITY_L 		1
+#define 	ENCODER_POLARITY_R 		-1
+
+//	drive speeds when using remote control (dsm2)
+#define 	DRIVE_RATE_NOVICE 		16
+#define 	TURN_RATE_NOVICE		6
+#define 	DRIVE_RATE_ADVANCED		26
+#define 	TURN_RATE_ADVANCED		10
+
+// DSM2 channel config
+#define 	DSM2_DRIVE_POLARITY		1
+#define 	DSM2_TURN_POLARITY  	-1
+#define 	DSM2_DRIVE_CH 	 	 	3
+#define 	DSM2_TURN_CH 	 	 	2
+#define 	DSM2_DEAD_ZONE			0.04
+
+// stop/start criteria 
+#define 	TIP_ANGLE 				0.75
+#define 	START_ANGLE 			0.3	
+#define 	START_DELAY 			0.5	
+#define 	PICKUP_DETECTION_TIME 	0.65
+
 
 #endif //BALANCE_CONFIG
