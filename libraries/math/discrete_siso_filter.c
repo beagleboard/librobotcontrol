@@ -143,11 +143,11 @@ int enable_saturation(d_filter_t* filter, float min, float max){
 }
 
 /*******************************************************************************
-* int did_filter_t_saturate(d_filter_t* filter)
+* int did_filter_saturate(d_filter_t* filter)
 *
 * Returns 1 if the filter saturated the last time step. Returns 0 otherwise.
 *******************************************************************************/
-int did_filter_t_saturate(d_filter_t* filter){
+int did_filter_saturate(d_filter_t* filter){
 	if(filter->initialized != 1){
 		printf("ERROR: filter not initialized yet\n");
 		return -1;

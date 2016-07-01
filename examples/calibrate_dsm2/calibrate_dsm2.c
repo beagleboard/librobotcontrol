@@ -1,8 +1,15 @@
 /*******************************************************************************
 * calibrate_dsm2.c
 *
-* run the build in calibration routine to save the limits of each channel
-* transmitted by your dsm2/dsmx radio
+* James Strawson 2016
+* Running the calibrate_dsm2 example will print out raw data to the console and 
+* record the min and max values for each channel. These limits will be saved to
+* disk so future dsm2 reads will be scaled correctly.
+* 
+* Make sure the transmitter and receiver are paired before testing. 
+* Use the pair_dsm2 example if you haven't already used a bind plug and standard 
+* receiver to pair. The satellite receiver remembers which transmitter it is 
+* paired to, not your BeagleBone.
 *******************************************************************************/
 
 #include <useful_includes.h>

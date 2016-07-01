@@ -1,7 +1,7 @@
 /*******************************************************************************
 * calibrate_mag.c
-* James Strawson - 2016
 *
+* James Strawson - 2016
 * This function serves as a command line interface for the calibrate_mag
 * routine. If the routine is successful, a new magnetometer calibration file
 * will be saved which is loaded automatically the next time the IMU is used.

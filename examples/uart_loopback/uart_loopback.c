@@ -1,6 +1,7 @@
 /*******************************************************************************
 * uart_loopback.c
 *
+* James Strawson 2016
 * This is a test to check read and write operation of UART buses. 
 * For this example to work, connect the RX and TX wires of one of the included 
 * 4-pin JST-SH pigtails and plug into the UART1 or UART5 headers. You may also 

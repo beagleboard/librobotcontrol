@@ -1,6 +1,7 @@
 /*******************************************************************************
 * test_algebra.c
 *
+* James Strawson 2016
 * This tests some of the more common functions in linear_algebra.c, it is not a
 * complete test of all available linear algebra functions but should get you
 * started.

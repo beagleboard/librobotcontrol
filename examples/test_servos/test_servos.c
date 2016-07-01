@@ -1,7 +1,35 @@
 /*******************************************************************************
 * test_servos.c
 *
-* See README.TXT for details
+* James Strawson 2016
+* Demonstrates use of pru to control servos and ESCs with pulses.
+* This program operates in 4 different modes. See the option list below
+* for how to select an operational mode from the command line.
+*
+* SERVO: uses send_servo_pulse_normalized() to set one or all servo positions
+* to a value from -1.5 to 1.5 corresponding to their extended range. 
+* -1 to 1 is considered the "safe" normal range as some servos will not go 
+* beyond this. Test your servos incrementally to find their safe range.
+*
+* ESC: For unidirectional brushless motor speed controllers specify a range from
+* 0 to 1 as opposed to the bidirectional servo range. Be sure to run the
+* calibrate_esc example first to make sure the ESCs are calibrated to the right
+* pulse range. This mode uses the send_esc_pulse_normalized() function.
+*
+* MICROSECONDS: You can also specify your own pulse width in microseconds (us).
+* This uses the send_servo_pulse_us() function.
+*
+* SWEEP: This is intended to gently sweep a servo back and forth about the
+* center position. Specify a range limit as a command line argument as described
+* below. This also uses the send_servo_pulse_normalized() function.
+* 
+* 
+* SERVO POWER RAIL: The robotics cape has a software-controlled 6V power
+* regulator allowing controlled steady power to drive servos. This can be
+* enabled at the command line with the -v option. It will not allow you to
+* enable the power rail when using the ESC mode as sending 6V into an ESC
+* may damage it. It is best to physically cut the center wire on ESC connections
+* as the BEC function is not needed when using the Robotics Cape.
 *******************************************************************************/
 
 #include <robotics_cape.h>

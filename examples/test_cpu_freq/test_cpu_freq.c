@@ -1,6 +1,7 @@
 /*******************************************************************************
 * test_cpu_freq.c
 *
+* James Strawson 2016
 * This cycles the CPU through each available frequency and leaves the frequency
 * set to the default "ondemand" governor.
 *******************************************************************************/

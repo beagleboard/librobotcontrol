@@ -82,8 +82,8 @@ if [ ! -f /usr/lib/libprussdrv.so ]; then
 fi
 
 # make sure the user really wants to install
+echo ""
 echo "This script will install all Robotics Cape supporting software."
-echo "This is for SD-101D Revision D capes ONLY!!!!"
 read -r -p "Continue? [y/n] " response
 case $response in
     [yY]) echo " " ;;
@@ -159,13 +159,13 @@ make clean
 cd ../
 
 
-# echo "Installing examples, this will take a few minutes."
-# find examples/ -exec touch {} \;
-# cd examples
-# make clean > /dev/null
-# make install > /dev/null
-# make clean > /dev/null
-# cd ../
+echo "Installing examples, this will take a minute."
+find examples/ -exec touch {} \;
+cd examples
+make clean > /dev/null
+make install > /dev/null
+make clean > /dev/null
+cd ../
 
 # make sure config diectory exists
 if [ ! -a "$CONFIG_DIR" ]; then
@@ -189,10 +189,9 @@ echo "Which program should run on boot?"
 echo "This will overwrite any program in " $AUTO_RUN_DIR
 echo "Select 'existing' to keep current configuration."
 echo "type 1-5 then enter"
-select bfn in "blink" "drive" "balance" "none" "existing"; do
+select bfn in "blink" "balance" "none" "existing"; do
     case $bfn in
 		blink ) PROG="blink"; break;;
-		drive ) PROG="drive"; break;;
         balance ) PROG="balance"; break;;
 		none ) PROG="none"; break;;
 		existing ) PROG="existing"; break;;

@@ -1,48 +1,19 @@
 /*******************************************************************************
 * balance.c
 *
-* See README.TXT for description
-
-Copyright (c) 2016, James Strawson
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
-2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
-either expressed or implied, of the FreeBSD Project.
+* James Strawson 2016
+* Reference solution for balancing EduMiP
 *******************************************************************************/
 
 #include <useful_includes.h>
 #include <robotics_cape.h>
 #include "balance_config.h"
 
-
 /*******************************************************************************
-* 	drive_mode_t
+* drive_mode_t
 *
-*	NOVICE: Drive rate and turn rate are limited to 
-*	make driving easier.
-*
-*	ADVANCED: Faster drive and turn rate for more fun.
+* NOVICE: Drive rate and turn rate are limited to make driving easier.
+* ADVANCED: Faster drive and turn rate for more fun.
 *******************************************************************************/
 typedef enum drive_mode_t{
 	NOVICE,
@@ -50,9 +21,9 @@ typedef enum drive_mode_t{
 }drive_mode_t;
 
 /*******************************************************************************
-* 	arm_state_t
+* arm_state_t
 *
-*	ARMED or DISARMED to indicate if the controller is running
+* ARMED or DISARMED to indicate if the controller is running
 *******************************************************************************/
 typedef enum arm_state_t{
 	ARMED,
@@ -60,39 +31,37 @@ typedef enum arm_state_t{
 }arm_state_t;
 
 /*******************************************************************************
-* 	setpoint_t
-*	setpoint for the balance controller
-*	This is controlled by the balance stack and read by the balance core	
+* setpoint_t
+*	
+* Controller setpoint written to by setpoint_manager and read by the controller.
 *******************************************************************************/
 typedef struct setpoint_t{
 	arm_state_t arm_state;	// see arm_state_t declaration
-	drive_mode_t drive_mode; // NOVICE or ADVANCED
-	float theta;		// body lean angle (rad)
-	float phi;			// wheel position (rad)
-	float phi_dot;		// rate at which phi reference updates (rad/s)
-	float gamma;		// body turn angle (rad)
-	float gamma_dot;	// rate at which gamma setpoint updates (rad/s)
+	drive_mode_t drive_mode;// NOVICE or ADVANCED
+	float theta;			// body lean angle (rad)
+	float phi;				// wheel position (rad)
+	float phi_dot;			// rate at which phi reference updates (rad/s)
+	float gamma;			// body turn angle (rad)
+	float gamma_dot;		// rate at which gamma setpoint updates (rad/s)
 }setpoint_t;
 
 /*******************************************************************************
-* 	core_state_t
-*	contains workings of the feedback controller
-*	Should only be written to by the balance core after 
-*	initialization		
+* core_state_t
+*
+* This is the system state written to by the balance controller.	
 *******************************************************************************/
 typedef struct core_state_t{
-	float wheelAngleR;	// wheen rotation relative to body
+	float wheelAngleR;	// wheel rotation relative to body
 	float wheelAngleL;
 	float theta; 		// body angle radians
 	float phi;			// average wheel angle in global frame
 	float gamma;		// body turn (yaw) angle radians
 	float vBatt; 		// battery voltage 
-	float u;
+	float u;			// balance control input to motors from D1
 } core_state_t;
 
-
 /*******************************************************************************
-* 	Local Function declarations	
+* Local Function declarations	
 *******************************************************************************/
 // IMU interrupt routine
 int balance_controller(); 
@@ -111,7 +80,7 @@ int blink_green();
 int blink_red();
 
 /*******************************************************************************
-* 	Global Variables				
+* Global Variables				
 *******************************************************************************/
 core_state_t cstate;
 setpoint_t setpoint;
@@ -121,11 +90,13 @@ imu_data_t imu_data;
 /*******************************************************************************
 * main()
 *
-* Initialize the filters, IMU, and threads,
-* and wait still something triggers a shut down
+* Initialize the filters, IMU, threads, & wait untill shut down
 *******************************************************************************/
 int main(){
-	initialize_cape();
+	if(initialize_cape()<0){
+		printf("ERROR: failed to initialize cape\n");
+		return -1;
+	}
 	set_led(RED,1);
 	set_led(GREEN,0);
 	set_state(UNINITIALIZED);
@@ -147,8 +118,7 @@ int main(){
 	// set up D3 steering controller
 	D3 = create_pid(D3_KP, D3_KI, D3_KD, 4*DT, DT);
 
-	// set up button handlers first
-	// so user can exit by holding pause
+	// set up button handlers
 	set_pause_pressed_func(&on_pause_press);
 	set_mode_released_func(&on_mode_release);
 	
@@ -167,7 +137,6 @@ int main(){
 	imu_config_t imu_config = get_default_imu_config();
 	imu_config.dmp_sample_rate = SAMPLE_RATE_HZ;
 	imu_config.orientation = ORIENTATION_Y_UP;
-	imu_config.enable_magnetometer = 1;
 
 	// start imu
 	if(initialize_imu_dmp(&imu_data, imu_config)){
@@ -241,10 +210,8 @@ void* setpoint_manager(void* ptr){
 		if(is_new_dsm2_data()){
 			// Read normalized (+-1) inputs from RC radio stick and multiply by 
 			// polarity setting so positive stick means positive setpoint
-			turn_stick  = get_dsm2_ch_normalized(DSM2_TURN_CH) \
-														 * DSM2_TURN_POLARITY;
-			drive_stick = get_dsm2_ch_normalized(DSM2_DRIVE_CH) \
-														* DSM2_DRIVE_POLARITY;
+			turn_stick  = get_dsm2_ch_normalized(DSM2_TURN_CH) * DSM2_TURN_POL;
+			drive_stick = get_dsm2_ch_normalized(DSM2_DRIVE_CH)* DSM2_DRIVE_POL;
 			
 			// saturate the inputs to avoid possible erratic behavior
 			saturate_float(&drive_stick,-1,1);
@@ -276,28 +243,26 @@ void* setpoint_manager(void* ptr){
 		}
 	}
 
+	// if state becomes EXITING the above loop exists and we disarm here
 	disarm_controller();
 	return NULL;
 }
 
 /*******************************************************************************
-* 	balance_controller()
+* balance_controller()
 *
-*	discrete-time balance controller operated off IMU interrupt
-*	Called at SAMPLE_RATE_HZ
+* discrete-time balance controller operated off IMU interrupt
+* Called at SAMPLE_RATE_HZ
 *******************************************************************************/
 int balance_controller(){
-	// local variables only in memory scope of balance_controller
 	static int inner_saturation_counter = 0; 
 	float compensated_u, steering_u, dutyL, dutyR;
 	
-	/**************************************************************
-	*	STATE_ESTIMATION
-	*	read sensors and compute the state regardless of if the 
-	*	controller is ARMED or DISARMED
-	***************************************************************/
-	// angle theta is positive in the direction of forward tip
-	// add mounting angle of BBB
+	/******************************************************************
+	* STATE_ESTIMATION
+	* read sensors and compute the state when either ARMED or DISARMED
+	******************************************************************/
+	// angle theta is positive in the direction of forward tip around X axis
 	cstate.theta = imu_data.fused_TaitBryan[TB_PITCH_X] + CAPE_MOUNT_ANGLE; 
 	
 	// collect encoder positions, right wheel is reversed 
@@ -306,28 +271,26 @@ int balance_controller(){
 	cstate.wheelAngleL = (get_encoder_pos(ENCODER_CHANNEL_L) * TWO_PI) \
 								/(ENCODER_POLARITY_L * GEARBOX * ENCODER_RES);
 	
-	// log phi estimate
-	// add theta body angle to get absolute wheel position
+	// Phi is average wheel rotation also add theta body angle to get absolute 
+	// wheel position in global frame since encoders are attachde to the body
 	cstate.phi = ((cstate.wheelAngleL+cstate.wheelAngleR)/2) + cstate.theta; 
 	
 	// steering angle gamma estimate 
 	cstate.gamma = (cstate.wheelAngleL-cstate.wheelAngleR) \
 											* (WHEEL_RADIUS_M/TRACK_WIDTH_M);
-	
 
 	/*************************************************************
-	*	check for various exit conditions AFTER state estimate
+	* check for various exit conditions AFTER state estimate
 	***************************************************************/
 	if(get_state() == EXITING){
 		disable_motors();
 		return 0;
 	}
-	// if controller is still ARMED while state is PA, disarm it
-	if(get_state() != RUNNING){
-		if(setpoint.arm_state==ARMED) disarm_controller();
+	// if controller is still ARMED while state is PAUSED, disarm it
+	if(get_state()!=RUNNING && setpoint.arm_state==ARMED){
+		disarm_controller();
 		return 0;
 	}
-
 	// exit if the controller is disarmed
 	if(setpoint.arm_state==DISARMED){
 		return 0;
@@ -340,25 +303,26 @@ int balance_controller(){
 		return 0;
 	}
 	
-	/**********************************************************
-	*	OUTER LOOP PHI controller D2
-	***********************************************************/
-	// move the position set points based on user input
+	/************************************************************
+	* OUTER LOOP PHI controller D2
+	* Move the position setpoint based on phi_dot. 
+	* Input to the controller is phi error (setpoint-state).
+	*************************************************************/
 	if(setpoint.phi_dot != 0.0) setpoint.phi += setpoint.phi_dot * DT;
-	// march the different equation terms for the input Phi Error
 	setpoint.theta = march_filter(&D2,setpoint.phi-cstate.phi);
 	
-	
-	/**********************************************************
-	*	INNER LOOP ANGLE Theta controller D1
-	***********************************************************/
+	/************************************************************
+	* INNER LOOP ANGLE Theta controller D1
+	* Input to D1 is theta error (setpoint-state). Then scale the 
+	* output u to compensate for changing battery voltage.
+	*************************************************************/
 	cstate.u = march_filter(&D1,setpoint.theta - cstate.theta);
 	compensated_u = cstate.u * V_NOMINAL/cstate.vBatt;
 
-
-	/**********************************************************
-	*	check saturation
-	***********************************************************/
+	/*************************************************************
+	* Check if the inner loop saturated. If it saturates for over
+	* a second disarm the controller to prevent stalling motors.
+	*************************************************************/
 	if(did_filter_saturate(&D1)) inner_saturation_counter++;
 	else inner_saturation_counter=0;
 	// if saturate for a second, disarm for safety
@@ -370,36 +334,29 @@ int balance_controller(){
 	}
 	
 	/**********************************************************
-	*	steering controller D3
+	* gama (steering) controller D3
+	* move the setpoint gamma based on user input like phi
 	***********************************************************/
-	// move the controller set points based on user input
 	if(setpoint.gamma_dot != 0.0) setpoint.gamma += setpoint.gamma_dot * DT;
 	steering_u = march_filter(&D3,setpoint.gamma - cstate.gamma);
 	
-
 	/**********************************************************
-	*	Send signal to motors
+	* Send signal to motors
+	* add D1 balance control u and D3 steering control also 
+	* multiply by polarity to make sure direction is correct.
 	***********************************************************/
-	// add D1 balance controller and steering control
 	dutyL = compensated_u - steering_u;
 	dutyR = compensated_u + steering_u;	
-	
-	// send to motors
-	// one motor is flipped on chassis so reverse duty to L
 	set_motor(MOTOR_CHANNEL_L, MOTOR_POLARITY_L * dutyL); 
 	set_motor(MOTOR_CHANNEL_R, MOTOR_POLARITY_R * dutyR); 
-		
+
 	return 0;
 }
-
 
 /*******************************************************************************
 * 	zero_out_controller()
 *
-*	clear the controller state and setpoint
-*	especially should be called before swapping state to RUNNING
-*	keep current theta and vbatt since they may be used by 
-*	other threads
+*	Clear the controller's memory and zero out setpoints.
 *******************************************************************************/
 int zero_out_controller(){
 	reset_filter(&D1);
@@ -426,7 +383,7 @@ int disarm_controller(){
 /*******************************************************************************
 * arm_controller()
 *
-* zero out the controller, enable motors, and arm the controller
+* zero out the controller & encoders. Enable motors & arm the controller.
 *******************************************************************************/
 int arm_controller(){
 	zero_out_controller();
@@ -440,10 +397,9 @@ int arm_controller(){
 /*******************************************************************************
 * int wait_for_starting_condition()
 *
-* Wait for MiP to be held upright long enough to begin
-* return 0 if successful. return -1 if the wait process was interrupted by 
-* pause button or shutdown signal which it detects by looking for a PAUSED
-* or EXITING state respectively.
+* Wait for MiP to be held upright long enough to begin.
+* Returns 0 if successful. Returns -1 if the wait process was interrupted by 
+* pause button or shutdown signal.
 *******************************************************************************/
 int wait_for_starting_condition(){
 	int checks = 0;
@@ -469,23 +425,20 @@ int wait_for_starting_condition(){
 /*******************************************************************************
 * battery_checker()
 *
-* slow loop checking battery voltage, also changes the D1 saturation limit
-* since that is dependent on the battery voltage
+* Slow loop checking battery voltage. Also changes the D1 saturation limit
+* since that is dependent on the battery voltage.
 *******************************************************************************/
 void* battery_checker(void* ptr){
 	float new_v,sat;
 	while(get_state()!=EXITING){
 		new_v = get_battery_voltage();
-		// check if there is a bad reading
-		if (new_v>9.0 || new_v<5.0){
-			// problem reading battery
-			// use nominal for now
-			new_v = V_NOMINAL;
-		}
+		// if the value doesn't make sense, use nominal voltage
+		if (new_v>9.0 || new_v<5.0) new_v = V_NOMINAL;
 		cstate.vBatt = new_v;
+		// set the new saturation level
 		sat = new_v / V_NOMINAL;
 		enable_saturation(&D1, -sat, sat);
-		usleep(100000);
+		usleep(1000000 / BATTERY_CHECK_HZ);
 	}
 	return NULL;
 }

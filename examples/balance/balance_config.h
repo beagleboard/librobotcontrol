@@ -56,17 +56,18 @@
 #define 	TURN_RATE_ADVANCED		10
 
 // DSM2 channel config
-#define 	DSM2_DRIVE_POLARITY		1
-#define 	DSM2_TURN_POLARITY  	-1
+#define 	DSM2_DRIVE_POL			1
+#define 	DSM2_TURN_POL		  	-1
 #define 	DSM2_DRIVE_CH 	 	 	3
 #define 	DSM2_TURN_CH 	 	 	2
 #define 	DSM2_DEAD_ZONE			0.04
 
-// stop/start criteria 
+// other
 #define 	TIP_ANGLE 				0.75
 #define 	START_ANGLE 			0.3	
 #define 	START_DELAY 			0.5	
 #define 	PICKUP_DETECTION_TIME 	0.65
+#define		BATTERY_CHECK_HZ		5
 
 
 #endif //BALANCE_CONFIG

@@ -1,7 +1,8 @@
 /******************************************************************************
 * check_battery.c
 *
-* simple program to display battery state
+* James Strawson 2016
+* Simple program to display battery state
 *******************************************************************************/
 #include <useful_includes.h>
 #include <robotics_cape.h>

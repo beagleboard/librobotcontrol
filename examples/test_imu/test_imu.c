@@ -1,7 +1,7 @@
 /*******************************************************************************
 * test_imu.c
-* James Strawson 2016
 *
+* James Strawson 2016
 * This serves as an example of how to read the IMU with direct reads to the
 * sensor registers. To use the DMP or interrupt-driven timing see test_dmp.c
 *******************************************************************************/

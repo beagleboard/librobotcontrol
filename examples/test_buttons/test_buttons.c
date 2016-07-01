@@ -1,6 +1,7 @@
 /*******************************************************************************
 * test_buttons.c
 *
+* James Strawson 2016
 * This is a more simple example than blink.c for testing button functionality.
 * It simply prints to the screen when a button has been pressed or released.
 *******************************************************************************/

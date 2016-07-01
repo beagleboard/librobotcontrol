@@ -1,13 +1,9 @@
 /*******************************************************************************
 * test_motors.c
-	
-	demonstrates use of H-bridges to drive motors. This program takes in
-	1 or two arguments.
-	
-	The first argument is the duty cycle normalized from -1 to 1;
-	
-	The seconds argument is optional and is the channel between 1 and 4.
-	If the second argument isn't given then all motors are driven.
+*
+* James Strawson 2016
+* demonstrates use of H-bridges to drive motors. Instructions are printed
+* to the screen when called.
 *******************************************************************************/
 
 #include <useful_includes.h>
@@ -25,14 +21,14 @@ typedef enum m_mode_t{
 // printed if some invalid argument was given
 void print_usage(){
 	printf("\n");
-	printf("to drive all motors:  		test_motors -d {duty}\n");
-	printf("to brake motors:			test_motors -b\n");
-	printf("to let motors free spin:   	test_motors -f\n");
-	printf("to sweep forward/back:   	test_motors -s {duty}\n");
-	printf("to specify a single motor:	test_motors -d {duty} -m {motor}\n");
-	
-	printf("motor option must be from 1 to 4\n");
-	printf("duty option must be from -1.0 to 1.0\n\n");
+	printf("-d {duty}		define a duty cycle from -1.0 to 1.0\n");
+	printf("-b  			enbale motor brake function\n");
+	printf("-f 			enable free spin function\n");
+	printf("-s {duty}		sweep motors back and foward at duty cycle\n");
+	printf("-m {motor}		specify a single motor from 1-4, otherwise all\n");
+	printf("			motors will be driven equally.\n");
+	printf("-h			print this help message\n");
+	printf("\n");
 }
 
 int main(int argc, char *argv[]){
@@ -43,7 +39,7 @@ int main(int argc, char *argv[]){
 	
 	// parse arguments
 	opterr = 0;
-	while ((c = getopt(argc, argv, "m:d:fbs:")) != -1){
+	while ((c = getopt(argc, argv, "m:d:fbs:h")) != -1){
 		switch (c){
 		case 'm': // motor channel option
 			in = atoi(optarg);
@@ -85,6 +81,10 @@ int main(int argc, char *argv[]){
 				printf("duty cycle must be from -1 to 1\n");
 				return -1;
 			}
+			break;
+		case 'h':
+			print_usage();
+			return -1;
 			break;
 		default:
 			print_usage();

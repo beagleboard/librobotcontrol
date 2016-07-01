@@ -374,6 +374,11 @@ int send_servo_pulse_us_all(int us);
 * 
 * Returns 1 when new data is available. 
 *
+* @ int is_dsm2_active()
+* 
+* Returns 1 if packets are arriving in good health without timeouts.
+* Returns 0 otherwise.
+*
 * @ int set_new_dsm2_data_func(int (*func)(void));
 *
 * Much like the button handlers, this assigns a user function to be called when
@@ -1123,7 +1128,7 @@ int destroy_filter(d_filter_t* filter);
 float march_filter(d_filter_t* filter, float new_input);
 int reset_filter(d_filter_t* filter);
 int enable_saturation(d_filter_t* filter, float min, float max);
-int did_filter_t_saturate(d_filter_t* filter);
+int did_filter_saturate(d_filter_t* filter);
 float previous_filter_input(d_filter_t* filter, int steps);
 float previous_filter_output(d_filter_t* filter, int steps);
 float newest_filter_output(d_filter_t* filter);

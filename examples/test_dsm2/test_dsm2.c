@@ -1,6 +1,7 @@
 /******************************************************************************
 * test_dsm2.c
 *
+* James Strawson 2016
 * test_dsm2 will print out the normalized dsm2 values.
 * Make sure the transmitter and receiver are paired before testing. 
 * Use the pair_dsm2 example if you didn't already bind receiver to transmitter

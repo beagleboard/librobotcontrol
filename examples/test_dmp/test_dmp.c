@@ -1,6 +1,9 @@
 /*******************************************************************************
-* Sample Code for testing MPU-9250 IMU operation with DMP and interrupts
+* test_dmp.c
+*
 * James Strawson - 2016
+* Sample Code for testing MPU-9250 IMU operation with DMP and interrupts.
+* Instructions are printed to the screen when called.
 *******************************************************************************/
 
 #include <useful_includes.h>

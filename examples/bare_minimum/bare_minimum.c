@@ -1,7 +1,8 @@
 /*******************************************************************************
 * bare_minimum.c
 *
-* This is meant to be a skeleton program for future projects. 
+* James Strawson 2016
+* This is meant to be a skeleton program for robotics cape projects. 
 *******************************************************************************/
 
 #include <robotics_cape.h>

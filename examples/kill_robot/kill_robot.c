@@ -1,6 +1,7 @@
 /******************************************************************************* 
 * kill_robot.c
 *
+* James Strawson 2016
 * Useful program for shutting down any existing program using robotics cape
 * library resources. It accomplishes this by looking for the PID file created
 * by initialize_cape(). If that Process ID is still running, it sends the 

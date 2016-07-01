@@ -1,10 +1,11 @@
 /*******************************************************************************
 * dsm2_passthrough.c
 *
+* James Strawson 2016
 * This sends all dsm2 data straight out the servo channels as they come in.
 * When running this program the BBB acts exactly like a normal DSM2 receiver.
 *
-* You must specify SERVO or ESC mode with -s or -e to turn off or off the 6V
+* You must specify SERVO or ESC mode with -s or -e to turn om or off the 6V
 * power rail. Sending 6V into an ESC may damage it!!!
 *
 * Raw data is also printed to the terminal for monitoring.
