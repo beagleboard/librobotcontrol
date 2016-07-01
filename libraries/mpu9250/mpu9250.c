@@ -742,12 +742,9 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 		return -1;
 	}
 	
-	// load in gyro calibration offsets from disk
-	if(load_gyro_offets()<0){
-		printf("ERROR: failed to load gyro calibration offsets\n");
-		i2c_release_bus(IMU_BUS);
-		return -1;
-	}
+	// load in gyro calibration offsets from disk if it failed keep going anyway
+	// with zero offsets
+	load_gyro_offets();
 	
 	// log locally that the dmp will be running
 	dmp_en = 1;
