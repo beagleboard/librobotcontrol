@@ -257,13 +257,12 @@ void* setpoint_manager(void* ptr){
 int balance_controller(){
 	static int inner_saturation_counter = 0; 
 	float compensated_u, steering_u, dutyL, dutyR;
-	
 	/******************************************************************
 	* STATE_ESTIMATION
 	* read sensors and compute the state when either ARMED or DISARMED
 	******************************************************************/
 	// angle theta is positive in the direction of forward tip around X axis
-	cstate.theta = imu_data.fused_TaitBryan[TB_PITCH_X] + CAPE_MOUNT_ANGLE; 
+	cstate.theta = imu_data.dmp_TaitBryan[TB_PITCH_X] + CAPE_MOUNT_ANGLE; 
 	
 	// collect encoder positions, right wheel is reversed 
 	cstate.wheelAngleR = (get_encoder_pos(ENCODER_CHANNEL_R) * TWO_PI) \
@@ -345,8 +344,8 @@ int balance_controller(){
 	* add D1 balance control u and D3 steering control also 
 	* multiply by polarity to make sure direction is correct.
 	***********************************************************/
-	dutyL = compensated_u - steering_u;
-	dutyR = compensated_u + steering_u;	
+	dutyL = compensated_u + steering_u;
+	dutyR = compensated_u - steering_u;	
 	set_motor(MOTOR_CHANNEL_L, MOTOR_POLARITY_L * dutyL); 
 	set_motor(MOTOR_CHANNEL_R, MOTOR_POLARITY_R * dutyR); 
 
