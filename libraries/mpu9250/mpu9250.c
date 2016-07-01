@@ -164,12 +164,9 @@ int initialize_imu(imu_data_t *data, imu_config_t conf){
 		return -1;
 	}
  
-	// load in gyro calibration offsets from disk
-	if(load_gyro_offets()<0){
-		printf("ERROR: failed to load gyro calibration offsets\n");
-		i2c_release_bus(IMU_BUS);
-		return -1;
-	}
+	// load in gyro calibration offsets from disk, keep going with zero offsets
+	// if no calibration was found.
+	load_gyro_offets();
 	
 	// Set sample rate = 1000/(1 + SMPLRT_DIV)
 	// here we use a divider of 0 for 1khz sample
