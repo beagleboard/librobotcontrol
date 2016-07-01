@@ -96,12 +96,10 @@ float march_filter(d_filter_t* filter, float new_input){
 		if(new_output > filter->saturation_max){
 			new_output = filter->saturation_max;
 			filter->saturation_flag=1;
-			return 1;
 		}
-		else if(new_output<filter->saturation_min){
+		else if(new_output < filter->saturation_min){
 			new_output = filter->saturation_min;
 			filter->saturation_flag=1;
-			return 1;
 		}
 		else{
 			filter->saturation_flag=0;
@@ -109,7 +107,7 @@ float march_filter(d_filter_t* filter, float new_input){
 	}
 	
 	// record the output to filter struct and ring buffer
-	filter->newest_output=new_output;
+	filter->newest_output = new_output;
 	insert_new_ring_buf_value(&filter->out_buf, new_output);
 
 	return new_output;
@@ -136,6 +134,10 @@ int reset_filter(d_filter_t* filter){
 * the filter to run unbounded.
 *******************************************************************************/
 int enable_saturation(d_filter_t* filter, float min, float max){
+	if(min>=max){
+		printf("ERORR: saturation max must be > min\n");
+		return -1;
+	}
 	filter->saturation_en = 1;
 	filter->saturation_min = min;
 	filter->saturation_max = max;

@@ -58,6 +58,7 @@ typedef struct core_state_t{
 	float gamma;		// body turn (yaw) angle radians
 	float vBatt; 		// battery voltage 
 	float u;			// balance control input to motors from D1
+	float mot_drive;	// u compensated for battery voltage
 } core_state_t;
 
 /*******************************************************************************
@@ -109,14 +110,17 @@ int main(){
 	float D1_num[] = D1_NUM;
 	float D1_den[] = D1_DEN;
 	D1 = create_filter(D1_ORDER, DT, D1_num, D1_den);
+	enable_saturation(&D1, -1.0, 1.0);
 
 	// set up D2 Phi controller
 	float D2_num[] = D2_NUM;
 	float D2_den[] = D2_DEN;
 	D2 = create_filter(D2_ORDER, DT, D2_num, D2_den);
+	enable_saturation(&D2, -THETA_REF_MAX, THETA_REF_MAX);
 
-	// set up D3 steering controller
+	// set up D3 gamma (steering) controller
 	D3 = create_pid(D3_KP, D3_KI, D3_KD, 4*DT, DT);
+	enable_saturation(&D3, -STEERING_INPUT_MAX, STEERING_INPUT_MAX);
 
 	// set up button handlers
 	set_pause_pressed_func(&on_pause_press);
@@ -186,11 +190,9 @@ void* setpoint_manager(void* ptr){
 	set_led(RED,0);
 	set_led(GREEN,1);
 	
-	// loop at roughly the same speed as the controller. This speed doesn't
-	// matter much as it only does something if new dsm2 data is available.
 	while(get_state()!=EXITING){
 		// sleep at beginning of loop so we can use the 'continue' statement
-		usleep(1000000/SAMPLE_RATE_HZ); 
+		usleep(1000000/SETPOINT_MANAGER_HZ); 
 		
 		// nothing to do if paused, go back to beginning of loop
 		if(get_state() != RUNNING) continue;
@@ -256,7 +258,7 @@ void* setpoint_manager(void* ptr){
 *******************************************************************************/
 int balance_controller(){
 	static int inner_saturation_counter = 0; 
-	float compensated_u, steering_u, dutyL, dutyR;
+	float steering_u, dutyL, dutyR;
 	/******************************************************************
 	* STATE_ESTIMATION
 	* read sensors and compute the state when either ARMED or DISARMED
@@ -307,7 +309,7 @@ int balance_controller(){
 	* Move the position setpoint based on phi_dot. 
 	* Input to the controller is phi error (setpoint-state).
 	*************************************************************/
-	if(setpoint.phi_dot != 0.0) setpoint.phi += setpoint.phi_dot * DT;
+	if(setpoint.phi_dot != 0.0) setpoint.phi += setpoint.phi_dot*DT;
 	setpoint.theta = march_filter(&D2,setpoint.phi-cstate.phi);
 	
 	/************************************************************
@@ -316,16 +318,16 @@ int balance_controller(){
 	* output u to compensate for changing battery voltage.
 	*************************************************************/
 	cstate.u = march_filter(&D1,setpoint.theta - cstate.theta);
-	compensated_u = cstate.u * V_NOMINAL/cstate.vBatt;
+	cstate.mot_drive = cstate.u * V_NOMINAL/cstate.vBatt;
 
 	/*************************************************************
 	* Check if the inner loop saturated. If it saturates for over
 	* a second disarm the controller to prevent stalling motors.
 	*************************************************************/
 	if(did_filter_saturate(&D1)) inner_saturation_counter++;
-	else inner_saturation_counter=0;
-	// if saturate for a second, disarm for safety
-	if(inner_saturation_counter > SAMPLE_RATE_HZ){
+	else inner_saturation_counter = 0; 
+ 	// if saturate for a second, disarm for safety
+	if(inner_saturation_counter > (SAMPLE_RATE_HZ*D1_SATURATION_TIMEOUT)){
 		printf("inner loop controller saturated\n");
 		disarm_controller();
 		inner_saturation_counter = 0;
@@ -344,8 +346,8 @@ int balance_controller(){
 	* add D1 balance control u and D3 steering control also 
 	* multiply by polarity to make sure direction is correct.
 	***********************************************************/
-	dutyL = compensated_u + steering_u;
-	dutyR = compensated_u - steering_u;	
+	dutyL = cstate.mot_drive + steering_u;
+	dutyR = cstate.mot_drive - steering_u;	
 	set_motor(MOTOR_CHANNEL_L, MOTOR_POLARITY_L * dutyL); 
 	set_motor(MOTOR_CHANNEL_R, MOTOR_POLARITY_R * dutyR); 
 
@@ -470,8 +472,7 @@ void* printf_loop(void* ptr){
 		last_state = new_state;
 		
 		// decide what to print or exit
-		switch (new_state){	
-		case RUNNING: { // show all the things
+		if(new_state == RUNNING){	
 			printf("\r");
 			printf("%7.2f  |", cstate.theta);
 			printf("%7.2f  |", setpoint.theta);
@@ -480,26 +481,11 @@ void* printf_loop(void* ptr){
 			printf("%7.2f  |", cstate.gamma);
 			printf("%7.2f  |", cstate.u);
 			
-			if(setpoint.arm_state == ARMED)
-				printf("  ARMED  |");
-			else
-				printf("DISARMED |");
-			printf("   "); // clear remaining characters
+			if(setpoint.arm_state == ARMED) printf("  ARMED  |");
+			else printf("DISARMED |");
 			fflush(stdout);
-			break;
-			}
-		case PAUSED: { // only print theta when paused
-			printf("\rtheta: %0.2f   ", cstate.theta);
-			break;
-			}
-		case EXITING:{
-			return NULL;
-			}
-		default: {
-			break; // this is only for UNINITIALIZED state
-			}
 		}
-		usleep(200000);
+		usleep(1000000 / PRINTF_HZ);
 	}
 	return NULL;
 } 
