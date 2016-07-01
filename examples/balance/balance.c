@@ -309,8 +309,11 @@ int balance_controller(){
 	* Move the position setpoint based on phi_dot. 
 	* Input to the controller is phi error (setpoint-state).
 	*************************************************************/
-	if(setpoint.phi_dot != 0.0) setpoint.phi += setpoint.phi_dot*DT;
-	setpoint.theta = march_filter(&D2,setpoint.phi-cstate.phi);
+	if(ENABLE_POSITION_HOLD){
+		if(setpoint.phi_dot != 0.0) setpoint.phi += setpoint.phi_dot*DT;
+		setpoint.theta = march_filter(&D2,setpoint.phi-cstate.phi);
+	}
+	else setpoint.theta = 0.0;
 	
 	/************************************************************
 	* INNER LOOP ANGLE Theta controller D1
@@ -390,6 +393,7 @@ int arm_controller(){
 	zero_out_controller();
 	set_encoder_pos(ENCODER_CHANNEL_L,0);
 	set_encoder_pos(ENCODER_CHANNEL_R,0);
+	// prefill_filter_inputs(&D1,cstate.theta); 
 	setpoint.arm_state = ARMED;
 	enable_motors();
 	return 0;
@@ -457,12 +461,13 @@ void* printf_loop(void* ptr){
 		// check if this is the first time since being paused
 		if(new_state==RUNNING && last_state!=RUNNING){
 			printf("\nRUNNING: Hold upright to balance.\n");
-			printf("  theta  |");
-			printf("  t_ref  |");
-			printf("   phi   |");
-			printf("  p_ref  |");
-			printf("  gamma  |");
+			printf("    θ    |");
+			printf("  θ_ref  |");
+			printf("    φ    |");
+			printf("  φ_ref  |");
+			printf("    γ    |");
 			printf("    u    |");
+			printf("  vBatt  |");
 			printf("arm_state|");
 			printf("\n");
 		}
@@ -480,6 +485,7 @@ void* printf_loop(void* ptr){
 			printf("%7.2f  |", setpoint.phi);
 			printf("%7.2f  |", cstate.gamma);
 			printf("%7.2f  |", cstate.u);
+			printf("%7.2f  |", cstate.vBatt);
 			
 			if(setpoint.arm_state == ARMED) printf("  ARMED  |");
 			else printf("DISARMED |");

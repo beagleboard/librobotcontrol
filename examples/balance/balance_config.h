@@ -22,22 +22,24 @@
 #define 	V_NOMINAL				7.4
 
 // inner loop controller
-#define 	D1_K					1.0	
+#define 	D1_K					0.9	
 #define 	D1_ORDER				2
 #define 	D1_NUM					{-6.289, 11.910, -5.634 }
 #define 	D1_DEN					{ 1.000, -1.702,  0.702 }
+#define 	D1_SATURATION_TIMEOUT	0.5
 
 // outer loop controller
 #define 	D2_K					0.7
 #define		D2_ORDER				1
 #define 	D2_NUM					{ 0.3858, -0.3853 }
 #define 	D2_DEN					{ 1.0000, -0.9277 }
-#define 	D2_SATURATION			0.37
+#define 	THETA_REF_MAX			0.37
 
 // steering controller
 #define 	D3_KP					1.0
 #define 	D3_KI					0.05
 #define 	D3_KD					0.1
+#define		STEERING_INPUT_MAX		0.5
 
 // electrical hookups
 #define 	MOTOR_CHANNEL_L 		4
@@ -62,12 +64,16 @@
 #define 	DSM2_TURN_CH 	 	 	2
 #define 	DSM2_DEAD_ZONE			0.04
 
+// Thread Loop Rates
+#define		BATTERY_CHECK_HZ		5
+#define 	SETPOINT_MANAGER_HZ		100
+#define		PRINTF_HZ				50
+
 // other
 #define 	TIP_ANGLE 				0.75
 #define 	START_ANGLE 			0.3	
 #define 	START_DELAY 			0.5	
 #define 	PICKUP_DETECTION_TIME 	0.65
-#define		BATTERY_CHECK_HZ		5
-
+#define 	ENABLE_POSITION_HOLD	1
 
 #endif //BALANCE_CONFIG
