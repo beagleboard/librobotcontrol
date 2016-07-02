@@ -27,6 +27,8 @@
 #define QUAT_MAG_SQ_NORMALIZED  (1L<<28)
 #define QUAT_MAG_SQ_MIN         (QUAT_MAG_SQ_NORMALIZED - QUAT_ERROR_THRESH)
 #define QUAT_MAG_SQ_MAX         (QUAT_MAG_SQ_NORMALIZED + QUAT_ERROR_THRESH)
+#define GYRO_CAL_THRESH			50
+#define GYRO_OFFSET_THRESH		500
 
 /*******************************************************************************
 *	Local variables
@@ -164,9 +166,12 @@ int initialize_imu(imu_data_t *data, imu_config_t conf){
 		return -1;
 	}
  
-	// load in gyro calibration offsets from disk, keep going with zero offsets
-	// if no calibration was found.
-	load_gyro_offets();
+	// load in gyro calibration offsets from disk
+	if(load_gyro_offets()<0){
+		printf("ERROR: failed to load gyro calibration offsets\n");
+		i2c_release_bus(IMU_BUS);
+		return -1;
+	}
 	
 	// Set sample rate = 1000/(1 + SMPLRT_DIV)
 	// here we use a divider of 0 for 1khz sample
@@ -739,9 +744,12 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 		return -1;
 	}
 	
-	// load in gyro calibration offsets from disk if it failed keep going anyway
-	// with zero offsets
-	load_gyro_offets();
+	// load in gyro calibration offsets from disk
+	if(load_gyro_offets()<0){
+		printf("ERROR: failed to load gyro calibration offsets\n");
+		i2c_release_bus(IMU_BUS);
+		return -1;
+	}
 	
 	// log locally that the dmp will be running
 	dmp_en = 1;
@@ -2013,6 +2021,9 @@ int calibrate_gyro_routine(){
 	i2c_write_byte(IMU_BUS, GYRO_CONFIG, 0x00); 
 	// Set accelerometer full-scale to 2 g, maximum sensitivity	
 	i2c_write_byte(IMU_BUS, ACCEL_CONFIG, 0x00); 
+
+COLLECT_DATA:
+
 	// Configure FIFO to capture gyro data for bias calculation
 	i2c_write_byte(IMU_BUS, USER_CTRL, 0x40);   // Enable FIFO  
 	// Enable gyro sensors for FIFO (max size 512 bytes in MPU-9250)
@@ -2034,6 +2045,14 @@ int calibrate_gyro_routine(){
 	
 	int i;
 	int16_t x,y,z;
+	vector_t vx,vy,vz;
+	vx = create_vector(samples);
+	vy = create_vector(samples);
+	vz = create_vector(samples);
+	float dev_x, dev_y, dev_z;
+	gyro_sum[0] = 0;
+	gyro_sum[1] = 0;
+	gyro_sum[2] = 0;
 	for (i=0; i<samples; i++) {
 		// read data for averaging
 		if(i2c_read_bytes(IMU_BUS, FIFO_R_W, 6, data)<0){
@@ -2046,19 +2065,46 @@ int calibrate_gyro_routine(){
 		gyro_sum[0]  += (int32_t) x;
 		gyro_sum[1]  += (int32_t) y;
 		gyro_sum[2]  += (int32_t) z;
+		vx.data[i] = (float)x;
+		vy.data[i] = (float)y;
+		vz.data[i] = (float)z;
 	}
-  
+  	dev_x = standard_deviation(vx);
+  	dev_y = standard_deviation(vy);
+  	dev_z = standard_deviation(vz);
+  	destroy_vector(&vx);
+  	destroy_vector(&vy);
+  	destroy_vector(&vz);
+
 	#ifdef DEBUG
 	printf("gyro sums: %d %d %d\n", gyro_sum[0], gyro_sum[1], gyro_sum[2]);
+	printf("std_deviation: %6.2f %6.2f %6.2f\n", dev_x, dev_y, dev_z);
 	#endif
-	
-	// done with I2C for now
-	i2c_release_bus(IMU_BUS);
+
+	// try again is standard deviation is too high
+	if(dev_x>GYRO_CAL_THRESH||dev_y>GYRO_CAL_THRESH||dev_z>GYRO_CAL_THRESH){
+		printf("Gyro data too noisy, put me down on a solid surface!\n");
+		printf("trying again\n");
+		goto COLLECT_DATA;
+	}
 	
 	// average out the samples
     offsets[0] = (int16_t) (gyro_sum[0]/(int32_t)samples);
 	offsets[1] = (int16_t) (gyro_sum[1]/(int32_t)samples);
 	offsets[2] = (int16_t) (gyro_sum[2]/(int32_t)samples);
+
+	// also check for values that are way out of bounds
+	if(abs(offsets[0])>GYRO_OFFSET_THRESH || abs(offsets[1])>GYRO_OFFSET_THRESH \
+										|| abs(offsets[2])>GYRO_OFFSET_THRESH){
+		printf("Gyro data out of bounds, put me down on a solid surface!\n");
+		printf("trying again\n");
+		goto COLLECT_DATA;
+	}
+
+	// done with I2C for now
+	i2c_release_bus(IMU_BUS);
+	
+	
  
 	printf("offsets: %d %d %d\n", offsets[0], offsets[1], offsets[2]);
  

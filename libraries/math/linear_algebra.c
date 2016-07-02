@@ -1240,3 +1240,30 @@ int fit_ellipsoid(matrix_t points, vector_t* center, vector_t* lengths){
 	return 0;
 }
 
+/*******************************************************************************
+* float standard_deviation(vector_t v)
+*
+* 
+*******************************************************************************/
+float standard_deviation(vector_t v){
+	int i;
+	float mean, mean_sqr;
+	if(v.initialized != 1){
+		printf("ERROR: vector not initialied\n");
+		return -1;
+	}
+	if(v.len == 1) return 0;
+
+	// calculate mean
+	mean = 0;
+	for(i=0;i<v.len;i++){
+		mean += v.data[i];
+	}
+	mean = mean / v.len;
+	// calculate mean square
+	mean_sqr = 0;
+	for(i=0;i<v.len;i++){
+		mean_sqr += (v.data[i]-mean)*(v.data[i]-mean);
+	}
+	return sqrt(mean_sqr/v.len);
+}

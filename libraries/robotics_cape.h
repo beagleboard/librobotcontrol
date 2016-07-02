@@ -969,6 +969,7 @@ matrix_t householder_matrix(vector_t v);
 vector_t lin_system_solve(matrix_t A, vector_t b);
 vector_t lin_system_solve_qr(matrix_t A, vector_t b);
 int fit_ellipsoid(matrix_t points, vector_t* center, vector_t* lengths);
+float standard_deviation(vector_t v);
 
 
 /*******************************************************************************
