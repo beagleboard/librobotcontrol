@@ -15,10 +15,10 @@
 // Critical Max voltages of packs used to detect number of cells in pack
 #define LOCKFILE	"/run/battery_monitor.lock"
 #define CELL_MAX			4.25 // set higher than actual to detect num cells
-#define VOLTAGE_FULL		4.0	 // minimum V to consider battery full
+#define VOLTAGE_FULL		3.9	 // minimum V to consider battery full
 #define VOLTAGE_75			3.8	
-#define VOLTAGE_50			3.6
-#define VOLTAGE_25			3.45	
+#define VOLTAGE_50			3.5
+#define VOLTAGE_25			3.0
 #define VOLTAGE_DISCONNECT	2	 // Threshold for detecting disconnected battery
 
 void illuminate_leds(int i){
@@ -145,7 +145,7 @@ int main(){
 		// if charging, blink in a charging pattern
 		if(charging){
 			chg_leds += 1;
-			if(chg_leds>4) chg_leds=1;
+			if(chg_leds>4) chg_leds=0;
 			illuminate_leds(chg_leds);
 			goto END;
 		}

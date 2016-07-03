@@ -72,7 +72,7 @@
 #define BATT_LED_4	26 // P8.14
 
 #define DC_JACK_OFFSET 0.35
-#define LIPO_OFFSET 0.32
+#define LIPO_OFFSET 0.22
 #define LIPO_ADC_CH 6
 #define DC_JACK_ADC_CH  5
 #define V_DIV_RATIO 11.0
