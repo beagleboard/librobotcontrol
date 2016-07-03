@@ -49,18 +49,15 @@ int main(){
 	printf("\nDeterminant of A : %8.4f\n", det);
 	
 	// get an inverse for A
-	matrix_t Ainv;
-	if(invert_matrix(A,&Ainv)<0) return -1;
-	printf("A inv\n");
+	matrix_t Ainv = invert_matrix(A);
+	if(A.initialized != 1) return -1;
+	printf("\nAinverse\n");
 	print_matrix(Ainv);
 	
 	// multiply A times A inverse
-	matrix_t AA;
-	if(multiply_matrices(A,Ainv,&AA)){
-		printf("ERROR: can't multiply matrices\n");
-		return -1;
-	}
-	printf("\nA * A^(-1):\n");
+	matrix_t AA = multiply_matrices(A,Ainv);
+	if(AA.initialized!=1) return -1;
+	printf("\nA * Ainverse:\n");
 	print_matrix(AA);
 	
 	// solve a square linear system
@@ -75,9 +72,8 @@ int main(){
 	
 	// If b are the coefficients of a polynomial, get the coefficients of the
 	// new polynomial b^2
-	vector_t bb;
-	polynomial_power(b,2,&bb);
-	printf("Coefficients of polynomial b times itself\n");
+	vector_t bb = poly_power(b,2);
+	printf("\nCoefficients of polynomial b times itself\n");
 	print_vector(bb);
 	
 	// clean up all the allocated memory. This isn't strictly necessary since

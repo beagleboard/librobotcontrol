@@ -1,19 +1,17 @@
 Robotics Cape Supporting Libraries
-James Strawson - 2013
+James Strawson - 2016
 
 Contains libraries to assist in the use of your Robotics Cape.
+The included Makefile will compile a single shared object robotics_cape.so
+and install it to /usr/lib. It will also move all header files to
+/usr/include.
 
+To use the .so you only need to #include <robotics_cape.h>
+We also recommend using #include <useful_includes.h>
 
-Installation Instructions:
+If you wish to recompile the lirbary without going through the entire Robotics
+Cape installation procedure, just execute the following make command as root.
 
-Log in as root and execute the install script and reboot
-root@beaglebone:~#cd libraries
-root@beaglebone:~/libraries# make clean
-root@beaglebone:~/libraries# make install
-If all went well, you now have shared libraries
-located in /usr/lib and /usr/include
+root@beaglebone:~/Robotics_Cape_Installer# cd libraries/
+root@beaglebone:~/Robotics_Cape_Installer/libraries# make clean install
 
-
-This is done for you in the BeagleMIP_Installer. 
-If you modify or add to these libraries you can
-recompile and install them with install.sh

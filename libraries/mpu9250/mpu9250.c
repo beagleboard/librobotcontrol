@@ -1842,8 +1842,8 @@ int data_fusion(){
 		
 		// generate complementary filters
 		float dt = 1.0/config.dmp_sample_rate;
-		low_pass =create_first_order_low_pass(dt,config.compass_time_constant);
-		high_pass=create_first_order_high_pass(dt,config.compass_time_constant);
+		low_pass =create_first_order_lowpass(dt,config.compass_time_constant);
+		high_pass=create_first_order_highpass(dt,config.compass_time_constant);
 		prefill_filter_inputs(&low_pass,newMagYaw);
 		prefill_filter_outputs(&low_pass,newMagYaw);
 		prefill_filter_inputs(&high_pass,newDMPYaw);

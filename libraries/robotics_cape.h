@@ -917,6 +917,7 @@ typedef struct vector_t{
 // Basic Matrix creation, modification, and access
 matrix_t create_matrix(int rows, int cols);
 void destroy_matrix(matrix_t* A);
+matrix_t create_empty_matrix();
 matrix_t duplicate_matrix(matrix_t A);
 matrix_t create_square_matrix(int n);
 matrix_t create_random_matrix(int rows, int cols);
@@ -931,6 +932,7 @@ void print_matrix_sci_notation(matrix_t A);
 // Basic Vector creation, modification, and access
 vector_t create_vector(int n);
 void destroy_vector(vector_t* v);
+vector_t create_empty_vector();
 vector_t duplicate_vector(vector_t v);
 vector_t create_random_vector(int len);
 vector_t create_vector_of_ones(int len);
@@ -941,12 +943,12 @@ void print_vector(vector_t v);
 void print_vector_sci_notation(vector_t v);
 
 // Multiplication, Addition, and other transforms
-int multiply_matrices(matrix_t A, matrix_t Bm, matrix_t* out);
+matrix_t multiply_matrices(matrix_t A, matrix_t Bm);
 int matrix_times_scalar(matrix_t* A, float s);
 int vector_times_scalar(vector_t* v, float s);
 vector_t matrix_times_col_vec(matrix_t A, vector_t v);
 vector_t row_vec_times_matrix(vector_t v, matrix_t A);
-int add_matrices(matrix_t A, matrix_t B, matrix_t* out);
+matrix_t add_matrices(matrix_t A, matrix_t B);
 int transpose_matrix(matrix_t* A);
 
 // vector operations
@@ -955,21 +957,23 @@ vector_t vector_projection(vector_t v, vector_t e);
 matrix_t vector_outer_product(vector_t v1, vector_t v2);
 float vector_dot_product(vector_t v1, vector_t v2);
 vector_t cross_product_3d(vector_t v1, vector_t v2);
-int polynomial_convolution(vector_t v1, vector_t v2, vector_t* out);
-int polynomial_power(vector_t v, int order, vector_t* out);
+vector_t poly_conv(vector_t v1, vector_t v2);
+vector_t poly_power(vector_t v, int N);
+vector_t poly_butter(int N, float wc);
+float standard_deviation(vector_t v);
+float vector_mean(vector_t v);
 
 // Advanced matrix operations
 float matrix_determinant(matrix_t A);
 int LUP_decomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P);
 int QR_decomposition(matrix_t A, matrix_t* Q, matrix_t* R);
-int invert_matrix(matrix_t A, matrix_t* out);
+matrix_t invert_matrix(matrix_t A);
 matrix_t householder_matrix(vector_t v);
 
 // linear system solvers
 vector_t lin_system_solve(matrix_t A, vector_t b);
 vector_t lin_system_solve_qr(matrix_t A, vector_t b);
 int fit_ellipsoid(matrix_t points, vector_t* center, vector_t* lengths);
-float standard_deviation(vector_t v);
 
 
 /*******************************************************************************
@@ -1126,6 +1130,7 @@ typedef struct d_filter_t{
 
 d_filter_t create_filter(int order, float dt, float* num, float* den);
 int destroy_filter(d_filter_t* filter);
+d_filter_t create_empty_filter();
 float march_filter(d_filter_t* filter, float new_input);
 int reset_filter(d_filter_t* filter);
 int enable_saturation(d_filter_t* filter, float min, float max);
@@ -1137,9 +1142,12 @@ float newest_filter_input(d_filter_t* filter);
 int prefill_filter_inputs(d_filter_t* filter, float in);
 int prefill_filter_outputs(d_filter_t* filter, float out);
 int print_filter_details(d_filter_t* filter);
-int multiply_filters(d_filter_t f1, d_filter_t f2, d_filter_t* out);
-d_filter_t create_first_order_low_pass(float dt, float time_constant);
-d_filter_t create_first_order_high_pass(float dt, float time_constant);
+d_filter_t multiply_filters(d_filter_t f1, d_filter_t f2);
+d_filter_t C2DTustin(vector_t num, vector_t den, float dt, float w);
+d_filter_t create_first_order_lowpass(float dt, float time_constant);
+d_filter_t create_first_order_highpass(float dt, float time_constant);
+d_filter_t create_butterworth_lowpass(int order, float dt, float wc);
+d_filter_t create_butterworth_highpass(int order, float dt, float wc);
 d_filter_t create_integrator(float dt);
 d_filter_t create_double_integrator(float dt);
 d_filter_t create_pid(float kp, float ki, float kd, float Tf, float dt);

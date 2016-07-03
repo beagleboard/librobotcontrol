@@ -8,6 +8,8 @@
 
 #include "../robotics_cape.h"
 #include <stdio.h>
+#include <math.h>
+#include <string.h> // for memset
 
 #define DEBUG
 
@@ -54,6 +56,17 @@ int destroy_filter(d_filter_t* filter){
 	destroy_vector(&(filter->denominator));
 	filter->initialized = 0;
 	return 0;
+}
+
+/*******************************************************************************
+* d_filter_t create_empty_filter()
+*
+* Returns an empty d_filter_t struct initialized to 0
+*******************************************************************************/
+d_filter_t create_empty_filter(){
+	d_filter_t out;
+	memset(&out,0,sizeof(d_filter_t));
+	return out;
 }
 
 /*******************************************************************************
@@ -268,63 +281,163 @@ int print_filter_details(d_filter_t* filter){
 }
 
 /*******************************************************************************
-* int multiply_filters(d_filter_t f1, d_filter_t f2, d_filter_t* out)
+* d_filter_t multiply_filters(d_filter_t f1, d_filter_t f2)
 *
 * 
 *******************************************************************************/
-int multiply_filters(d_filter_t f1, d_filter_t f2, d_filter_t* out){
+d_filter_t multiply_filters(d_filter_t f1, d_filter_t f2){
+	d_filter_t out = create_empty_filter();
 	if(f1.initialized!=1 || f2.initialized!=1){
 		printf("ERROR: filter not initialized\n");
-		return -1;
+		return out;
 	}
 	if(f1.dt != f2.dt){
 		printf("ERROR: filter timestep dt must match when multiplying.\n");
-		return -1;
+		return out;
 	}
 	// order of new system is sum of old orders
 	int new_order = f1.order + f2.order;
 	
 	// multiply out the transfer function coefficients
-	vector_t newnum,newden;
-	if(polynomial_convolution(f1.numerator,f2.numerator,&newnum)<0){
+	vector_t newnum = poly_conv(f1.numerator,f2.numerator);
+	if(newnum.initialized != 1){
 		printf("ERROR:failed to multiply numerator polynomials\n");
-		return -1;
+		return out;
 	}
-	if(polynomial_convolution(f1.denominator,f2.denominator,&newden)<0){
+	vector_t newden = poly_conv(f1.denominator,f2.denominator);
+	if(newden.initialized != 1){
 		printf("ERROR:failed to multiply denominator polynomials\n");
-		return -1;
+		return out;
 	}
 	
-	*out = create_filter(new_order, f1.dt, &newnum.data[0], &newden.data[0]);
-	return 0;
+	out = create_filter(new_order, f1.dt, &newnum.data[0], &newden.data[0]);
+	destroy_vector(&newden);
+	destroy_vector(&newnum);
+	return out;
 }
 
 /*******************************************************************************
-* d_filter_t create_first_order_low_pass(float dt, float time_constant)
+* d_filter_t C2DTustin(vector_t num, vector_t den, float dt, float w)
+* 
+* Creates a discrete time filter with similar dynamics to a provided continuous
+* time transfer function using tustin's approximation with prewarping. 
+*
+* arguments:
+* vector_t num: 	continuous time numerator coefficients
+* vector_t den: 	continuous time denominator coefficients
+* float dt:			desired timestep of discrete filter
+* float w:			prewarping frequency in rad/s
+*******************************************************************************/
+d_filter_t C2DTustin(vector_t num, vector_t den, float dt, float w){
+	int i,j;
+	d_filter_t out = create_empty_filter();
+	if(!num.initialized || !den.initialized){
+		printf("ERROR: vector not initialized yet\n");
+		return out;
+	}
+	float f = 2*(1 - cos(w*dt)) / (w*dt*sin(w*dt));
+	float c = 2/(f*dt);
+	int   m = num.len - 1;			// highest order of num
+	int   n = den.len - 1;			// highest order of den
+	float A0;
+	vector_t numZ = create_vector(n+1);	// make vectors with den order +1
+	vector_t denZ = create_vector(n+1);
+	vector_t p1  = create_vector(2);	// (z - 1)
+	p1.data[0]   = 1;
+	p1.data[1]   = -1;
+	vector_t p2  = create_vector(2);	// (z + 1)
+	p2.data[0]   = 1;
+	p2.data[1]   = 1;
+	vector_t temp, v1, v2;
+	
+	// from zeroth up to and including mth
+	for(i=0;i<=m;i++){				
+		v1 = poly_power(p1,m-i);
+		v2 = poly_power(p2,n-m+i);
+		temp = poly_conv(v1,v2);
+		destroy_vector(&v1);
+		destroy_vector(&v2);
+		for(j=0;j<n+1;j++){
+			numZ.data[j] += num.data[i]*pow(c,m-i)*temp.data[j];
+		}
+		destroy_vector(&temp);
+	}
+	for(i=0;i<=n;i++){
+		v1 = poly_power(p1,n-i);
+		v2 = poly_power(p2,i);
+		temp = poly_conv(v1,v2);
+		destroy_vector(&v1);
+		destroy_vector(&v2);
+		for(j=0;j<n+1;j++){
+			denZ.data[j] += den.data[i]*pow(c,n-i)*temp.data[j];
+		}
+		destroy_vector(&temp);
+	}
+	A0 = denZ.data[0];
+	for(i=0;i<n+1;i++){
+		numZ.data[i] = numZ.data[i]/A0;
+		denZ.data[i] = denZ.data[i]/A0;
+	}
+	out = create_filter(n,dt,numZ.data,denZ.data);
+	destroy_vector(&numZ);
+	destroy_vector(&denZ);
+	destroy_vector(&p1);
+	destroy_vector(&p2);
+	return out;
+}
+
+/*******************************************************************************
+* d_filter_t create_first_order_lowpass(float dt, float time_constant)
 *
 * Returns a configured and ready to use d_filter_t_t struct with a first order
 * low pass transfer function. dt is in units of seconds and time_constant is 
 * the number of seconds it takes to rise to 63.4% of a steady-state input.
 *******************************************************************************/
-d_filter_t create_first_order_low_pass(float dt, float time_constant){
-	const float lp_const = dt/time_constant;
+d_filter_t create_first_order_lowpass(float dt, float time_constant){
+	float lp_const = dt/time_constant;
 	float numerator[]   = {lp_const, 0};
 	float denominator[] = {1, lp_const-1};
 	return create_filter(1,dt,numerator,denominator);
 }
 
 /*******************************************************************************
-* d_filter_t create_first_order_high_pass(float dt, float time_constant)
+* d_filter_t create_first_order_highpass(float dt, float time_constant)
 *
 * Returns a configured and ready to use d_filter_t_t struct with a first order
 * high pass transfer function. dt is in units of seconds and time_constant is 
 * the number of seconds it takes to decay by 63.4% of a steady-state input.
 *******************************************************************************/
-d_filter_t create_first_order_high_pass(float dt, float time_constant){
+d_filter_t create_first_order_highpass(float dt, float time_constant){
 	float hp_const = dt/time_constant;
 	float numerator[] = {1-hp_const, hp_const-1};
 	float denominator[] = {1,hp_const-1};
 	return create_filter(1,dt,numerator,denominator);
+}
+
+/*******************************************************************************
+* d_filter_t create_butterworth_lowpass(int order, float dt, float wc)
+*
+* Returns a configured and ready to use d_filter_t_t struct with the transfer
+* function for Butterworth low pass filter of order N and cutoff wc.
+*******************************************************************************/
+d_filter_t create_butterworth_lowpass(int order, float dt, float wc){
+	vector_t A = poly_butter(order,wc);
+	vector_t B = create_vector(1);
+	B.data[0] = 1;
+	return C2DTustin(B, A, dt, wc);
+}
+
+/*******************************************************************************
+* d_filter_t create_butterworth_highpass(int order, float dt, float wc)
+*
+* Returns a configured and ready to use d_filter_t_t struct with the transfer
+* function for Butterworth low pass filter of order N and cutoff wc.
+*******************************************************************************/
+d_filter_t create_butterworth_highpass(int order, float dt, float wc){
+	vector_t A = poly_butter(order,wc);
+	vector_t B = create_vector(order + 1);
+	B.data[0] = 1;
+	return C2DTustin(B, A, dt, wc);
 }
 
 /*******************************************************************************

@@ -8,6 +8,9 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h> // for memset
+
+#define PI (float)M_PI
 
 /*******************************************************************************
 * matrix_t create_matrix(int rows, int cols)
@@ -51,6 +54,17 @@ void destroy_matrix(matrix_t* A){
 	A->cols = 0;
 	A->initialized = 0;
 	return;
+}
+
+/*******************************************************************************
+* matrix_t create_empty_matrix()
+*
+* 
+*******************************************************************************/
+matrix_t create_empty_matrix(){
+	matrix_t out;
+	memset(&out,0,sizeof(matrix_t));
+	return out;
 }
 
 /*******************************************************************************
@@ -290,13 +304,25 @@ void destroy_vector(vector_t* v){
 }
 
 /*******************************************************************************
+* vector_t create_empty_vector()
+*
+* 
+*******************************************************************************/
+vector_t create_empty_vector(){
+	vector_t out;
+	memset(&out, 0, sizeof(vector_t));
+	return out;
+}
+
+
+/*******************************************************************************
 * vector_t duplicate_vector(vector_t v)
 *
 * 
 *******************************************************************************/
 vector_t duplicate_vector(vector_t v){
 	int i;
-	vector_t out;
+	vector_t out = create_empty_vector();
 	if(!v.initialized){
 		printf("ERROR: vector not initialized yet\n");
 		return out;
@@ -315,7 +341,7 @@ vector_t duplicate_vector(vector_t v){
 *******************************************************************************/
 vector_t create_random_vector(int len){
 	int i;
-	vector_t v;
+	vector_t v = create_empty_vector();
 	if(len<1){
 		printf("error creating vector, len must be >=1");
 		return v;
@@ -334,7 +360,7 @@ vector_t create_random_vector(int len){
 *******************************************************************************/
 vector_t create_vector_of_ones(int len){
 	int i;
-	vector_t v;
+	vector_t v = create_empty_vector();
 	if(len<1){
 		printf("error creating vector, len must be >=1");
 		return v;
@@ -352,7 +378,7 @@ vector_t create_vector_of_ones(int len){
 * 
 *******************************************************************************/
 vector_t create_vector_from_array(int len, float* array){
-	vector_t v;
+	vector_t v = create_empty_vector();
 	if(len<1){
 		printf("ERROR: len must be greater than 0\n");
 		return v;
@@ -445,18 +471,19 @@ void print_vector_sci_notation(vector_t v){
 *
 * 
 *******************************************************************************/
-int multiply_matrices(matrix_t A, matrix_t B, matrix_t* out){
+matrix_t multiply_matrices(matrix_t A, matrix_t B){
 	int i,j,k;
 	float sum = 0;
+	matrix_t out = create_empty_matrix();
 	if(!A.initialized||!B.initialized){
 		printf("ERROR: matrix not initialized yet\n");
-		return -1;
+		return out;
 	}
 	if (A.cols != B.rows){
 		printf("ERROR: Invalid matrix sizes");
-		return -1;
+		return out;
 	}
-	*out = create_matrix(A.rows, B.cols);	
+	out = create_matrix(A.rows, B.cols);	
 	for(i=0;i<(A.rows);i++){
 		for(j=0;j<(B.cols);j++){	
 			for(k=0;k<(A.cols);k++){
@@ -464,11 +491,11 @@ int multiply_matrices(matrix_t A, matrix_t B, matrix_t* out){
 				sum = sum + A.data[i][k]*B.data[k][j];
 			}
 			// save mult sum to new location
-			out->data[i][j] = sum;
+			out.data[i][j] = sum;
 			sum = 0; 	// re-initialize sum for next loop
 		}
 	}
-	return 0;
+	return out;
 }
 
 /*******************************************************************************
@@ -514,7 +541,7 @@ int vector_times_scalar(vector_t* v, float s){
 *******************************************************************************/
 vector_t matrix_times_col_vec(matrix_t A, vector_t v){
 	int i,j;
-	vector_t out;
+	vector_t out = create_empty_vector();
 	if(!A.initialized || !v.initialized){
 		printf("ERROR: matrix or vector not initialized yet\n");
 		return out;
@@ -540,7 +567,7 @@ vector_t matrix_times_col_vec(matrix_t A, vector_t v){
 *******************************************************************************/
 vector_t row_vec_times_matrix(vector_t v, matrix_t A){
 	int i,j;
-	vector_t out;
+	vector_t out = create_empty_vector();
 	if(!A.initialized || !v.initialized){
 		printf("ERROR: matrix or vector not initialized yet\n");
 		return out;
@@ -562,27 +589,28 @@ vector_t row_vec_times_matrix(vector_t v, matrix_t A){
 
 
 /*******************************************************************************
-* int add_matrices(matrix_t A, matrix_t B, matrix_t* out)
+* matrix_t add_matrices(matrix_t A, matrix_t B)
 *
 * 
 *******************************************************************************/
-int add_matrices(matrix_t A, matrix_t B, matrix_t* out){
+matrix_t add_matrices(matrix_t A, matrix_t B){
 	int i,j;
+	matrix_t out = create_empty_matrix();
 	if(!A.initialized||!B.initialized){
 		printf("ERROR: matrix not initialized yet\n");
-		return -1;
+		return out;
 	}
 	if ((A.rows != B.rows)||(A.cols != B.cols)){
 		printf("Invalid matrix sizes");
-		return -1;
+		return out;
 	}
-	*out = create_matrix(A.rows, A.cols);
+	out = create_matrix(A.rows, A.cols);
 	for(i=0;i<(A.rows);i++){
 		for(j=0;j<(A.cols);j++){	
-			out->data[i][j] = A.data[i][j] + B.data[i][j];
+			out.data[i][j] = A.data[i][j] + B.data[i][j];
 		}
 	}
-	return 0;
+	return out;
 }
 
 /*******************************************************************************
@@ -638,7 +666,7 @@ float vector_norm(vector_t v){
 vector_t vector_projection(vector_t v, vector_t e){
 	int i;
 	float factor;
-	vector_t out;
+	vector_t out = create_empty_vector();
 	
 	if(!v.initialized || !e.initialized){
 		printf("ERROR: vectors not initialized yet\n");
@@ -667,7 +695,7 @@ matrix_t vector_outer_product(vector_t v1, vector_t v2){
 	int i, j;
 	int m = v1.len;
 	int n = v2.len;
-	matrix_t out;
+	matrix_t out = create_empty_matrix();
 	if(!v1.initialized || !v2.initialized){
 		printf("ERROR: vectors not initialized yet\n");
 		return out;
@@ -709,7 +737,7 @@ float vector_dot_product(vector_t v1, vector_t v2){
 * 
 *******************************************************************************/
 vector_t cross_product_3d(vector_t v1, vector_t v2){
-	vector_t out;
+	vector_t out = create_empty_vector();
 	if(!v1.initialized || !v2.initialized){
 		printf("ERROR: vector not initialized yet\n");
 		return out;
@@ -727,55 +755,163 @@ vector_t cross_product_3d(vector_t v1, vector_t v2){
 }
 
 /*******************************************************************************
-* int polynomial_convolution(vector_t v1, vector_t v2, vector_t* out)
+* vector_t poly_conv(vector_t v1, vector_t v2)
 *
 * 
 *******************************************************************************/
-int polynomial_convolution(vector_t v1, vector_t v2, vector_t* out){
+vector_t poly_conv(vector_t v1, vector_t v2){
+	vector_t out = create_empty_vector();
 	int m,n,i,j,k;
-	if(v1.initialized!=1 || v2.initialized!=1){
+	if(!v1.initialized || !v2.initialized){
 		printf("ERROR: vector not initialized yet\n");
-		return -1;
+		return out;
 	}
 	m = v1.len;
 	n = v2.len;
 	k = m+n-1;
-	*out = create_vector(k);
+	out = create_vector(k);
+	
 	for(i=0;i<m;i++){
 		for(j=0;j<n;j++){
-			out->data[i+j] += v1.data[i] * v2.data[j];
+			out.data[i+j] += v1.data[i] * v2.data[j];
 		}
 	}
-	return 0;	
+	return out;	
 }
 
 /*******************************************************************************
-* int polynomial_power(vector_t v, int order, vector_t* out)
+* vector_t poly_power(vector_t v, int N)
 *
 * 
 *******************************************************************************/
-int polynomial_power(vector_t v, int order, vector_t* out){
+vector_t poly_power(vector_t v, int N){
+	vector_t out = create_empty_vector();
 	int i;
-	vector_t temp, current;
-	if(order<2){
-		printf("Error: polynomial power needs an order >=2\n");
-		return -1;
-	}
-	if(v.initialized!=1){
+	if(!v.initialized){
 		printf("ERROR: vector not initialized yet\n");
-		return -1;
+		return out;
 	}
-	current = duplicate_vector(v);
-	for(i=2;i<=order;i++){
-		polynomial_convolution(current, v, &temp);
-		destroy_vector(&current);
-		current = duplicate_vector(temp);
+	if(N < 0){
+		printf("ERROR: no negative exponents\n");
+		return out;
+	}
+	if(N == 0){
+		out = create_vector(1);
+		out.data[0] = 1;
+		return out;
+	}	
+	out = duplicate_vector(v);
+	if(N == 1){
+		return out;
+	}
+	vector_t temp;
+	for(i=2;i<=N;i++){
+		temp = poly_conv(out, v);
+		out  = duplicate_vector(temp);
 		destroy_vector(&temp);
 	}
-	*out = current;
-	return 0;
+	return out;
 }
 
+/*******************************************************************************
+* vector_t poly_butter(int N, float wc)
+*
+* Return vector of coefficients for continuous-time Butterworth polynomial
+*  or order N and cutoff wc (rad/s)
+*******************************************************************************/
+vector_t poly_butter(int N, float wc){
+	int i;
+	vector_t filter = create_empty_vector();
+	vector_t P2, P3, temp;
+	if(N < 1){
+		printf("ERROR: order must be > 1\n");
+		return filter;
+	}
+	if(N > 10){
+		printf("ERROR: order must be <= 10 to prevent overflow\n");
+		return filter;
+	}
+	filter = create_vector(1);
+	filter.data[0] = 1;
+	P2 = create_vector(2);
+	P3 = create_vector(3);
+	if(N%2 == 0){
+		for(i=1;i<=N/2;i++){
+			P3.data[0] = 1/(wc*wc);
+			P3.data[1] = -2*cos((2*i + N - 1)*PI/(2*N))/wc;
+			P3.data[2] = 1;
+			temp = duplicate_vector(filter);
+			filter = poly_conv(temp,P3);
+			destroy_vector(&temp);
+		}
+	}
+	if(N%2 == 1){	
+		P2.data[0] = 1/wc;
+		P2.data[1] = 1;
+		temp = duplicate_vector(filter);
+		filter = poly_conv(temp,P2);
+		destroy_vector(&temp);
+		for(i=1;i<=(N-1)/2;i++){
+			P3.data[0] = 1/(wc*wc);
+			P3.data[1] = -2*cos((2*i + N - 1)*PI/(2*N))/wc;
+			P3.data[2] = 1;
+			temp = duplicate_vector(filter);
+			filter = poly_conv(temp,P3);
+			destroy_vector(&temp);
+		}
+	}
+	destroy_vector(&P2);
+	destroy_vector(&P3);
+	return filter;
+}
+
+/*******************************************************************************
+* float standard_deviation(vector_t v)
+*
+* 
+*******************************************************************************/
+float standard_deviation(vector_t v){
+	int i;
+	float mean, mean_sqr;
+	if(v.initialized != 1){
+		printf("ERROR: vector not initialied\n");
+		return -1;
+	}
+	if(v.len == 1) return 0;
+
+	// calculate mean
+	mean = 0;
+	for(i=0;i<v.len;i++){
+		mean += v.data[i];
+	}
+	mean = mean / v.len;
+	// calculate mean square
+	mean_sqr = 0;
+	for(i=0;i<v.len;i++){
+		mean_sqr += (v.data[i]-mean)*(v.data[i]-mean);
+	}
+	return sqrt(mean_sqr/v.len);
+}
+
+/*******************************************************************************
+* float vector_mean(vector_t v)
+*
+* 
+*******************************************************************************/
+float vector_mean(vector_t v){
+	int i;
+	float sum = 0;
+
+	if(v.initialized != 1){
+		printf("ERROR: vector not initialied\n");
+		return -1;
+	}
+	// calculate mean
+	for(i=0;i<v.len;i++){
+		sum += v.data[i];
+	}
+	return sum/ v.len;
+}
 
 /*******************************************************************************
 * float matrix_determinant(matrix_t A)
@@ -928,13 +1064,13 @@ int QR_decomposition(matrix_t A, matrix_t* Q, matrix_t* R){
 		// multiply new Qi to old Qtemp
 		temp = duplicate_matrix(Qt);
 		destroy_matrix(&Qt);
-		multiply_matrices(Qi,temp,&Qt);
+		Qt = multiply_matrices(Qi,temp);
 		destroy_matrix(&temp);
 		
 		// same with Rtemp
 		temp = duplicate_matrix(Rt);
 		destroy_matrix(&Rt);
-		multiply_matrices(Qi,temp,&Rt);
+		Rt = multiply_matrices(Qi,temp);
 		destroy_matrix(&temp);
 		
 		// free other allocation used in this step
@@ -949,26 +1085,26 @@ int QR_decomposition(matrix_t A, matrix_t* Q, matrix_t* R){
 }
 
 /*******************************************************************************
-*  int invert_matrix(matrix_t A, matrix_t* out)
+* matrix_t invert_matrix(matrix_t A)
 *
 * Invert Matrix function based on LUP decomposition and then forward and
-*  backward substitution.
-* 
+* backward substitution.
 *******************************************************************************/
-int invert_matrix(matrix_t A, matrix_t* out){
+matrix_t invert_matrix(matrix_t A){
 	int i,j,k,m;
 	matrix_t L,U,P,D,temp;
+	matrix_t out = create_empty_matrix();
 	if(!A.initialized){
 		printf("ERROR: matrix not initialized yet\n");
-		return -1;
+		return out;
 	}
 	if(A.cols != A.rows){
 		printf("ERROR: matrix is not square\n");
-		return -1;
+		return out;
 	}
 	if(matrix_determinant(A) == 0){
 		printf("ERROR: matrix is singular, not invertible\n");
-		return -1;
+		return out;
 	}
 	m = A.cols;
 	LUP_decomposition(A,&L,&U,&P);
@@ -990,14 +1126,14 @@ int invert_matrix(matrix_t A, matrix_t* out){
 		}
 	}
 	// multiply by permutation matrix
-	multiply_matrices(temp, P, out);		
+	out = multiply_matrices(temp, P);		
 	// free allocation	
 	destroy_matrix(&temp);	
 	destroy_matrix(&L);		
 	destroy_matrix(&U);
 	destroy_matrix(&P);
 	destroy_matrix(&D);
-	return 0;
+	return out;
 }
 
 /*******************************************************************************
@@ -1008,7 +1144,7 @@ int invert_matrix(matrix_t A, matrix_t* out){
 matrix_t householder_matrix(vector_t v){
 	int i, j;
 	float tau;
-	matrix_t out;
+	matrix_t out = create_empty_matrix();
 	if(!v.initialized){
 		printf("ERROR: vector not initialized yet\n");
 		return out;
@@ -1035,7 +1171,7 @@ matrix_t householder_matrix(vector_t v){
 vector_t lin_system_solve(matrix_t A, vector_t b){
 	float fMaxElem, fAcc;
 	int nDim,i,j,k,m;
-	vector_t xout;
+	vector_t xout = create_empty_vector();
 	if(!A.initialized || !b.initialized){
 		printf("ERROR: matrix or vector not initialized yet\n");
 		return xout;
@@ -1107,7 +1243,8 @@ vector_t lin_system_solve(matrix_t A, vector_t b){
 *  then solve for x with gaussian elimination
 *******************************************************************************/
 vector_t lin_system_solve_qr(matrix_t A, vector_t b){
-	vector_t xout, temp;
+	vector_t xout = create_empty_vector();
+	vector_t temp;
 	matrix_t Q,R;
 	int i,k;
 	if(!A.initialized || !b.initialized){
@@ -1238,32 +1375,4 @@ int fit_ellipsoid(matrix_t points, vector_t* center, vector_t* lengths){
 	destroy_matrix(&A);
 	destroy_vector(&b);
 	return 0;
-}
-
-/*******************************************************************************
-* float standard_deviation(vector_t v)
-*
-* 
-*******************************************************************************/
-float standard_deviation(vector_t v){
-	int i;
-	float mean, mean_sqr;
-	if(v.initialized != 1){
-		printf("ERROR: vector not initialied\n");
-		return -1;
-	}
-	if(v.len == 1) return 0;
-
-	// calculate mean
-	mean = 0;
-	for(i=0;i<v.len;i++){
-		mean += v.data[i];
-	}
-	mean = mean / v.len;
-	// calculate mean square
-	mean_sqr = 0;
-	for(i=0;i<v.len;i++){
-		mean_sqr += (v.data[i]-mean)*(v.data[i]-mean);
-	}
-	return sqrt(mean_sqr/v.len);
 }
