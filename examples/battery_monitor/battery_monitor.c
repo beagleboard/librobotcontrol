@@ -17,8 +17,8 @@
 #define CELL_MAX			4.25 // set higher than actual to detect num cells
 #define VOLTAGE_FULL		3.9	 // minimum V to consider battery full
 #define VOLTAGE_75			3.8	
-#define VOLTAGE_50			3.5
-#define VOLTAGE_25			3.0
+#define VOLTAGE_50			3.55
+#define VOLTAGE_25			3.1
 #define VOLTAGE_DISCONNECT	2	 // Threshold for detecting disconnected battery
 
 void illuminate_leds(int i){
