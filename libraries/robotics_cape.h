@@ -1109,23 +1109,29 @@ float get_ring_buf_value(ring_buf_t* buf, int position);
 *******************************************************************************/
 
 typedef struct d_filter_t{
-	int order;
-	float dt;
-	// input scaling factor usually =1, useful for fast controller tuning
-	float prescaler; 
-	vector_t numerator;	// numerator coefficients 
+	// transfer function properties
+	int order;				// transfer function order
+	float dt;				// timestep in seconds
+	float gain; 			// gain usually 1
+	vector_t numerator;		// numerator coefficients 
 	vector_t denominator;	// denominator coefficients 
-	int saturation_en;
+	// saturation settings
+	int saturation_en;		// set to 1 by enable_saturation()
 	float saturation_min;
 	float saturation_max;
-	int saturation_flag;
-	ring_buf_t in_buf;			// dynamically allocated buffers
+	int saturation_flag;	// 1 if saturated on the last step
+	// soft start settings
+	int soft_start_en;		// set to 1 by enbale_soft_start()
+	float soft_start_steps;	// steps before full output allowed
+	// dynamically allocated ring buffers
+	ring_buf_t in_buf;
 	ring_buf_t out_buf;
-	
+	// newest input and output for quick reference
 	float newest_input;
 	float newest_output;
-	
-	int initialized;
+	// other
+	uint64_t step;			// steps since last reset
+	int initialized;		// 
 } d_filter_t;
 
 d_filter_t create_filter(int order, float dt, float* num, float* den);
@@ -1135,6 +1141,7 @@ float march_filter(d_filter_t* filter, float new_input);
 int reset_filter(d_filter_t* filter);
 int enable_saturation(d_filter_t* filter, float min, float max);
 int did_filter_saturate(d_filter_t* filter);
+int enable_soft_start(d_filter_t* filter, float seconds);
 float previous_filter_input(d_filter_t* filter, int steps);
 float previous_filter_output(d_filter_t* filter, int steps);
 float newest_filter_output(d_filter_t* filter);

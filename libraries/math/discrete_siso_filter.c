@@ -11,7 +11,6 @@
 #include <math.h>
 #include <string.h> // for memset
 
-#define DEBUG
 
 /*******************************************************************************
 * d_filter_t create_filter(int order, float dt, float* num, float* den)
@@ -28,18 +27,21 @@ d_filter_t create_filter(int order, float dt, float* num, float* den){
 		return filter;
 	}
 	filter.order = order;
-	filter.prescaler = 1;
+	filter.gain = 1;
 	filter.newest_input = 0;
 	filter.newest_output = 0;
 	filter.saturation_en = 0;
 	filter.saturation_min = 0;
 	filter.saturation_max = 0;
 	filter.saturation_flag = 0;
+	filter.soft_start_en = 0;
+	filter.soft_start_steps = 0;
 	filter.numerator   = create_vector_from_array(order+1, num);
 	filter.denominator = create_vector_from_array(order+1, den);
 	filter.in_buf 	   = create_ring_buf(order+1);
 	filter.out_buf     = create_ring_buf(order+1);
 	filter.initialized = 1;
+	filter.step = 0;
 	return filter;
 }
 
@@ -94,7 +96,7 @@ float march_filter(d_filter_t* filter, float new_input){
 	float input_i, output_i;
 	for(i=0; i<=(filter->order); i++){
 		input_i = get_ring_buf_value(&filter->in_buf,i);
-		new_output += filter->prescaler * filter->numerator.data[i] * input_i;
+		new_output += filter->gain * filter->numerator.data[i] * input_i;
 	}
 	for(i=1; i<=(filter->order); i++){
 		output_i = get_ring_buf_value(&filter->out_buf,i-1);
@@ -104,6 +106,14 @@ float march_filter(d_filter_t* filter, float new_input){
 	// scale in case denominator doesn't have a leading 1
 	new_output = new_output/filter->denominator.data[0];
 	
+	// soft start limits
+	if(filter->soft_start_en && filter->step < filter->soft_start_steps){
+		float a=filter->saturation_max*(filter->step/filter->soft_start_steps);
+		float b=filter->saturation_min*(filter->step/filter->soft_start_steps);
+		if(new_output > a) new_output = a;
+		if(new_output < b) new_output = b;
+	}
+
 	// saturate and set flag
 	if(filter->saturation_en){
 		if(new_output > filter->saturation_max){
@@ -122,7 +132,8 @@ float march_filter(d_filter_t* filter, float new_input){
 	// record the output to filter struct and ring buffer
 	filter->newest_output = new_output;
 	insert_new_ring_buf_value(&filter->out_buf, new_output);
-
+	// increment steps
+	filter->step++;
 	return new_output;
 }
 
@@ -136,6 +147,7 @@ int reset_filter(d_filter_t* filter){
 	reset_ring_buf(&filter->out_buf);
 	filter->newest_input = 0;
 	filter->newest_output = 0;
+	filter->step = 0;
 	return 0;
 }
 
@@ -147,6 +159,10 @@ int reset_filter(d_filter_t* filter){
 * the filter to run unbounded.
 *******************************************************************************/
 int enable_saturation(d_filter_t* filter, float min, float max){
+	if(filter->initialized != 1){
+		printf("ERROR: filter not initialized yet\n");
+		return -1;
+	}
 	if(min>=max){
 		printf("ERORR: saturation max must be > min\n");
 		return -1;
@@ -154,6 +170,28 @@ int enable_saturation(d_filter_t* filter, float min, float max){
 	filter->saturation_en = 1;
 	filter->saturation_min = min;
 	filter->saturation_max = max;
+	return 0;
+}
+
+/*******************************************************************************
+* int enable_soft_start(d_filter_t* filter, float seconds)
+*
+* Enables soft start function where the output limit is gradually increased 
+* for the given number of seconds up to the normal saturation value. Saturation
+* must already be enabled for this to work.
+*******************************************************************************/
+int enable_soft_start(d_filter_t* filter, float seconds){
+	if(filter->initialized != 1){
+		printf("ERROR: filter not initialized yet\n");
+		return -1;
+	}
+	if(filter->saturation_en != 1){
+		printf("ERROR: saturation must be enabled to use soft start.\n");
+		return -1;
+	}
+	filter->soft_start_en = 1;
+	filter->soft_start_steps = seconds/filter->dt;
+	
 	return 0;
 }
 
@@ -311,6 +349,7 @@ d_filter_t multiply_filters(d_filter_t f1, d_filter_t f2){
 	}
 	
 	out = create_filter(new_order, f1.dt, &newnum.data[0], &newden.data[0]);
+	out.gain = f1.gain * f2.gain;
 	destroy_vector(&newden);
 	destroy_vector(&newnum);
 	return out;

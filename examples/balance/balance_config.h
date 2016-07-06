@@ -22,14 +22,14 @@
 #define 	V_NOMINAL				7.4
 
 // inner loop controller
-#define 	D1_K					0.9	
+#define 	D1_GAIN					0.9	
 #define 	D1_ORDER				2
 #define 	D1_NUM					{-6.289, 11.910, -5.634 }
 #define 	D1_DEN					{ 1.000, -1.702,  0.702 }
 #define 	D1_SATURATION_TIMEOUT	0.5
 
 // outer loop controller
-#define 	D2_K					0.7
+#define 	D2_GAIN					0.7
 #define		D2_ORDER				1
 #define 	D2_NUM					{ 0.3858, -0.3853 }
 #define 	D2_DEN					{ 1.0000, -0.9277 }
@@ -75,5 +75,6 @@
 #define 	START_DELAY 			0.5	
 #define 	PICKUP_DETECTION_TIME 	0.65
 #define 	ENABLE_POSITION_HOLD	1
+#define 	SOFT_START_SEC			0.7
 
 #endif //BALANCE_CONFIG

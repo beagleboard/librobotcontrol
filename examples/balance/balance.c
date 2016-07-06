@@ -57,7 +57,9 @@ typedef struct core_state_t{
 	float phi;			// average wheel angle in global frame
 	float gamma;		// body turn (yaw) angle radians
 	float vBatt; 		// battery voltage 
-	float u;			// balance control input to motors from D1
+	float d1_u;			// output of balance controller D1 to motors
+	float d2_u;			// output of position controller D2 (theta_ref)
+	float d3_u;			// output of steering controller D3 to motors
 	float mot_drive;	// u compensated for battery voltage
 } core_state_t;
 
@@ -110,12 +112,15 @@ int main(){
 	float D1_num[] = D1_NUM;
 	float D1_den[] = D1_DEN;
 	D1 = create_filter(D1_ORDER, DT, D1_num, D1_den);
+	D1.gain = D1_GAIN;
 	enable_saturation(&D1, -1.0, 1.0);
-
+	enable_soft_start(&D1, SOFT_START_SEC);
+	
 	// set up D2 Phi controller
 	float D2_num[] = D2_NUM;
 	float D2_den[] = D2_DEN;
 	D2 = create_filter(D2_ORDER, DT, D2_num, D2_den);
+	D2.gain = D2_GAIN;
 	enable_saturation(&D2, -THETA_REF_MAX, THETA_REF_MAX);
 
 	// set up D3 gamma (steering) controller
@@ -129,6 +134,8 @@ int main(){
 	// start a thread to slowly sample battery 
 	pthread_t  battery_thread;
 	pthread_create(&battery_thread, NULL, battery_checker, (void*) NULL);
+	// wait for the battery thread to make the first read
+	while(cstate.vBatt==0 && get_state()!=EXITING) usleep(1000);
 	
 	// start printf_thread if running from a terminal
 	// if it was started as a background process then don't bother
@@ -157,6 +164,8 @@ int main(){
 	// to make sure other setup functions don't interfere
 	set_imu_interrupt_func(&balance_controller);
 	
+	// start in the RUNNING state, pressing the puase button will swap to 
+	// the PUASED state then back again.
 	printf("\nHold your MIP upright to begin balancing\n");
 	set_state(RUNNING);
 	
@@ -258,7 +267,7 @@ void* setpoint_manager(void* ptr){
 *******************************************************************************/
 int balance_controller(){
 	static int inner_saturation_counter = 0; 
-	float steering_u, dutyL, dutyR;
+	float dutyL, dutyR;
 	/******************************************************************
 	* STATE_ESTIMATION
 	* read sensors and compute the state when either ARMED or DISARMED
@@ -277,7 +286,7 @@ int balance_controller(){
 	cstate.phi = ((cstate.wheelAngleL+cstate.wheelAngleR)/2) + cstate.theta; 
 	
 	// steering angle gamma estimate 
-	cstate.gamma = (cstate.wheelAngleL-cstate.wheelAngleR) \
+	cstate.gamma = (cstate.wheelAngleR-cstate.wheelAngleL) \
 											* (WHEEL_RADIUS_M/TRACK_WIDTH_M);
 
 	/*************************************************************
@@ -311,7 +320,8 @@ int balance_controller(){
 	*************************************************************/
 	if(ENABLE_POSITION_HOLD){
 		if(setpoint.phi_dot != 0.0) setpoint.phi += setpoint.phi_dot*DT;
-		setpoint.theta = march_filter(&D2,setpoint.phi-cstate.phi);
+		cstate.d2_u = march_filter(&D2,setpoint.phi-cstate.phi);
+		setpoint.theta = cstate.d2_u;
 	}
 	else setpoint.theta = 0.0;
 	
@@ -320,8 +330,8 @@ int balance_controller(){
 	* Input to D1 is theta error (setpoint-state). Then scale the 
 	* output u to compensate for changing battery voltage.
 	*************************************************************/
-	cstate.u = march_filter(&D1,setpoint.theta - cstate.theta);
-	cstate.mot_drive = cstate.u * V_NOMINAL/cstate.vBatt;
+	D1.gain = D1_GAIN * V_NOMINAL/cstate.vBatt;
+	cstate.d1_u = march_filter(&D1,setpoint.theta - cstate.theta);
 
 	/*************************************************************
 	* Check if the inner loop saturated. If it saturates for over
@@ -342,15 +352,15 @@ int balance_controller(){
 	* move the setpoint gamma based on user input like phi
 	***********************************************************/
 	if(setpoint.gamma_dot != 0.0) setpoint.gamma += setpoint.gamma_dot * DT;
-	steering_u = march_filter(&D3,setpoint.gamma - cstate.gamma);
+	cstate.d3_u = march_filter(&D3,setpoint.gamma - cstate.gamma);
 	
 	/**********************************************************
 	* Send signal to motors
 	* add D1 balance control u and D3 steering control also 
 	* multiply by polarity to make sure direction is correct.
 	***********************************************************/
-	dutyL = cstate.mot_drive + steering_u;
-	dutyR = cstate.mot_drive - steering_u;	
+	dutyL = cstate.d1_u - cstate.d3_u;
+	dutyR = cstate.d1_u + cstate.d3_u;	
 	set_motor(MOTOR_CHANNEL_L, MOTOR_POLARITY_L * dutyL); 
 	set_motor(MOTOR_CHANNEL_R, MOTOR_POLARITY_R * dutyR); 
 
@@ -434,15 +444,12 @@ int wait_for_starting_condition(){
 * since that is dependent on the battery voltage.
 *******************************************************************************/
 void* battery_checker(void* ptr){
-	float new_v,sat;
+	float new_v;
 	while(get_state()!=EXITING){
 		new_v = get_battery_voltage();
 		// if the value doesn't make sense, use nominal voltage
 		if (new_v>9.0 || new_v<5.0) new_v = V_NOMINAL;
 		cstate.vBatt = new_v;
-		// set the new saturation level
-		sat = new_v / V_NOMINAL;
-		enable_saturation(&D1, -sat, sat);
 		usleep(1000000 / BATTERY_CHECK_HZ);
 	}
 	return NULL;
@@ -466,7 +473,8 @@ void* printf_loop(void* ptr){
 			printf("    φ    |");
 			printf("  φ_ref  |");
 			printf("    γ    |");
-			printf("    u    |");
+			printf("  D1_u   |");
+			printf("  D3_u   |");
 			printf("  vBatt  |");
 			printf("arm_state|");
 			printf("\n");
@@ -484,7 +492,8 @@ void* printf_loop(void* ptr){
 			printf("%7.2f  |", cstate.phi);
 			printf("%7.2f  |", setpoint.phi);
 			printf("%7.2f  |", cstate.gamma);
-			printf("%7.2f  |", cstate.u);
+			printf("%7.2f  |", cstate.d1_u);
+			printf("%7.2f  |", cstate.d3_u);
 			printf("%7.2f  |", cstate.vBatt);
 			
 			if(setpoint.arm_state == ARMED) printf("  ARMED  |");
