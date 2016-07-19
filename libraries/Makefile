@@ -4,7 +4,7 @@ SUBDIRS = $(shell find * -type d -print)
 CC = gcc
 LINKER   := gcc
 TOUCH 	 := $(shell touch *)
-CFLAGS := -Wall -fsingle-precision-constant -fPIC -march=armv7-a -mtune=cortex-a8 -mfloat-abi=hard -mfpu=neon
+CFLAGS := -Wall -fsingle-precision-constant -fpic -march=armv7-a -mtune=cortex-a8
 LFLAGS	:= -lm -lrt -lpthread -shared -lprussdrvd
 
 #DEFS = 

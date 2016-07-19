@@ -134,7 +134,7 @@ int initialize_imu(imu_data_t *data, imu_config_t conf){
 	}
 	
 	// if it is not claimed, start the i2c bus
-	if(i2c_init(IMU_BUS, IMU_ADDR)){
+	if(i2c_init(IMU_BUS, IMU_ADDR)<0){
 		printf("failed to initialize i2c bus\n");
 		return -1;
 	}

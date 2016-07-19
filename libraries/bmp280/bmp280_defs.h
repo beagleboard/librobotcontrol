@@ -7,7 +7,7 @@
 #ifndef _BMP280_H
 #define _BMP280_H
    
-#define BMP_ADDR    		    0x77
+#define BMP_ADDR    		    0x76
 #define DEFAULT_SEA_LEVEL_PA	101325
 
 // temperature and pressure registers
@@ -21,7 +21,7 @@
 // config register and settings
 #define BMP280_CONFIG			(0xF5)
 // time sample delay settings
-#define BMP280_TSB_0			(0x00<<5)
+#define BMP280_TSB_0			(0x00)
 #define BMP280_TSB_63			(0x01<<5)
 #define BMP280_TSB_125			(0x02<<5)
 #define BMP280_TSB_250			(0x03<<5)
@@ -41,6 +41,7 @@
 // control measurement register and settings
 #define BMP280_CTRL_MEAS		(0xF4)
 // temperature oversample
+#define BMP_TEMP_OVERSAMPLE_OFF	(0x00)
 #define BMP_TEMP_OVERSAMPLE_1	(0x01<<5)
 #define BMP_TEMP_OVERSAMPLE_2	(0x02<<5)
 #define BMP_TEMP_OVERSAMPLE_4	(0x03<<5)

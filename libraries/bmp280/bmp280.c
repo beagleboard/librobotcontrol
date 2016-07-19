@@ -9,7 +9,7 @@
 
 #include <stdio.h>
 #include <math.h>
-
+#include <unistd.h>
 
 typedef struct bmp280_cal_t{
     uint16_t dig_T1;
@@ -44,14 +44,15 @@ bmp280_data_t data;
 
 
 /*******************************************************************************
-* int initialize_barometer()
+* int initialize_barometer(bmp_oversample_t oversample, bmp_filter_t filter)
 *
-* Reads the factory-set coefficients
+* sets up the i2c bus and barometer for continuous sampling and internal
+* filtering. 
 *******************************************************************************/
-int initialize_barometer(bmp_oversample_t oversampling){
+int initialize_barometer(bmp_oversample_t oversample, bmp_filter_t filter){
 	uint8_t buf[24];
 	uint8_t c;
-	
+	int i;
 	// make sure the bus is not currently in use by another thread
 	// do not proceed to prevent interfering with that process
 	if(i2c_get_in_use_state(BMP_BUS)){
@@ -59,18 +60,17 @@ int initialize_barometer(bmp_oversample_t oversampling){
 		printf("Continuing with initialize_barometer() anyway.\n");
 	}
 	
+	// initialize the bus
+	if(i2c_init(BMP_BUS,BMP_ADDR)<0){
+		printf("ERROR: failed to initialize i2c bus\n");
+		printf("aborting initialize_barometer\n");
+		return -1;
+	}
+
 	// claiming the bus does no guarantee other code will not interfere 
 	// with this process, but best to claim it so other code can check
 	// like we did above
 	i2c_claim_bus(BMP_BUS);
-	
-	// initialize the bus
-	if(i2c_init(BMP_BUS,BMP_ADDR)<1){
-		printf("ERROR: failed to initialize i2c bus\n");
-		printf("aborting initialize_barometer\n");
-		i2c_release_bus(BMP_BUS);
-		return -1;
-	}
 	
 	// reset the barometer
 	if(i2c_write_byte(BMP_BUS, BMP280_RESET_REG, BMP280_RESET_WORD)<0){
@@ -97,29 +97,9 @@ int initialize_barometer(bmp_oversample_t oversampling){
 		
 	// set up the bmp measurement control register settings
 	// no temperature oversampling,  normal continuous read mode
-	c = BMP280_TSB_0 | BMP_MODE_NORMAL;
-	switch(oversampling){
-	case BMP_OVERSAMPLE_1:
-		c |= BMP_PRES_OVERSAMPLE_1;
-		break;
-	case BMP_OVERSAMPLE_2:
-		c |= BMP_PRES_OVERSAMPLE_2;
-		break;
-	case BMP_OVERSAMPLE_4:
-		c |= BMP_PRES_OVERSAMPLE_4;
-		break;
-	case BMP_OVERSAMPLE_8:
-		c |= BMP_PRES_OVERSAMPLE_8;
-		break;
-	case BMP_OVERSAMPLE_16:
-		c |= BMP_PRES_OVERSAMPLE_16;
-		break;
-	default:
-		printf("ERROR: invalid oversampling argument\n");
-		printf("aborting initialize_bmp\n");
-		i2c_release_bus(BMP_BUS);
-		return -1;
-	}
+	c = BMP_MODE_NORMAL;
+	c |= BMP_TEMP_OVERSAMPLE_1;
+	c |= oversample;
 	// write the measurement control register
 	if(i2c_write_byte(BMP_BUS,BMP280_CTRL_MEAS,c)<0){
 		printf("ERROR: can't write to bmp measurement control register\n");
@@ -129,7 +109,8 @@ int initialize_barometer(bmp_oversample_t oversampling){
 	}
 	
 	// set up the filter config register
-	c = BMP280_TSB_0 | BMP280_FILTER_OFF;
+	c = BMP280_TSB_0; 	// minimal sleep delay between samples
+	c |= filter;		// user selectable filter coefficient
 	if(i2c_write_byte(BMP_BUS,BMP280_CONFIG,c)<0){
 		printf("failed to write to bmp_config register\n");
 		printf("aborting initialize_bmp\n");
@@ -137,22 +118,29 @@ int initialize_barometer(bmp_oversample_t oversampling){
 		return -1;
 	}
 	
-	// now to retrieve the factory NVM calibration data
-	// first make sure it's ready by checking status bit
-	// check the chip ID register
-	if(i2c_read_byte(BMP_BUS, BMP280_STATUS_REG	, &c)<0){
-		printf("ERROR: can't read status byte from barometer\n");
-		printf("aborting initialize_bmp\n");
-		i2c_release_bus(BMP_BUS);
-		return -1;
-	}
-	if(c|BMP280_IM_UPDATE_STATUS){
-		printf("ERROR: factory NVM calibration not available yet\n");
-		printf("aborting initialize_bmp\n");
-		i2c_release_bus(BMP_BUS);
-		return -1;
-	}
-	// read in actual data all in one go
+	
+	// keep checking the status register untill the NVM calibration is ready
+	// after a short wait
+	i = 0;
+	c = BMP280_IM_UPDATE_STATUS;
+	do{
+		usleep(20000);
+		if(i2c_read_byte(BMP_BUS, BMP280_STATUS_REG	, &c)<0){
+			printf("ERROR: can't read status byte from barometer\n");
+			printf("aborting initialize_bmp\n");
+			i2c_release_bus(BMP_BUS);
+			return -1;
+		}
+		if(i>10){
+			printf("ERROR: factory NVM calibration not available yet\n");
+			printf("aborting initialize_bmp\n");
+			i2c_release_bus(BMP_BUS);
+			return -1;
+		}
+		i++;
+	} while(c&BMP280_IM_UPDATE_STATUS);
+
+	// retrieve the factory NVM calibration data all in one go
 	if(i2c_read_bytes(BMP_BUS,BMP280_DIG_T1,24,buf)<0){
 		printf("ERROR: failed to load BMP280 factory calibration registers\n");
 		printf("aborting initialize_barometer\n");
@@ -177,10 +165,25 @@ int initialize_barometer(bmp_oversample_t oversampling){
 	
 	// release control of the bus
 	i2c_release_bus(BMP_BUS);
+
+	// wait for the barometer to settle and get its first internal read.
+	usleep(50000);
+
+	// read in data to it's ready for the user to access right away
+	if(read_barometer()<0){
+		printf("ERROR: failed to read barometer during initialization\n");
+		i2c_release_bus(BMP_BUS);
+		return -1;
+	}
 	return 0;
 }
 
 
+/*******************************************************************************
+* int power_down_barometer()
+*
+* Puts the barometer into low power standby
+*******************************************************************************/
 int power_down_barometer(){
 	// make sure the bus is not currently in use by another thread
 	// do not proceed to prevent interfering with that process
@@ -211,15 +214,14 @@ int power_down_barometer(){
 /*******************************************************************************
 * int read_barometer()
 *
-* Reads the status bit followed by the temperature and pressure data registers.
-* If the status bit indicates no new data is available, this function returns 1.
-* Old data will still be available with the get_pressure, get_temperature, and
-* get_altitude functions.If new data was read then this function returns 0.
-* If an error occurred return -1. 
+* Reads the newest temperature and pressure measurments from the barometer over
+* the I2C bus. To access the data use the bmp_get_temperature_c(), 
+* bmp_get_pressure_pa(), or bmp_get_altitude_m() functions. 
+* returns 0 on success, otherwise -1.
 *******************************************************************************/
 int read_barometer(){
 	int64_t var1, var2, var3, var4, t_fine, T, p;
-	uint8_t c, raw[6];
+	uint8_t raw[6];
 	int32_t adc_P, adc_T;
 	
 	// check claim bus state to avoid stepping on IMU reads
@@ -236,26 +238,11 @@ int read_barometer(){
 		return -1;
 	}
 	
-	// first check the status bit
-	if(i2c_read_byte(BMP_BUS,BMP280_STATUS_REG,&c)<0){
-		printf("ERROR: failed to read barometer status register\n");
-		printf("aborting read_barometer\n");
-		i2c_release_bus(BMP_BUS);
-		return -1;
-	}
-	if(c&BMP280_MEAS_STATUS){
-		#ifdef DEBUG
-		pritnf("BMP status says no new data ready\n");
-		#endif
-		i2c_release_bus(BMP_BUS);
-		return 1;
-	}
-	
 	// if new data is ready, read it in
 	if(i2c_read_bytes(BMP_BUS,BMP280_PRESSURE_MSB,6,raw)<0){
 		printf("ERROR: failed to read barometer data registers\n");
 		i2c_release_bus(BMP_BUS);
-		return 1;
+		return -1;
 	}
 	
 	// run the numbers, thanks to Bosch for putting this code in their datasheet
@@ -297,27 +284,52 @@ int read_barometer(){
 	
 
 	data.alt = 44330.0*(1.0 - pow((data.pressure/cal.sea_level_pa), 0.1903));
+
+	i2c_release_bus(BMP_BUS);
 	return 0;
-	
 }
 
-
-
 /*******************************************************************************
-
+* float bmp_get_temperature_c()
+*
+* This does not start an I2C transaction but simply returns the temperature in
+* degrees celcius that was read by the last call to the read_barometer() 
+* function.
 *******************************************************************************/
 float bmp_get_temperature_c(){
 	return data.temp;
 }
 
+/*******************************************************************************
+* float bmp_get_pressure_pa()
+*
+* This does not start an I2C transaction but simply returns the pressure in
+* pascals that was read by the last call to the read_barometer() function.
+*******************************************************************************/
 float bmp_get_pressure_pa(){
 	return data.pressure;
 }
 
+/*******************************************************************************
+* float bmp_get_altitude_m()
+*
+* This does not start an I2C transaction but simply returns the altitude in 
+* meters based on the pressure received by the last call to the read_barometer()
+* function. Assuming current pressure at sea level is the default 101325 Pa.
+* Use set_sea_level_pressure_pa() if you know the current sea level pressure
+* and desire more accuracy. 
+*******************************************************************************/
 float bmp_get_altitude_m(){
 	return data.alt;
 }
 
+/*******************************************************************************
+* int set_sea_level_pressure_pa(float pa)
+*
+* If you know the current sea level pressure for your region and weather, you 
+* can use this to correct the altititude reading. This is not necessary if you
+* only care about differential altitude from a starting point.
+*******************************************************************************/
 int set_sea_level_pressure_pa(float pa){
 	if(pa<80000 || pa >120000){
 		printf("ERROR: Please enter a reasonable sea level pressure\n");
