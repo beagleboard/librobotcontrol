@@ -25,8 +25,8 @@ int main(){
 	printf(" Time Constant: %5.2f ", TIME_CONSTANT);
 	printf(" dt: %6.2f \n\n", dt);
 	
-	low_pass   = create_first_order_low_pass(dt, TIME_CONSTANT);
-	high_pass  = create_first_order_high_pass(dt, TIME_CONSTANT);
+	low_pass   = create_first_order_lowpass(dt, TIME_CONSTANT);
+	high_pass  = create_first_order_highpass(dt, TIME_CONSTANT);
 	integrator = create_integrator(dt);
 
 	reset_filter(&low_pass);
