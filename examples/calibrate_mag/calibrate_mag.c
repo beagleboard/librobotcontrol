@@ -16,7 +16,7 @@ int main(){
 		return -1;
 	}
 	printf("\n");
-	printf("This will sample the magnetometer for the next few seconds\n");
+	printf("This will sample the magnetometer for the next 15 seconds\n");
 	printf("Rotate the cape around in the air through as many orientations\n");
 	printf("as possible to collect sufficient data for calibration\n");
 	printf("Press ENTER to continue or anything else to quit\n");
@@ -25,6 +25,10 @@ int main(){
 		return -1;
 	}
 	
+	printf("spin spin spin!!!\n\n");
+	// wait for the user to actually start 
+	sleep(2);
+
 	if(calibrate_mag_routine()<0){
 		printf("Failed to complete magnetometer calibration\n");
 		cleanup_cape();
