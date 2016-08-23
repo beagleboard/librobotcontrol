@@ -64,6 +64,8 @@ int main(){
 		fflush(stdout);
 		usleep(100000);
 	}
+
+	power_off_imu();
 	cleanup_cape();
 	return 0;
 }
