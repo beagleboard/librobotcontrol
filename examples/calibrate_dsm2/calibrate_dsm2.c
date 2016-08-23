@@ -24,7 +24,7 @@ int main(){
 	printf("and make sure your transmitter is on and paired to the receiver\n");
 	printf("\n");
 	printf("Press ENTER to continue or anything else to quit\n");
-	if(continue_or_quit()<0){
+	if(continue_or_quit()<1){
 		cleanup_cape();
 		return -1;
 	}

@@ -232,22 +232,28 @@ int suppress_stderr(int (*func)(void)){
 /*******************************************************************************
 * continue_or_quit()
 *
-* This is a blocking function which returns 0 if the user presses ENTER.
-* otherwise it returns -1 on any other keypress. If ctrl-C is pressed it will
-* additionally set the global state to EXITITING. This is useful for checking
-* if the user wishes to continue with a process or quit.
+* This is a blocking function which returns 1 if the user presses ENTER.
+* it returns 0 on any other keypress. If ctrl-C is pressed it will
+* additionally set the global state to EXITITING and return -1. 
+* This is a useful function for checking if the user wishes to continue with a 
+* process or quit.
 *******************************************************************************/
 int continue_or_quit(){
 	// set stdin to non-canonical raw mode to capture all button presses 
 	fflush(stdin);
 	system("stty raw");
   	int c=getchar();
-  	int ret = -1; // set to 0 if enter is pressed
+  	int ret;
 	if(c==3){
 		printf("recieved Ctrl-C\n");
 		set_state(EXITING);
-	}else if(c=='\r' || c=='\n'){
-		ret=0;
+		ret = -1;
+	}
+	else if(c=='\r' || c=='\n'){
+		ret = 1;
+	}
+	else{
+		ret = 0;
 	}
 	// put stdin back to normal canonical mode
 	system ("stty cooked");

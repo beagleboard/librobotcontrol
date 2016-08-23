@@ -20,7 +20,7 @@ int main(){
 	printf("Rotate the cape around in the air through as many orientations\n");
 	printf("as possible to collect sufficient data for calibration\n");
 	printf("Press ENTER to continue or anything else to quit\n");
-	if(continue_or_quit()<0){
+	if(continue_or_quit()<1){
 		cleanup_cape();
 		return -1;
 	}

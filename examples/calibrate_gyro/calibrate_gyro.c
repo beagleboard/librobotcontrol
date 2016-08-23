@@ -19,7 +19,7 @@ int main(){
 	printf("\nThis program will generate a new gyro calibration file\n");
 	printf("keep your beaglebone very still for this procedure.\n");
 	printf("Press ENTER to continue or anything else to quit\n");
-	if(continue_or_quit()<0){
+	if(continue_or_quit()<1){
 		cleanup_cape();
 		return -1;
 	}

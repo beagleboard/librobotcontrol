@@ -36,7 +36,7 @@ int main(){
 	printf("\nDISCONNECT PROPELLERS FROM MOTORS\n");
 	printf("DISCONNECT POWER FROM ESCS\n");
 	printf("press enter to start sending max pulse width\n");
-	if(continue_or_quit()<0){
+	if(continue_or_quit()<1){
 		printf("aborting calibrate_escs\n");
 		goto END;
 	}
@@ -49,7 +49,7 @@ int main(){
 	printf("Now reapply power to the ESCs.\n");
 	printf("Press enter again after the ESCs finish chirping\n");
 	set_led(GREEN,1);
-	if(continue_or_quit()<0){
+	if(continue_or_quit()<1){
 		printf("aborting calibrate_escs\n");
 		goto END;
 	}
@@ -59,7 +59,7 @@ int main(){
 	printf("Sending minimum width pulses\n");
 	printf("Press enter again after the ESCs chirping to finish calibration\n");
 	width = 0;
-	if(continue_or_quit()<0){
+	if(continue_or_quit()<1){
 		printf("aborting calibrate_escs\n");
 		goto END;
 	}

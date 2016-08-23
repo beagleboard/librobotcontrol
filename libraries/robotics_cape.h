@@ -910,10 +910,11 @@ int print_cpu_frequency();
 *
 * @ continue_or_quit()
 *
-* This is a blocking function which returns 0 if the user presses ENTER.
-* otherwise it returns -1 on any other keypress. If ctrl-C is pressed it will
-* additionally set the global state to EXITITING. This is useful for checking
-* if the user wishes to continue with a process or quit.
+* This is a blocking function which returns 1 if the user presses ENTER.
+* it returns 0 on any other keypress. If ctrl-C is pressed it will
+* additionally set the global state to EXITITING and return -1. 
+* This is a useful function for checking if the user wishes to continue with a 
+* process or quit.
 *******************************************************************************/
 int null_func();
 float get_random_float();
