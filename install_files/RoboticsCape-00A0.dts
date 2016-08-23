@@ -366,6 +366,12 @@ fragment@26 {
 	};
 };
 
+fragment@27 {
+	target = <&uart6>;
+	__overlay__ {
+		status = "okay";
+	};
+};
 
 
 /****************************************
