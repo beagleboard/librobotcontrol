@@ -77,7 +77,7 @@ int main(){
 		
 	}
 
-	power_down_barometer();
+	power_off_barometer();
 	cleanup_cape();
 	return 0;
 }

@@ -180,11 +180,11 @@ int initialize_barometer(bmp_oversample_t oversample, bmp_filter_t filter){
 
 
 /*******************************************************************************
-* int power_down_barometer()
+* int power_off_barometer()
 *
 * Puts the barometer into low power standby
 *******************************************************************************/
-int power_down_barometer(){
+int power_off_barometer(){
 	// make sure the bus is not currently in use by another thread
 	// do not proceed to prevent interfering with that process
 	if(i2c_get_in_use_state(BMP_BUS)){
@@ -200,7 +200,7 @@ int power_down_barometer(){
 	// write the measurement control register to go into sleep mode
 	if(i2c_write_byte(BMP_BUS,BMP280_CTRL_MEAS,BMP_MODE_SLEEP)<0){
 		printf("ERROR: cannot write bmp_mode_register\n");
-		printf("aborting power_down_barometer()\n");
+		printf("aborting power_off_barometer()\n");
 		i2c_release_bus(BMP_BUS);
 		return -1;
 	}

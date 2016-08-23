@@ -639,7 +639,7 @@ uint64_t micros_since_last_interrupt();
 * powers on the barometer and initializes it with the given oversample and
 * filter settings. returns 0 on success, otherwise -1.
 *
-* @ int power_down_barometer()
+* @ int power_off_barometer()
 * Puts the barometer into a low power state, should be called at the end of
 * your program before close. return 0 on success, otherwise -1.
 *
@@ -687,7 +687,7 @@ typedef enum bmp_filter_t{
 }bmp_filter_t;
 
 int initialize_barometer(bmp_oversample_t oversample, bmp_filter_t filter);
-int power_down_barometer();
+int power_off_barometer();
 int read_barometer();
 float bmp_get_temperature_c();
 float bmp_get_pressure_pa();
