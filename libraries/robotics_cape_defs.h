@@ -1,7 +1,7 @@
 /*******************************************************************************
 * robotics_cape_defs.h
 *
-* This is a colection of definitions outlining the hardware mapping of the
+* This is a collection of definitions outlining the hardware mapping of the
 * robotics Cape. 
 *******************************************************************************/
 
