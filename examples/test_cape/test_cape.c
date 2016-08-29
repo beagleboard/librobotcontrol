@@ -309,16 +309,15 @@ void clear_instruction_area(){
 	clear_line();
 	goto_line(INSTRUCTION_LINE+6);
 	clear_line();
-	goto_line(INSTRUCTION_LINE+7);
-	clear_line();
-	goto_line(INSTRUCTION_LINE+8);
-	clear_line();
 	goto_line(INSTRUCTION_LINE);
 }
 
 // called once a test fails to indicate to the user 
 void fail_test(){
 	num_fails++;
+	printf("TEST FAILED\n");
+	printf("press any key to continue with next cape\n");
+	clear_instruction_area();
 	printf("TEST FAILED\n");
 	printf("press any key to continue with next cape\n");
 	continue_or_quit();
