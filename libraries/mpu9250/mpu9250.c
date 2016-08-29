@@ -1929,11 +1929,17 @@ int load_gyro_offets(){
 		// calibration file doesn't exist yet
 		printf("WARNING: no gyro calibration data found\n");
 		printf("Please run calibrate_gyro\n\n");
-		return -1;
+		// use zero offsets
+		x = 0;
+		y = 0;
+		z = 0;
 	}
-	// read in data
-	fscanf(cal,"%d\n%d\n%d\n", &x,&y,&z);
-		
+	else {
+		// read in data
+		fscanf(cal,"%d\n%d\n%d\n", &x,&y,&z);
+		fclose(cal);
+	}
+
 	#ifdef DEBUG
 	printf("offsets: %d %d %d\n", x, y, z);
 	#endif
@@ -1953,7 +1959,6 @@ int load_gyro_offets(){
 		printf("ERROR: failed to load gyro offsets into IMU register\n");
 		return -1;
 	}
-	fclose(cal);
 	return 0;	
 }
 
@@ -2407,9 +2412,13 @@ int calibrate_mag_routine(){
 		A.data[i][2] = imu_data.mag[2];
 		i++;
 		
-		// print "keep going" every second
-		if(i%sample_rate_hz == 0){
+		// print "keep going" every 4 seconds
+		if(i%(sample_rate_hz*4) == sample_rate_hz*2){
 			printf("keep spinning\n");
+		}
+		// print "you're doing great" every 4 seconds
+		if(i%(sample_rate_hz*4) == 0){
+			printf("you're doing great\n");
 		}
 		
 		usleep(1000000/sample_rate_hz);
@@ -2420,7 +2429,8 @@ int calibrate_mag_routine(){
 	i2c_release_bus(IMU_BUS);
 	
 	printf("\n\nOkay Stop!\n");
-	printf("Calculating calibration constants.....");
+	printf("Calculating calibration constants.....\n");
+	fflush(stdout);
 	
 	// if data collection loop exited without getting enough data, warn the
 	// user and return -1, otherwise keep going normally
@@ -2462,6 +2472,7 @@ int calibrate_mag_routine(){
 	new_scale[1] = 70.0/lengths.data[1];
 	new_scale[2] = 70.0/lengths.data[2];
 	
+	printf("\n");
 	printf("Offsets X: %7.3f Y: %7.3f Z: %7.3f\n", 	center.data[0],\
 													center.data[1],\
 													center.data[2]);
