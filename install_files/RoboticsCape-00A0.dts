@@ -332,42 +332,42 @@ fragment@10 {
 ****************************************/	
 
 fragment@22 {
-	target = <&uart1>;
+	target = <&uart0>;
 	__overlay__ {
 		status = "okay";
 	};
 };
 
 fragment@23 {
-	target = <&uart2>;
+	target = <&uart1>;
 	__overlay__ {
 		status = "okay";
 	};
 };
 
 fragment@24 {
-	target = <&uart3>;
+	target = <&uart2>;
 	__overlay__ {
 		status = "okay";
 	};
 };
 
 fragment@25 {
-	target = <&uart4>;
+	target = <&uart3>;
 	__overlay__ {
 		status = "okay";
 	};
 };
 
 fragment@26 {
-	target = <&uart5>;
+	target = <&uart4>;
 	__overlay__ {
 		status = "okay";
 	};
 };
 
 fragment@27 {
-	target = <&uart6>;
+	target = <&uart5>;
 	__overlay__ {
 		status = "okay";
 	};

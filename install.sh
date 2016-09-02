@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Bash script to install supporting software for the Robotics Cape
-# tested on follwing beagleboard.org Debian releases 
-# 2014-05-14, 2015-03-01, 2015-11-12
+# This is specifically for Debian Jessie, tested on the following images:
+# 2016-05-13
 
 INSTALL_DIR="/root"
 BOOTSCRIPT="Auto_Run_Script.sh"
@@ -15,70 +15,35 @@ AM335_DTB="/boot/dtbs/$KERNEL/am335x-boneblack.dtb"
 CONFIG_DIR="/etc/robotics"
 AUTO_RUN_DIR="/root/Auto_Run_Programs"
 
+
+echo " "
+echo "Detected Linux kernel $KERNEL"
+echo "Detected Debian version $DEBIAN"
 echo " "
 
+####################
+# Sanity Checks
+####################
 
 # make sure the user is root
 if [ `whoami` != 'root' ]; then
-	echo "You must be root to install this"
-	exit
+	echo "You must be root to install this."
+	exit 1
 fi
 
-# check what image and kernel is being used as the install differs
-if grep -q "2015-03-01" /etc/dogtag; then
-	echo "using Debian release 2015-03-01"
-    IMG="2015-03-01"
-elif grep -q "2015-11-12" /etc/dogtag; then
-	echo "using Debian release 2015-11-12"
-	IMG="2015-11-12"
-else
-	echo "please use one of the following Debian images"
-	echo "2015-03-01 (Wheezy)"
-	echo "2015-11-12 (Wheezy)"
-	exit
-fi 
-echo "using linux kernel $KERNEL"
-
-# warn the user if using a 'ti' kernel instead of a 'bone' kernel
-if uname -r | grep -q "ti"; then
-	echo "WARNING: the 'ti' kernels do not necessarily"
-	echo "support the uio-pruss PRU driver."
-	echo "we suggest using a 'bone' kernel"
+# make sure the release is really jessie
+if [ ! cat /etc/debian_version | grep "8." ]; then
+	echo "ERROR: This is not Debian Jessie."
+	echo "Flash the latest Jessie image to your BBB"
+	echo "or use the Wheezy branch of this installer."
+	exit 1
 fi
 
-#check that the uio-pruss driver is available
-if modprobe -n uio-pruss | grep -q "not found"; then
-	echo "ERROR: uio-pruss driver missing."
-	echo "We suggest using the latest Debian Wheezy image."
-	echo "The Debian Jessie image does not yet support the PRU."
+#check that the remoteproc driver is there
+if modprobe -n remoteproc | grep -q "not found" ; then
+	echo "ERROR: remoteproc module not found"
+	echo "Use a standard TI kernel with remoteproc instead."
 	exit
-fi
-
-#check dependencies
-if [ ! -f /usr/bin/make ]; then
-	echo " "
-    echo "error: dependency 'make' not installed"
-	echo "use apt-get install build-essentials"
-	echo "OR, if you are using a console-only image:"
-	echo "bash upgrade_console_only_image.sh"
-	exit
-fi
-
-if [ ! -f /usr/bin/gcc ]; then
-	echo " "
-    echo "error: dependency 'gcc' not installed"
-	echo "use apt-get install build-essentials"
-	echo "OR, if you are using a console-only image:"
-	echo "bash upgrade_console_only_image.sh"
-	exit
-fi
-
-if [ ! -f /usr/lib/libprussdrv.so ]; then
-	if [ ! -f /usr/lib/local/libprussdrv.so ]; then
-		echo " "
-		echo "error: libprussdrv missing"
-		exit
-	fi
 fi
 
 # make sure the user really wants to install
@@ -92,13 +57,15 @@ esac
 echo " "
 
 
+###############
+# install
+###############
+
 # touch everything since the BBB clock is probably wrong
 find . -exec touch {} \;
 
 echo "Installing Device Tree Overlay"
-# newer images ship with dtc compiler
-dtc -O dtb -o /lib/firmware/$OVERLAY.dtbo -b 0 -@ install_files/$OVERLAY.dts
-
+cp install_files/$OVERLAY.dtbo /lib/firmware/$OVERLAY.dtbo
 
 # make a backup of the original uEnv.txt file
 # if it doesn't already exist
@@ -109,34 +76,11 @@ else
 	cp $UENV_TXT $UENV_TXT.old
 fi
 
-# disable cape-universal in 2015-11-12 image and newer
-# 2015-03-01 was before cape-universal so not needed
-if [ "$IMG" != "2015-03-01" ]; then
-	sed -i '/cape_universal=enable/ s??#cape_universal=enable?' $UENV_TXT
-fi
+# disable cape-universal
+sed -i '/cape_universal=enable/ s??#cape_universal=enable?' $UENV_TXT
 
-# all images need HDMI disabled
+# disable HDMI
 echo "optargs=capemgr.disable_partno=BB-BONELT-HDMI,BB-BONELT-HDMIN" >> $UENV_TXT
-
-
-# Now we must increase the I2C bus speed, this is done by tweaking the 
-# am335x-boneblack.dtb file. Modified versions are included with the installer
-#make a backup if it hasn't been made by a previous installation
-if [ -a "$AM335_DTB.old" ];then
-	echo "backup of $AM335_DTB already exists"
-else
-	echo "making backup copy of $AM335_DTB"
-	cp $AM335_DTB $AM335_DTB.old
-fi
-#copy the right file over
-echo "installing new am335x-boneblack.dtb"
-if [ $IMG == "2015-03-01" ]; then
-	cp install_files/$IMG/am335x-boneblack.dtb $AM335_DTB
-elif [ $IMG == "2015-11-12" ]; then
-	cp install_files/$IMG/$DEBIAN/am335x-boneblack.dtb $AM335_DTB
-else
-	echo "invalid IMG variable value $IMG"
-fi
 
 # set Robotics Cape as the only cape to load
 echo "Setting Capemgr to Load $CAPENAME Overlay by Default"
@@ -146,9 +90,10 @@ echo "CAPE=$CAPENAME" > /etc/default/capemgr
 # the cape is pushed upstream. here now in anticipation of that
 echo "cape_enable=capemgr.enable_partno=$CAPENAME" >> $UENV_TXT
 
+
 echo "Installing PRU Binaries"
-cp install_files/pru/pru_1_servo.bin /usr/bin
-cp install_files/pru/pru_0_encoder.bin /usr/bin
+# cp install_files/pru/pru_1_servo.bin /usr/bin
+# cp install_files/pru/pru_0_encoder.bin /usr/bin
 
 
 echo "Installing Supporting Libraries"
@@ -171,6 +116,12 @@ cd ../
 if [ ! -a "$CONFIG_DIR" ]; then
 	mkdir $CONFIG_DIR
 fi
+
+
+
+#################################
+# set up the auto start script
+#################################
 
 # make sure Auto Run directory exists
 if [ ! -a "$AUTO_RUN_DIR" ]; then
@@ -207,10 +158,12 @@ if [ "$PROG" != "existing" ]; then
 	fi
 fi
 
+############
 # all done
+############
 echo " "
 echo "Robotics Cape Configured and Installed"
 echo "Reboot to complete installation."
-echo "After Rebooting we suggest running calibrate_gyro"
+echo "After Rebooting we suggest running calibrate_gyro and calibrate_mag"
 echo " " 
 
