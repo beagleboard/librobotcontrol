@@ -38,8 +38,11 @@ either expressed or implied, of the FreeBSD Project.
 #include "mmap/mmap_gpio_adc.h"		// used for fast gpio functions
 #include "mmap/mmap_pwmss.h"		// used for fast pwm functions
 #include "simple_pwm/simple_pwm.h" 	// for configuring pwm
-#include "pru/prussdrv.h"
-#include "pru/pruss_intc_mapping.h"
+
+// defines
+#define PRU_ADDR		0x4A300000		// Start of PRU memory Page 184 am335x TRM
+#define PRU_LEN			0x80000			// Length of PRU memory
+#define PRU_SHAREDMEM	0x10000			// Offset to shared memory
 
 /*******************************************************************************
 * Global Variables
@@ -47,7 +50,6 @@ either expressed or implied, of the FreeBSD Project.
 enum state_t state = UNINITIALIZED;
 int pause_btn_state, mode_btn_state;
 static unsigned int *prusharedMem_32int_ptr;
-int pru_initialized; // set to 1 by initialize_cape, checked by cleanup_cape
 
 
 /*******************************************************************************
@@ -85,8 +87,7 @@ pthread_t mode_released_thread;
 * should be the first thing your program calls
 *******************************************************************************/
 int initialize_cape(){
-	FILE *fd; 	
-	int ret;
+	FILE *fd; 
 
 	printf("\n");
 
@@ -123,6 +124,13 @@ int initialize_cape(){
 	fflush(fd);
 	fclose(fd);
 	
+	// Start Signal Handler
+	#ifdef DEBUG
+	printf("Initializing exit signal handler\n");
+	#endif
+	signal(SIGINT, shutdown_signal_handler);	
+	signal(SIGTERM, shutdown_signal_handler);	
+
 	// check the device tree overlay is actually loaded
 	if (is_cape_loaded() != 1){
 		printf("ERROR: Device tree overlay not loaded by cape manager\n");
@@ -194,11 +202,11 @@ int initialize_cape(){
 	printf(" PWM");
 	fflush(stdout);
 	if(simple_init_pwm(1,PWM_FREQ)){
-		printf("simple_pwm.c failed to initialize PWMSS 0\n");
+		printf("simple_pwm.c failed to initialize PWMSS 1\n");
 		return -1;
 	}
 	if(simple_init_pwm(2,PWM_FREQ)){
-		printf("simple_pwm.c failed to initialize PWMSS 1\n");
+		printf("simple_pwm.c failed to initialize PWMSS 2\n");
 		return -1;
 	}
 	
@@ -212,27 +220,10 @@ int initialize_cape(){
 	fflush(stdout);
 	initialize_button_handlers();
 	
-	// Load binary into PRU
+	// start PRU
 	printf(" PRU\n");
 	fflush(stdout);
-#ifdef DEBUG  	// if in debug mode print everything
-	ret=initialize_pru();
-#else  // otherwise supress the annoying prints
-	ret=suppress_stderr(&initialize_pru); 
-#endif
-	if(ret<0){
-		printf("ERROR: PRU init FAILED\n");
-		pru_initialized = 0;
-		return -1;
-	}
-	pru_initialized=1;
-		
-	// Start Signal Handler
-	#ifdef DEBUG
-	printf("Initializing exit signal handler\n");
-	#endif
-	signal(SIGINT, shutdown_signal_handler);	
-	signal(SIGTERM, shutdown_signal_handler);	
+	initialize_pru();
 	
 	// Print current battery voltage
 	printf("Battery: %2.2fV  ", get_battery_voltage());
@@ -297,21 +288,10 @@ int cleanup_cape(){
 	deselect_spi1_slave(2);	
 	disable_servo_power_rail();
 	
-	
 	#ifdef DEBUG
 	printf("stopping dsm2 service\n");
 	#endif
-	stop_dsm2_service();
-	
-	// only turn off pru if it was enbaled, otherwise segfaults
-	if(pru_initialized){	
-		#ifdef DEBUG
-		printf("turning off PRU\n");
-		#endif
-		prussdrv_pru_disable(0);
-		prussdrv_pru_disable(1);
-		prussdrv_exit();
-	}
+	stop_dsm2_service();	
 	
 	#ifdef DEBUG
 	printf("deleting PID file\n");
@@ -950,31 +930,58 @@ float get_adc_volt(int ch){
 /*******************************************************************************
 * int initialize_pru()
 * 
-* Configures the PRU and loads the servo and encoder binaries. Importantly 
-* it stores locally a pointer to the PRU shared memory which is used by the 
-* servo and encoder functions in this C file.
+* Enables the PRU and gets a pointer to the PRU shared memory which is used by 
+* the servo and encoder functions in this C file.
 *******************************************************************************/
 int initialize_pru(){
-	// start pru
-    prussdrv_init();
 	
-    // Open PRU Interrupt
-	if(prussdrv_open(PRU_EVTOUT_0)<0){
-        printf("prussdrv_open open failed\n");
-        return -1;
-    }
-    // Get the interrupt initialized
-	tpruss_intc_initdata pruss_intc_initdata = PRUSS_INTC_INITDATA;
-    prussdrv_pruintc_init(&pruss_intc_initdata);
-	// get pointer to PRU shared memory
-	void* sharedMem = NULL;
-    prussdrv_map_prumem(PRUSS0_SHARED_DATARAM, &sharedMem);
-    prusharedMem_32int_ptr = (unsigned int*) sharedMem;
+	unsigned int	*pru;		// Points to start of PRU memory.
+	int	fd;
+	printf("Encoder tester\n");
+	
+	fd = open ("/dev/mem", O_RDWR | O_SYNC);
+	if (fd == -1) {
+		printf ("ERROR: could not open /dev/mem.\n\n");
+		return 1;
+	}
+	pru = mmap (0, PRU_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PRU_ADDR);
+	if (pru == MAP_FAILED) {
+		printf ("ERROR: could not map memory.\n\n");
+		return 1;
+	}
+	close(fd);
+
+	// set global shared memory pointer
+	prusharedMem_32int_ptr = pru + PRU_SHAREDMEM/4;	// Points to start of shared memory
+
+	// zero out the 8 servo channels and encoder channel
 	memset(prusharedMem_32int_ptr, 0, 9*4);
-	// launch binaries
-	prussdrv_exec_program(SERVO_PRU_NUM, PRU_SERVO_BIN);
-	prussdrv_exec_program(ENCODER_PRU_NUM, PRU_ENCODER_BIN);
+
+	// reset each core
+	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind 2>/dev/null");
+	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/bind");
+	system("echo 4a338000.pru1  > /sys/bus/platform/drivers/pru-rproc/unbind 2> /dev/null");
+	system("echo 4a338000.pru1 > /sys/bus/platform/drivers/pru-rproc/bind");
+
 	
+    return 0;
+}
+
+/*******************************************************************************
+* int power_off_pru()
+* 
+* Enables the PRU and gets a pointer to the PRU shared memory which is used by 
+* the servo and encoder functions in this C file.
+*******************************************************************************/
+int power_off_pru(){
+	
+	// set pointer to NULL
+    prusharedMem_32int_ptr = NULL;
+
+    // unbind both cores
+	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind 2>/dev/null");
+	system("echo 4a338000.pru1  > /sys/bus/platform/drivers/pru-rproc/unbind 2> /dev/null");
+
     return 0;
 }
 

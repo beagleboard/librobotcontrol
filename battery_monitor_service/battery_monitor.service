@@ -1,0 +1,12 @@
+[Unit]
+Description=battery_monitor
+
+[Service]
+User=root
+PIDFile=/var/run/battery_monitor.pid
+ExecStartPre=battery_monitor -k > /dev/null
+ExecStart=battery_monitor
+ExecStop=battery_monitor -k
+
+[Install]
+WantedBy=multi-user.target

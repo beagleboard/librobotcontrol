@@ -62,7 +62,7 @@ int simple_init_pwm(int subsystem, int frequency){
 	simple_uninit_pwm(subsystem);
 	
 	// open export file for that subsystem
-	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwmchip%d/unexport", 2*subsystem);
+	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwmchip%d/export", 2*subsystem);
 	export_fd = open(buf, O_WRONLY);
 	if (export_fd < 0) {
 		printf("error opening pwm export file\n");
@@ -70,14 +70,14 @@ int simple_init_pwm(int subsystem, int frequency){
 	}
 
 	// export just the A channel for that subsystem
-	write(export_fd, "0", 1);
+	write(export_fd, "0", 1); 
 	
 	//check that the right pwm directories were created
 	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwmchip%d/pwm0", 2*subsystem);
 	dir = opendir(buf);
 	if (dir!=NULL) closedir(dir); //success
 	else{
-		printf("failed to export pwm%d\n",2*subsystem);
+		printf("failed to export pwmss%d chA\n",subsystem);
 		return -1;
 	}
 	
@@ -107,13 +107,12 @@ int simple_init_pwm(int subsystem, int frequency){
 	// the driver will not let you change the period when both are exported
 	
 	// export the B channel
-	len = snprintf(buf, sizeof(buf), "%d", (2*subsystem)+1);
-	write(export_fd, buf, len);
-	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwm%d/", (2*subsystem)+1);
+	write(export_fd, "1", 1);
+	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwmchip%d/pwm1", 2*subsystem);
 	dir = opendir(buf);
 	if (dir!=NULL) closedir(dir); //success
 	else{
-		printf("failed to export pwm%d\n",(2*subsystem)+1);
+		printf("failed to export pwmss%d chB\n",2*subsystem);
 		return -1;
 	}
 	// set up file descriptors for B channel

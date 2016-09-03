@@ -32,7 +32,7 @@ if [ `whoami` != 'root' ]; then
 fi
 
 # make sure the release is really jessie
-if [ ! cat /etc/debian_version | grep "8." ]; then
+if ! grep -q "8." /etc/debian_version ; then
 	echo "ERROR: This is not Debian Jessie."
 	echo "Flash the latest Jessie image to your BBB"
 	echo "or use the Wheezy branch of this installer."
@@ -47,7 +47,6 @@ if modprobe -n remoteproc | grep -q "not found" ; then
 fi
 
 # make sure the user really wants to install
-echo ""
 echo "This script will install all Robotics Cape supporting software."
 read -r -p "Continue? [y/n] " response
 case $response in

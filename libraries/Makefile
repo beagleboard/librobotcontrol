@@ -47,8 +47,6 @@ install:
 	$(MAKE)
 	@$(CP) $(TARGET) $(INSTALL_DIR)
 	@$(CP) $(OBJECTS) $(INSTALL_DIR)
-	@$(CP) pru/prussdrv.h $(INCLUDE_DIR)
-	@$(CP) pru/pruss_intc_mapping.h $(INCLUDE_DIR)
 	@$(CP) $(INSTALL_DIR)/$(TARGET) $(INSTALL_DIR)/lib$(TARGET)
 	@ldconfig
 	@echo "$(TARGET) installed to $(INSTALL_DIR)"
