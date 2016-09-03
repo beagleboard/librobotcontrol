@@ -5,7 +5,7 @@ CC = gcc
 LINKER   := gcc
 TOUCH 	 := $(shell touch *)
 CFLAGS := -Wall -fsingle-precision-constant -fpic -march=armv7-a -mtune=cortex-a8
-LFLAGS	:= -lm -lrt -lpthread -shared -lprussdrvd
+LFLAGS	:= -lm -lrt -lpthread -shared
 
 #DEFS = 
 

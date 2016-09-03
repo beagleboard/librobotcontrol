@@ -25,7 +25,7 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 // #define DEBUG
 
-#include <robotics_cape.h>
+#include "../robotics_cape.h"
 #include <stdint.h> // for uint8_t types etc
 #include <stdlib.h>
 #include <stdio.h>
