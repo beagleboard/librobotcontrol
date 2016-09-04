@@ -32,6 +32,7 @@ void shutdown_signal_handler(int signo);
 
 // main() takes only one optional argument: -k (kill)
 int main(int argc, char *argv[]){
+	FILE* fd;
 	float pack_voltage;	// 2S pack voltage on JST XH 2S balance connector
 	float jack_voltage;	// could be dc power supply or another battery
 	float cell_voltage;	// cell voltage from either 2S or external pack
@@ -63,6 +64,17 @@ int main(int argc, char *argv[]){
 		printf("Stop with 'systemctl stop battery_monitor.service'\n\n");
 		return -1;
 	}
+
+	// make new pid file
+	fd = fopen(PID_FILE, "ab+");
+	if (fd < 0) {
+		printf("\n error opening PID_FILE for writing\n");
+		return -1;
+	}
+	pid_t current_pid = getpid();
+	fprintf(fd,"%d\n",(int)current_pid);
+	fflush(fd);
+	fclose(fd);
 
 	// set up signal handler
     signal(SIGINT, shutdown_signal_handler);	
@@ -160,6 +172,10 @@ END:
 		//check periodically
 		usleep(500000);
 	}
+
+	// exit
+	printf("battery_monitor exiting cleanly\n");
+	remove(PID_FILE);
 	return 0;
 }
 
@@ -172,7 +188,6 @@ END:
 void shutdown_signal_handler(int signo){
 	if (signo == SIGINT){
 		running = 0;
-		printf("\nreceived SIGINT Ctrl-C\n");
  	}else if (signo == SIGTERM){
 		running = 0;
 		printf("\nreceived SIGTERM\n");
@@ -201,7 +216,7 @@ int kill_existing_instance(){
 	// return -1 indicating weird behavior
 	if(old_pid == 0){
 		remove(PID_FILE);
-		return -2;
+		return 1;
 	}
 		
 	// attempt a clean shutdown
@@ -210,7 +225,10 @@ int kill_existing_instance(){
 	// check every 0.1 seconds to see if it closed 
 	for(i=0; i<20; i++){
 		if(access(PID_FILE, F_OK ) != -1) usleep(100000);
-		else return 1; // succcess, it shut down properly
+		else{
+			printf("success\n");
+			return 0; // succcess, it shut down properly
+		}
 	}
 	
 	// otherwise force kill the program if the PID file never got cleaned up
