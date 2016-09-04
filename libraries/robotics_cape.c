@@ -89,8 +89,6 @@ pthread_t mode_released_thread;
 int initialize_cape(){
 	FILE *fd; 
 
-	printf("\n");
-
 	// check if another project was using resources
 	// kill that process cleanly with sigint if so
 	#ifdef DEBUG
@@ -138,9 +136,11 @@ int initialize_cape(){
 	}
 	
 	// initialize mmap io libs
+	#ifdef DEBUG
 	printf("Initializing: ");
 	printf("GPIO");
 	fflush(stdout);
+	#endif
 
 	//export all GPIO output pins
 	gpio_export(RED_LED);
@@ -177,14 +177,19 @@ int initialize_cape(){
 		return -1;
 	}
 	
+	#ifdef DEBUG
 	printf(" ADC");
 	fflush(stdout);
+	#endif
 	if(initialize_mmap_adc()){
 		printf("mmap_gpio_adc.c failed to initialize adc\n");
 		return -1;
 	}
+
+	#ifdef DEBUG
 	printf(" eQEP");
 	fflush(stdout);
+	#endif
 	if(init_eqep(0)){
 		printf("mmap_pwmss.c failed to initialize eQEP\n");
 		return -1;
@@ -199,8 +204,10 @@ int initialize_cape(){
 	}
 	
 	// setup pwm driver
+	#ifdef DEBUG
 	printf(" PWM");
 	fflush(stdout);
+	#endif
 	if(simple_init_pwm(1,PWM_FREQ)){
 		printf("simple_pwm.c failed to initialize PWMSS 1\n");
 		return -1;
@@ -216,22 +223,27 @@ int initialize_cape(){
 	disable_motors();
 	
 	//set up function pointers for button press events
+	#ifdef DEBUG
 	printf(" Buttons");
 	fflush(stdout);
+	#endif
 	initialize_button_handlers();
 	
 	// start PRU
+	#ifdef DEBUG
 	printf(" PRU\n");
 	fflush(stdout);
+	#endif
 	initialize_pru();
 	
 	// Print current battery voltage
+	#ifdef DEBUG
 	printf("Battery: %2.2fV  ", get_battery_voltage());
 	printf("Process ID: %d\n", (int)current_pid);
+	#endif
 
 	// all done
 	set_state(PAUSED);
-	printf("Robotics Cape Initialized\n\n");
 
 	return 0;
 }
@@ -937,7 +949,6 @@ int initialize_pru(){
 	
 	unsigned int	*pru;		// Points to start of PRU memory.
 	int	fd;
-	printf("Encoder tester\n");
 	
 	fd = open ("/dev/mem", O_RDWR | O_SYNC);
 	if (fd == -1) {
@@ -958,10 +969,10 @@ int initialize_pru(){
 	memset(prusharedMem_32int_ptr, 0, 9*4);
 
 	// reset each core
-	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind 2>/dev/null");
-	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/bind");
-	system("echo 4a338000.pru1  > /sys/bus/platform/drivers/pru-rproc/unbind 2> /dev/null");
-	system("echo 4a338000.pru1 > /sys/bus/platform/drivers/pru-rproc/bind");
+	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind  > /dev/null");
+	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/bind > /dev/null");
+	system("echo 4a338000.pru1  > /sys/bus/platform/drivers/pru-rproc/unbind > /dev/null");
+	system("echo 4a338000.pru1 > /sys/bus/platform/drivers/pru-rproc/bind > /dev/null");
 
 	
     return 0;
