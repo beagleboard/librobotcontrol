@@ -60,8 +60,8 @@ echo " "
 # install
 ###############
 
-# touch everything since the BBB clock is probably wrong
-find . -exec touch {} \;
+# # touch everything since the BBB clock is probably wrong
+# find . -exec touch {} \;
 
 echo "Installing Device Tree Overlay"
 cp install_files/$OVERLAY.dtbo /lib/firmware/$OVERLAY.dtbo
@@ -85,16 +85,16 @@ echo "optargs=capemgr.disable_partno=BB-BONELT-HDMI,BB-BONELT-HDMIN" >> $UENV_TX
 echo "Setting Capemgr to Load $CAPENAME Overlay by Default"
 echo "CAPE=$CAPENAME" > /etc/default/capemgr
 
-# also add to uEnv.txt even though this doesn't work until
-# the cape is pushed upstream. here now in anticipation of that
+# also add to uEnv.txt even though this doesn't work until the cape overlay is 
+# pushed upstream. here now in anticipation of that
 echo "cape_enable=capemgr.enable_partno=$CAPENAME" >> $UENV_TXT
 
-
+# copy precompiles pru binaries to firmware
 echo "Installing PRU Binaries"
 # cp install_files/pru/pru_1_servo.bin /usr/bin
 # cp install_files/pru/pru_0_encoder.bin /usr/bin
 
-
+# compile and install robotics_cape.so
 echo "Installing Supporting Libraries"
 cd libraries
 make clean > /dev/null
@@ -102,7 +102,7 @@ make install > /dev/null
 make clean
 cd ../
 
-
+# compile all examples, this is slow
 echo "Installing examples, this will take a minute."
 find examples/ -exec touch {} \;
 cd examples
@@ -111,51 +111,64 @@ make install > /dev/null
 make clean > /dev/null
 cd ../
 
-# make sure config diectory exists
-if [ ! -a "$CONFIG_DIR" ]; then
+# make a config directory if it doesn't exist
+if [ ! -d "$CONFIG_DIR" ]; then
+	echo "Making config directory $CONFIG_DIR"
 	mkdir $CONFIG_DIR
 fi
 
+# install the battery_monitor service
+cd battery_monitor_service
+bash install.sh
+cd ../
 
 
 #################################
-# set up the auto start script
+# set up the startup service
 #################################
-
-# make sure Auto Run directory exists
-if [ ! -a "$AUTO_RUN_DIR" ]; then
-	echo "creating directory " $AUTO_RUN_DIR
-	mkdir $AUTO_RUN_DIR
-fi
-
-# set up a script to run things on boot
-echo "Enabling Boot Script"
-cp install_files/$BOOTSCRIPT /etc/init.d/
-chmod 755 /etc/init.d/$BOOTSCRIPT
-update-rc.d $BOOTSCRIPT defaults 
 
 echo " "
 echo "Which program should run on boot?"
-echo "This will overwrite any program in " $AUTO_RUN_DIR
 echo "Select 'existing' to keep current configuration."
-echo "type 1-5 then enter"
+echo "Select blink if you are unsure."
+echo "type 1-4 then enter"
 select bfn in "blink" "balance" "none" "existing"; do
     case $bfn in
 		blink ) PROG="blink"; break;;
         balance ) PROG="balance"; break;;
-		none ) PROG="none"; break;;
+		none ) PROG="bare_minimum"; break;;
 		existing ) PROG="existing"; break;;
     esac
 done
 
-# if user didn't select existing, delete everything in auto run folder
-# and replace with new program
-if [ "$PROG" != "existing" ]; then
-	rm -f $AUTO_RUN_DIR/*
-	if [ "$PROG" != "none" ]; then
-		cp /usr/bin/$PROG $AUTO_RUN_DIR/
-	fi
+
+# copy the service file over but don't replace if it's already there
+# this will preserve an existing one if 
+
+# if user selected existing, copy the service file with -n option
+# to preserve it if it exists but still put it there if not
+# otherwise force it
+if [ "$PROG" == "existing" ]; then
+	cp -n install_files/robot.service /etc/systemd/system/
+else
+	cp install_files/robot.service /etc/systemd/system/
 fi
+
+# now put in the right value for blink or balance
+# if 'none' was selected then leave default as bare_minimum (does nothing)
+if [ "$PROG" == "blink" ]; then
+	sed -i "/ExecStart=/c\ExecStart=/usr/bin/blink" /etc/systemd/system/robot.service 
+elif  [ "$PROG" == "balance" ]; then
+	sed -i "/ExecStart=/c\ExecStart=/usr/bin/balance" /etc/systemd/system/robot.service 
+fi
+
+
+# reload the daemon and enable the service
+systemctl daemon-reload
+systemctl enable battery_monitor
+
+
+
 
 ############
 # all done

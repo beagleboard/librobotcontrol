@@ -12,7 +12,6 @@
 #include <robotics_cape.h>
 
 int main(){
-	printf("\nAttempting to shut down existing project\n\n");
 	int ret = kill_robot();
 	
 	switch(ret){
