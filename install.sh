@@ -1,145 +1,100 @@
 #!/bin/bash
 
 # Bash script to install supporting software for the Robotics Cape
-# tested on beagleboard.org Debian release 2014-05-14
-# and 2015-03-01
+# This is specifically for Debian Jessie, tested on the following images:
+# 2016-05-13
 
 INSTALL_DIR="/root"
 BOOTSCRIPT="Auto_Run_Script.sh"
+OVERLAY="RoboticsCape-00A0"
+CAPENAME="RoboticsCape"
+KERNEL="$(uname -r)"
+DEBIAN="$(cat /etc/debian_version)"
+UENV_TXT="/boot/uEnv.txt"
+AM335_DTB="/boot/dtbs/$KERNEL/am335x-boneblack.dtb"
+CONFIG_DIR="/etc/robotics"
+AUTO_RUN_DIR="/root/Auto_Run_Programs"
 
-touch *
+
+echo " "
+echo "Detected Linux kernel $KERNEL"
+echo "Detected Debian version $DEBIAN"
 echo " "
 
-echo "This script will install all Robotics Cape supporting software."
-
-read -r -p "Continue? [y/n] " response
-case $response in
-    [yY]) 
-        echo " "
-        ;;
-    *)
-		echo "cancelled"
-        exit
-        ;;
-esac
-
+####################
+# Sanity Checks
+####################
 
 # make sure the user is root
 if [ `whoami` != 'root' ]; then
-	echo "You must be root to install this"
+	echo "You must be root to install this."
+	exit 1
+fi
+
+# make sure the release is really jessie
+if ! grep -q "8." /etc/debian_version ; then
+	echo "ERROR: This is not Debian Jessie."
+	echo "Flash the latest Jessie image to your BBB"
+	echo "or use the Wheezy branch of this installer."
+	exit 1
+fi
+
+#check that the remoteproc driver is there
+if modprobe -n remoteproc | grep -q "not found" ; then
+	echo "ERROR: remoteproc module not found"
+	echo "Use a standard TI kernel with remoteproc instead."
 	exit
 fi
 
-# check what image is being used as the install differs
-if grep -q "2015-03-01" /etc/dogtag; then
-	echo "using Debian release 2015-03-01"
-    IMG="2015-03-01"
-elif grep -q "2014-05-14" /etc/dogtag; then
-	echo "using Debian release 2014-05-14"
-	IMG="2014-05-14"
-else
-	echo "please use Debian 2015-03-01 or 2014-05-14"
-	exit
-fi 
-
-# print kernel version, mostly for fun
-KERN="$(uname -r)"
-echo "using linux kernel $KERN"
-
-#check dependencies
-if [ ! -f /usr/bin/make ]; then
-	echo " "
-    echo "error: dependency 'make' not installed"
-	echo "use apt-get install build-essentials"
-	echo "OR, if you are using a console-only image:"
-	echo "bash upgrade_console_only_image.sh"
-	exit
-fi
-
-if [ ! -f /usr/bin/gcc ]; then
-	echo " "
-    echo "error: dependency 'gcc' not installed"
-	echo "use apt-get install build-essentials"
-	echo "OR, if you are using a console-only image:"
-	echo "bash upgrade_console_only_image.sh"
-	exit
-fi
-
-if [ ! -f /usr/lib/libprussdrv.so ]; then
-	if [ ! -f /usr/lib/local/libprussdrv.so ]; then
-		echo " "
-		echo "error: PRU library not installed"
-		echo "use the following script with an internet connection:"
-		echo "bash upgrade_console_only_image.sh"
-		exit
-	fi
-fi
-
+# make sure the user really wants to install
+echo "This script will install all Robotics Cape supporting software."
+read -r -p "Continue? [y/n] " response
+case $response in
+    [yY]) echo " " ;;
+    *) echo "cancelled"; exit;;
+esac
 echo " "
+
+
+###############
+# install
+###############
+
+# # touch everything since the BBB clock is probably wrong
+# find . -exec touch {} \;
+
 echo "Installing Device Tree Overlay"
-cp install_files/SD-101C-00A0.dtbo /lib/firmware/SD-101C-00A0.dtbo
+cp install_files/$OVERLAY.dtbo /lib/firmware/$OVERLAY.dtbo
 
-# if you want to recompile yourself use this
-#dtc -O dtb -o /lib/firmware/SD-101C-00A0.dtbo -b 0 -@ install_files/SD-101C-00A0.dts
-
-# HDMI must be disabled to open pins for cape use
-echo "modifying uEnv.txt to Disable HDMI"
-# uEnv.txt is located differently between releases
-# set a variable with the path
-
-if [ "$IMG" == "2014-05-14" ]; then
-	ENVPATH="/boot/uboot/uEnv.txt"
-elif [ "$IMG" == "2015-03-01" ]; then
-	ENVPATH="/boot/uEnv.txt"
-fi
-
-# make a backup of the original file if it hasn't already been 
-# done before by a previous installation
-if [ -a "$ENVPATH.old" ];then
-	echo "backup of $ENVPATH already exists"
+# make a backup of the original uEnv.txt file
+# if it doesn't already exist
+if [ -a "$UENV_TXT.old" ];then
+	echo "backup of $UENV_TXT already exists"
 else
-	echo "making backup copy of $ENVPATH"
-	cp $ENVPATH $ENVPATH.old
+	echo "making backup copy of $UENV_TXT"
+	cp $UENV_TXT $UENV_TXT.old
 fi
 
-# copy the appropriate line to disable HDMI
-# if the user reinstalls the line is duplicated, but still works
-echo "optargs=capemgr.disable_partno=BB-BONELT-HDMI,BB-BONELT-HDMIN" >> $ENVPATH
+# disable cape-universal
+sed -i '/cape_universal=enable/ s??#cape_universal=enable?' $UENV_TXT
 
+# disable HDMI
+echo "optargs=capemgr.disable_partno=BB-BONELT-HDMI,BB-BONELT-HDMIN" >> $UENV_TXT
 
-# Now we must increase the I2C bus speed, this is done by tweaking the 
-# am335x-boneblack.dtb file. Modified versions are included with the installer
-# first make a backup copy, then pick which one to copy
-if [ "$IMG" == "2014-05-14" ]; then
-	AMPATH="/boot/uboot/dtbs/am335x-boneblack.dtb"
-elif [ "$IMG" == "2015-03-01" ]; then
-	AMPATH="/boot/dtbs/3.8.13-bone70/am335x-boneblack.dtb"
-else
-	echo "invalid IMG variable value $IMG"
-fi
-#make a backup if it hasn't been made by a previous installation
-if [ -a "$AMPATH.old" ];then
-	echo "backup of $AMPATH already exists"
-else
-	echo "making backup copy of $AMPATH"
-	cp $AMPATH $AMPATH.old
-fi
-#copy the right file over
-echo "installing new am335x-boneblack.dtb"
-if [ "$IMG" == "2014-05-14" ]; then
-	cp install_files/2014-05-14/am335x-boneblack.dtb $AMPATH
-elif [ "$IMG" == "2015-03-01" ]; then
-	cp install_files/2015-03-01/am335x-boneblack.dtb $AMPATH
-else
-	echo "invalid IMG variable value $IMG"
-fi
+# set Robotics Cape as the only cape to load
+echo "Setting Capemgr to Load $CAPENAME Overlay by Default"
+echo "CAPE=$CAPENAME" > /etc/default/capemgr
 
-# set SD-101C as the only cape to load besides eMMC
-# single ">" means previous contents will be erased
-echo "Setting Capemgr to Load Robotics Overlay by Default"
-echo "CAPE=SD-101C" > /etc/default/capemgr
+# also add to uEnv.txt even though this doesn't work until the cape overlay is 
+# pushed upstream. here now in anticipation of that
+echo "cape_enable=capemgr.enable_partno=$CAPENAME" >> $UENV_TXT
 
+# copy precompiles pru binaries to firmware
+echo "Installing PRU Binaries"
+# cp install_files/pru/pru_1_servo.bin /usr/bin
+# cp install_files/pru/pru_0_encoder.bin /usr/bin
 
+# compile and install robotics_cape.so
 echo "Installing Supporting Libraries"
 cd libraries
 make clean > /dev/null
@@ -147,12 +102,8 @@ make install > /dev/null
 make clean
 cd ../
 
-echo "Installing PRU Binaries and Assembler"
-cp install_files/pru_servo.bin /usr/bin
-cp install_files/pasm /usr/bin
-
-
-echo "Installing examples, this may take a minute."
+# compile all examples, this is slow
+echo "Installing examples, this will take a minute."
 find examples/ -exec touch {} \;
 cd examples
 make clean > /dev/null
@@ -160,98 +111,71 @@ make install > /dev/null
 make clean > /dev/null
 cd ../
 
-# install calibration files 
-if [ ! -d "$INSTALL_DIR/robot_config" ]; then
-	echo "Installing Default Calibration Files"
-	cp -r robot_config/ $INSTALL_DIR
-else
-	#okay, the config folder exists, check status of each config file
-	# STAT=0 > files are the same as default
-	# STAT=1 > user has modified a file
-	# STAT=2 > file doesn't exist yet
-	cmp -s robot_config/gyro.cal $INSTALL_DIR/robot_config/gyro.cal
-	GYRO_STAT=$?
-	cmp -s robot_config/dsm2.cal $INSTALL_DIR/robot_config/dsm2.cal
-	DSM_STAT=$?
-	
-	if [ $GYRO_STAT -eq "1" ]; then
-		echo " "
-		read -r -p "Would you like to keep your old gyro calibration file? [y/n] " response
-		case $response in
-			[yY]) 
-				echo " "
-				;;
-			*)
-				echo "writing new default gyro calibration file"
-				cp robot_config/gyro.cal $INSTALL_DIR/robot_config/
-				;;
-		esac
-	else
-		echo "writing new default gyro calibration file"
-		cp robot_config/gyro.cal $INSTALL_DIR/robot_config/
-	fi
-	
-	if [ $DSM_STAT -eq "1" ]; then
-		echo " "
-		read -r -p "Would you like to keep your old DSM2 calibration file? [y/n] " response
-		case $response in
-			[yY]) 
-				echo " "
-				;;
-			*)
-				echo "writing new default DSM2 calibration file"
-				cp robot_config/dsm2.cal $INSTALL_DIR/robot_config/
-				;;
-		esac
-	else
-		echo "writing new default DSM2 calibration file"
-		cp robot_config/dsm2.cal $INSTALL_DIR/robot_config/
-	fi
-		
+# make a config directory if it doesn't exist
+if [ ! -d "$CONFIG_DIR" ]; then
+	echo "Making config directory $CONFIG_DIR"
+	mkdir $CONFIG_DIR
 fi
 
+# install the battery_monitor service
+cd battery_monitor_service
+bash install.sh
+cd ../
 
-# make a robot_logs directory if it doesn't exist
-if [ -d $INSTALL_DIR/robot_logs ]; then
-	echo "$INSTALL_DIR/robot_logs already exists"
-else
-	echo "creating log directory $INSTALL_DIR/robot_logs"
-	mkdir $INSTALL_DIR/robot_logs
-fi
 
-#the led_aging script causes problems in older images so this is a modified version
-if [ "$IMG" == "2014-05-14" ]; then
-	echo "upgrading /etc/init.d/led_aging.sh"
-	cp install_files/led_aging.sh /etc/init.d/
-fi
-
-echo "Enabling Boot Script"
-cp install_files/$BOOTSCRIPT $INSTALL_DIR
-rm -f /etc/init.d/$BOOTSCRIPT
-ln $INSTALL_DIR/$BOOTSCRIPT /etc/init.d/$BOOTSCRIPT 
-chmod 755 $INSTALL_DIR/$BOOTSCRIPT
-chmod 755 /etc/init.d/$BOOTSCRIPT
-update-rc.d $BOOTSCRIPT defaults 
+#################################
+# set up the startup service
+#################################
 
 echo " "
-echo "which program should run on boot?"
-echo "type 1-5 then enter"
-select bfn in "blink" "drive" "balance" "fly" "none"; do
+echo "Which program should run on boot?"
+echo "Select 'existing' to keep current configuration."
+echo "Select blink if you are unsure."
+echo "type 1-4 then enter"
+select bfn in "blink" "balance" "none" "existing"; do
     case $bfn in
 		blink ) PROG="blink"; break;;
-		drive ) PROG="drive"; break;;
         balance ) PROG="balance"; break;;
-		fly ) PROG="fly"; break;;
-		none ) PROG=" "; break;;
+		none ) PROG="bare_minimum"; break;;
+		existing ) PROG="existing"; break;;
     esac
 done
 
-# put the right program in the auto run script
-sed "s/#INSERT/$PROG/" install_files/Auto_Run_Script.sh > $INSTALL_DIR/Auto_Run_Script.sh
 
+# copy the service file over but don't replace if it's already there
+# this will preserve an existing one if 
+
+# if user selected existing, copy the service file with -n option
+# to preserve it if it exists but still put it there if not
+# otherwise force it
+if [ "$PROG" == "existing" ]; then
+	cp -n install_files/robot.service /etc/systemd/system/
+else
+	cp install_files/robot.service /etc/systemd/system/
+fi
+
+# now put in the right value for blink or balance
+# if 'none' was selected then leave default as bare_minimum (does nothing)
+if [ "$PROG" == "blink" ]; then
+	sed -i "/ExecStart=/c\ExecStart=/usr/bin/blink" /etc/systemd/system/robot.service 
+elif  [ "$PROG" == "balance" ]; then
+	sed -i "/ExecStart=/c\ExecStart=/usr/bin/balance" /etc/systemd/system/robot.service 
+fi
+
+
+# reload the daemon and enable the service
+systemctl daemon-reload
+systemctl enable battery_monitor
+
+
+
+
+############
+# all done
+############
 echo " "
 echo "Robotics Cape Configured and Installed"
 echo "Reboot to complete installation."
-echo "After Rebooting we suggest running 'calibrate_gyro'"
+echo "After Rebooting we suggest running calibrate_gyro and calibrate_mag"
 echo " " 
 
