@@ -1,4 +1,4 @@
-TARGET = robotics_cape.so
+TARGET = librobotics_cape.so
 
 SUBDIRS = $(shell find * -type d -print)
 CC = gcc
@@ -9,13 +9,15 @@ LFLAGS	:= -lm -lrt -lpthread -shared
 
 #DEFS = 
 
+prefix := /usr
+
 SOURCES := $(shell find ./ -name '*.c')
 INCLUDES := $(shell find ./ -name '*.h')
 OBJECTS  := $(SOURCES:$%.c=$%.o)
 RM := rm -f
 CP := cp
-INSTALL_DIR = /usr/lib/
-INCLUDE_DIR = /usr/include/
+INSTALL_DIR = $(DESTDIR)$(prefix)/lib/
+INCLUDE_DIR = $(DESTDIR)$(prefix)/include/
 
 all:$(TARGET)
 	
