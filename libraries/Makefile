@@ -5,7 +5,7 @@ CC = gcc
 LINKER   := gcc
 TOUCH 	 := $(shell touch *)
 CFLAGS := -Wall -fsingle-precision-constant -fpic -march=armv7-a -mtune=cortex-a8
-LFLAGS	:= -lm -lrt -lpthread -shared -lprussdrvd
+LFLAGS	:= -lm -lrt -lpthread -shared
 
 #DEFS = 
 
@@ -47,8 +47,6 @@ install:
 	$(MAKE)
 	@$(CP) $(TARGET) $(INSTALL_DIR)
 	@$(CP) $(OBJECTS) $(INSTALL_DIR)
-	@$(CP) pru/prussdrv.h $(INCLUDE_DIR)
-	@$(CP) pru/pruss_intc_mapping.h $(INCLUDE_DIR)
 	@$(CP) $(INSTALL_DIR)/$(TARGET) $(INSTALL_DIR)/lib$(TARGET)
 	@ldconfig
 	@echo "$(TARGET) installed to $(INSTALL_DIR)"

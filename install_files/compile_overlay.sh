@@ -5,6 +5,6 @@ CAPENAME="RoboticsCape"
 
 echo "Installing Device Tree Overlay"
 
-dtc -O dtb -o /lib/firmware/$OVERLAY.dtbo -b 0 -@ $OVERLAY.dts
-
+dtc -O dtb -o $OVERLAY.dtbo -b 0 -@ $OVERLAY.dts
+cp $OVERLAY.dtbo /lib/firmware/$OVERLAY.dtbo
 

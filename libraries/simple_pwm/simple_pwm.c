@@ -61,32 +61,34 @@ int simple_init_pwm(int subsystem, int frequency){
 	// unexport the channels first
 	simple_uninit_pwm(subsystem);
 	
-	export_fd = open(SYSFS_PWM_DIR "/export", O_WRONLY);
+	// open export file for that subsystem
+	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwmchip%d/export", 2*subsystem);
+	export_fd = open(buf, O_WRONLY);
 	if (export_fd < 0) {
 		printf("error opening pwm export file\n");
 		return -1;
 	}
+
 	// export just the A channel for that subsystem
-	len = snprintf(buf, sizeof(buf), "%d", 2*subsystem);
-	write(export_fd, buf, len);
+	write(export_fd, "0", 1); 
 	
 	//check that the right pwm directories were created
-	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwm%d/", 2*subsystem);
+	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwmchip%d/pwm0", 2*subsystem);
 	dir = opendir(buf);
 	if (dir!=NULL) closedir(dir); //success
 	else{
-		printf("failed to export pwm%d\n",2*subsystem);
+		printf("failed to export pwmss%d chA\n",subsystem);
 		return -1;
 	}
 	
 	// set up file descriptors for A channel
-	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwm%d/run", (2*subsystem));
+	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwmchip%d/pwm0/enable", 2*subsystem);
 	runA_fd = open(buf, O_WRONLY);
-	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwm%d/period_ns", (2*subsystem));
+	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwmchip%d/pwm0/period", 2*subsystem);
 	periodA_fd = open(buf, O_WRONLY);
-	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwm%d/duty_ns", (2*subsystem));
+	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwmchip%d/pwm0/duty_cycle", 2*subsystem);
 	duty_fd[(2*subsystem)] = open(buf, O_WRONLY);
-	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwm%d/polarity", (2*subsystem)+1);
+	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwmchip%d/pwm0/polarity", 2*subsystem);
 	polarityA_fd = open(buf, O_WRONLY);
 
 	
@@ -105,23 +107,22 @@ int simple_init_pwm(int subsystem, int frequency){
 	// the driver will not let you change the period when both are exported
 	
 	// export the B channel
-	len = snprintf(buf, sizeof(buf), "%d", (2*subsystem)+1);
-	write(export_fd, buf, len);
-	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwm%d/", (2*subsystem)+1);
+	write(export_fd, "1", 1);
+	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwmchip%d/pwm1", 2*subsystem);
 	dir = opendir(buf);
 	if (dir!=NULL) closedir(dir); //success
 	else{
-		printf("failed to export pwm%d\n",(2*subsystem)+1);
+		printf("failed to export pwmss%d chB\n",2*subsystem);
 		return -1;
 	}
 	// set up file descriptors for B channel
-	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwm%d/run", (2*subsystem)+1);
+	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwmchip%d/pwm1/enable", 2*subsystem);
 	runB_fd = open(buf, O_WRONLY);
-	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwm%d/period_ns", (2*subsystem)+1);
+	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwmchip%d/pwm1/period", 2*subsystem);
 	periodB_fd = open(buf, O_WRONLY);
-	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwm%d/duty_ns", (2*subsystem)+1);
+	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwmchip%d/pwm1/duty_cycle", 2*subsystem);
 	duty_fd[(2*subsystem)+1] = open(buf, O_WRONLY);
-	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwm%d/polarity", (2*subsystem)+1);
+	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwmchip%d/pwm1/polarity", 2*subsystem);
 	polarityB_fd = open(buf, O_WRONLY);
 	
 	// disable the run value and set polarity before period
@@ -152,21 +153,27 @@ int simple_init_pwm(int subsystem, int frequency){
 }
 
 int simple_uninit_pwm(int subsystem){
-	int fd, len;
+	int fd;
 	char buf[MAXBUF];
+
+	// sanity check
 	if(subsystem<0 || subsystem>2){
 		printf("PWM subsystem must be between 0 and 2\n");
 		return -1;
 	}
-	fd = open(SYSFS_PWM_DIR "/unexport", O_WRONLY);
+
+	// open the unexport file for that subsystem
+	snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwmchip%d/unexport", 2*subsystem);
+	fd = open(buf, O_WRONLY);
 	if (fd < 0) {
 		printf("error opening pwm export file\n");
 		return -1;
 	}
-	len = snprintf(buf, sizeof(buf), "%d", 2*subsystem);
-	write(fd, buf, len);
-	len = snprintf(buf, sizeof(buf), "%d", (2*subsystem)+1);
-	write(fd, buf, len);
+
+	// write 0 and 1 to the file to unexport both channels
+	write(fd, "0", 1);
+	write(fd, "1", 1);
+
 	close(fd);
 	simple_pwm_initialized[subsystem] = 0;
 	return 0;

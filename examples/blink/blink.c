@@ -77,8 +77,6 @@ int main(){
 		printf("failed to initialize cape\n");
 		return -1;
 	}
-	printf("calling blink_led\n");
-	blink_led(GREEN, 15, 0.5); // blink 15hz for 0.5 second
 	
 	printf("\nPress mode to change blink rate\n");
 	printf("hold pause button to exit\n");

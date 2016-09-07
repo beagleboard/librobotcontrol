@@ -1,0 +1,12 @@
+[Unit]
+Description=robot
+
+[Service]
+User=root
+PIDFile=/var/run/robotics_cape.pid
+ExecStartPre=/usr/bin/wait_until_ready
+ExecStart=/usr/bin/bare_minimum
+ExecStop=/usr/bin/kill_robot
+
+[Install]
+WantedBy=multi-user.target

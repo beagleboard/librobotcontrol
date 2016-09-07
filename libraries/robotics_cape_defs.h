@@ -25,7 +25,7 @@
 // PID file location
 // file created to indicate running process
 // contains pid of current process
-#define PID_FILE "/run/robotics_cape.pid"
+#define PID_FILE "/var/run/robotics_cape.pid"
 
 //// Mavlink UDP input buffer size
 #define MAV_BUF_LEN 512 

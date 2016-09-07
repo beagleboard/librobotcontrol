@@ -25,7 +25,7 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 // #define DEBUG
 
-#include <robotics_cape.h>
+#include "../robotics_cape.h"
 #include <stdint.h> // for uint8_t types etc
 #include <stdlib.h>
 #include <stdio.h>
@@ -34,12 +34,13 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h> //for IOCTL defs
 
-// debian enumerates the busses backwards on the BBB
+// debian wheezy enumerates the busses backwards on the BBB
+// this file is for debian jessie which enumerates them correctly
 // to maintain sanity we use the hardware bus number everywhere
 // I2C2 is for internal use with sensors
 // I2C1 is broken out on the external connector on robotics cape
-#define I2C1_FILE "/dev/i2c-2"
-#define I2C2_FILE "/dev/i2c-1"
+#define I2C1_FILE "/dev/i2c-1"
+#define I2C2_FILE "/dev/i2c-2"
 #define MAX_I2C_LENGTH   128
 
 /******************************************************************

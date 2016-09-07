@@ -1,16 +1,18 @@
 Robotics Cape Installer for BeagleBone Black
 James Strawson - 2016
 
+This is an unstable development branch for Debian Jessie only. 
+For now use Wheezy and the master branch.
+
 
 Installation Instructions:
 
-1) Flash your BBB to one of the following Debian Wheezy versions.
-   2015-03-01
-   2015-11-12
-
+1) Flash your BBB to the latest stable DebianvJessie version.
    Images and instructions avialabe here: http://beagleboard.org/latest-images
+   
+   This branch is tested on the following Jessie release: 2016-05-13
 
-
+  
 2) Copy the Robotics_Cape_Installer folder to /root/
    This is usually done through SFTP using a program like WinSCP
 
