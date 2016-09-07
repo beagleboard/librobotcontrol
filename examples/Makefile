@@ -6,23 +6,17 @@ SUBDIRS = $(shell find * -type d -print)
 all:
 	@for dir in $(SUBDIRS) ; do \
 		echo "making example: $$dir" ; \
-		cd "$$dir" ; \
-		$(MAKE) -s; \
-		cd ../ ; \
+		$(MAKE) -C $$dir -s; \
 	done
 	
 clean:
 	@for dir in $(SUBDIRS) ; do \
 		echo "cleaning example: $$dir" ; \
-		cd "$$dir" ; \
-		$(MAKE) -s clean; \
-		cd ../ ; \
+		$(MAKE) -C $$dir -s clean; \
 	done
 	
 install:
 	@for dir in $(SUBDIRS) ; do \
 		echo "installing example: $$dir" ; \
-		cd "$$dir" ; \
-		$(MAKE) -s install; \
-		cd ../ ; \
+		$(MAKE) -C $$dir -s install ;\
 	done

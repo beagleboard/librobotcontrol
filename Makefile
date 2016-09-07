@@ -16,3 +16,5 @@ install:
 	install -m 644 libraries/librobotics_cape.so $(DESTDIR)$(prefix)/lib
 	install -d -m 755 $(DESTDIR)$(prefix)/include
 	install -m 644 libraries/*.h $(DESTDIR)$(prefix)/include
+	make -C examples -s install
+	make -C battery_monitor_service/src -s install
