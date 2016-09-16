@@ -699,14 +699,6 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 		return -1;
 	}
 	
-	//set up gpio interrupt pin connected to imu
-	if(gpio_export(IMU_INTERRUPT_PIN)){
-		printf("can't export gpio %d \n", IMU_INTERRUPT_PIN);
-		return (-1);
-	}
-	gpio_set_dir(IMU_INTERRUPT_PIN, INPUT_PIN);
-	gpio_set_edge(IMU_INTERRUPT_PIN, "falling");
-	
 	// make sure the bus is not currently in use by another thread
 	// do not proceed to prevent interfering with that process
 	if(i2c_get_in_use_state(IMU_BUS)){

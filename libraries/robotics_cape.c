@@ -142,36 +142,6 @@ int initialize_cape(){
 	fflush(stdout);
 	#endif
 
-	//export all GPIO output pins
-	gpio_export(RED_LED);
-	gpio_set_dir(RED_LED, OUTPUT_PIN);
-	gpio_export(GRN_LED);
-	gpio_set_dir(GRN_LED, OUTPUT_PIN);
-	gpio_export(MDIR1A);
-	gpio_set_dir(MDIR1A, OUTPUT_PIN);
-	gpio_export(MDIR1B);
-	gpio_set_dir(MDIR1B, OUTPUT_PIN);
-	gpio_export(MDIR2A);
-	gpio_set_dir(MDIR2A, OUTPUT_PIN);
-	gpio_export(MDIR2B);
-	gpio_set_dir(MDIR2B, OUTPUT_PIN);
-	gpio_export(MDIR3A);
-	gpio_set_dir(MDIR3A, OUTPUT_PIN);
-	gpio_export(MDIR3B);
-	gpio_set_dir(MDIR3B, OUTPUT_PIN);
-	gpio_export(MDIR4A);
-	gpio_set_dir(MDIR4A, OUTPUT_PIN);
-	gpio_export(MDIR4B);
-	gpio_set_dir(MDIR4B, OUTPUT_PIN);
-	gpio_export(MOT_STBY);
-	gpio_set_dir(MOT_STBY, OUTPUT_PIN);
-	gpio_export(PAIRING_PIN);
-	gpio_set_dir(PAIRING_PIN, OUTPUT_PIN);
-	gpio_export(INTERRUPT_PIN);
-	gpio_set_dir(INTERRUPT_PIN, INPUT_PIN);
-	gpio_export(SERVO_PWR);
-	gpio_set_dir(SERVO_PWR, OUTPUT_PIN);
-	
 	if(initialize_mmap_gpio()){
 		printf("mmap_gpio_adc.c failed to initialize gpio\n");
 		return -1;
@@ -449,25 +419,6 @@ int blink_led(led_t led, float hz, float period){
 *	releasing the two buttons.
 *******************************************************************************/
 int initialize_button_handlers(){
-	
-	#ifdef DEBUG
-	printf("\nsetting up mode & pause gpio pins\n");
-	#endif
-	//set up mode pi
-	if(gpio_export(MODE_BTN)){
-		printf("can't export gpio %d \n", MODE_BTN);
-		return (-1);
-	}
-	gpio_set_dir(MODE_BTN, INPUT_PIN);
-	gpio_set_edge(MODE_BTN, "both");  // Can be rising, falling or both
-	
-	//set up pause pin
-	if(gpio_export(PAUSE_BTN)){
-		printf("can't export gpio %d \n", PAUSE_BTN);
-		return (-1);
-	}
-	gpio_set_dir(PAUSE_BTN, INPUT_PIN);
-	gpio_set_edge(PAUSE_BTN, "both");  // Can be rising, falling or both
 	
 	#ifdef DEBUG
 	printf("starting button handling threads\n");

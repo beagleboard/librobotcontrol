@@ -41,11 +41,6 @@ $(phony all) : $(TARGET)
 
 
 install:
-	# @echo "moving headers files to /usr/include"
-	# @for f in $(INCLUDES) ; do \
-	# 	$(CP) --parents $$f $(INCLUDE_DIR) ; \
-	# done
-	
 	$(MAKE)
 	install -d -m 755 $(DESTDIR)$(prefix)/lib
 	install -m 644 librobotics_cape.so $(DESTDIR)$(prefix)/lib
