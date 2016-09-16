@@ -22,3 +22,6 @@ install: all
 	@install -m 644 robot.service $(DESTDIR)/etc/systemd/system/
 	@systemctl daemon-reload
 	@systemctl enable robot
+
+clean:
+	@rm -f $(OVERLAY).dtbo
