@@ -40,8 +40,12 @@ int main(int argc, char *argv[]){
 		return -1;
 	}
 	
-	// Initialization
-	initialize_cape();
+	// // Initialization
+	// if(initialize_cape()<0){
+	// 	printf("failed to initialze cape\n");
+	// 	return -1;
+	// }
+	
 	printf("\ntesting UART bus %d\n\n", bus);
 	if(initialize_uart(bus, BAUDRATE, TIMEOUT_S)){
 		printf("Failed to initialize_uart%d\n", bus);
@@ -63,6 +67,6 @@ int main(int argc, char *argv[]){
 	
 	// close up
 	close_uart(bus);
-	cleanup_cape();
+	// cleanup_cape();
 	return 0;
 }

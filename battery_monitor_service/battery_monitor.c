@@ -8,8 +8,8 @@
 #include <useful_includes.h>
 #include <robotics_cape.h>
 #include <robotics_cape_defs.h>
-#include <simple_gpio/simple_gpio.h>
-#include <mmap/mmap_gpio_adc.h>
+#include "../libraries/simple_gpio/simple_gpio.h"
+#include "../libraries/mmap/mmap_gpio_adc.h"
 #include <sys/file.h>
 
 #define PIDFILE	"/var/run/battery_monitor.pid"

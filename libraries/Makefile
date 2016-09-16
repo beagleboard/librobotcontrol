@@ -41,15 +41,17 @@ $(phony all) : $(TARGET)
 
 
 install:
-	@echo "moving headers files to /usr/include"
-	@for f in $(INCLUDES) ; do \
-		$(CP) --parents $$f $(INCLUDE_DIR) ; \
-	done
+	# @echo "moving headers files to /usr/include"
+	# @for f in $(INCLUDES) ; do \
+	# 	$(CP) --parents $$f $(INCLUDE_DIR) ; \
+	# done
 	
 	$(MAKE)
-	@$(CP) $(TARGET) $(INSTALL_DIR)
-	@$(CP) $(OBJECTS) $(INSTALL_DIR)
-	@$(CP) $(INSTALL_DIR)/$(TARGET) $(INSTALL_DIR)/lib$(TARGET)
+	install -d -m 755 $(DESTDIR)$(prefix)/lib
+	install -m 644 librobotics_cape.so $(DESTDIR)$(prefix)/lib
+	install -d -m 755 $(DESTDIR)$(prefix)/include
+	install -m 644 *.h $(DESTDIR)$(prefix)/include
+	install -m 644 ../install_files/robotics.mk $(DESTDIR)$(prefix)/include
 	@ldconfig
 	@echo "$(TARGET) installed to $(INSTALL_DIR)"
 	@echo

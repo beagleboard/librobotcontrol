@@ -1,0 +1,10 @@
+# This is a template for the replacement uEnv.txt file needed to
+# disable the universal cape and enable hdmi pins
+# install.sh fills in the kernel name and UUID at instalation time.
+
+uname_r=
+
+dtb=am335x-boneblack-emmc-overlay.dtb
+cmdline=coherent_pool=1M
+
+uuid=

@@ -129,11 +129,11 @@ int initialize_cape(){
 	signal(SIGINT, shutdown_signal_handler);	
 	signal(SIGTERM, shutdown_signal_handler);	
 
-	// check the device tree overlay is actually loaded
-	if (is_cape_loaded() != 1){
-		printf("ERROR: Device tree overlay not loaded by cape manager\n");
-		return -1;
-	}
+	// // check the device tree overlay is actually loaded
+	// if (is_cape_loaded() != 1){
+		// printf("ERROR: Device tree overlay not loaded by cape manager\n");
+		// return -1;
+	// }
 	
 	// initialize mmap io libs
 	#ifdef DEBUG

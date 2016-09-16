@@ -30,6 +30,3 @@ root@beaglebone:~# systemctl status battery_monitor
            └─16859 /usr/bin/battery_monitor
 
 
-Use the install.sh and uninstall.sh scripts to install and uninstall accordingly.
-After calling install.sh the service should start after the next reboot.
-The main robotics cape installer will install the battery_monitor service too.

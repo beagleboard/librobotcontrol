@@ -4,8 +4,8 @@ Description=robot
 [Service]
 User=root
 PIDFile=/var/run/robotics_cape.pid
-ExecStartPre=/usr/bin/wait_until_ready
-ExecStart=/usr/bin/bare_minimum
+ExecStartPre=/usr/bin/startup_routine
+ExecStart=/etc/robotics/link_to_startup_program
 ExecStop=/usr/bin/kill_robot
 
 [Install]

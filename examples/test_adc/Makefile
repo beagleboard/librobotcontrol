@@ -2,4 +2,4 @@
 # Just change the target name to match your main source code filename.
 TARGET = test_adc
 
-include ../config.mk
+include /usr/include/robotics.mk 

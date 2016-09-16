@@ -29,8 +29,6 @@ int main(){
 	// log start time 
 	start_us = micros_since_epoch();
 
-	system("echo start > /root/startlog.txt");
-
 	// check capemanager
 	while(is_cape_loaded()<1){
 		if(check_timeout()) return 1;

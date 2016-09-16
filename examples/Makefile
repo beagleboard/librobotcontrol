@@ -16,6 +16,7 @@ clean:
 	done
 	
 install:
+	echo "Installing examples, this will take a minute."
 	@for dir in $(SUBDIRS) ; do \
 		echo "installing example: $$dir" ; \
 		$(MAKE) -C $$dir -s install ;\
