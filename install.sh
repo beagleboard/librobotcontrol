@@ -19,7 +19,7 @@ CONFIG_DIR="/etc/robotics"
 
 
 echo " "
-echo "Detected Linux kernel $KERNEL"
+echo "Detected Linux kernel $UNAME"
 echo "Detected Debian version $DEBIAN"
 echo " "
 
