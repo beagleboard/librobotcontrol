@@ -13,7 +13,7 @@
 #include "../../libraries/simple_gpio/simple_gpio.h"
 #include "../../libraries/simple_pwm/simple_pwm.h"
 
-#define TIMEOUT_S 30
+#define TIMEOUT_S 60
 #define START_LOG "/etc/robotics/startup_log.txt"
 
 int is_cape_loaded();
@@ -43,41 +43,52 @@ int main(){
 
 	// check capemanager
 	while(is_cape_loaded()!=1){
-		if(check_timeout()) return 1;
+		if(check_timeout()){
+			system("echo 'timeout reached while waiting for overlay to load' >> " START_LOG);
+		 	return 1;
+		}
 		usleep(500000);
-		system("echo 'waiting for overlay' >> " START_LOG);
+		
 	}
+	system("uptime -p >> " START_LOG);
 	system("echo 'cape overlay loaded' >> " START_LOG);
 
 	// export gpio pins
 	while(setup_gpio()!=0){
-		if(check_timeout()) return 1;
+		if(check_timeout()){
+			system("echo 'timeout reached while waiting for gpio driver' >> " START_LOG);
+		 	return 1;
+		}
 		usleep(500000);
-		system("echo 'waiting for gpio' >> " START_LOG);
 	}
+	system("uptime -p >> " START_LOG);
 	system("echo 'gpio pins exported' >> " START_LOG);
 
 	// set up pwm at desired frequnecy
 	while(setup_pwm()!=0){
-		if(check_timeout()) return 1;
+		if(check_timeout()){
+			system("echo 'timeout reached while waiting for pwm driver' >> " START_LOG);
+		 	return 1;
+		}
 		usleep(500000);
-		system("echo 'waiting for pwm' >> " START_LOG);
 	}
+	system("uptime -p >> " START_LOG);
 	system("echo 'pwm initialized' >> " START_LOG);
 
 	// set up pru
 	while(setup_pru()!=0){
-		if(check_timeout()) return 1;
+		if(check_timeout()){
+			system("echo 'timeout reached while waiting for remoteproc pru' >> " START_LOG);
+		 	return 1;
+		}
 		usleep(500000);
-		system("echo 'waiting for pru remoteproc' >> " START_LOG);
 	}
-	system("echo 'pru initialized' >> " START_LOG);
+	system("uptime -p >> " START_LOG);
+	system("echo 'pru remoteproc initialized' >> " START_LOG);
 
 	cleanup_cape();
-	printf("success, cape ready\n");
-	system("echo 'uptime: ' >> " START_LOG);
-	system("cat /proc/uptime >> " START_LOG);
-	system("echo 'success, cape ready' >> " START_LOG);
+	printf("startup routine complete\n");
+	system("echo 'startup routine complete' >> " START_LOG);
 	return 0;
 }
 
