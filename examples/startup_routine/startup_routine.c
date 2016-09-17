@@ -20,6 +20,7 @@ int is_cape_loaded();
 int check_timeout();
 int setup_gpio();
 int setup_pwm();
+int setup_pru();
 
 uint64_t start_us;
 
@@ -64,8 +65,17 @@ int main(){
 	}
 	system("echo 'pwm initialized' >> " START_LOG);
 
+	// set up pru
+	while(setup_pru()!=0){
+		if(check_timeout()) return 1;
+		usleep(500000);
+		system("echo 'waiting for pru remoteproc' >> " START_LOG);
+	}
+	system("echo 'pru initialized' >> " START_LOG);
+
 	cleanup_cape();
 	printf("success, cape ready\n");
+	system("echo 'uptime: ' >> " START_LOG);
 	system("cat /proc/uptime >> " START_LOG);
 	system("echo 'success, cape ready' >> " START_LOG);
 	return 0;
@@ -164,5 +174,23 @@ int setup_gpio(){
 int setup_pwm(){
 	if(simple_init_pwm(1,PWM_FREQ)) return -1;
 	if(simple_init_pwm(2,PWM_FREQ)) return -1;
+	return 0;
+}
+
+
+/*******************************************************************************
+* int setup_pru()
+*
+* makes sure remoteproc for the pru is up and running, then reboots both cores
+*******************************************************************************/
+int setup_pru(){
+
+	// make sure driver is running
+	if(access("/sys/bus/platform/drivers/pru-rproc/bind", F_OK)) return -1;
+
+	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind  > /dev/null");
+	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/bind > /dev/null");
+	system("echo 4a338000.pru1  > /sys/bus/platform/drivers/pru-rproc/unbind > /dev/null");
+	system("echo 4a338000.pru1 > /sys/bus/platform/drivers/pru-rproc/bind > /dev/null");
 	return 0;
 }
