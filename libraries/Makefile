@@ -39,7 +39,7 @@ install:
 	install -d -m 755 $(DESTDIR)$(PREFIX)/include
 	install -m 644 *.h $(DESTDIR)$(PREFIX)/include
 	@ldconfig
-	@echo "$(TARGET) installed to $(DESTDIR)$(PREFIX)/lib"
+	@echo "$(TARGET) Installed to $(DESTDIR)$(PREFIX)/lib"
 	
 
 clean:
@@ -49,4 +49,4 @@ clean:
 	
 	@rm -f *.o
 	@rm -f *.so
-	@echo "librobotics_cape Cleanup complete!"
+	@echo "librobotics_cape Cleanup Complete!"

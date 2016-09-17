@@ -1,6 +1,5 @@
 
 OVERLAY = "RoboticsCape-00A0"
-CAPENAME = "RoboticsCape"
 
 all:
 	@echo "Compiling Overlay"
@@ -18,12 +17,7 @@ install: all
 	@install -m 644 pruss-blacklist.conf $(DESTDIR)/etc/modprobe.d/
 	@echo "Installing generic makefile"
 	@install -m 644 robotics.mk $(DESTDIR)/usr/include/
-	@echo "Installing systemd service"
-	@install -d -m 755 $(DESTDIR)/etc/robotics
-	@install -d -m 755 $(DESTDIR)/etc/systemd/system
-	@install -m 644 robot.service $(DESTDIR)/etc/systemd/system/
-	@systemctl daemon-reload
-	@systemctl enable robot
 
 clean:
 	@rm -f $(OVERLAY).dtbo
+	@echo "Overlay Cleanup Complete"
