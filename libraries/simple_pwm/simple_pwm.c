@@ -58,9 +58,9 @@ int simple_init_pwm(int subsystem, int frequency){
 		return -1;
 	}
 	
-	// unexport the channels first
-	simple_uninit_pwm(subsystem);
-	
+	// // unexport the channels first
+	// simple_uninit_pwm(subsystem);
+	 
 	// open export file for that subsystem
 	len = snprintf(buf, sizeof(buf), SYSFS_PWM_DIR "/pwmchip%d/export", 2*subsystem);
 	export_fd = open(buf, O_WRONLY);

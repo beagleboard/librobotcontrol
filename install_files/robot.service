@@ -3,7 +3,7 @@ Description=robot
 
 [Service]
 User=root
-PIDFile=/var/run/robotics_cape.pid
+PIDFile=/var/run/robotcs_cape.pid
 ExecStartPre=/usr/bin/startup_routine
 ExecStart=/etc/robotics/link_to_startup_program
 ExecStop=/usr/bin/kill_robot

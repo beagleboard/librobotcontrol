@@ -94,20 +94,10 @@ int initialize_cape(){
 	#ifdef DEBUG
 		printf("checking for existing PID_FILE\n");
 	#endif
-	fd = fopen(PID_FILE, "r");
-	if (fd != NULL) {
-		int old_pid;
-		fscanf(fd,"%d", &old_pid);
-		if(old_pid != 0){
-			printf("warning, shutting down existing robotics project\n");
-			kill((pid_t)old_pid, SIGINT);
-			sleep(1);
-		}
-		// close and delete the old file
-		fclose(fd);
-		remove(PID_FILE);
-	}
+	kill_robot();
 	
+
+
 	// create new pid file with process id
 	#ifdef DEBUG
 		printf("opening PID_FILE\n");
@@ -129,12 +119,6 @@ int initialize_cape(){
 	signal(SIGINT, shutdown_signal_handler);	
 	signal(SIGTERM, shutdown_signal_handler);	
 
-	// // check the device tree overlay is actually loaded
-	// if (is_cape_loaded() != 1){
-		// printf("ERROR: Device tree overlay not loaded by cape manager\n");
-		// return -1;
-	// }
-	
 	// initialize mmap io libs
 	#ifdef DEBUG
 	printf("Initializing: ");
@@ -207,11 +191,9 @@ int initialize_cape(){
 	initialize_pru();
 	
 	// Print current battery voltage
-	#ifdef DEBUG
 	printf("Battery: %2.2fV  ", get_battery_voltage());
-	printf("Process ID: %d\n", (int)current_pid);
-	#endif
-
+	printf("Process ID: %d\n", (int)current_pid); 
+ 
 	// all done
 	set_state(PAUSED);
 
@@ -1145,15 +1127,32 @@ int kill_robot(){
 	FILE* fd;
 	int old_pid, i;
 	
-	// attempt to open PID file
-	fd = fopen(PID_FILE, "r");
-	// if the file didn't open, no proejct is runnning in the background
-	// so return 0
-	if (fd == NULL) {
+	// // first check if the robot service is running
+	// if(!system("service robot status | grep 'active (running)' -q")){
+	// 	printf("robot service is running, stopping it now\n");
+	// 	system("service robot stop");
+	// 	usleep(1000000);
+	// 	if(!system("service robot status | grep 'inactive (dead)' -q")) return 1;
+	// 	usleep(1000000);
+	// 	if(!system("service robot status | grep 'inactive (dead)' -q")) return 1;
+	// 	usleep(1000000);
+	// 	if(!system("service robot status | grep 'inactive (dead)' -q")) return 1;
+	// }
+
+
+	// start by checking if a pid file exists
+	if(access(PID_FILE, F_OK ) != 0){
+		// PID file missing
 		return 0;
 	}
+
+	// attempt to open PID file
+	// if the file didn't open, no project is runnning in the background
+	// so return 0
+	fd = fopen(PID_FILE, "r");
+	if (fd == NULL) return 0;
 	
-	// otherwise try to read the current process ID
+	// try to read the current process ID
 	fscanf(fd,"%d", &old_pid);
 	fclose(fd);
 	
@@ -1163,23 +1162,36 @@ int kill_robot(){
 		remove(PID_FILE);
 		return -2;
 	}
-		
-	// attempt a clean shutdown
+
+	// check if it's our own pid, if so return 0
+	if(old_pid == (int)getpid()) return 0;
+	
+	// now see if the process for the read pid is still running
+	if(getpgid(old_pid) < 0){
+		// process not running, remove the pid file
+		remove(PID_FILE);
+		return 0;
+	}
+
+	// process must be running, attempt a clean shutdown
 	kill((pid_t)old_pid, SIGINT);
 	
 	// check every 0.1 seconds to see if it closed 
 	for(i=0; i<30; i++){
-		if(access(PID_FILE, F_OK ) != -1) usleep(100000);
-		else return 1; // succcess, it shut down properly
+		if(getpgid(old_pid) >= 0) usleep(100000);
+		else{ // succcess, it shut down properly
+			remove(PID_FILE);
+			return 1; 
+		}
 	}
 	
 	// otherwise force kill the program if the PID file never got cleaned up
 	kill((pid_t)old_pid, SIGKILL);
+	usleep(500000);
 
-	// close and delete the old file
-	fclose(fd);
+	// delete the old PID file if it was left over
 	remove(PID_FILE);
-	
+
 	// return -1 indicating the program had to be killed
 	return -1;
 }

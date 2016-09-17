@@ -89,16 +89,16 @@ Bit 0 /
 		"P9.41",	/*MOT_STBY*/
 		"P9.42",	/*QEP_0A*/
 		
-		"ehrpwm1A",
-		"ehrpwm1B",
-		"ehrpwm2A",
-		"ehrpwm2B",
+	 	"epwmss0",
+        "ehrpwm0",
+        "epwmss1",
+        "ehrpwm1",
+        "epwmss2",
+        "ehrpwm2",
+
 		"pruss",
 		"pru0",
 		"pru1",
-		"eqep0",
-		"eqep1",
-		"eqep2",
 		"i2c1",
 		"i2c2",
 		"uart1",	/*breakout*/

@@ -36,8 +36,9 @@ int main(){
 	start_us = micros_since_epoch();
 	system("echo start > " START_LOG);
 
+	// stop a possibly running process and
 	// delete old pid file if it's left over from an improper shudown
-	if(remove(PID_FILE)==0) system("echo 'removed old PID_FILE' > " START_LOG);
+	kill_robot();
 
 	// check capemanager
 	while(is_cape_loaded()!=1){
@@ -65,6 +66,7 @@ int main(){
 
 	cleanup_cape();
 	printf("success, cape ready\n");
+	system("cat /proc/uptime >> " START_LOG);
 	system("echo 'success, cape ready' >> " START_LOG);
 	return 0;
 }
@@ -93,6 +95,7 @@ int check_timeout(){
 	int seconds = (new_us-start_us)/1000000;
 	if(seconds>TIMEOUT_S){
 		printf("TIMEOUT REACHED\n");
+		system("echo 'TIMEOUT_REACHED' >> " START_LOG);
 		return 1;
 	}
 	return 0;
