@@ -6,7 +6,7 @@ SUBDIRS = $(shell find * -type d -print)
 all:
 	@for dir in $(SUBDIRS) ; do \
 		echo "making example: $$dir" ; \
-		$(MAKE) -C $$dir -s; \
+		$(MAKE) -C $$dir -s --no-print-directory; \
 	done
 	
 clean:
@@ -16,7 +16,6 @@ clean:
 	done
 	
 install:
-	echo "Installing examples, this will take a minute."
 	@for dir in $(SUBDIRS) ; do \
 		echo "installing example: $$dir" ; \
 		$(MAKE) -C $$dir -s install ;\

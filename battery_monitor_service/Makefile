@@ -5,7 +5,7 @@ TARGET = battery_monitor
 CC	:= gcc
 LINKER   := gcc -o
 CFLAGS	:= -c -Wall -g
-LFLAGS	:= -lm -lrt -lpthread -llibrobotics_cape
+LFLAGS	:= -lm -lrt -lpthread -lrobotics_cape
 
 SOURCES  := $(wildcard *.c)
 INCLUDES := $(wildcard *.h)
@@ -17,14 +17,12 @@ INSTALL_DIR = /usr/bin/
 # linking Objects
 $(TARGET): $(OBJECTS)
 	@$(LINKER) $(@) $(OBJECTS) $(LFLAGS)
-	@echo
-	@echo "Linking Complete"
 
 
 # compiling command
 $(OBJECTS): %.o : %.c
 	@$(TOUCH) $(CC) $(CFLAGS) -c $< -o $(@)
-	@echo "Compiled "$<" successfully!"
+	@echo "Compiled: "$<
 
 
 # install to /usr/bin
@@ -45,5 +43,5 @@ install: $(all)
 clean:
 	@$(RM) $(OBJECTS)
 	@$(RM) $(TARGET)
-	@echo "Cleanup complete!"
+	@echo "battery_monitor cleanup complete"
 
