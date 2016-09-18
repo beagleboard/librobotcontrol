@@ -1126,19 +1126,6 @@ int is_cape_loaded(){
 int kill_robot(){
 	FILE* fd;
 	int old_pid, i;
-	
-	// // first check if the robot service is running
-	// if(!system("service robot status | grep 'active (running)' -q")){
-	// 	printf("robot service is running, stopping it now\n");
-	// 	system("service robot stop");
-	// 	usleep(1000000);
-	// 	if(!system("service robot status | grep 'inactive (dead)' -q")) return 1;
-	// 	usleep(1000000);
-	// 	if(!system("service robot status | grep 'inactive (dead)' -q")) return 1;
-	// 	usleep(1000000);
-	// 	if(!system("service robot status | grep 'inactive (dead)' -q")) return 1;
-	// }
-
 
 	// start by checking if a pid file exists
 	if(access(PID_FILE, F_OK ) != 0){
