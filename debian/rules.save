@@ -1,0 +1,12 @@
+Source: helloworld  
+Maintainer: Julio Capote <julio@packagecloud.io>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.3
+Section: utils
+
+Package: helloworld  
+Priority: extra  
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}  
+Description: a simple helloworld package
+ Just prints "Hi", it's very useful.
