@@ -169,20 +169,20 @@ int init_eqep(int ss){
 	// check ti-eqep driver is up
 	switch(ss){
 	case 0:
-		if(access("sftp://root@192.168.1.166/sys/devices/platform/ocp/48300000.epwmss/48300180.eqep", F_OK ) != 0){
-			printf("ERROR: ti-eqep driver missing!\n");
+		if(access("/sys/devices/platform/ocp/48300000.epwmss/48300180.eqep", F_OK ) != 0){
+			printf("ERROR: ti-eqep driver not loaded for eqep0\n");
 			return -1;
 		}
 		break;
 	case 1:
-		if(access("sftp://root@192.168.1.166/sys/devices/platform/ocp/48302000.epwmss/48302180.eqep", F_OK ) != 0){
-			printf("ERROR: ti-eqep driver missing!\n");
+		if(access("/sys/devices/platform/ocp/48302000.epwmss/48302180.eqep", F_OK ) != 0){
+			printf("ERROR: ti-eqep driver not loaded for eqep1\n");
 			return -1;
 		}
 		break;
 	case 2:
-		if(access("sftp://root@192.168.1.166/sys/devices/platform/ocp/48304000.epwmss/48304180.eqep", F_OK ) != 0){
-			printf("ERROR: ti-eqep driver missing!\n");
+		if(access("/sys/devices/platform/ocp/48304000.epwmss/48304180.eqep", F_OK ) != 0){
+			printf("ERROR: ti-eqep driver not loaded for eqep2\n");
 			return -1;
 		}
 		break;
