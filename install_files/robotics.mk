@@ -27,7 +27,7 @@ $(phony all) : $(TARGET)
 .PHONY: install
 
 install: $(all)
-	@$(MAKE)
+	@$(MAKE) --no-print-directory
 	@install -m 0755 $(TARGET) $(DESTDIR)$(PREFIX)/bin
 	
 clean:
