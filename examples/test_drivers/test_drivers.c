@@ -18,6 +18,10 @@ int main(){
 	printf("Kernel: ");
 	fflush(stdout);
 	system("uname -r");
+	system("cat /etc/dogtag");
+	printf("Debian: ");
+	fflush(stdout);
+	system("cat /etc/debian_version");
 	printf("\n");
 
 	// gpio
