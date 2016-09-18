@@ -33,8 +33,8 @@ install: $(all)
 	@$(MAKE)
 	@echo "Installing battery_monitor Binary"
 	@install -m 0755 $(TARGET) $(INSTALL_DIR)
+	@echo "Installing battery_monitor Service File"
 	@install -d -m 755 $(DESTDIR)/etc/systemd/system
-	@echo "Installing battery_monitor Service"
 	@install -m 0644 battery_monitor.service $(DESTDIR)/etc/systemd/system/
 	@echo "Enabling battery_monitor Service"
 	@systemctl daemon-reload

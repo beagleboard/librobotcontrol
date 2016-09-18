@@ -56,19 +56,17 @@ int main(int argc, char *argv[]){
 		}
     }
 
-	// we only want one instance running, so check the pidfile
-	int pidfile = open(BATTPIDFILE, O_CREAT | O_RDWR, 0666);
-	if(flock(pidfile, LOCK_EX | LOCK_NB)) {
-		printf("\nBattery_monitor service is already running in background.\n");
-		printf("This program is started in the background at boot.\n\n");
-		printf("Stop with 'systemctl stop battery_monitor.service'\n\n");
+	// we only want one instance running, so check is a pid file already exists
+	if(access(PID_FILE, F_OK ) == 0){
+		// PID file exists
+		printf("instance of battery_monitor already running\n");
 		return -1;
 	}
 
 	// make new pid file
 	fd = fopen(BATTPIDFILE, "ab");
 	if (fd < 0) {
-		printf("\n error opening PID_FILE for writing\n");
+		printf("\n error opening PID file for writing\n");
 		return -1;
 	}
 	pid_t current_pid = getpid();
