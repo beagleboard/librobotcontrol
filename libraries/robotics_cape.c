@@ -29,7 +29,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 *******************************************************************************/
 
-// #define DEBUG
+//#define DEBUG
 
 #include "useful_includes.h"
 #include "robotics_cape.h"
@@ -96,22 +96,6 @@ int initialize_cape(){
 	#endif
 	kill_robot();
 	
-
-
-	// create new pid file with process id
-	#ifdef DEBUG
-		printf("opening PID_FILE\n");
-	#endif
-	fd = fopen(PID_FILE, "ab+");
-	if (fd < 0) {
-		printf("\n error opening PID_FILE for writing\n");
-		return -1;
-	}
-	pid_t current_pid = getpid();
-	fprintf(fd,"%d",(int)current_pid);
-	fflush(fd);
-	fclose(fd);
-	
 	// Start Signal Handler
 	#ifdef DEBUG
 	printf("Initializing exit signal handler\n");
@@ -121,9 +105,7 @@ int initialize_cape(){
 
 	// initialize mmap io libs
 	#ifdef DEBUG
-	printf("Initializing: ");
-	printf("GPIO");
-	fflush(stdout);
+	printf("Initializing: GPIO\n");
 	#endif
 
 	if(initialize_mmap_gpio()){
@@ -132,8 +114,7 @@ int initialize_cape(){
 	}
 	
 	#ifdef DEBUG
-	printf(" ADC");
-	fflush(stdout);
+	printf("Initializing: ADC\n");
 	#endif
 	if(initialize_mmap_adc()){
 		printf("mmap_gpio_adc.c failed to initialize adc\n");
@@ -141,8 +122,7 @@ int initialize_cape(){
 	}
 
 	#ifdef DEBUG
-	printf(" eQEP");
-	fflush(stdout);
+	printf("Initializing: eQEP\n");
 	#endif
 	if(init_eqep(0)){
 		printf("mmap_pwmss.c failed to initialize eQEP\n");
@@ -159,8 +139,7 @@ int initialize_cape(){
 	
 	// setup pwm driver
 	#ifdef DEBUG
-	printf(" PWM");
-	fflush(stdout);
+	printf("Initializing: PWM\n");
 	#endif
 	if(simple_init_pwm(1,PWM_FREQ)){
 		printf("simple_pwm.c failed to initialize PWMSS 1\n");
@@ -178,22 +157,35 @@ int initialize_cape(){
 	
 	//set up function pointers for button press events
 	#ifdef DEBUG
-	printf(" Buttons");
-	fflush(stdout);
+	printf("Initializing: Buttons\n");
 	#endif
-	initialize_button_handlers();
+	if(initialize_button_handlers()<0) return -1;
 	
 	// start PRU
 	#ifdef DEBUG
-	printf(" PRU\n");
-	fflush(stdout);
+	printf("Initializing: PRU\n");
 	#endif
-	initialize_pru();
-	
-	// Print current battery voltage
-	printf("Battery: %2.2fV  ", get_battery_voltage());
+	if(initialize_pru()<0) return -1;
+
+	// create new pid file with process id
+	#ifdef DEBUG
+		printf("opening PID_FILE\n");
+	#endif
+	fd = fopen(PID_FILE, "ab+");
+	if (fd < 0) {
+		printf("\n error opening PID_FILE for writing\n");
+		return -1;
+	}
+	pid_t current_pid = getpid();
+	fprintf(fd,"%d",(int)current_pid);
+	fflush(fd);
+	fclose(fd);
+
+	// Print current PID
+	#ifdef DEBUG
 	printf("Process ID: %d\n", (int)current_pid); 
- 
+ 	#endif
+
 	// all done
 	set_state(PAUSED);
 
@@ -402,9 +394,6 @@ int blink_led(led_t led, float hz, float period){
 *******************************************************************************/
 int initialize_button_handlers(){
 	
-	#ifdef DEBUG
-	printf("starting button handling threads\n");
-	#endif
 	struct sched_param params;
 	pthread_attr_t attr;
 	params.sched_priority = sched_get_priority_max(SCHED_FIFO)/2;
@@ -615,10 +604,6 @@ int disable_motors(){
 *******************************************************************************/
 int set_motor(int motor, float duty){
 	uint8_t a,b;
-	
-	if(state == UNINITIALIZED){
-		initialize_cape();
-	}
 
 	//check that the duty cycle is within +-1
 	if (duty>1.0){
@@ -879,16 +864,31 @@ float get_adc_volt(int ch){
 * the servo and encoder functions in this C file.
 *******************************************************************************/
 int initialize_pru(){
-	
 	unsigned int	*pru;		// Points to start of PRU memory.
 	int	fd;
 	
-	fd = open ("/dev/mem", O_RDWR | O_SYNC);
+	// check rpoc driver is up
+	if(access("/sys/bus/platform/drivers/pru-rproc/bind", F_OK ) != 0){
+		printf("ERROR: pru-rproc driver missing!\n");
+		return -1;
+	}
+
+	// reset each core
+	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind  > /dev/null");
+	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/bind > /dev/null");
+	system("echo 4a338000.pru1  > /sys/bus/platform/drivers/pru-rproc/unbind > /dev/null");
+	system("echo 4a338000.pru1 > /sys/bus/platform/drivers/pru-rproc/bind > /dev/null");
+	
+	// start mmaping shared memory
+	fd = open("/dev/mem", O_RDWR | O_SYNC);
 	if (fd == -1) {
 		printf ("ERROR: could not open /dev/mem.\n\n");
 		return 1;
 	}
-	pru = mmap (0, PRU_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PRU_ADDR);
+	#ifdef DEBUG
+	printf("mmap'ing PRU shared memory\n");
+	#endif
+	pru = mmap(0, PRU_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PRU_ADDR);
 	if (pru == MAP_FAILED) {
 		printf ("ERROR: could not map memory.\n\n");
 		return 1;
@@ -899,14 +899,10 @@ int initialize_pru(){
 	prusharedMem_32int_ptr = pru + PRU_SHAREDMEM/4;	// Points to start of shared memory
 
 	// zero out the 8 servo channels and encoder channel
+	#ifdef DEBUG
+	printf("zeroing out PRU shared memory\n");
+	#endif
 	memset(prusharedMem_32int_ptr, 0, 9*4);
-
-	// reset each core
-	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind  > /dev/null");
-	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/bind > /dev/null");
-	system("echo 4a338000.pru1  > /sys/bus/platform/drivers/pru-rproc/unbind > /dev/null");
-	system("echo 4a338000.pru1 > /sys/bus/platform/drivers/pru-rproc/bind > /dev/null");
-
 	
     return 0;
 }
