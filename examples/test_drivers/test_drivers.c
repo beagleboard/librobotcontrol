@@ -12,6 +12,13 @@
 int main(){
 	
 	printf("\n");
+	printf("Overlays: \n");
+	system("cat /sys/devices/platform/bone_capemgr/slots");
+	printf("\n");
+	printf("Kernel: ");
+	fflush(stdout);
+	system("uname -r");
+	printf("\n");
 
 	// gpio
 	if(access("/sys/class/gpio/export", F_OK ) != 0){
@@ -19,24 +26,24 @@ int main(){
 	} else printf("PASSED: gpio\n");
 
 	// pwm 1,2
-	if(access("/sys/devices/platform/ocp/48302000.epwmss/48302200.pwm/export", F_OK ) != 0){
+	if(access("/sys/class/pwm/pwmchip2/export", F_OK ) != 0){
 		printf("ERROR:  ti-pwm driver not loaded for hrpwm1\n");
 	} else printf("PASSED: hrpwm1\n");
 	
-	if(access("/sys/devices/platform/ocp/48304000.epwmss/48304200.pwm/export", F_OK ) != 0){
+	if(access("/sys/class/pwm/pwmchip4/export", F_OK ) != 0){
 		printf("ERROR:  ti-pwm driver not loaded for hrpwm2\n");
 	} else printf("PASSED: hrpwm2\n");
 
 	// eqep 0,1,2
-	if(access("/sys/devices/platform/ocp/48300000.epwmss/48300180.eqep", F_OK ) != 0){
+	if(access("/sys/devices/platform/ocp/48300000.epwmss/48300180.eqep/position", F_OK ) != 0){
 		printf("ERROR:  ti-eqep driver not loaded for eqep0\n");
 	} else printf("PASSED: eqep0\n");
 
-	if(access("/sys/devices/platform/ocp/48302000.epwmss/48302180.eqep", F_OK ) != 0){
+	if(access("/sys/devices/platform/ocp/48302000.epwmss/48302180.eqep/position", F_OK ) != 0){
 		printf("ERROR:  ti-eqep driver not loaded for eqep1\n");
 	} else printf("PASSED: eqep1\n");
 	
-	if(access("/sys/devices/platform/ocp/48304000.epwmss/48304180.eqep", F_OK ) != 0){
+	if(access("/sys/devices/platform/ocp/48304000.epwmss/48304180.eqep/position", F_OK ) != 0){
 		printf("ERROR:  ti-eqep driver not loaded for eqep2\n");
 	} else printf("PASSED: eqep2\n");
 
@@ -70,10 +77,6 @@ int main(){
 		printf("ERROR:  spi driver not loaded\n");
 	} else printf("PASSED: spi\n");
 
-	printf("\n");
-	printf("KERNEL: ");
-	fflush(stdout);
-	system("uname -r");
 
 	printf("\n");
 
