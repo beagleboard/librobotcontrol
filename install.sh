@@ -14,6 +14,7 @@ DEBIAN="$(cat /etc/debian_version)"
 echo " "
 echo "Detected Linux kernel $UNAME"
 echo "Detected Debian version $DEBIAN"
+cat /etc/dogtag
 echo " "
 
 ################################################################################
@@ -56,7 +57,6 @@ echo " "
 # Compile and install library, then examples, then battery monitor service
 ################################################################################
 
-make clean
 make install
 make clean
 
