@@ -1,5 +1,6 @@
 
 OVERLAY = "RoboticsCape-00A0"
+CAPE = "RoboticsCape"
 UENV = "/boot/uEnv.txt"
 UNAME := "$(shell uname -r)"
 UUID := "$(shell blkid -c /dev/null -s UUID -o value /dev/mmcblk*)"
@@ -25,7 +26,7 @@ install: all
 	@sed -i s/^uuid=.*\$$/uuid=$(UUID)/ $(UENV)
 	@sed -i s/^uname_r=.*\$$/uname_r=$(UNAME)/ $(UENV)
 	@echo  "Setting Default Cape"
-	@sed -i s/^CAPE=.*\$$/CAPE=$(OVERLAY)/ /etc/default/capemgr
+	@sed -i s/^CAPE=.*\$$/CAPE=$(CAPE)/ /etc/default/capemgr
 
 clean:
 	@rm -f $(OVERLAY).dtbo
