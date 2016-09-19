@@ -25,7 +25,7 @@ install: all
 	@sed -i s/^uuid=.*\$$/uuid=$(UUID)/ $(UENV)
 	@sed -i s/^uname_r=.*\$$/uname_r=$(UNAME)/ $(UENV)
 	@echo  "Setting Default Cape"
-	@echo "CAPE=$OVERYLAY" > /etc/default/capemgr
+	@sed -i s/^CAPE=.*\$$/CAPE=$(OVERLAY)/ /etc/default/capemgr
 
 clean:
 	@rm -f $(OVERLAY).dtbo
