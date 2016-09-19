@@ -1,5 +1,8 @@
 
 OVERLAY = "RoboticsCape-00A0"
+UENV = "/boot/uEnv.txt"
+UNAME := "$(shell uname -r)"
+UUID := "$(shell blkid -c /dev/null -s UUID -o value /dev/mmcblk*)"
 
 all:
 	@echo "Compiling Overlay"
@@ -17,6 +20,12 @@ install: all
 	@install -m 644 pruss-blacklist.conf $(DESTDIR)/etc/modprobe.d/
 	@echo "Installing generic makefile"
 	@install -m 644 robotics.mk $(DESTDIR)/usr/include/
+	@echo "Updating uEnv.txt"
+	@install -m 644 --backup=numbered ./uEnv.txt /boot/ 
+	@sed -i s/^uuid=.*\$$/uuid=$(UUID)/ $(UENV)
+	@sed -i s/^uname_r=.*\$$/uname_r=$(UNAME)/ $(UENV)
+	@echo  "Setting Default Cape"
+	@echo "CAPE=$OVERYLAY" > /etc/default/capemgr
 
 clean:
 	@rm -f $(OVERLAY).dtbo

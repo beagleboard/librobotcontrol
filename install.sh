@@ -1,22 +1,15 @@
 #!/bin/bash
 
 # Bash script to install supporting software for the Robotics Cape
-# This is specifically for Debian Jessie, tested on the following images:
-# 2016-05-13
+# This is specifically for Debian Jessie
 
 
 ################################################################################
 # Variables collected here for convenience
 ################################################################################
-INSTALL_DIR="/root"
-OVERLAY="RoboticsCape-00A0"
-CAPENAME="RoboticsCape"
-UNAME="$(uname -r)"
-UUID="$(blkid -c /dev/null -s UUID -o value /dev/mmcblk*)"
-DEBIAN="$(cat /etc/debian_version)"
-UENV_TXT="/boot/uEnv.txt"
-CONFIG_DIR="/etc/robotics"
 
+UNAME="$(uname -r)"
+DEBIAN="$(cat /etc/debian_version)"
 
 echo " "
 echo "Detected Linux kernel $UNAME"
@@ -57,38 +50,13 @@ case $response in
 esac
 echo " "
 
-# # touch everything since the BBB clock is probably wrong
-# find . -exec touch {} \;
-
-
-################################################################################
-# install cape overlay stuff
-################################################################################
-
-# make a backup of the original uEnv.txt file
-# if it doesn't already exist
-if [ -a "$UENV_TXT.original" ];then
-	echo "backup of $UENV_TXT already exists"
-else
-	echo "making backup copy of $UENV_TXT"
-	cp $UENV_TXT $UENV_TXT.original
-fi
-
-# copy new uEnv.txt file over and plug in uname and uuid
-cp install_files/uEnv.txt $UENV_TXT
-sed -i "s/^uuid=.*\$/uuid=$UUID/" $UENV_TXT
-sed -i "s/^uname_r=.*\$/uname_r=$UNAME/" $UENV_TXT
-
-# set Robotics Cape as the only cape to load
-echo "Setting Capemgr to Load $CAPENAME Overlay by Default"
-echo "CAPE=$CAPENAME" > /etc/default/capemgr
-
 
 
 ################################################################################
 # Compile and install library, then examples, then battery monitor service
 ################################################################################
 
+make clean
 make install
 make clean
 
