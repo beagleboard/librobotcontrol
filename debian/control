@@ -8,7 +8,5 @@ Package: roboticscape
 Priority: extra  
 Architecture: armhf
 Depends: ${shlibs:Depends}, ${misc:Depends}  
-Description: Contains the supporting library for the robotics cape
-along with many example programs, supporting systemd services, 
-and device tree overlay.
+Description: Contains the supporting library for the robotics cape along with many example programs, supporting systemd services, and device tree overlay.
 
