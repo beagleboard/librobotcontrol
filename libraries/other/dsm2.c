@@ -474,14 +474,7 @@ int bind_dsm2(){
 		printf("error: can't set pinmux to gpio for P9_11\n");
 		return -1;
 	}
-	// FILE *pinmux_fd;
-	// pinmux_fd = fopen(PINMUX_PATH, "w+");
-	// if((int)pinmux_fd == -1){
-	// 	printf("error opening pinmux\n");
-	// 	return -1;
-	// }
-	// fprintf(pinmux_fd, "%s", "gpio_pd");
-	// fflush(pinmux_fd);
+
 	//export GPIO pin to userspace
 	if(gpio_export(GPIO_PIN_BIND)){
 		printf("error exporting gpio pin\n");
@@ -572,11 +565,6 @@ enter:
 	}
 	
 	usleep(1000000);
-	
-	// swap pinmux back to uart
-	// fprintf(pinmux_fd, "%s", "uart");
-	// fflush(pinmux_fd);
-	// fclose(pinmux_fd);
 
 	// swap pinmux from GPIO back to uart
 	if(system("echo uart > " PINMUX_PATH)){
