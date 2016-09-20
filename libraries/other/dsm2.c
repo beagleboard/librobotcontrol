@@ -19,7 +19,7 @@
 
 #define MAX_DSM2_CHANNELS 9
 #define GPIO_PIN_BIND 30 //P9.11 gpio_0[30]
-#define PINMUX_PATH "/sys/devices/ocp.3/P9_11_pinmux.13/state"
+#define PINMUX_PATH "/sys/devices/platform/ocp/ocp:P9_11_pinmux/state"
 #define PAUSE 115	//microseconds
 #define DEFAULT_MIN 1142
 #define DEFAULT_MAX 1858
@@ -463,15 +463,25 @@ int bind_dsm2(){
 	int pulses = 9; 
 	int delay = 200000;
 	
-	// swap pinmux from UART4_RX to GPIO
-	FILE *pinmux_fd;
-	pinmux_fd = fopen(PINMUX_PATH, "w+");
-	if((int)pinmux_fd == -1){
-		printf("error opening pinmux\n");
+	// check pinmux helper is enbaled for this pin
+	if(access(PINMUX_PATH, F_OK)!=0){
+		printf("error, pinmux helper not enabled for P9_11\n");
 		return -1;
 	}
-	fprintf(pinmux_fd, "%s", "gpio_pd");
-	fflush(pinmux_fd);
+
+	// swap pinmux from UART4_RX to GPIO
+	if(system("echo gpio > " PINMUX_PATH)){
+		printf("error: can't set pinmux to gpio for P9_11\n");
+		return -1;
+	}
+	// FILE *pinmux_fd;
+	// pinmux_fd = fopen(PINMUX_PATH, "w+");
+	// if((int)pinmux_fd == -1){
+	// 	printf("error opening pinmux\n");
+	// 	return -1;
+	// }
+	// fprintf(pinmux_fd, "%s", "gpio_pd");
+	// fflush(pinmux_fd);
 	//export GPIO pin to userspace
 	if(gpio_export(GPIO_PIN_BIND)){
 		printf("error exporting gpio pin\n");
@@ -481,19 +491,17 @@ int bind_dsm2(){
 	gpio_set_dir(GPIO_PIN_BIND, INPUT_PIN);
 	
 	// give user instructions
-	printf("\n\nYou must choose which DSM mode to request from your\
-															transmitter\n");
-	printf("Note that your transmitter may actually bind in a different \
-																	mode\n");
+	printf("\n\nYou must choose which DSM mode to request from your transmitter\n");
+	printf("Note that your transmitter may actually bind in a different mode\n");
 	printf("depending on how it is configured.\n");
 	printf("We suggest option 1 for 6-channel DSM2 radios,\n");
 	printf("and option 4 for 7-9 channel DSMX radios\n");
 	printf("\n");
-	printf("1: DSM2 10-bit 22ms framerate\n");
-	printf("2: DSM2 11-bit 11ms framerate\n"); 
-	printf("3: DSMX 10-bit 22ms framerate\n"); 
-	printf("4: DSMX 11-bit 11ms framerate\n"); 
-	printf("5: Orange 10-bit 22ms framerate\n");
+	printf("1: Spektrum  DSM2 10-bit 22ms framerate\n");
+	printf("2: Spektrum  DSM2 11-bit 11ms framerate\n"); 
+	printf("3: Spektrum  DSMX 10-bit 22ms framerate\n"); 
+	printf("4: Spektrum  DSMX 11-bit 11ms framerate\n"); 
+	printf("5: Orange/JR DSM2 10-bit 22ms framerate\n");
 	printf("\n"); 
 	printf("Enter mode 1-5: ");
 	
@@ -566,12 +574,18 @@ enter:
 	usleep(1000000);
 	
 	// swap pinmux back to uart
-	fprintf(pinmux_fd, "%s", "uart");
-	fflush(pinmux_fd);
-	fclose(pinmux_fd);
+	// fprintf(pinmux_fd, "%s", "uart");
+	// fflush(pinmux_fd);
+	// fclose(pinmux_fd);
+
+	// swap pinmux from GPIO back to uart
+	if(system("echo uart > " PINMUX_PATH)){
+		printf("error: can't set pinmux to uart on P9_11\n");
+		return -1;
+	}
 	
 	// all done
-	printf("Your receiver should now be blinking. If not try again.\n");
+	printf("\n\n\nYour receiver should now be blinking. If not try again.\n");
 	printf("Now turn on your transmitter in bind mode.\n");
 	printf("Use test_dsm2 to confirm functionality.\n\n");
 	
