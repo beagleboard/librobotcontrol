@@ -12,17 +12,17 @@ int main(){
 	// always initialize cape library first
 	initialize_cape();
 	printf("\nHello BeagleBone\n");
-	
-	// Keep Running until program state changes to EXITING
-	while(get_state() != EXITING){
+	set_state(RUNNING);
+	// Keep Running until state changes to EXITING
+	while(get_state()!=EXITING){
 		// handle other states
-		if(get_state() == RUNNING){
+		if(get_state()==RUNNING){
 			// do things
 		}
-		else if(get_state() == PAUSED){
+		else if(get_state()==PAUSED){
 			// do other things
 		}
-		// always sleep at some point in your loops to avoid locking the CPU
+		// always sleep at some point
 		usleep(100000);
 	}
 	
