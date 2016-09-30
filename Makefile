@@ -1,19 +1,22 @@
 prefix := /usr
 
 all:
-	make -C libraries
-	CPATH=$(PWD)/libraries LIBRARY_PATH=$(PWD)/libraries make -C examples
-	CPATH=$(PWD)/libraries LIBRARY_PATH=$(PWD)/libraries make -C battery_monitor_service/src
-	make -C install_files
+	@make -C install_files --no-print-directory
+	@make -C libraries --no-print-directory
+	@CPATH=$(PWD)/libraries LIBRARY_PATH=$(PWD)/libraries make -C examples --no-print-directory
+	@CPATH=$(PWD)/libraries LIBRARY_PATH=$(PWD)/libraries make -C battery_monitor_service --no-print-directory
 
-install: all
-	make -C install_files -s install
-	install -d -m 755 $(DESTDIR)$(prefix)/lib
-	install -m 644 libraries/librobotics_cape.so $(DESTDIR)$(prefix)/lib
-	install -d -m 755 $(DESTDIR)$(prefix)/include
-	install -m 644 libraries/*.h $(DESTDIR)$(prefix)/include
-	make -C examples -s install
-	make -C battery_monitor_service/src -s install
-	install -d -m 755 $(DESTDIR)/etc/systemd/system
-	install -m 644 battery_monitor_service/battery_monitor.service $(DESTDIR)/etc/systemd/system
+install:
+	@make -C install_files -s install
+	@make -C libraries -s install
+	@make -C examples -s install
+	@make -C battery_monitor_service -s install
+	@make -C robot_service -s install
+
+clean:
+	@make -C examples -s clean
+	@make -C libraries -s clean
+	@make -C battery_monitor_service -s clean
+	@make -C install_files -s clean
+	@echo "All Directories Cleaned"
 

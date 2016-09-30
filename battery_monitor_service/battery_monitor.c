@@ -8,11 +8,11 @@
 #include <useful_includes.h>
 #include <robotics_cape.h>
 #include <robotics_cape_defs.h>
-#include <simple_gpio/simple_gpio.h>
-#include <mmap/mmap_gpio_adc.h>
+#include "../libraries/simple_gpio/simple_gpio.h"
+#include "../libraries/mmap/mmap_gpio_adc.h"
 #include <sys/file.h>
 
-#define PIDFILE	"/var/run/battery_monitor.pid"
+#define BATTPIDFILE	"/var/run/battery_monitor.pid"
 
 // Critical Max voltages of packs used to detect number of cells in pack
 #define CELL_MAX			4.25 // set higher than actual to detect num cells
@@ -56,23 +56,21 @@ int main(int argc, char *argv[]){
 		}
     }
 
-	// we only want one instance running, so check the pidfile
-	int pidfile = open(PIDFILE, O_CREAT | O_RDWR, 0666);
-	if(flock(pidfile, LOCK_EX | LOCK_NB)) {
-		printf("\nBattery_monitor service is already running in background.\n");
-		printf("This program is started in the background at boot.\n\n");
-		printf("Stop with 'systemctl stop battery_monitor.service'\n\n");
+	// we only want one instance running, so check is a pid file already exists
+	if(access(PID_FILE, F_OK ) == 0){
+		// PID file exists
+		printf("instance of battery_monitor already running\n");
 		return -1;
 	}
 
 	// make new pid file
-	fd = fopen(PID_FILE, "ab+");
+	fd = fopen(BATTPIDFILE, "ab");
 	if (fd < 0) {
-		printf("\n error opening PID_FILE for writing\n");
+		printf("\n error opening PID file for writing\n");
 		return -1;
 	}
 	pid_t current_pid = getpid();
-	fprintf(fd,"%d\n",(int)current_pid);
+	fprintf(fd,"%d",(int)current_pid);
 	fflush(fd);
 	fclose(fd);
 
@@ -201,7 +199,7 @@ int kill_existing_instance(){
 	int old_pid, i;
 	
 	// attempt to open PID file
-	fd = fopen(PID_FILE, "r");
+	fd = fopen(BATTPIDFILE, "r");
 	// if the file didn't open, no proejct is runnning in the background
 	// so return 0
 	if (fd == NULL) {
@@ -215,7 +213,7 @@ int kill_existing_instance(){
 	// if the file didn't contain a PID number, remove it and 
 	// return -1 indicating weird behavior
 	if(old_pid == 0){
-		remove(PID_FILE);
+		remove(BATTPIDFILE);
 		return 1;
 	}
 		
@@ -224,10 +222,10 @@ int kill_existing_instance(){
 	
 	// check every 0.1 seconds to see if it closed 
 	for(i=0; i<20; i++){
-		if(access(PID_FILE, F_OK ) != -1) usleep(100000);
-		else{
-			printf("success\n");
-			return 0; // succcess, it shut down properly
+		if(getpgid(old_pid) >= 0) usleep(100000);
+		else{ // succcess, it shut down properly
+			remove(BATTPIDFILE);
+			return 1; 
 		}
 	}
 	
@@ -235,8 +233,7 @@ int kill_existing_instance(){
 	kill((pid_t)old_pid, SIGKILL);
 
 	// close and delete the old file
-	fclose(fd);
-	remove(PID_FILE);
+	remove(BATTPIDFILE);
 	
 	// return -1 indicating the program had to be killed
 	return -1;

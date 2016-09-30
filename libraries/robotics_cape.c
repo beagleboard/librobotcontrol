@@ -29,7 +29,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 *******************************************************************************/
 
-// #define DEBUG
+//#define DEBUG
 
 #include "useful_includes.h"
 #include "robotics_cape.h"
@@ -94,33 +94,7 @@ int initialize_cape(){
 	#ifdef DEBUG
 		printf("checking for existing PID_FILE\n");
 	#endif
-	fd = fopen(PID_FILE, "r");
-	if (fd != NULL) {
-		int old_pid;
-		fscanf(fd,"%d", &old_pid);
-		if(old_pid != 0){
-			printf("warning, shutting down existing robotics project\n");
-			kill((pid_t)old_pid, SIGINT);
-			sleep(1);
-		}
-		// close and delete the old file
-		fclose(fd);
-		remove(PID_FILE);
-	}
-	
-	// create new pid file with process id
-	#ifdef DEBUG
-		printf("opening PID_FILE\n");
-	#endif
-	fd = fopen(PID_FILE, "ab+");
-	if (fd < 0) {
-		printf("\n error opening PID_FILE for writing\n");
-		return -1;
-	}
-	pid_t current_pid = getpid();
-	fprintf(fd,"%d",(int)current_pid);
-	fflush(fd);
-	fclose(fd);
+	kill_robot();
 	
 	// Start Signal Handler
 	#ifdef DEBUG
@@ -129,57 +103,18 @@ int initialize_cape(){
 	signal(SIGINT, shutdown_signal_handler);	
 	signal(SIGTERM, shutdown_signal_handler);	
 
-	// check the device tree overlay is actually loaded
-	if (is_cape_loaded() != 1){
-		printf("ERROR: Device tree overlay not loaded by cape manager\n");
-		return -1;
-	}
-	
 	// initialize mmap io libs
 	#ifdef DEBUG
-	printf("Initializing: ");
-	printf("GPIO");
-	fflush(stdout);
+	printf("Initializing: GPIO\n");
 	#endif
 
-	//export all GPIO output pins
-	gpio_export(RED_LED);
-	gpio_set_dir(RED_LED, OUTPUT_PIN);
-	gpio_export(GRN_LED);
-	gpio_set_dir(GRN_LED, OUTPUT_PIN);
-	gpio_export(MDIR1A);
-	gpio_set_dir(MDIR1A, OUTPUT_PIN);
-	gpio_export(MDIR1B);
-	gpio_set_dir(MDIR1B, OUTPUT_PIN);
-	gpio_export(MDIR2A);
-	gpio_set_dir(MDIR2A, OUTPUT_PIN);
-	gpio_export(MDIR2B);
-	gpio_set_dir(MDIR2B, OUTPUT_PIN);
-	gpio_export(MDIR3A);
-	gpio_set_dir(MDIR3A, OUTPUT_PIN);
-	gpio_export(MDIR3B);
-	gpio_set_dir(MDIR3B, OUTPUT_PIN);
-	gpio_export(MDIR4A);
-	gpio_set_dir(MDIR4A, OUTPUT_PIN);
-	gpio_export(MDIR4B);
-	gpio_set_dir(MDIR4B, OUTPUT_PIN);
-	gpio_export(MOT_STBY);
-	gpio_set_dir(MOT_STBY, OUTPUT_PIN);
-	gpio_export(PAIRING_PIN);
-	gpio_set_dir(PAIRING_PIN, OUTPUT_PIN);
-	gpio_export(INTERRUPT_PIN);
-	gpio_set_dir(INTERRUPT_PIN, INPUT_PIN);
-	gpio_export(SERVO_PWR);
-	gpio_set_dir(SERVO_PWR, OUTPUT_PIN);
-	
 	if(initialize_mmap_gpio()){
 		printf("mmap_gpio_adc.c failed to initialize gpio\n");
 		return -1;
 	}
 	
 	#ifdef DEBUG
-	printf(" ADC");
-	fflush(stdout);
+	printf("Initializing: ADC\n");
 	#endif
 	if(initialize_mmap_adc()){
 		printf("mmap_gpio_adc.c failed to initialize adc\n");
@@ -187,8 +122,7 @@ int initialize_cape(){
 	}
 
 	#ifdef DEBUG
-	printf(" eQEP");
-	fflush(stdout);
+	printf("Initializing: eQEP\n");
 	#endif
 	if(init_eqep(0)){
 		printf("mmap_pwmss.c failed to initialize eQEP\n");
@@ -205,8 +139,7 @@ int initialize_cape(){
 	
 	// setup pwm driver
 	#ifdef DEBUG
-	printf(" PWM");
-	fflush(stdout);
+	printf("Initializing: PWM\n");
 	#endif
 	if(simple_init_pwm(1,PWM_FREQ)){
 		printf("simple_pwm.c failed to initialize PWMSS 1\n");
@@ -224,23 +157,34 @@ int initialize_cape(){
 	
 	//set up function pointers for button press events
 	#ifdef DEBUG
-	printf(" Buttons");
-	fflush(stdout);
+	printf("Initializing: Buttons\n");
 	#endif
-	initialize_button_handlers();
+	if(initialize_button_handlers()<0) return -1;
 	
 	// start PRU
 	#ifdef DEBUG
-	printf(" PRU\n");
-	fflush(stdout);
+	printf("Initializing: PRU\n");
 	#endif
-	initialize_pru();
-	
-	// Print current battery voltage
+	if(initialize_pru()<0) return -1;
+
+	// create new pid file with process id
 	#ifdef DEBUG
-	printf("Battery: %2.2fV  ", get_battery_voltage());
-	printf("Process ID: %d\n", (int)current_pid);
+		printf("opening PID_FILE\n");
 	#endif
+	fd = fopen(PID_FILE, "ab+");
+	if (fd < 0) {
+		printf("\n error opening PID_FILE for writing\n");
+		return -1;
+	}
+	pid_t current_pid = getpid();
+	fprintf(fd,"%d",(int)current_pid);
+	fflush(fd);
+	fclose(fd);
+
+	// Print current PID
+	#ifdef DEBUG
+	printf("Process ID: %d\n", (int)current_pid); 
+ 	#endif
 
 	// all done
 	set_state(PAUSED);
@@ -450,28 +394,6 @@ int blink_led(led_t led, float hz, float period){
 *******************************************************************************/
 int initialize_button_handlers(){
 	
-	#ifdef DEBUG
-	printf("\nsetting up mode & pause gpio pins\n");
-	#endif
-	//set up mode pi
-	if(gpio_export(MODE_BTN)){
-		printf("can't export gpio %d \n", MODE_BTN);
-		return (-1);
-	}
-	gpio_set_dir(MODE_BTN, INPUT_PIN);
-	gpio_set_edge(MODE_BTN, "both");  // Can be rising, falling or both
-	
-	//set up pause pin
-	if(gpio_export(PAUSE_BTN)){
-		printf("can't export gpio %d \n", PAUSE_BTN);
-		return (-1);
-	}
-	gpio_set_dir(PAUSE_BTN, INPUT_PIN);
-	gpio_set_edge(PAUSE_BTN, "both");  // Can be rising, falling or both
-	
-	#ifdef DEBUG
-	printf("starting button handling threads\n");
-	#endif
 	struct sched_param params;
 	pthread_attr_t attr;
 	params.sched_priority = sched_get_priority_max(SCHED_FIFO)/2;
@@ -682,10 +604,6 @@ int disable_motors(){
 *******************************************************************************/
 int set_motor(int motor, float duty){
 	uint8_t a,b;
-	
-	if(state == UNINITIALIZED){
-		initialize_cape();
-	}
 
 	//check that the duty cycle is within +-1
 	if (duty>1.0){
@@ -946,16 +864,31 @@ float get_adc_volt(int ch){
 * the servo and encoder functions in this C file.
 *******************************************************************************/
 int initialize_pru(){
-	
 	unsigned int	*pru;		// Points to start of PRU memory.
 	int	fd;
 	
-	fd = open ("/dev/mem", O_RDWR | O_SYNC);
+	// check rpoc driver is up
+	if(access("/sys/bus/platform/drivers/pru-rproc/bind", F_OK ) != 0){
+		printf("ERROR: pru-rproc driver missing!\n");
+		return -1;
+	}
+
+	// reset each core
+	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind  > /dev/null");
+	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/bind > /dev/null");
+	system("echo 4a338000.pru1  > /sys/bus/platform/drivers/pru-rproc/unbind > /dev/null");
+	system("echo 4a338000.pru1 > /sys/bus/platform/drivers/pru-rproc/bind > /dev/null");
+	
+	// start mmaping shared memory
+	fd = open("/dev/mem", O_RDWR | O_SYNC);
 	if (fd == -1) {
 		printf ("ERROR: could not open /dev/mem.\n\n");
 		return 1;
 	}
-	pru = mmap (0, PRU_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PRU_ADDR);
+	#ifdef DEBUG
+	printf("mmap'ing PRU shared memory\n");
+	#endif
+	pru = mmap(0, PRU_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PRU_ADDR);
 	if (pru == MAP_FAILED) {
 		printf ("ERROR: could not map memory.\n\n");
 		return 1;
@@ -966,14 +899,10 @@ int initialize_pru(){
 	prusharedMem_32int_ptr = pru + PRU_SHAREDMEM/4;	// Points to start of shared memory
 
 	// zero out the 8 servo channels and encoder channel
+	#ifdef DEBUG
+	printf("zeroing out PRU shared memory\n");
+	#endif
 	memset(prusharedMem_32int_ptr, 0, 9*4);
-
-	// reset each core
-	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind  > /dev/null");
-	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/bind > /dev/null");
-	system("echo 4a338000.pru1  > /sys/bus/platform/drivers/pru-rproc/unbind > /dev/null");
-	system("echo 4a338000.pru1 > /sys/bus/platform/drivers/pru-rproc/bind > /dev/null");
-
 	
     return 0;
 }
@@ -1193,16 +1122,20 @@ int is_cape_loaded(){
 int kill_robot(){
 	FILE* fd;
 	int old_pid, i;
-	
-	// attempt to open PID file
-	fd = fopen(PID_FILE, "r");
-	// if the file didn't open, no proejct is runnning in the background
-	// so return 0
-	if (fd == NULL) {
+
+	// start by checking if a pid file exists
+	if(access(PID_FILE, F_OK ) != 0){
+		// PID file missing
 		return 0;
 	}
+
+	// attempt to open PID file
+	// if the file didn't open, no project is runnning in the background
+	// so return 0
+	fd = fopen(PID_FILE, "r");
+	if (fd == NULL) return 0;
 	
-	// otherwise try to read the current process ID
+	// try to read the current process ID
 	fscanf(fd,"%d", &old_pid);
 	fclose(fd);
 	
@@ -1212,23 +1145,36 @@ int kill_robot(){
 		remove(PID_FILE);
 		return -2;
 	}
-		
-	// attempt a clean shutdown
+
+	// check if it's our own pid, if so return 0
+	if(old_pid == (int)getpid()) return 0;
+	
+	// now see if the process for the read pid is still running
+	if(getpgid(old_pid) < 0){
+		// process not running, remove the pid file
+		remove(PID_FILE);
+		return 0;
+	}
+
+	// process must be running, attempt a clean shutdown
 	kill((pid_t)old_pid, SIGINT);
 	
 	// check every 0.1 seconds to see if it closed 
 	for(i=0; i<30; i++){
-		if(access(PID_FILE, F_OK ) != -1) usleep(100000);
-		else return 1; // succcess, it shut down properly
+		if(getpgid(old_pid) >= 0) usleep(100000);
+		else{ // succcess, it shut down properly
+			remove(PID_FILE);
+			return 1; 
+		}
 	}
 	
 	// otherwise force kill the program if the PID file never got cleaned up
 	kill((pid_t)old_pid, SIGKILL);
+	usleep(500000);
 
-	// close and delete the old file
-	fclose(fd);
+	// delete the old PID file if it was left over
 	remove(PID_FILE);
-	
+
 	// return -1 indicating the program had to be killed
 	return -1;
 }

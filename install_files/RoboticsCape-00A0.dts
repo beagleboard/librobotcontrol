@@ -89,16 +89,19 @@ Bit 0 /
 		"P9.41",	/*MOT_STBY*/
 		"P9.42",	/*QEP_0A*/
 		
-		"ehrpwm1A",
-		"ehrpwm1B",
-		"ehrpwm2A",
-		"ehrpwm2B",
+	 	"epwmss0",  /* hdmi    */
+        "ehrpwm0",  /* hdmi    */
+        "epwmss1",  /* hdmi    */
+        "ehrpwm1",  /* hdmi    */
+        "epwmss2",  /* hdmi    */
+        "ehrpwm2",  /* hdmi    */
+        "eqep0",
+        "eqep1",
+        "eqep2",
+
 		"pruss",
 		"pru0",
 		"pru1",
-		"eqep0",
-		"eqep1",
-		"eqep2",
 		"i2c1",
 		"i2c2",
 		"uart1",	/*breakout*/
@@ -239,90 +242,58 @@ fragment@1 {
 /****************************************
  		PWMSS			
 ****************************************/	
-fragment@2 {
-	target = <&epwmss0>;
-	__overlay__ {
-		status = "okay";
-	};
-};
-
-fragment@3 {
-	target = <&epwmss1>;
-	__overlay__ {
-		status = "okay";
-	};
-};
-
-fragment@4 {
-	target = <&epwmss2>;
-	__overlay__ {
-		status = "okay";
-	};
-};
-
-
-fragment@5 {
-	target = <&ehrpwm0>;
-	__overlay__ {
-		status = "okay";
-	};
-};
-
-fragment@6 {
-	target = <&ehrpwm1>;
-	__overlay__ {
-		status = "okay";
-	};
-};
-
-fragment@7 {
-	target = <&ehrpwm2>;
-	__overlay__ {
-		status = "okay";
-	};
-};
-
-
-
-fragment@8 {
-	target = <&eqep0>;
-	__overlay__ {
-		count_mode = <0>;  /* 0 - Quadrature mode, normal 90 phase offset cha & chb.  1 - Direction mode.  cha input = clock, chb input = direction */
-		swap_inputs = <0>; /* Are channel A and channel B swapped? (0 - no, 1 - yes) */
-		invert_qa = <1>;   /* Should we invert the channel A input?  */
-		invert_qb = <1>;   /* Should we invert the channel B input? I invert these because my encoder outputs drive transistors that pull down the pins */
-		invert_qi = <0>;   /* Should we invert the index input? */
-		invert_qs = <0>;   /* Should we invert the strobe input? */
-		
-		status = "okay";
-	};
-};
-
-fragment@9 {
-	target = <&eqep1>;
-	__overlay__ {
-		count_mode = <0>;  /* 0 - Quadrature mode, normal 90 phase offset cha & chb.  1 - Direction mode.  cha input = clock, chb input = direction */
-		swap_inputs = <0>; /* Are channel A and channel B swapped? (0 - no, 1 - yes) */
-		invert_qa = <1>;   /* Should we invert the channel A input?  */
-		invert_qb = <1>;   /* Should we invert the channel B input? I invert these because my encoder outputs drive transistors that pull down the pins */
-		invert_qi = <0>;   /* Should we invert the index input? */
-		invert_qs = <0>;   /* Should we invert the strobe input? */
-		status = "okay";
-	};
-};
-
 fragment@10 {
-	target = <&eqep2>;
-	__overlay__ {
-		count_mode = <0>;  /* 0 - Quadrature mode, normal 90 phase offset cha & chb.  1 - Direction mode.  cha input = clock, chb input = direction */
-		swap_inputs = <0>; /* Are channel A and channel B swapped? (0 - no, 1 - yes) */
-		invert_qa = <1>;   /* Should we invert the channel A input?  */
-		invert_qb = <1>;   /* Should we invert the channel B input? I invert these because my encoder outputs drive transistors that pull down the pins */
-		invert_qi = <0>;   /* Should we invert the index input? */
-		invert_qs = <0>;   /* Should we invert the strobe input? */
-		status = "okay";
-	};
-};
+        target = <&epwmss0>;
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@11 {
+        target = <&ehrpwm0>;
+        __overlay__ {
+            status = "okay";
+            pinctrl-names = "default";
+            pinctrl-0 = <>; 
+        };
+    };
+
+
+    fragment@13 {
+        target = <&epwmss1>;
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@14 {
+        target = <&ehrpwm1>;
+        __overlay__ {
+            status = "okay";
+            pinctrl-names = "default";
+            pinctrl-0 = <>; 
+        };
+    };
+
+    fragment@15 {
+        target = <&epwmss2>;
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@16 {
+        target = <&ehrpwm2>;
+        __overlay__ {
+            status = "okay";
+            pinctrl-names = "default";
+            pinctrl-0 = <>; 
+        };
+    };
+
+
+
+
 
 /****************************************
  	UART
@@ -442,73 +413,59 @@ fragment@32 {
     };
 	
 
- fragment@34 {
-	target = <&ocp>;
+     /************************/
+    /* eQEP                 */
+    /************************/
+
+    fragment@50 {
+	target = <&eqep0>;
 	__overlay__ {
-		#address-cells = <1>;
-		#size-cells = <1>;
+            pinctrl-names = "default";
+            pinctrl-0 = <>;
 
-		pruss: pruss@4a300000 {
-			status = "okay";
-			compatible = "ti,am3352-pruss";
-			ti,hwmods = "pruss";
-			reg = <0x4a300000 0x2000>,
-			      <0x4a302000 0x2000>,
-			      <0x4a310000 0x3000>,
-			      <0x4a326000 0x2000>,
-			      <0x4a32e000 0x31c>,
-			      <0x4a332000 0x58>;
-			reg-names = "dram0", "dram1", "shrdram2", "cfg",
-				    "iep", "mii_rt";
-			#address-cells = <1>;
-			#size-cells = <1>;
-			ranges;
+            count_mode = <0>;  /* 0 - Quadrature mode, normal 90 phase offset cha & chb.  1 - Direction mode.  cha input = clock, chb input = direction */
+            swap_inputs = <0>; /* Are channel A and channel B swapped? (0 - no, 1 - yes) */
+            invert_qa = <1>;   /* Should we invert the channel A input?  */
+            invert_qb = <1>;   /* Should we invert the channel B input? I invert these because my encoder outputs drive transistors that pull down the pins */
+            invert_qi = <0>;   /* Should we invert the index input? */
+            invert_qs = <0>;   /* Should we invert the strobe input? */
 
-			pruss_intc: intc@4a320000 {
-				compatible = "ti,am3352-pruss-intc";
-				reg = <0x4a320000 0x2000>;
-				reg-names = "intc";
-				interrupts = <20 21 22 23 24 25 26 27>;
-				interrupt-names = "host2", "host3", "host4",
-						  "host5", "host6", "host7",
-						  "host8", "host9";
-				interrupt-controller;
-				#interrupt-cells = <1>;
-			};
-
-			pru0: pru0@4a334000 {
-				compatible = "ti,am3352-pru";
-				reg = <0x4a334000 0x2000>,
-				      <0x4a322000 0x400>,
-				      <0x4a322400 0x100>;
-				reg-names = "iram", "control", "debug";
-				interrupt-parent = <&pruss_intc>;
-				interrupts = <16>, <17>;
-				interrupt-names = "vring", "kick";
-			};
-
-			pru1: pru1@4a338000 {
-				compatible = "ti,am3352-pru";
-				reg = <0x4a338000 0x2000>,
-				      <0x4a324000 0x400>,
-				      <0x4a324400 0x100>;
-				reg-names = "iram", "control", "debug";
-				interrupt-parent = <&pruss_intc>;
-				interrupts = <18>, <19>;
-				interrupt-names = "vring", "kick";
-			};
-
-			pruss_mdio: mdio@4a332400 {
-				compatible = "ti,davinci_mdio";
-				reg = <0x4a332400 0x90>;
-				clocks = <&dpll_core_m4_ck>;
-				clock-names = "fck";
-				bus_freq = <1000000>;
-				#address-cells = <1>;
-				#size-cells = <0>;
-				status = "disabled";
-			};
-		};
+	    status = "okay";
 	};
- };
+    };
+
+    fragment@51 {
+	target = <&eqep1>;
+	__overlay__ {
+            pinctrl-names = "default";
+            pinctrl-0 = <>;
+
+            count_mode = <0>;  /* 0 - Quadrature mode, normal 90 phase offset cha & chb.  1 - Direction mode.  cha input = clock, chb input = direction */
+            swap_inputs = <0>; /* Are channel A and channel B swapped? (0 - no, 1 - yes) */
+            invert_qa = <1>;   /* Should we invert the channel A input?  */
+            invert_qb = <1>;   /* Should we invert the channel B input? I invert these because my encoder outputs drive transistors that pull down the pins */
+            invert_qi = <0>;   /* Should we invert the index input? */
+            invert_qs = <0>;   /* Should we invert the strobe input? */
+
+	    status = "okay";
+	};
+    };
+
+    fragment@52 {
+	target = <&eqep2>;
+	__overlay__ {
+            pinctrl-names = "default";
+            pinctrl-0 = <>;
+
+            count_mode = <0>;  /* 0 - Quadrature mode, normal 90 phase offset cha & chb.  1 - Direction mode.  cha input = clock, chb input = direction */
+            swap_inputs = <0>; /* Are channel A and channel B swapped? (0 - no, 1 - yes) */
+            invert_qa = <1>;   /* Should we invert the channel A input?  */
+            invert_qb = <1>;   /* Should we invert the channel B input? I invert these because my encoder outputs drive transistors that pull down the pins */
+            invert_qi = <0>;   /* Should we invert the index input? */
+            invert_qs = <0>;   /* Should we invert the strobe input? */
+
+	    status = "okay";
+	};
+    };
+
 };

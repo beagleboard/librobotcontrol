@@ -696,6 +696,16 @@ int set_sea_level_pressure_pa(float pa);
 
 
 /*******************************************************************************
+* GPS
+*
+*
+*
+*******************************************************************************/
+int initialize_gps(int baud);
+int stop_gps_service();
+
+
+/*******************************************************************************
 * I2C functions
 *
 * I2C bus 1 is broken out on the robotics cape on socket "I2C1" and is free for 
