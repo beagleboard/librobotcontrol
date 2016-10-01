@@ -1602,43 +1602,37 @@ int read_dmp_fifo(){
 	// if there was magnetometer data try to read it
 	is_new_mag_data = 0;
 	if(packet_len==FIFO_LEN_MAG){
-		// check if the readings saturated such as because
-		// of a local field source, discard data if so
-		if(raw[i+6]&MAGNETOMETER_SATURATION){
-			printf("WARNING: magnetometer saturated\n");
-		}
-		else{
-			// Turn the MSB and LSB into a signed 16-bit value
-			// Data stored as little Endian
-			mag_adc[0] = (int16_t)(((int16_t)raw[i+1]<<8) | raw[i+0]);  
-			mag_adc[1] = (int16_t)(((int16_t)raw[i+3]<<8) | raw[i+2]);  
-			mag_adc[2] = (int16_t)(((int16_t)raw[i+5]<<8) | raw[i+4]); 
-			
-			// if the data is non-zero, save it
-			// multiply by the sensitivity adjustment and convert to units of 
-			// uT micro Teslas. Also correct the coordinate system as someone 
-			// in invensense thought it would be bright idea to have the 
-			// magnetometer coordiate system aligned differently than the 
-			// accelerometer and gyro.... -__-
-			if(mag_adc[0]!=0 || mag_adc[1]!=0 || mag_adc[2]!=0){
-		// multiply by the sensitivity adjustment and convert to units of uT
-		// Also correct the coordinate system as someone in invensense 
-		// thought it would be a bright idea to have the magnetometer coordiate
-		// system aligned differently than the accelerometer and gyro.... -__-
-		factory_cal_data[0] = mag_adc[1]*mag_factory_adjust[1] * MAG_RAW_TO_uT;
-		factory_cal_data[1] = mag_adc[0]*mag_factory_adjust[0] * MAG_RAW_TO_uT;
-		factory_cal_data[2] = -mag_adc[2]*mag_factory_adjust[2] * MAG_RAW_TO_uT;
-	
-		// now apply out own calibration, but first make sure we don't 
-		// accidentally multiply by zero in case of uninitialized scale factors
-		if(mag_scales[0]==0.0) mag_scales[0]=1.0;
-		if(mag_scales[1]==0.0) mag_scales[1]=1.0;
-		if(mag_scales[2]==0.0) mag_scales[2]=1.0;
-		data_ptr->mag[0] = (factory_cal_data[0]-mag_offsets[0])*mag_scales[0];
-		data_ptr->mag[1] = (factory_cal_data[1]-mag_offsets[1])*mag_scales[1];
-		data_ptr->mag[2] = (factory_cal_data[2]-mag_offsets[2])*mag_scales[2];
-		is_new_mag_data = 1;
-			}
+		
+		// Turn the MSB and LSB into a signed 16-bit value
+		// Data stored as little Endian
+		mag_adc[0] = (int16_t)(((int16_t)raw[i+1]<<8) | raw[i+0]);  
+		mag_adc[1] = (int16_t)(((int16_t)raw[i+3]<<8) | raw[i+2]);  
+		mag_adc[2] = (int16_t)(((int16_t)raw[i+5]<<8) | raw[i+4]); 
+		
+		// if the data is non-zero, save it
+		// multiply by the sensitivity adjustment and convert to units of 
+		// uT micro Teslas. Also correct the coordinate system as someone 
+		// in invensense thought it would be bright idea to have the 
+		// magnetometer coordiate system aligned differently than the 
+		// accelerometer and gyro.... -__-
+		if(mag_adc[0]!=0 || mag_adc[1]!=0 || mag_adc[2]!=0){
+			// multiply by the sensitivity adjustment and convert to units of uT
+			// Also correct the coordinate system as someone in invensense 
+			// thought it would be a bright idea to have the magnetometer coordiate
+			// system aligned differently than the accelerometer and gyro.... -__-
+			factory_cal_data[0] = mag_adc[1]*mag_factory_adjust[1] * MAG_RAW_TO_uT;
+			factory_cal_data[1] = mag_adc[0]*mag_factory_adjust[0] * MAG_RAW_TO_uT;
+			factory_cal_data[2] = -mag_adc[2]*mag_factory_adjust[2] * MAG_RAW_TO_uT;
+		
+			// now apply out own calibration, but first make sure we don't 
+			// accidentally multiply by zero in case of uninitialized scale factors
+			if(mag_scales[0]==0.0) mag_scales[0]=1.0;
+			if(mag_scales[1]==0.0) mag_scales[1]=1.0;
+			if(mag_scales[2]==0.0) mag_scales[2]=1.0;
+			data_ptr->mag[0] = (factory_cal_data[0]-mag_offsets[0])*mag_scales[0];
+			data_ptr->mag[1] = (factory_cal_data[1]-mag_offsets[1])*mag_scales[1];
+			data_ptr->mag[2] = (factory_cal_data[2]-mag_offsets[2])*mag_scales[2];
+			is_new_mag_data = 1;
 		}
 		i+=7; // increase our position by 7 bytes
 	}
