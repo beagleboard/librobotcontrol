@@ -52,6 +52,7 @@ int pause_btn_state, mode_btn_state;
 static unsigned int *prusharedMem_32int_ptr;
 
 
+
 /*******************************************************************************
 * local function declarations
 *******************************************************************************/
@@ -125,16 +126,16 @@ int initialize_cape(){
 	printf("Initializing: eQEP\n");
 	#endif
 	if(init_eqep(0)){
-		printf("mmap_pwmss.c failed to initialize eQEP\n");
-		return -1;
+		printf("ERROR: failed to initialize eQEP0\n");
+		// return -1;
 	}
 	if(init_eqep(1)){
-		printf("mmap_pwmss.c failed to initialize eQEP\n");
-		return -1;
+		printf("ERROR: failed to initialize eQEP1\n");
+		// return -1;
 	}
 	if(init_eqep(2)){
-		printf("mmap_pwmss.c failed to initialize eQEP\n");
-		return -1;
+		printf("ERROR: failed to initialize eQEP2\n");
+		// return -1;
 	}
 	
 	// setup pwm driver
@@ -142,12 +143,12 @@ int initialize_cape(){
 	printf("Initializing: PWM\n");
 	#endif
 	if(simple_init_pwm(1,PWM_FREQ)){
-		printf("simple_pwm.c failed to initialize PWMSS 1\n");
-		return -1;
+		printf("ERROR: failed to initialize hrpwm1\n");
+//		return -1;
 	}
 	if(simple_init_pwm(2,PWM_FREQ)){
-		printf("simple_pwm.c failed to initialize PWMSS 2\n");
-		return -1;
+		printf("ERROR: failed to initialize PWMSS 2\n");
+		// return -1;
 	}
 	
 	// start some gpio pins at defaults
@@ -159,13 +160,19 @@ int initialize_cape(){
 	#ifdef DEBUG
 	printf("Initializing: Buttons\n");
 	#endif
-	if(initialize_button_handlers()<0) return -1;
+	if(initialize_button_handlers()<0){
+		printf("ERROR: failed to start button threads\n");
+		return -1;
+	}
 	
 	// start PRU
 	#ifdef DEBUG
 	printf("Initializing: PRU\n");
 	#endif
-	if(initialize_pru()<0) return -1;
+	if(initialize_pru()<0){
+		printf("ERROR: failed to initialize PRU\n");
+//		return -1;
+	}
 
 	// create new pid file with process id
 	#ifdef DEBUG
@@ -775,7 +782,8 @@ int get_encoder_pos(int ch){
 	}
 	// 4th channel is counted by the PRU not eQEP
 	if(ch==4){
-		return (int) prusharedMem_32int_ptr[8];
+		if(prusharedMem_32int_ptr == NULL) return -1;
+		else return (int) prusharedMem_32int_ptr[8];
 	}
 	
 	// first 3 channels counted by eQEP
@@ -795,7 +803,8 @@ int set_encoder_pos(int ch, int val){
 	}
 	// 4th channel is counted by the PRU not eQEP
 	if(ch==4){
-		prusharedMem_32int_ptr[8] = val;
+		if(prusharedMem_32int_ptr == NULL) return -1;
+		else prusharedMem_32int_ptr[8] = val;
 		return 0;
 	}
 	// else write to eQEP
@@ -867,6 +876,9 @@ int initialize_pru(){
 	unsigned int	*pru;		// Points to start of PRU memory.
 	int	fd;
 	
+	// reset memory pointer to NULL so if init fails it doesn't point somewhere bad
+	prusharedMem_32int_ptr = NULL;
+
 	// check rpoc driver is up
 	if(access("/sys/bus/platform/drivers/pru-rproc/bind", F_OK ) != 0){
 		printf("ERROR: pru-rproc driver missing!\n");
