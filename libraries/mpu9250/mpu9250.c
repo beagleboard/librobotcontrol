@@ -102,7 +102,7 @@ imu_config_t get_default_imu_config(){
 	// DMP stuff
 	conf.dmp_sample_rate = 100;
 	conf.orientation = ORIENTATION_Z_UP;
-	conf.compass_time_constant = 5;
+	conf.compass_time_constant = 5.0;
 	conf.dmp_interrupt_priority = sched_get_priority_max(SCHED_FIFO) -1;
 	conf.show_warnings = 0;
 	return conf;
@@ -696,6 +696,12 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 	if(DMP_MAX_RATE%conf.dmp_sample_rate != 0){
 		printf("DMP sample rate must be a divisor of 200\n");
 		printf("acceptable values: 200,100,50,40,25,20,10,8,5,4 (HZ)\n");
+		return -1;
+	}
+
+	// make sure the compass filter time constant is valid
+	if(conf.enable_magnetometer && conf.compass_time_constant<=0.1){
+		printf("ERROR: compass time constant must be greater than 0.1\n");
 		return -1;
 	}
 	

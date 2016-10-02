@@ -561,7 +561,7 @@ typedef struct imu_config_t {
 	int dmp_sample_rate;
 	imu_orientation_t orientation; //orientation matrix
 	// higher mix_factor means less weight the compass has on fused_TaitBryan
-	int compass_time_constant; 	// time constant for filtering fused yaw
+	float compass_time_constant; 	// time constant for filtering fused yaw
 	int dmp_interrupt_priority; // scheduler priority for handler
 	int show_warnings;	// set to 1 to enable showing of i2c_bus warnings
 
