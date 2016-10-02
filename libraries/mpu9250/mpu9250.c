@@ -1811,7 +1811,7 @@ int data_fusion(){
 		#endif
 		return -1;
 	}
-	data_ptr->compass_heading = newMagYaw;
+	data_ptr->compass_heading_raw = newMagYaw;
 	// save DMP last from time and record newDMPYaw for this time
 	lastDMPYaw = newDMPYaw;
 	newDMPYaw = data_ptr->dmp_TaitBryan[TB_YAW_Z];
@@ -1853,7 +1853,7 @@ int data_fusion(){
 
 	// Euler angles expect a yaw between -pi to pi so slide it again and
 	// store in the user-accessible fused euler angle
-	
+	data_ptr->compass_heading = newYaw;
 	data_ptr->fused_TaitBryan[TB_YAW_Z] = newYaw;
 	data_ptr->fused_TaitBryan[TB_PITCH_X] = data_ptr->dmp_TaitBryan[TB_PITCH_X];
 	data_ptr->fused_TaitBryan[TB_ROLL_Y] = data_ptr->dmp_TaitBryan[TB_ROLL_Y];

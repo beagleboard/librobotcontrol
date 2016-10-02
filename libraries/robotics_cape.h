@@ -591,7 +591,8 @@ typedef struct imu_data_t {
 	// TaitBryan angles will be available which add magnetometer data to filter
 	float fused_quat[4]; 	// normalized quaternion
 	float fused_TaitBryan[3]; 	// radians pitch/roll/yaw X/Y/Z
-	float compass_heading;	// heading in radians based purely on magnetometer
+	float compass_heading;	// heading filtered with gyro and accel data
+	float compass_heading_raw;	// heading in radians based purely on magnetometer
 } imu_data_t;
  
 // General functions
