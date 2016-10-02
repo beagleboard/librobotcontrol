@@ -717,6 +717,20 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 		printf("initialize_imu_dmp failed at i2c_init\n");
 		return -1;
 	}
+
+	// configure the gpio interrupt pin
+	if(gpio_export(IMU_INTERRUPT_PIN)<0){
+		printf("ERROR: failed to export GPIO %d", IMU_INTERRUPT_PIN);
+		return -1;
+	}
+	if(gpio_set_dir(IMU_INTERRUPT_PIN, INPUT_PIN)<0){
+		printf("ERROR: failed to configure GPIO %d", IMU_INTERRUPT_PIN);
+		return -1;
+	}
+	if(gpio_set_edge(IMU_INTERRUPT_PIN, "falling")<0){
+		printf("ERROR: failed to configure GPIO %d", IMU_INTERRUPT_PIN);
+		return -1;
+	}
 	
 	// claiming the bus does no guarantee other code will not interfere 
 	// with this process, but best to claim it so other code can check
@@ -1068,6 +1082,7 @@ int mpu_set_bypass(uint8_t bypass_on){
 	
 	// INT_PIN_CFG settings
 	tmp = LATCH_INT_EN | INT_ANYRD_CLEAR | ACTL_ACTIVE_LOW;
+	
 	if(bypass_on)
 		tmp |= BYPASS_EN;
 	if (i2c_write_byte(IMU_BUS, INT_PIN_CFG, tmp))
@@ -1261,33 +1276,34 @@ int dmp_enable_lp_quat(unsigned char enable){
 int mpu_reset_fifo(void){
     uint8_t data;
 
+    // make sure the i2c address is set correctly. 
+	// this shouldn't take any time at all if already set
+	i2c_set_device_address(IMU_BUS, IMU_ADDR);
+
     data = 0;
-    if (i2c_write_byte(IMU_BUS, INT_ENABLE, data))
-        return -1;
-    if (i2c_write_byte(IMU_BUS, FIFO_EN, data))
-        return -1;
-    // if (i2c_write_byte(IMU_BUS, USER_CTRL, data))
-        // return -1;
+    if (i2c_write_byte(IMU_BUS, INT_ENABLE, data)) return -1;
+    if (i2c_write_byte(IMU_BUS, FIFO_EN, data)) return -1;
+    //if (i2c_write_byte(IMU_BUS, USER_CTRL, data)) return -1;
 
 	data = BIT_FIFO_RST | BIT_DMP_RST;
-	if (i2c_write_byte(IMU_BUS, USER_CTRL, data))
-		return -1;
-	usleep(2500);
+	if (i2c_write_byte(IMU_BUS, USER_CTRL, data)) return -1;
+	usleep(1000);
+
 	data = BIT_DMP_EN | BIT_FIFO_EN;
 	if (config.enable_magnetometer)
 		data |= I2C_MST_EN;
 	if (i2c_write_byte(IMU_BUS, USER_CTRL, data))
 		return -1;
 	
-	if(dmp_en){
-		i2c_write_byte(IMU_BUS, INT_ENABLE, BIT_DMP_INT_EN);
+	if(config.enable_magnetometer){
+		i2c_write_byte(IMU_BUS, FIFO_EN, FIFO_SLV0_EN);
 	}
-	//i2c_write_byte(IMU_BUS, INT_ENABLE, 0);
-	
-	data = 0;
-	if(config.enable_magnetometer) data |= FIFO_SLV0_EN;
-	if (i2c_write_byte(IMU_BUS, FIFO_EN, data))
-		return -1;
+	else i2c_write_byte(IMU_BUS, FIFO_EN, 0);
+
+	// if(dmp_en) i2c_write_byte(IMU_BUS, INT_ENABLE, BIT_DMP_INT_EN);
+	// else i2c_write_byte(IMU_BUS, INT_ENABLE, 0);
+	i2c_write_byte(IMU_BUS, INT_ENABLE, 0x02);
+	//i2c_write_byte(IMU_BUS, INT_ENABLE, RAW_RDY_EN);
   
     return 0;
 }
@@ -1326,26 +1342,13 @@ int dmp_set_interrupt_mode(unsigned char mode){
 int set_int_enable(unsigned char enable){
     unsigned char tmp;
 
-    if (dmp_en) {
-		#ifdef DEBUG
-		printf("setting dmp-driven interrupt to %d\n", enable);
-		#endif
-        if (enable) tmp = BIT_DMP_INT_EN;
-        else tmp = 0x00;
-		
-        if (i2c_write_byte(IMU_BUS, INT_ENABLE, tmp)) return -1;
-		// disable all other FIFO features leaving just DMP
-		if (i2c_write_byte(IMU_BUS, FIFO_EN, 0)) return -1;
-    } 
-	else {
-		#ifdef DEBUG
-		printf("setting data-ready interrupt to %d\n", enable);
-		#endif
-        if (enable) tmp = BIT_DATA_RDY_EN;
-        else tmp = 0x00;
-		
-        if (i2c_write_byte(IMU_BUS, INT_ENABLE, tmp)) return -1;
-    }
+    if (enable) tmp = BIT_DMP_INT_EN;
+    else tmp = 0x00;
+	
+    if (i2c_write_byte(IMU_BUS, INT_ENABLE, tmp)) return -1;
+	// disable all other FIFO features leaving just DMP
+	if (i2c_write_byte(IMU_BUS, FIFO_EN, 0)) return -1;
+
     return 0;
 }
 
@@ -1454,7 +1457,7 @@ void* imu_interrupt_handler(void* ptr){
 			if(first_run == 1){
 				first_run = 0;
 			}
-			else if(interrupt_running){
+			else if(interrupt_running && last_read_successful){
 				 imu_interrupt_func(); 
 			}
 		}
@@ -1521,6 +1524,10 @@ int read_dmp_fifo(){
 	// this shouldn't take any time at all if already set
 	i2c_set_device_address(IMU_BUS, IMU_ADDR);
 	
+	// turn off the new magnetometer data flag. this will be turned on later
+	// given a good magnetometer reading
+	is_new_mag_data = 0;
+
 	// check fifo count register to make sure new data is there
     if (i2c_read_word(IMU_BUS, FIFO_COUNTH, &fifo_count)<0){
 		if(config.show_warnings){
@@ -1532,10 +1539,36 @@ int read_dmp_fifo(){
 	printf("fifo_count: %d\n", fifo_count);
 	#endif
 	
+	/***************************************************************************
+	* now that we see how many values are in the buffer, we have a long list of
+	* checks to determine what should be done
+	***************************************************************************/
+	// empty FIFO, just return, nothing else to do
+	if(fifo_count==0){
+		return -1;
+	}
+
+	// one packet, perfect!
+	else if (fifo_count==FIFO_LEN_NO_MAG || packet_len==FIFO_LEN_MAG){
+		i = 0; // set offset to 0
+		goto READ_FIFO;
+	}
+
+	// if exactly 2 packets are there we just missed one (whoops)
+	// read both in and set the offset i to one packet length
+	// the last packet data will be read normally
+	else if (fifo_count == 2*packet_len){
+		if(config.show_warnings&& first_run!=1){
+			printf("warning: imu fifo contains two packets\n");
+		}
+		i = packet_len;
+		goto READ_FIFO;
+	}
+
 	// if more than 2 packets are there, something really bad happened
 	// reset the fifo
-	if (fifo_count>2*packet_len){
-		if(config.show_warnings){
+	else if(fifo_count>2*packet_len){
+		if(config.show_warnings&& first_run!=1){
 			printf("mpu9250 wrong fifo count: %d\n", fifo_count);
 			printf("resetting fifo\n");
 		}
@@ -1543,54 +1576,51 @@ int read_dmp_fifo(){
         return -1;
 	}
 	
-	// if one or two complete packets are not available, wait and try again
-	if(fifo_count!=packet_len && fifo_count<2*packet_len){
-		// printf("mpu9250 false interrupt, %d bytes available\n", fifo_count);
-		// printf("resetting FIFO\n");
-		// mpu_reset_fifo();
-		// return -1;
-				
-		usleep(2500);
-		if (i2c_read_word(IMU_BUS, FIFO_COUNTH, &fifo_count)<0){
-			if(config.show_warnings){
-				printf("fifo_count i2c error: %s\n",strerror(errno));
-			}
-			return -1;
-		}
-		
-		// still not enough bytes, must be bad read. 
-		if(fifo_count!=packet_len && fifo_count!=2*packet_len){
-			if(config.show_warnings && first_run!=1){
-				printf("%d bytes available, resetting FIFO: \n",fifo_count);
-				mpu_reset_fifo();
-			}
-			return -1;
-		}
-	}
-	
-	// if exactly 2 packets are there we just missed one (whoops)
-	// read both in and set the offset i to one packet length
-	// the last packet data will be read normally
-	if (fifo_count == 2*packet_len){
-		if(config.show_warnings){
-			printf("warning: mpu9250 fifo contains two packets\n");
-		}
-		i = packet_len;
-	}
-	// exactly one packet available, set offset to 0
-	else if (fifo_count==FIFO_LEN_NO_MAG || packet_len==FIFO_LEN_MAG){
+	// if there are exactly 7 bytes available, there must be magnetometer data
+	// but nothing else. read it in anyway
+	else if(fifo_count==7){
 		i = 0;
+		goto READ_FIFO;
 	}
-	// we should never get to this 'else' due to above logic but just in case
-	// we should exit now if a weird packet is received.
+
 	else{
-		if(config.show_warnings){
-			printf("mpu9250 false interrupt, %d bytes available\n",fifo_count);
+		if(config.show_warnings&& first_run!=1){
+			printf("WARNING: %d bytes in FIFO, expected %d\n", fifo_count,packet_len);
 		}
 		return -1;
 	}
+	// // if one or two complete packets are not available, wait and try again
+	// if(fifo_count!=packet_len && fifo_count<2*packet_len){
+	// 	// printf("mpu9250 false interrupt, %d bytes available\n", fifo_count);
+	// 	// printf("resetting FIFO\n");
+	// 	// mpu_reset_fifo();
+	// 	// return -1;
+				
+	// 	usleep(1000);
+	// 	if (i2c_read_word(IMU_BUS, FIFO_COUNTH, &fifo_count)<0){
+	// 		if(config.show_warnings){
+	// 			printf("fifo_count i2c error: %s\n",strerror(errno));
+	// 		}
+	// 		return -1;
+	// 	}
+		
+	// 	// still not enough bytes, must be bad read. 
+	// 	if(fifo_count!=packet_len && fifo_count!=2*packet_len){
+	// 		if(config.show_warnings && first_run!=1){
+	// 			printf("%d bytes available, resetting FIFO: \n",fifo_count);
+	// 			mpu_reset_fifo();
+	// 		}
+	// 		return -1;
+	// 	}
+	// }
 	
-
+	
+	
+	// we should never get to this 'else' due to above logic but just in case
+	// we should exit now if a weird packet is received.
+	
+	
+READ_FIFO:
 	// read it in!
     ret = i2c_read_bytes(IMU_BUS, FIFO_R_W, fifo_count, &raw[0]);
 	if(ret<0){
@@ -1606,8 +1636,7 @@ int read_dmp_fifo(){
 	}
 	
 	// if there was magnetometer data try to read it
-	is_new_mag_data = 0;
-	if(packet_len==FIFO_LEN_MAG){
+	if(packet_len==FIFO_LEN_MAG || packet_len==7){
 		
 		// Turn the MSB and LSB into a signed 16-bit value
 		// Data stored as little Endian
@@ -1641,6 +1670,14 @@ int read_dmp_fifo(){
 			is_new_mag_data = 1;
 		}
 		i+=7; // increase our position by 7 bytes
+	}
+
+	// only magnetometer data was available so nothing else to do
+	if(packet_len==7){
+		if(config.show_warnings){
+			printf("WARNING: only magnetometer data available\n");
+		}
+		return 0;
 	}
 	
 	// parse the quaternion data from the buffer
