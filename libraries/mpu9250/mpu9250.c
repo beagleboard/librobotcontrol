@@ -23,7 +23,7 @@
 #define FIFO_LEN_MAG	35
 
 // error threshold checks
-#define QUAT_ERROR_THRESH       (1L<<24)
+#define QUAT_ERROR_THRESH       (1L<<16) // very precise threshold
 #define QUAT_MAG_SQ_NORMALIZED  (1L<<28)
 #define QUAT_MAG_SQ_MIN         (QUAT_MAG_SQ_NORMALIZED - QUAT_ERROR_THRESH)
 #define QUAT_MAG_SQ_MAX         (QUAT_MAG_SQ_NORMALIZED + QUAT_ERROR_THRESH)
@@ -1571,18 +1571,27 @@ int read_dmp_fifo(){
 	// these numbers pop up under high stress and represent uneven 
 	// combinations of magnetometer and DMP data
 	if(fifo_count==42){
+		if(config.show_warnings&& first_run!=1){
+			printf("warning: packet count 42\n");
+		}
 		i = 7; // set offset to 7
 		mag_data_available=0;
 		dmp_data_available=1;
 		goto READ_FIFO;
 	}
 	if(fifo_count==63){
+		if(config.show_warnings&& first_run!=1){
+			printf("warning: packet count 63\n");
+		}
 		i = 28; // set offset to 7
 		mag_data_available=0;
 		dmp_data_available=1;
 		goto READ_FIFO;
 	}
 	if(fifo_count==77){
+		if(config.show_warnings&& first_run!=1){
+			printf("warning: packet count 77\n");
+		}
 		i = 42; // set offset to 7
 		mag_data_available=0;
 		dmp_data_available=1;
@@ -1800,6 +1809,9 @@ int check_quaternion_validity(unsigned char* raw, int i){
 	quat_q14[3] = quat[3] >> 16;
 	quat_mag_sq = quat_q14[0] * quat_q14[0] + quat_q14[1] * quat_q14[1] +
 		quat_q14[2] * quat_q14[2] + quat_q14[3] * quat_q14[3];
+	if ((quat_mag_sq < QUAT_MAG_SQ_MIN) ||(quat_mag_sq > QUAT_MAG_SQ_MAX)){
+		return 0;
+	}
 	if ((quat_mag_sq < QUAT_MAG_SQ_MIN) ||(quat_mag_sq > QUAT_MAG_SQ_MAX)){
 		return 0;
 	}
