@@ -104,7 +104,7 @@ imu_config_t get_default_imu_config(){
 	conf.dmp_sample_rate = 100;
 	conf.orientation = ORIENTATION_Z_UP;
 	conf.compass_time_constant = 5.0;
-	conf.dmp_interrupt_priority = sched_get_priority_max(SCHED_FIFO) -1;
+	conf.dmp_interrupt_priority = sched_get_priority_max(SCHED_FIFO)-1;
 	conf.show_warnings = 0;
 	return conf;
 }
@@ -1083,6 +1083,7 @@ int mpu_set_bypass(uint8_t bypass_on){
 	
 	// INT_PIN_CFG settings
 	tmp = LATCH_INT_EN | INT_ANYRD_CLEAR | ACTL_ACTIVE_LOW;
+	tmp =  ACTL_ACTIVE_LOW;
 	
 	if(bypass_on)
 		tmp |= BYPASS_EN;
@@ -1301,11 +1302,9 @@ int mpu_reset_fifo(void){
 	}
 	else i2c_write_byte(IMU_BUS, FIFO_EN, 0);
 
-	// if(dmp_en) i2c_write_byte(IMU_BUS, INT_ENABLE, BIT_DMP_INT_EN);
-	// else i2c_write_byte(IMU_BUS, INT_ENABLE, 0);
-	i2c_write_byte(IMU_BUS, INT_ENABLE, 0x02);
-	//i2c_write_byte(IMU_BUS, INT_ENABLE, RAW_RDY_EN);
-  
+	if(dmp_en) i2c_write_byte(IMU_BUS, INT_ENABLE, BIT_DMP_INT_EN);
+	else i2c_write_byte(IMU_BUS, INT_ENABLE, 0);
+
     return 0;
 }
 
@@ -1569,13 +1568,26 @@ int read_dmp_fifo(){
 		goto READ_FIFO;
 	}
 
-	// // 42 byte packet is DMP data sandwiched between magnetometer data
-	// if(fifo_count==42){
-	// 	i = 7; // set offset to 7
-	// 	mag_data_available=1;
-	// 	dmp_data_available=1;
-	// 	goto READ_FIFO;
-	// }
+	// these numbers pop up under high stress and represent uneven 
+	// combinations of magnetometer and DMP data
+	if(fifo_count==42){
+		i = 7; // set offset to 7
+		mag_data_available=0;
+		dmp_data_available=1;
+		goto READ_FIFO;
+	}
+	if(fifo_count==63){
+		i = 28; // set offset to 7
+		mag_data_available=0;
+		dmp_data_available=1;
+		goto READ_FIFO;
+	}
+	if(fifo_count==77){
+		i = 42; // set offset to 7
+		mag_data_available=0;
+		dmp_data_available=1;
+		goto READ_FIFO;
+	}
 
 	// if exactly 2 packets are there we just missed one (whoops)
 	// read both in and set the offset i to one packet length
@@ -1584,22 +1596,18 @@ int read_dmp_fifo(){
 		if(config.show_warnings&& first_run!=1){
 			printf("warning: imu fifo contains two packets\n");
 		}
-		//i = fifo_count; // set offset to beginning of second packet
-		i = 0;
+		i = FIFO_LEN_NO_MAG; // set offset to beginning of second packet
 		mag_data_available=0;
 		dmp_data_available=1;
-		//fifo_count=FIFO_LEN_NO_MAG;
 		goto READ_FIFO;
 	}
 	if(fifo_count==2*FIFO_LEN_MAG){
 		if(config.show_warnings&& first_run!=1){
 			printf("warning: imu fifo contains two packets\n");
 		}
-		//i = fifo_count; // set offset to beginning of second packet
-		i = 0;
+		i = FIFO_LEN_MAG; // set offset to beginning of second packet
 		mag_data_available=1;
 		dmp_data_available=1;
-		//fifo_count = FIFO_LEN_MAG;
 		goto READ_FIFO;
 	}
 
@@ -1650,12 +1658,13 @@ READ_FIFO:
 			j=i+7; // 7 mag bytes before dmp data
 		}
 		else if(check_quaternion_validity(raw,i)){
+			// printf("after\n");
 			j=i; // 7 mag bytes after dmp data
 			i=i+FIFO_LEN_NO_MAG; // update mag data offset
 		}
 		else{
 			if(config.show_warnings){
-				printf("WARNING: Quaternion out of bounds\n");
+				printf("warning: Quaternion out of bounds\n");
 				printf("fifo_count: %d\n", fifo_count);
 			}
 			mpu_reset_fifo();
@@ -1667,7 +1676,7 @@ READ_FIFO:
 			((long)raw[j+2] << 8) | raw[j+3];
 		quat[1] = ((long)raw[j+4] << 24) | ((long)raw[j+5] << 16) |
 			((long)raw[j+6] << 8) | raw[j+7];
-		quat[2] = ((long)raw[i+8] << 24) | ((long)raw[j+9] << 16) |
+		quat[2] = ((long)raw[j+8] << 24) | ((long)raw[j+9] << 16) |
 			((long)raw[j+10] << 8) | raw[j+11];
 		quat[3] = ((long)raw[j+12] << 24) | ((long)raw[j+13] << 16) |
 			((long)raw[j+14] << 8) | raw[j+15];
