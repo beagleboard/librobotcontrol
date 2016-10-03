@@ -151,6 +151,8 @@ imu_orientation_t orientation_prompt(){
 	printf(" 4: ORIENTATION_X_DOWN\n");
 	printf(" 5: ORIENTATION_Y_UP\n");
 	printf(" 6: ORIENTATION_Y_DOWN\n");
+	printf(" 7: ORIENTATION_X_FORWARD\n");
+	printf(" 8: ORIENTATION_X_BACK\n");
 
     while ((c = getchar()) != EOF){
         switch(c){
@@ -171,6 +173,12 @@ imu_orientation_t orientation_prompt(){
             break;
 		case '6':
             return ORIENTATION_Y_DOWN;
+            break;
+        case '7':
+            return ORIENTATION_X_FORWARD;
+            break;
+		case '8':
+            return ORIENTATION_X_BACK;
             break;
         case 'q':
             printf("Quitting\n");

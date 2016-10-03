@@ -1876,6 +1876,16 @@ int data_fusion(){
 		magQuat[QUAT_Y] = data_ptr->mag[TB_YAW_Z];
 		magQuat[QUAT_Z] = -data_ptr->mag[TB_ROLL_Y];
 		break;
+	case ORIENTATION_X_FORWARD:
+		magQuat[QUAT_X] = data_ptr->mag[TB_ROLL_Y];
+		magQuat[QUAT_Y] = -data_ptr->mag[TB_PITCH_X];
+		magQuat[QUAT_Z] = data_ptr->mag[TB_YAW_Z];
+		break;
+	case ORIENTATION_X_BACK:
+		magQuat[QUAT_X] = -data_ptr->mag[TB_ROLL_Y];
+		magQuat[QUAT_Y] = data_ptr->mag[TB_PITCH_X];
+		magQuat[QUAT_Z] = data_ptr->mag[TB_YAW_Z];
+		break;
 	default:
 		printf("ERROR: invalid orientation\n");
 		return -1;
@@ -2280,6 +2290,16 @@ void print_orientation_info(){
 	signed char ydown[] = {1,0,0, 0,0,1, 0,-1,0};
 	orient = inv_orientation_matrix_to_scalar(ydown);
 	printf("y-down: %d\n", orient);
+
+	// X-forward
+	signed char xforward[] = {0,-1,0, 1,0,0, 0,0,1};
+	orient = inv_orientation_matrix_to_scalar(xforward);
+	printf("x-forward: %d\n", orient);
+
+	// X-back
+	signed char xback[] = {0,1,0, -1,0,0, 0,0,1};
+	orient = inv_orientation_matrix_to_scalar(xback);
+	printf("yx-back: %d\n", orient);
 }
 
 /*******************************************************************************

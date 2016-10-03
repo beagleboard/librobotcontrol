@@ -537,12 +537,14 @@ typedef enum gyro_dlpf_t {
 } gyro_dlpf_t;
 
 typedef enum imu_orientation_t {
-	ORIENTATION_Z_UP 	= 136,
-	ORIENTATION_Z_DOWN 	= 396,
-	ORIENTATION_X_UP 	= 14,
-	ORIENTATION_X_DOWN 	= 266,
-	ORIENTATION_Y_UP 	= 112,
-	ORIENTATION_Y_DOWN 	= 336
+	ORIENTATION_Z_UP 	  = 136,
+	ORIENTATION_Z_DOWN    = 396,
+	ORIENTATION_X_UP 	  = 14,
+	ORIENTATION_X_DOWN 	  = 266,
+	ORIENTATION_Y_UP 	  = 112,
+	ORIENTATION_Y_DOWN 	  = 336,
+	ORIENTATION_X_FORWARD = 133,
+	ORIENTATION_X_BACK 	  = 161
 } imu_orientation_t;
 
 typedef struct imu_config_t {
