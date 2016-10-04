@@ -17,5 +17,6 @@ clean:
 	@make -C examples -s clean
 	@make -C battery_monitor_service -s clean
 	@make -C robot_service -s clean
+	@make -C project_template -s clean
 	@echo "All Directories Cleaned"
 
