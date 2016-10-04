@@ -537,12 +537,14 @@ typedef enum gyro_dlpf_t {
 } gyro_dlpf_t;
 
 typedef enum imu_orientation_t {
-	ORIENTATION_Z_UP 	= 136,
-	ORIENTATION_Z_DOWN 	= 396,
-	ORIENTATION_X_UP 	= 14,
-	ORIENTATION_X_DOWN 	= 266,
-	ORIENTATION_Y_UP 	= 112,
-	ORIENTATION_Y_DOWN 	= 336
+	ORIENTATION_Z_UP 	  = 136,
+	ORIENTATION_Z_DOWN    = 396,
+	ORIENTATION_X_UP 	  = 14,
+	ORIENTATION_X_DOWN 	  = 266,
+	ORIENTATION_Y_UP 	  = 112,
+	ORIENTATION_Y_DOWN 	  = 336,
+	ORIENTATION_X_FORWARD = 133,
+	ORIENTATION_X_BACK 	  = 161
 } imu_orientation_t;
 
 typedef struct imu_config_t {
@@ -561,7 +563,7 @@ typedef struct imu_config_t {
 	int dmp_sample_rate;
 	imu_orientation_t orientation; //orientation matrix
 	// higher mix_factor means less weight the compass has on fused_TaitBryan
-	int compass_time_constant; 	// time constant for filtering fused yaw
+	float compass_time_constant; 	// time constant for filtering fused yaw
 	int dmp_interrupt_priority; // scheduler priority for handler
 	int show_warnings;	// set to 1 to enable showing of i2c_bus warnings
 
@@ -591,7 +593,8 @@ typedef struct imu_data_t {
 	// TaitBryan angles will be available which add magnetometer data to filter
 	float fused_quat[4]; 	// normalized quaternion
 	float fused_TaitBryan[3]; 	// radians pitch/roll/yaw X/Y/Z
-	float compass_heading;	// heading in radians based purely on magnetometer
+	float compass_heading;	// heading filtered with gyro and accel data
+	float compass_heading_raw;	// heading in radians based purely on magnetometer
 } imu_data_t;
  
 // General functions
@@ -693,6 +696,16 @@ float bmp_get_temperature_c();
 float bmp_get_pressure_pa();
 float bmp_get_altitude_m();
 int set_sea_level_pressure_pa(float pa);
+
+
+/*******************************************************************************
+* GPS
+*
+*
+*
+*******************************************************************************/
+int initialize_gps(int baud);
+int stop_gps_service();
 
 
 /*******************************************************************************

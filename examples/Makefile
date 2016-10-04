@@ -5,24 +5,18 @@ SUBDIRS = $(shell find * -type d -print)
 
 all:
 	@for dir in $(SUBDIRS) ; do \
-		echo "making example: $$dir" ; \
-		cd "$$dir" ; \
-		$(MAKE) -s; \
-		cd ../ ; \
+		echo "Making Example: $$dir" ; \
+		$(MAKE) -C $$dir -s --no-print-directory; \
 	done
 	
 clean:
 	@for dir in $(SUBDIRS) ; do \
-		echo "cleaning example: $$dir" ; \
-		cd "$$dir" ; \
-		$(MAKE) -s clean; \
-		cd ../ ; \
+		echo "Cleaning Example: $$dir" ; \
+		$(MAKE) -C $$dir -s clean; \
 	done
 	
 install:
 	@for dir in $(SUBDIRS) ; do \
-		echo "installing example: $$dir" ; \
-		cd "$$dir" ; \
-		$(MAKE) -s install; \
-		cd ../ ; \
+		echo "Installing Example: $$dir" ; \
+		$(MAKE) -C $$dir -s install ;\
 	done

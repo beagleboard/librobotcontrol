@@ -1,21 +1,18 @@
-TARGET = robotics_cape.so
+TARGET = librobotics_cape.so
 
 SUBDIRS = $(shell find * -type d -print)
 CC = gcc
 LINKER   := gcc
 TOUCH 	 := $(shell touch *)
 CFLAGS := -Wall -fsingle-precision-constant -fpic -march=armv7-a -mtune=cortex-a8
-LFLAGS	:= -lm -lrt -lpthread -shared -lprussdrvd
+LFLAGS	:= -lm -lrt -lpthread -shared
 
-#DEFS = 
+
+PREFIX := /usr
 
 SOURCES := $(shell find ./ -name '*.c')
 INCLUDES := $(shell find ./ -name '*.h')
 OBJECTS  := $(SOURCES:$%.c=$%.o)
-RM := rm -f
-CP := cp
-INSTALL_DIR = /usr/lib/
-INCLUDE_DIR = /usr/include/
 
 all:$(TARGET)
 	
@@ -23,13 +20,10 @@ all:$(TARGET)
 # linking Objects
 $(TARGET): $(OBJECTS)
 	@$(LINKER) $(LFLAGS) -o $(TARGET) $(OBJECTS)
-	@echo
-	@echo "Linking Complete"
 	
 $(OBJECTS): %.o : %.c
 	@$(TOUCH) $(CC) $(CFLAGS) $(DEFS) -c $< -o $(@)
-	@echo "Compiled "$<" successfully!"
-
+	@echo "Compiled: "$<
 
 
 
@@ -39,27 +33,23 @@ $(phony all) : $(TARGET)
 
 
 install:
-	@echo "moving headers files to /usr/include"
-	@for f in $(INCLUDES) ; do \
-		$(CP) --parents $$f $(INCLUDE_DIR) ; \
-	done
-	
 	$(MAKE)
-	@$(CP) $(TARGET) $(INSTALL_DIR)
-	@$(CP) $(OBJECTS) $(INSTALL_DIR)
-	@$(CP) pru/prussdrv.h $(INCLUDE_DIR)
-	@$(CP) pru/pruss_intc_mapping.h $(INCLUDE_DIR)
-	@$(CP) $(INSTALL_DIR)/$(TARGET) $(INSTALL_DIR)/lib$(TARGET)
+	install -d -m 755 $(DESTDIR)$(PREFIX)/lib
+	install -d -m 755 $(DESTDIR)/etc/robotics/
+	install -m 644 librobotics_cape.so $(DESTDIR)$(PREFIX)/lib
+	install -d -m 755 $(DESTDIR)$(PREFIX)/include
+	install -m 644 *.h $(DESTDIR)$(PREFIX)/include
+	@install -m 644 pru/am335x-pru0-fw $(DESTDIR)/lib/firmware/
+	@install -m 644 pru/am335x-pru1-fw $(DESTDIR)/lib/firmware/
 	@ldconfig
-	@echo "$(TARGET) installed to $(INSTALL_DIR)"
-	@echo
+	@echo "$(TARGET) Installed to $(DESTDIR)$(PREFIX)/lib"
 	
 
 clean:
 	@for dir in $(SUBDIRS) ; do \
-		$(RM) $$dir/*.o ; \
+		rm -f $$dir/*.o ; \
 	done
 	
-	@$(RM) *.o
-	@$(RM) *.so
-	@echo "Cleanup complete!"
+	@rm -f *.o
+	@rm -f *.so
+	@echo "librobotics_cape Cleanup Complete!"

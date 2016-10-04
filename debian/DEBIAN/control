@@ -1,0 +1,11 @@
+Package: roboticscape
+Version: 0.0.1
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.3
+Section: utils
+Priority: extra  
+Architecture: armhf
+Depends:
+Maintainer: James Strawson <james@strawsondesign.com>
+Description: Contains the supporting library for the robotics cape along with many example programs, supporting systemd services, and device tree overlay.
+

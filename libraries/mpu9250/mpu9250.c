@@ -23,7 +23,7 @@
 #define FIFO_LEN_MAG	35
 
 // error threshold checks
-#define QUAT_ERROR_THRESH       (1L<<24)
+#define QUAT_ERROR_THRESH       (1L<<16) // very precise threshold
 #define QUAT_MAG_SQ_NORMALIZED  (1L<<28)
 #define QUAT_MAG_SQ_MIN         (QUAT_MAG_SQ_NORMALIZED - QUAT_ERROR_THRESH)
 #define QUAT_MAG_SQ_MAX         (QUAT_MAG_SQ_NORMALIZED + QUAT_ERROR_THRESH)
@@ -82,6 +82,7 @@ int load_mag_calibration();
 int write_mag_cal_to_disk(float offsets[3], float scale[3]);
 void* imu_interrupt_handler(void* ptr);
 int (*imu_interrupt_func)(); // pointer to user-defined function
+int check_quaternion_validity(unsigned char* raw, int i);
 
 
 /*******************************************************************************
@@ -102,8 +103,8 @@ imu_config_t get_default_imu_config(){
 	// DMP stuff
 	conf.dmp_sample_rate = 100;
 	conf.orientation = ORIENTATION_Z_UP;
-	conf.compass_time_constant = 5;
-	conf.dmp_interrupt_priority = sched_get_priority_max(SCHED_FIFO) -1;
+	conf.compass_time_constant = 5.0;
+	conf.dmp_interrupt_priority = sched_get_priority_max(SCHED_FIFO)-1;
 	conf.show_warnings = 0;
 	return conf;
 }
@@ -698,14 +699,12 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 		printf("acceptable values: 200,100,50,40,25,20,10,8,5,4 (HZ)\n");
 		return -1;
 	}
-	
-	//set up gpio interrupt pin connected to imu
-	if(gpio_export(IMU_INTERRUPT_PIN)){
-		printf("can't export gpio %d \n", IMU_INTERRUPT_PIN);
-		return (-1);
+
+	// make sure the compass filter time constant is valid
+	if(conf.enable_magnetometer && conf.compass_time_constant<=0.1){
+		printf("ERROR: compass time constant must be greater than 0.1\n");
+		return -1;
 	}
-	gpio_set_dir(IMU_INTERRUPT_PIN, INPUT_PIN);
-	gpio_set_edge(IMU_INTERRUPT_PIN, "falling");
 	
 	// make sure the bus is not currently in use by another thread
 	// do not proceed to prevent interfering with that process
@@ -717,6 +716,20 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 	// start the i2c bus
 	if(i2c_init(IMU_BUS, IMU_ADDR)){
 		printf("initialize_imu_dmp failed at i2c_init\n");
+		return -1;
+	}
+
+	// configure the gpio interrupt pin
+	if(gpio_export(IMU_INTERRUPT_PIN)<0){
+		printf("ERROR: failed to export GPIO %d", IMU_INTERRUPT_PIN);
+		return -1;
+	}
+	if(gpio_set_dir(IMU_INTERRUPT_PIN, INPUT_PIN)<0){
+		printf("ERROR: failed to configure GPIO %d", IMU_INTERRUPT_PIN);
+		return -1;
+	}
+	if(gpio_set_edge(IMU_INTERRUPT_PIN, "falling")<0){
+		printf("ERROR: failed to configure GPIO %d", IMU_INTERRUPT_PIN);
 		return -1;
 	}
 	
@@ -1070,6 +1083,8 @@ int mpu_set_bypass(uint8_t bypass_on){
 	
 	// INT_PIN_CFG settings
 	tmp = LATCH_INT_EN | INT_ANYRD_CLEAR | ACTL_ACTIVE_LOW;
+	tmp =  ACTL_ACTIVE_LOW;
+	
 	if(bypass_on)
 		tmp |= BYPASS_EN;
 	if (i2c_write_byte(IMU_BUS, INT_PIN_CFG, tmp))
@@ -1263,34 +1278,33 @@ int dmp_enable_lp_quat(unsigned char enable){
 int mpu_reset_fifo(void){
     uint8_t data;
 
+    // make sure the i2c address is set correctly. 
+	// this shouldn't take any time at all if already set
+	i2c_set_device_address(IMU_BUS, IMU_ADDR);
+
     data = 0;
-    if (i2c_write_byte(IMU_BUS, INT_ENABLE, data))
-        return -1;
-    if (i2c_write_byte(IMU_BUS, FIFO_EN, data))
-        return -1;
-    // if (i2c_write_byte(IMU_BUS, USER_CTRL, data))
-        // return -1;
+    if (i2c_write_byte(IMU_BUS, INT_ENABLE, data)) return -1;
+    if (i2c_write_byte(IMU_BUS, FIFO_EN, data)) return -1;
+    //if (i2c_write_byte(IMU_BUS, USER_CTRL, data)) return -1;
 
 	data = BIT_FIFO_RST | BIT_DMP_RST;
-	if (i2c_write_byte(IMU_BUS, USER_CTRL, data))
-		return -1;
-	usleep(2500);
+	if (i2c_write_byte(IMU_BUS, USER_CTRL, data)) return -1;
+	usleep(1000);
+
 	data = BIT_DMP_EN | BIT_FIFO_EN;
 	if (config.enable_magnetometer)
 		data |= I2C_MST_EN;
 	if (i2c_write_byte(IMU_BUS, USER_CTRL, data))
 		return -1;
 	
-	if(dmp_en){
-		i2c_write_byte(IMU_BUS, INT_ENABLE, BIT_DMP_INT_EN);
+	if(config.enable_magnetometer){
+		i2c_write_byte(IMU_BUS, FIFO_EN, FIFO_SLV0_EN);
 	}
-	//i2c_write_byte(IMU_BUS, INT_ENABLE, 0);
-	
-	data = 0;
-	if(config.enable_magnetometer) data |= FIFO_SLV0_EN;
-	if (i2c_write_byte(IMU_BUS, FIFO_EN, data))
-		return -1;
-  
+	else i2c_write_byte(IMU_BUS, FIFO_EN, 0);
+
+	if(dmp_en) i2c_write_byte(IMU_BUS, INT_ENABLE, BIT_DMP_INT_EN);
+	else i2c_write_byte(IMU_BUS, INT_ENABLE, 0);
+
     return 0;
 }
 
@@ -1328,26 +1342,13 @@ int dmp_set_interrupt_mode(unsigned char mode){
 int set_int_enable(unsigned char enable){
     unsigned char tmp;
 
-    if (dmp_en) {
-		#ifdef DEBUG
-		printf("setting dmp-driven interrupt to %d\n", enable);
-		#endif
-        if (enable) tmp = BIT_DMP_INT_EN;
-        else tmp = 0x00;
-		
-        if (i2c_write_byte(IMU_BUS, INT_ENABLE, tmp)) return -1;
-		// disable all other FIFO features leaving just DMP
-		if (i2c_write_byte(IMU_BUS, FIFO_EN, 0)) return -1;
-    } 
-	else {
-		#ifdef DEBUG
-		printf("setting data-ready interrupt to %d\n", enable);
-		#endif
-        if (enable) tmp = BIT_DATA_RDY_EN;
-        else tmp = 0x00;
-		
-        if (i2c_write_byte(IMU_BUS, INT_ENABLE, tmp)) return -1;
-    }
+    if (enable) tmp = BIT_DMP_INT_EN;
+    else tmp = 0x00;
+	
+    if (i2c_write_byte(IMU_BUS, INT_ENABLE, tmp)) return -1;
+	// disable all other FIFO features leaving just DMP
+	if (i2c_write_byte(IMU_BUS, FIFO_EN, 0)) return -1;
+
     return 0;
 }
 
@@ -1456,7 +1457,7 @@ void* imu_interrupt_handler(void* ptr){
 			if(first_run == 1){
 				first_run = 0;
 			}
-			else if(interrupt_running){
+			else if(interrupt_running && last_read_successful){
 				 imu_interrupt_func(); 
 			}
 		}
@@ -1500,11 +1501,12 @@ int stop_imu_interrupt_func(){
 *******************************************************************************/
 int read_dmp_fifo(){
     unsigned char raw[MAX_FIFO_BUFFER];
-	long quat_q14[4], quat[4], quat_mag_sq;\
+	long quat[4];
 	int16_t mag_adc[3];
     uint16_t fifo_count;
-	int ret, is_new_mag_data;
-	int i = 0; // position in the buffer
+	int ret, mag_data_available, dmp_data_available;
+	int i = 0; // position of beginning of mag data
+	int j = 0; // position of beginning of dmp data
 	static int first_run = 1; // set to 0 after first call
 	float factory_cal_data[3]; // just temp holder for mag data
     if (!dmp_en){
@@ -1523,6 +1525,8 @@ int read_dmp_fifo(){
 	// this shouldn't take any time at all if already set
 	i2c_set_device_address(IMU_BUS, IMU_ADDR);
 	
+	int is_new_dmp_data = 0;
+
 	// check fifo count register to make sure new data is there
     if (i2c_read_word(IMU_BUS, FIFO_COUNTH, &fifo_count)<0){
 		if(config.show_warnings){
@@ -1534,65 +1538,113 @@ int read_dmp_fifo(){
 	printf("fifo_count: %d\n", fifo_count);
 	#endif
 	
-	// if more than 2 packets are there, something really bad happened
-	// reset the fifo
-	if (fifo_count>2*packet_len){
-		if(config.show_warnings){
-			printf("mpu9250 wrong fifo count: %d\n", fifo_count);
-			printf("resetting fifo\n");
-		}
-		mpu_reset_fifo();
-        return -1;
+	/***************************************************************************
+	* now that we see how many values are in the buffer, we have a long list of
+	* checks to determine what should be done
+	***************************************************************************/
+	mag_data_available=0;
+	dmp_data_available=0;
+
+	// empty FIFO, just return, nothing else to do
+	if(fifo_count==0){
+		// if(config.show_warnings&& first_run!=1){
+		// 	printf("WARNING: empty fifo\n");
+		// }
+		return -1;
 	}
-	
-	// if one or two complete packets are not available, wait and try again
-	if(fifo_count!=packet_len && fifo_count<2*packet_len){
-		// printf("mpu9250 false interrupt, %d bytes available\n", fifo_count);
-		// printf("resetting FIFO\n");
-		// mpu_reset_fifo();
-		// return -1;
-				
-		usleep(2500);
-		if (i2c_read_word(IMU_BUS, FIFO_COUNTH, &fifo_count)<0){
-			if(config.show_warnings){
-				printf("fifo_count i2c error: %s\n",strerror(errno));
-			}
-			return -1;
-		}
-		
-		// still not enough bytes, must be bad read. 
-		if(fifo_count!=packet_len && fifo_count!=2*packet_len){
-			if(config.show_warnings && first_run!=1){
-				printf("%d bytes available, resetting FIFO: \n",fifo_count);
-				mpu_reset_fifo();
-			}
-			return -1;
-		}
+
+
+	// one packet, perfect!
+	if(fifo_count==FIFO_LEN_NO_MAG){
+		i = 0; // set offset to 0
+		mag_data_available=0;
+		dmp_data_available=1;
+		goto READ_FIFO;
 	}
-	
+	if(fifo_count==FIFO_LEN_MAG){
+		i = 0; // set offset to 0
+		mag_data_available=1;
+		dmp_data_available=1;
+		goto READ_FIFO;
+	}
+
+	// these numbers pop up under high stress and represent uneven 
+	// combinations of magnetometer and DMP data
+	if(fifo_count==42){
+		if(config.show_warnings&& first_run!=1){
+			printf("warning: packet count 42\n");
+		}
+		i = 7; // set offset to 7
+		mag_data_available=0;
+		dmp_data_available=1;
+		goto READ_FIFO;
+	}
+	if(fifo_count==63){
+		if(config.show_warnings&& first_run!=1){
+			printf("warning: packet count 63\n");
+		}
+		i = 28; // set offset to 7
+		mag_data_available=0;
+		dmp_data_available=1;
+		goto READ_FIFO;
+	}
+	if(fifo_count==77){
+		if(config.show_warnings&& first_run!=1){
+			printf("warning: packet count 77\n");
+		}
+		i = 42; // set offset to 7
+		mag_data_available=0;
+		dmp_data_available=1;
+		goto READ_FIFO;
+	}
+
 	// if exactly 2 packets are there we just missed one (whoops)
 	// read both in and set the offset i to one packet length
 	// the last packet data will be read normally
-	if (fifo_count == 2*packet_len){
-		if(config.show_warnings){
-			printf("warning: mpu9250 fifo contains two packets\n");
+	if(fifo_count==2*FIFO_LEN_NO_MAG){
+		if(config.show_warnings&& first_run!=1){
+			printf("warning: imu fifo contains two packets\n");
 		}
-		i = packet_len;
+		i = FIFO_LEN_NO_MAG; // set offset to beginning of second packet
+		mag_data_available=0;
+		dmp_data_available=1;
+		goto READ_FIFO;
 	}
-	// exactly one packet available, set offset to 0
-	else if (fifo_count==FIFO_LEN_NO_MAG || packet_len==FIFO_LEN_MAG){
-		i = 0;
-	}
-	// we should never get to this 'else' due to above logic but just in case
-	// we should exit now if a weird packet is received.
-	else{
-		if(config.show_warnings){
-			printf("mpu9250 false interrupt, %d bytes available\n",fifo_count);
+	if(fifo_count==2*FIFO_LEN_MAG){
+		if(config.show_warnings&& first_run!=1){
+			printf("warning: imu fifo contains two packets\n");
 		}
-		return -1;
+		i = FIFO_LEN_MAG; // set offset to beginning of second packet
+		mag_data_available=1;
+		dmp_data_available=1;
+		goto READ_FIFO;
 	}
+
+	// if there are exactly 7 14, or 21 bytes available, there must be magnetometer
+	// data but nothing else. read it in anyway
+	if(fifo_count==7 || fifo_count==14 || fifo_count==21){
+		i = fifo_count - 7;
+		mag_data_available = 1;
+		dmp_data_available = 0;
+		goto READ_FIFO;
+	}
+
+	// finally, if we got a weird packet length, reset the fifo
+	if(config.show_warnings&& first_run!=1){
+		printf("WARNING: %d bytes in FIFO, expected %d\n", fifo_count,packet_len);
+	}
+	mpu_reset_fifo();
+	return -1;
+	
 	
 
+	/***************************************************************************
+	* now we get to the reading section. Here we also have logic to determine
+	* the order of the data in the packet as magnetometer data may come before
+	* or after the DMP data
+	***************************************************************************/
+READ_FIFO:
+	memset(raw,0,MAX_FIFO_BUFFER);
 	// read it in!
     ret = i2c_read_bytes(IMU_BUS, FIFO_R_W, fifo_count, &raw[0]);
 	if(ret<0){
@@ -1606,51 +1658,140 @@ int read_dmp_fifo(){
 		}
         return -1;
 	}
-	
-	// if there was magnetometer data try to read it
-	is_new_mag_data = 0;
-	if(packet_len==FIFO_LEN_MAG){
-		// check if the readings saturated such as because
-		// of a local field source, discard data if so
-		if(raw[i+6]&MAGNETOMETER_SATURATION){
-			printf("WARNING: magnetometer saturated\n");
+
+
+	// if dmp data is available we must figure out if it's before or 
+	// after the magnetometer data. Usually before.
+	if(dmp_data_available){
+		if(check_quaternion_validity(raw,i+7)){
+			j=i+7; // 7 mag bytes before dmp data
+		}
+		else if(check_quaternion_validity(raw,i)){
+			// printf("after\n");
+			j=i; // 7 mag bytes after dmp data
+			i=i+FIFO_LEN_NO_MAG; // update mag data offset
 		}
 		else{
-			// Turn the MSB and LSB into a signed 16-bit value
-			// Data stored as little Endian
-			mag_adc[0] = (int16_t)(((int16_t)raw[i+1]<<8) | raw[i+0]);  
-			mag_adc[1] = (int16_t)(((int16_t)raw[i+3]<<8) | raw[i+2]);  
-			mag_adc[2] = (int16_t)(((int16_t)raw[i+5]<<8) | raw[i+4]); 
-			
-			// if the data is non-zero, save it
-			// multiply by the sensitivity adjustment and convert to units of 
-			// uT micro Teslas. Also correct the coordinate system as someone 
-			// in invensense thought it would be bright idea to have the 
-			// magnetometer coordiate system aligned differently than the 
-			// accelerometer and gyro.... -__-
-			if(mag_adc[0]!=0 || mag_adc[1]!=0 || mag_adc[2]!=0){
-		// multiply by the sensitivity adjustment and convert to units of uT
-		// Also correct the coordinate system as someone in invensense 
-		// thought it would be a bright idea to have the magnetometer coordiate
-		// system aligned differently than the accelerometer and gyro.... -__-
-		factory_cal_data[0] = mag_adc[1]*mag_factory_adjust[1] * MAG_RAW_TO_uT;
-		factory_cal_data[1] = mag_adc[0]*mag_factory_adjust[0] * MAG_RAW_TO_uT;
-		factory_cal_data[2] = -mag_adc[2]*mag_factory_adjust[2] * MAG_RAW_TO_uT;
-	
-		// now apply out own calibration, but first make sure we don't 
-		// accidentally multiply by zero in case of uninitialized scale factors
-		if(mag_scales[0]==0.0) mag_scales[0]=1.0;
-		if(mag_scales[1]==0.0) mag_scales[1]=1.0;
-		if(mag_scales[2]==0.0) mag_scales[2]=1.0;
-		data_ptr->mag[0] = (factory_cal_data[0]-mag_offsets[0])*mag_scales[0];
-		data_ptr->mag[1] = (factory_cal_data[1]-mag_offsets[1])*mag_scales[1];
-		data_ptr->mag[2] = (factory_cal_data[2]-mag_offsets[2])*mag_scales[2];
-		is_new_mag_data = 1;
+			if(config.show_warnings){
+				printf("warning: Quaternion out of bounds\n");
+				printf("fifo_count: %d\n", fifo_count);
 			}
+			mpu_reset_fifo();
+		    return -1;
 		}
-		i+=7; // increase our position by 7 bytes
+		// now we can read the quaternion
+		// parse the quaternion data from the buffer
+		quat[0] = ((long)raw[j+0] << 24) | ((long)raw[j+1] << 16) |
+			((long)raw[j+2] << 8) | raw[j+3];
+		quat[1] = ((long)raw[j+4] << 24) | ((long)raw[j+5] << 16) |
+			((long)raw[j+6] << 8) | raw[j+7];
+		quat[2] = ((long)raw[j+8] << 24) | ((long)raw[j+9] << 16) |
+			((long)raw[j+10] << 8) | raw[j+11];
+		quat[3] = ((long)raw[j+12] << 24) | ((long)raw[j+13] << 16) |
+			((long)raw[j+14] << 8) | raw[j+15];
+
+		// load in the quaternion to the data struct if it was good
+		data_ptr->dmp_quat[QUAT_W] = (float)quat[QUAT_W];
+		data_ptr->dmp_quat[QUAT_X] = (float)quat[QUAT_X];
+		data_ptr->dmp_quat[QUAT_Y] = (float)quat[QUAT_Y];
+		data_ptr->dmp_quat[QUAT_Z] = (float)quat[QUAT_Z];
+		// fill in euler angles to the data struct
+		normalizeQuaternion(data_ptr->dmp_quat);
+		quaternionToTaitBryan(data_ptr->dmp_quat, data_ptr->dmp_TaitBryan);
+		
+		j+=16; // increase offset by 16 which was the quaternion size
+		
+		
+		// Read Accel values and load into imu_data struct
+		// Turn the MSB and LSB into a signed 16-bit value
+		data_ptr->raw_accel[0] = (int16_t)(((uint16_t)raw[j+0]<<8)|raw[j+1]);
+		data_ptr->raw_accel[1] = (int16_t)(((uint16_t)raw[j+2]<<8)|raw[j+3]);
+		data_ptr->raw_accel[2] = (int16_t)(((uint16_t)raw[j+4]<<8)|raw[j+5]);
+		
+		// Fill in real unit values
+		data_ptr->accel[0] = data_ptr->raw_accel[0] * data_ptr->accel_to_ms2;
+		data_ptr->accel[1] = data_ptr->raw_accel[1] * data_ptr->accel_to_ms2;
+		data_ptr->accel[2] = data_ptr->raw_accel[2] * data_ptr->accel_to_ms2;
+		j+=6;
+		
+		// Read gyro values and load into imu_data struct
+		// Turn the MSB and LSB into a signed 16-bit value
+		data_ptr->raw_gyro[0] = (int16_t)(((int16_t)raw[0+j]<<8)|raw[1+j]);
+		data_ptr->raw_gyro[1] = (int16_t)(((int16_t)raw[2+j]<<8)|raw[3+j]);
+		data_ptr->raw_gyro[2] = (int16_t)(((int16_t)raw[4+j]<<8)|raw[5+j]);
+		// Fill in real unit values
+		data_ptr->gyro[0] = data_ptr->raw_gyro[0] * data_ptr->gyro_to_degs;
+		data_ptr->gyro[1] = data_ptr->raw_gyro[1] * data_ptr->gyro_to_degs;
+		data_ptr->gyro[2] = data_ptr->raw_gyro[2] * data_ptr->gyro_to_degs;
+
+		is_new_dmp_data = 1;
 	}
+
+	// if there was magnetometer data try to read it
+	if(mag_data_available){
+		// Turn the MSB and LSB into a signed 16-bit value
+		// Data stored as little Endian
+		mag_adc[0] = (int16_t)(((int16_t)raw[i+1]<<8) | raw[i+0]);  
+		mag_adc[1] = (int16_t)(((int16_t)raw[i+3]<<8) | raw[i+2]);  
+		mag_adc[2] = (int16_t)(((int16_t)raw[i+5]<<8) | raw[i+4]); 
+		
+		// if the data is non-zero, save it
+		// multiply by the sensitivity adjustment and convert to units of 
+		// uT micro Teslas. Also correct the coordinate system as someone 
+		// in invensense thought it would be bright idea to have the 
+		// magnetometer coordiate system aligned differently than the 
+		// accelerometer and gyro.... -__-
+		if(mag_adc[0]!=0 || mag_adc[1]!=0 || mag_adc[2]!=0){
+			// multiply by the sensitivity adjustment and convert to units of uT
+			// Also correct the coordinate system as someone in invensense 
+			// thought it would be a bright idea to have the magnetometer coordiate
+			// system aligned differently than the accelerometer and gyro.... -__-
+			factory_cal_data[0] = mag_adc[1]*mag_factory_adjust[1] * MAG_RAW_TO_uT;
+			factory_cal_data[1] = mag_adc[0]*mag_factory_adjust[0] * MAG_RAW_TO_uT;
+			factory_cal_data[2] = -mag_adc[2]*mag_factory_adjust[2] * MAG_RAW_TO_uT;
+		
+			// now apply out own calibration, but first make sure we don't 
+			// accidentally multiply by zero in case of uninitialized scale factors
+			if(mag_scales[0]==0.0) mag_scales[0]=1.0;
+			if(mag_scales[1]==0.0) mag_scales[1]=1.0;
+			if(mag_scales[2]==0.0) mag_scales[2]=1.0;
+			data_ptr->mag[0] = (factory_cal_data[0]-mag_offsets[0])*mag_scales[0];
+			data_ptr->mag[1] = (factory_cal_data[1]-mag_offsets[1])*mag_scales[1];
+			data_ptr->mag[2] = (factory_cal_data[2]-mag_offsets[2])*mag_scales[2];
+		}
+	}
+
 	
+	
+	// run data_fusion to filter yaw with compass if new mag data came in
+	if(is_new_dmp_data && config.enable_magnetometer){
+		#ifdef DEBUG
+		printf("running data_fusion\n");
+		#endif
+		data_fusion();
+	}
+
+	// if we finally got dmp data, turn off the first run flag
+	if(is_new_dmp_data) first_run=0;
+
+	// finally, our return value is based on the presence of DMP data only
+	// even if new magnetometer data was read, the expected timing must come
+	// from the DMP samples only
+	if(is_new_dmp_data) return 0;
+	else return -1;
+}
+
+/*******************************************************************************
+* We can detect a corrupted FIFO by monitoring the quaternion data and
+* ensuring that the magnitude is always normalized to one. This
+* shouldn't happen in normal operation, but if an I2C error occurs,
+* the FIFO reads might become misaligned.
+*
+* Let's start by scaling down the quaternion data to avoid long long
+* math.
+*******************************************************************************/
+int check_quaternion_validity(unsigned char* raw, int i){
+	long quat_q14[4], quat[4], quat_mag_sq;
 	// parse the quaternion data from the buffer
 	quat[0] = ((long)raw[i+0] << 24) | ((long)raw[i+1] << 16) |
 		((long)raw[i+2] << 8) | raw[i+3];
@@ -1661,14 +1802,7 @@ int read_dmp_fifo(){
 	quat[3] = ((long)raw[i+12] << 24) | ((long)raw[i+13] << 16) |
 		((long)raw[i+14] << 8) | raw[i+15];
 
-	/* We can detect a corrupted FIFO by monitoring the quaternion data and
-	 * ensuring that the magnitude is always normalized to one. This
-	 * shouldn't happen in normal operation, but if an I2C error occurs,
-	 * the FIFO reads might become misaligned.
-	 *
-	 * Let's start by scaling down the quaternion data to avoid long long
-	 * math.
-	 */
+	
 	quat_q14[0] = quat[0] >> 16;
 	quat_q14[1] = quat[1] >> 16;
 	quat_q14[2] = quat[2] >> 16;
@@ -1676,58 +1810,12 @@ int read_dmp_fifo(){
 	quat_mag_sq = quat_q14[0] * quat_q14[0] + quat_q14[1] * quat_q14[1] +
 		quat_q14[2] * quat_q14[2] + quat_q14[3] * quat_q14[3];
 	if ((quat_mag_sq < QUAT_MAG_SQ_MIN) ||(quat_mag_sq > QUAT_MAG_SQ_MAX)){
-		if(config.show_warnings){
-			printf("ERROR:Quaternion is outside of the acceptable threshold\n");
-		}
-		return -1;
+		return 0;
 	}
-	// load in the quaternion to the data struct if it was good
-	data_ptr->dmp_quat[QUAT_W] = (float)quat[QUAT_W];
-	data_ptr->dmp_quat[QUAT_X] = (float)quat[QUAT_X];
-	data_ptr->dmp_quat[QUAT_Y] = (float)quat[QUAT_Y];
-	data_ptr->dmp_quat[QUAT_Z] = (float)quat[QUAT_Z];
-	// fill in euler angles to the data struct
-	normalizeQuaternion(data_ptr->dmp_quat);
-	quaternionToTaitBryan(data_ptr->dmp_quat, data_ptr->dmp_TaitBryan);
-	
-	i+=16; // increase offset by 16 which was the quaternion size
-	
-	
-	// Read Accel values and load into imu_data struct
-	// Turn the MSB and LSB into a signed 16-bit value
-	data_ptr->raw_accel[0] = (int16_t)(((uint16_t)raw[i+0]<<8)|raw[i+1]);
-	data_ptr->raw_accel[1] = (int16_t)(((uint16_t)raw[i+2]<<8)|raw[i+3]);
-	data_ptr->raw_accel[2] = (int16_t)(((uint16_t)raw[i+4]<<8)|raw[i+5]);
-	
-	// Fill in real unit values
-	data_ptr->accel[0] = data_ptr->raw_accel[0] * data_ptr->accel_to_ms2;
-	data_ptr->accel[1] = data_ptr->raw_accel[1] * data_ptr->accel_to_ms2;
-	data_ptr->accel[2] = data_ptr->raw_accel[2] * data_ptr->accel_to_ms2;
-	i+=6;
-	
-	// Read gyro values and load into imu_data struct
-	// Turn the MSB and LSB into a signed 16-bit value
-	data_ptr->raw_gyro[0] = (int16_t)(((int16_t)raw[0+i]<<8)|raw[1+i]);
-	data_ptr->raw_gyro[1] = (int16_t)(((int16_t)raw[2+i]<<8)|raw[3+i]);
-	data_ptr->raw_gyro[2] = (int16_t)(((int16_t)raw[4+i]<<8)|raw[5+i]);
-	// Fill in real unit values
-	data_ptr->gyro[0] = data_ptr->raw_gyro[0] * data_ptr->gyro_to_degs;
-	data_ptr->gyro[1] = data_ptr->raw_gyro[1] * data_ptr->gyro_to_degs;
-	data_ptr->gyro[2] = data_ptr->raw_gyro[2] * data_ptr->gyro_to_degs;
-	#ifdef DEBUG
-	printf("finished reading gyro data\n");
-	#endif
-	
-	// run data_fusion to filter yaw with compass if new mag data came in
-	if(is_new_mag_data){
-		#ifdef DEBUG
-		printf("running data_fusion\n");
-		#endif
-		data_fusion();
+	if ((quat_mag_sq < QUAT_MAG_SQ_MIN) ||(quat_mag_sq > QUAT_MAG_SQ_MAX)){
+		return 0;
 	}
-
-	first_run = 0;
-    return 0;
+	return 1;
 }
 
 /*******************************************************************************
@@ -1800,6 +1888,16 @@ int data_fusion(){
 		magQuat[QUAT_Y] = data_ptr->mag[TB_YAW_Z];
 		magQuat[QUAT_Z] = -data_ptr->mag[TB_ROLL_Y];
 		break;
+	case ORIENTATION_X_FORWARD:
+		magQuat[QUAT_X] = data_ptr->mag[TB_ROLL_Y];
+		magQuat[QUAT_Y] = -data_ptr->mag[TB_PITCH_X];
+		magQuat[QUAT_Z] = data_ptr->mag[TB_YAW_Z];
+		break;
+	case ORIENTATION_X_BACK:
+		magQuat[QUAT_X] = -data_ptr->mag[TB_ROLL_Y];
+		magQuat[QUAT_Y] = data_ptr->mag[TB_PITCH_X];
+		magQuat[QUAT_Z] = data_ptr->mag[TB_YAW_Z];
+		break;
 	default:
 		printf("ERROR: invalid orientation\n");
 		return -1;
@@ -1819,7 +1917,7 @@ int data_fusion(){
 		#endif
 		return -1;
 	}
-	data_ptr->compass_heading = newMagYaw;
+	data_ptr->compass_heading_raw = newMagYaw;
 	// save DMP last from time and record newDMPYaw for this time
 	lastDMPYaw = newDMPYaw;
 	newDMPYaw = data_ptr->dmp_TaitBryan[TB_YAW_Z];
@@ -1861,7 +1959,7 @@ int data_fusion(){
 
 	// Euler angles expect a yaw between -pi to pi so slide it again and
 	// store in the user-accessible fused euler angle
-	
+	data_ptr->compass_heading = newYaw;
 	data_ptr->fused_TaitBryan[TB_YAW_Z] = newYaw;
 	data_ptr->fused_TaitBryan[TB_PITCH_X] = data_ptr->dmp_TaitBryan[TB_PITCH_X];
 	data_ptr->fused_TaitBryan[TB_ROLL_Y] = data_ptr->dmp_TaitBryan[TB_ROLL_Y];
@@ -2204,6 +2302,16 @@ void print_orientation_info(){
 	signed char ydown[] = {1,0,0, 0,0,1, 0,-1,0};
 	orient = inv_orientation_matrix_to_scalar(ydown);
 	printf("y-down: %d\n", orient);
+
+	// X-forward
+	signed char xforward[] = {0,-1,0, 1,0,0, 0,0,1};
+	orient = inv_orientation_matrix_to_scalar(xforward);
+	printf("x-forward: %d\n", orient);
+
+	// X-back
+	signed char xback[] = {0,1,0, -1,0,0, 0,0,1};
+	orient = inv_orientation_matrix_to_scalar(xback);
+	printf("yx-back: %d\n", orient);
 }
 
 /*******************************************************************************
