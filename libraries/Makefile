@@ -1,4 +1,4 @@
-TARGET = librobotics_cape.so
+TARGET = librobotics-cape.so
 
 SUBDIRS = $(shell find * -type d -print)
 CC = gcc
@@ -36,9 +36,11 @@ install:
 	$(MAKE)
 	install -d -m 755 $(DESTDIR)$(PREFIX)/lib
 	install -d -m 755 $(DESTDIR)/etc/robotics/
-	install -m 644 librobotics_cape.so $(DESTDIR)$(PREFIX)/lib
+	install -m 644 $(TARGET) $(DESTDIR)$(PREFIX)/lib
 	install -d -m 755 $(DESTDIR)$(PREFIX)/include
 	install -m 644 *.h $(DESTDIR)$(PREFIX)/include
+	#install pru binaries
+	install -d -m 755 $(DESTDIR)/lib/firmware/
 	@install -m 644 pru/am335x-pru0-fw $(DESTDIR)/lib/firmware/
 	@install -m 644 pru/am335x-pru1-fw $(DESTDIR)/lib/firmware/
 	@ldconfig

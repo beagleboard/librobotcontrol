@@ -43,6 +43,7 @@ either expressed or implied, of the FreeBSD Project.
 #define PRU_ADDR		0x4A300000		// Start of PRU memory Page 184 am335x TRM
 #define PRU_LEN			0x80000			// Length of PRU memory
 #define PRU_SHAREDMEM	0x10000			// Offset to shared memory
+#define CAPE_NAME 	"RoboticsCape"
 
 /*******************************************************************************
 * Global Variables

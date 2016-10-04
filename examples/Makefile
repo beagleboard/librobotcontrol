@@ -2,6 +2,7 @@
 
 CWD = $(PWD)
 SUBDIRS = $(shell find * -type d -print)
+PREFIX := /usr
 
 all:
 	@for dir in $(SUBDIRS) ; do \
@@ -16,6 +17,7 @@ clean:
 	done
 	
 install:
+	@install -d -m 755 $(DESTDIR)$(PREFIX)/bin
 	@for dir in $(SUBDIRS) ; do \
 		echo "Installing Example: $$dir" ; \
 		$(MAKE) -C $$dir -s install ;\

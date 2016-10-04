@@ -19,16 +19,13 @@
 #define GYRO_CAL_FILE 	"gyro.cal"
 #define MAG_CAL_FILE	"mag.cal"
 
-// Cape name for device tree overlay
-#define CAPE_NAME 	"RoboticsCape"
-
 // PID file location
 // file created to indicate running process
 // contains pid of current process
 #define PID_FILE "/var/run/robotics_cape.pid"
 
 //// Mavlink UDP input buffer size
-#define MAV_BUF_LEN 512 
+//#define MAV_BUF_LEN 512 
 
 //// PRU Servo Control
 #define SERVO_CHANNELS			8
@@ -80,13 +77,11 @@
 #define POLL_TIMEOUT 100 /* 0.1 seconds */
 #define INTERRUPT_PIN 117  //gpio3.21 P9.25
 
-#define UART4_PATH "/dev/ttyO4"
+//#define UART4_PATH "/dev/ttyO4"
 
 // PRU Servo & encoder Control parameters
 #define SERVO_PRU_NUM 	 1
 #define ENCODER_PRU_NUM 	 0
-#define PRU_SERVO_BIN "/usr/bin/pru_1_servo.bin"
-#define PRU_ENCODER_BIN "/usr/bin/pru_0_encoder.bin"
 #define PRU_SERVO_LOOP_INSTRUCTIONS	48	// instructions per PRU servo timer loop 
 
 
