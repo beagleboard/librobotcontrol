@@ -3,6 +3,6 @@
 TARGET = test_gps
 
 
-include /usr/include/robotics.mk 
+include ../robotics.mk 
 
 	

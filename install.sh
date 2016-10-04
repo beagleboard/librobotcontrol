@@ -8,11 +8,13 @@
 # Variables collected here for convenience
 ################################################################################
 
-UNAME="$(uname -r)"
+KERNEL="$(uname -r)"
+UNAME="$(cat /boot/uEnv.txt | grep "uname_r")"
 DEBIAN="$(cat /etc/debian_version)"
+UUID = "$(shell blkid -c /dev/null -s UUID -o value /dev/mmcblk*)"
 
 echo " "
-echo "Detected Linux kernel $UNAME"
+echo "Detected Linux kernel $KERNEL"
 echo "Detected Debian version $DEBIAN"
 cat /etc/dogtag
 echo " "
@@ -51,14 +53,47 @@ case $response in
 esac
 echo " "
 
+echo "This script will install all Robotics Cape supporting software."
+echo "Enter 1 to install on a BeagleBone Black"
+echo "Enter 2 to install on Beaglebone Blue"
+echo "Enter 3 to abort and exit"
+select bfn in "black" "blue" "quit"; do
+    case $bfn in
+		black ) BOARD="black"; break;;
+        blue ) BOARD="blue"; break;;
+		quit ) exit;;
+    esac
+done
 
 
 ################################################################################
-# Compile and install library, then examples, then battery monitor service
+# Run Beaglebone Black specific installation steps
+################################################################################
+if [$BOARD == "black"]; then
+	
+	echo "Installing Cape Overlay"
+	install -m 644 black_install_files/RoboticsCape-00A0.dtbo /lib/firmware/
+	
+	echo "Installing modprobe blacklist"
+	install -d -m 755 /etc/modprobe.d
+	install -m 644 black_install_files/pruss-blacklist.conf /etc/modprobe.d/
+	
+	echo "Updating uEnv.txt"
+	install -m 644 --backup=numbered ./uEnv.txt /boot/ 
+	sed -i s/^uuid=.*\$$/uuid=$(UUID)/ $(UENV)
+	sed -i s/^uname_r=.*\$$/$(UNAME)/ $(UENV)
+	
+	echo  "Setting Default Cape"
+	echo "CAPE=RoboticsCape" > /etc/default/capemgr
+fi
+
+################################################################################
+# Compile and install library, examples, and services
+# This works for Black and Blue
 ################################################################################
 
-make install
-make clean
+#make install
+#make clean
 
 
 #################################################

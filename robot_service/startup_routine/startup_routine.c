@@ -41,17 +41,17 @@ int main(){
 	// delete old pid file if it's left over from an improper shudown
 	kill_robot();
 
-	// check capemanager
-	while(is_cape_loaded()!=1){
-		if(check_timeout()){
-			system("echo 'timeout reached while waiting for overlay to load' >> " START_LOG);
-		 	return 1;
-		}
-		usleep(500000);
+	// // check capemanager
+	// while(is_cape_loaded()!=1){
+	// 	if(check_timeout()){
+	// 		system("echo 'timeout reached while waiting for overlay to load' >> " START_LOG);
+	// 	 	return 1;
+	// 	}
+	// 	usleep(500000);
 		
-	}
-	system("uptime -p >> " START_LOG);
-	system("echo 'cape overlay loaded' >> " START_LOG);
+	// }
+	// system("uptime -p >> " START_LOG);
+	// system("echo 'cape overlay loaded' >> " START_LOG);
 
 	// export gpio pins
 	while(setup_gpio()!=0){
@@ -92,18 +92,18 @@ int main(){
 	return 0;
 }
 
-/*******************************************************************************
-* is_cape_loaded()
-*
-* check to make sure robotics cape overlay is loaded
-* return 1 if cape is loaded
-* return 0 if cape is missing
-*******************************************************************************/
-int is_cape_loaded(){
-	int ret = system("grep -q "CAPE_NAME" /sys/devices/platform/bone_capemgr*/slots");
-	if(ret == 0) return 1;
-	return 0;
-}
+// /******************************************************************************
+// * is_cape_loaded()
+// *
+// * check to make sure robotics cape overlay is loaded
+// * return 1 if cape is loaded
+// * return 0 if cape is missing
+// ******************************************************************************/
+// int is_cape_loaded(){
+// 	int ret = system("grep -q "CAPE_NAME" /sys/devices/platform/bone_capemgr*/slots");
+// 	if(ret == 0) return 1;
+// 	return 0;
+// }
 
 /*******************************************************************************
 * int check_timeout()

@@ -6,5 +6,6 @@ uname_r=
 
 dtb=am335x-boneblack-emmc-overlay.dtb
 cmdline=coherent_pool=1M
+cape_enable=bone_capemgr.enable_partno=RoboticsCape
 
 uuid=

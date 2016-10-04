@@ -35,9 +35,12 @@ $(phony all) : $(TARGET)
 install:
 	$(MAKE)
 	install -d -m 755 $(DESTDIR)$(PREFIX)/lib
+	install -d -m 755 $(DESTDIR)/etc/robotics/
 	install -m 644 librobotics_cape.so $(DESTDIR)$(PREFIX)/lib
 	install -d -m 755 $(DESTDIR)$(PREFIX)/include
 	install -m 644 *.h $(DESTDIR)$(PREFIX)/include
+	@install -m 644 pru/am335x-pru0-fw $(DESTDIR)/lib/firmware/
+	@install -m 644 pru/am335x-pru1-fw $(DESTDIR)/lib/firmware/
 	@ldconfig
 	@echo "$(TARGET) Installed to $(DESTDIR)$(PREFIX)/lib"
 	
