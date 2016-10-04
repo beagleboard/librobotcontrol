@@ -5,7 +5,7 @@ This is for Debian Jessie ONLY.
 See the wheezy_archive branch for Wheezy-compatible code.
 
 
-Installation Instructions and Black or Blue
+Installation Instructions for Black or Blue
 
 1) 	Flash your BBB to the latest stable Debian Jessie version.
    	Images and instructions avialabe here: 
