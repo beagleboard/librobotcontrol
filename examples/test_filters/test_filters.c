@@ -8,8 +8,8 @@
 * filters to demonstrate how they sum to 1
 *******************************************************************************/
 
-#include <robotics_cape.h>
-#include <useful_includes.h>
+#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape.h"
 
 #define SAMPLE_RATE 	50
 #define TIME_CONSTANT 	2.0

@@ -74,10 +74,6 @@ if [$BOARD == "black"]; then
 	echo "Installing Cape Overlay"
 	install -m 644 black_install_files/RoboticsCape-00A0.dtbo /lib/firmware/
 	
-	echo "Installing modprobe blacklist"
-	install -d -m 755 /etc/modprobe.d
-	install -m 644 black_install_files/pruss-blacklist.conf /etc/modprobe.d/
-	
 	echo "Updating uEnv.txt"
 	install -m 644 --backup=numbered ./uEnv.txt /boot/ 
 	sed -i s/^uuid=.*\$$/uuid=$(UUID)/ $(UENV)

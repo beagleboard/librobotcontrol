@@ -5,9 +5,9 @@
 * see README.txt for details
 *******************************************************************************/
 
-#include <useful_includes.h>
-#include <robotics_cape.h>
-#include <robotics_cape_defs.h>
+#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape.h"
+#include "../../libraries/roboticscape-defs.h"
 #include "../../libraries/simple_gpio/simple_gpio.h"
 #include "../../libraries/mmap/mmap_gpio_adc.h"
 #include <sys/file.h>

@@ -7,8 +7,8 @@
 * will be saved which is loaded automatically the next time the IMU is used.
 *******************************************************************************/
 
-#include <robotics_cape.h>
-#include <useful_includes.h>
+#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape.h"
 
 int main(){
 	if(initialize_cape()<0){

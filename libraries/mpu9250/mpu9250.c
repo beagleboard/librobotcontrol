@@ -6,9 +6,9 @@
 * Credit to Kris Winer most of the framework and register definitions.
 *******************************************************************************/
 
-#include "../robotics_cape_defs.h"
-#include "../useful_includes.h"
-#include "../robotics_cape.h"
+#include "../roboticscape-defs.h"
+#include "../usefulincludes.h"
+#include "../roboticscape.h"
 #include "../simple_gpio/simple_gpio.h"
 #include "mpu9250_defs.h"
 #include "dmp_firmware.h"

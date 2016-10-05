@@ -7,14 +7,19 @@ TOUCH 	 := $(shell touch *)
 CC	:= gcc
 LINKER   := gcc -o
 CFLAGS	:= -c -Wall -g
-LFLAGS	:= -lm -lrt -lpthread -lrobotics-cape
+LFLAGS	:= -lm -lrt -lpthread -lroboticscape
 
 SOURCES  := $(wildcard *.c)
 INCLUDES := $(wildcard *.h)
 OBJECTS  := $(SOURCES:$%.c=$%.o)
-RM := rm -f
 
 PREFIX := /usr
+RM := rm -f
+INSTALL := install -m 755 
+INSTALLDIR := install -d -m 644 
+
+LINKDIR := /etc/roboticscape
+LINKNAME := link_to_startup_program
 
 
 # linking Objects
@@ -27,16 +32,27 @@ $(OBJECTS): %.o : %.c
 	@$(TOUCH) $(CC) $(CFLAGS) -c $< -o $(@)
 
 
-# install to /usr/bin
-$(phony all) : $(TARGET)
-.PHONY: install
+all:
+	$(TARGET)
 
-install: $(all)
+install: 
 	@$(MAKE) --no-print-directory
-	@install -m 0755 $(TARGET) $(DESTDIR)$(PREFIX)/bin
+	@$(INSTALLDIR) $(DESTDIR)$(PREFIX)/bin
+	@$(INSTALL) $(TARGET) $(DESTDIR)$(PREFIX)/bin
+	@echo "$(TARGET) Install Complete"
 	
 clean:
 	@$(RM) $(OBJECTS)
 	@$(RM) $(TARGET)
+	@echo "$(TARGET) Clean Complete"
 
+uninstall:
+	@$(RM) $(DESTDIR)$(PREFIX)/bin/$(TARGET)
+	@echo "$(TARGET) Uninstall Complete"
+
+runonboot:
+	@$(MAKE) install --no-print-directory
+	@$(INSTALLDIR) $(DESTDIR)$(LINKDIR)
+	@ln -s /usr/bin/$(TARGET) $(LINKDIR)/$(LINKNAME)
+	@echo "$(TARGET) Set to Run on Boot"
 	

@@ -22,3 +22,12 @@ install:
 		echo "Installing Example: $$dir" ; \
 		$(MAKE) -C $$dir -s install ;\
 	done
+
+uninstall:
+	@for dir in $(SUBDIRS) ; do \
+		echo "Uninstalling Example: $$dir" ; \
+		$(MAKE) -C $$dir -s uninstall ;\
+	done
+
+
+

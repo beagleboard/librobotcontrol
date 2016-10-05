@@ -8,8 +8,8 @@
 * shutdown signal SIGINT. If that doesn't work then kill it with SIGKILL.
 *******************************************************************************/ 
 
-#include <useful_includes.h>
-#include <robotics_cape.h>
+#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape.h"
 
 int main(){
 	int ret = kill_robot();

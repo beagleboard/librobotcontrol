@@ -27,7 +27,8 @@
 *   9  	DSMx 2048/11ms: 
 *******************************************************************************/
 
-#include <robotics_cape.h>
+#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape.h"
 
 // just run the bind function
 int main(){

@@ -1,12 +1,11 @@
-Source: librobotics-cape
+Source: libroboticscape
 Section: unknown
 Priority: optional
 Build-Depends: build-essential
 Maintainer: James Strawson <james@strawsondesign.com>
 Homepage: <strawsondesign.com>
 
-Package: librobotics-cape
-Version: 0.0.1
+Package: libroboticscape
 Architecture: armhf
 Description: Robotics Cape Library and Examples
 	Supporting library and example programs for the Robotics Cape and Beaglebone Blue

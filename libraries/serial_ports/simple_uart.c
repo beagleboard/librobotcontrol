@@ -6,8 +6,8 @@
 *
 *******************************************************************************/
 
-#include "../robotics_cape.h"
-#include "../useful_includes.h"
+#include "../roboticscape.h"
+#include "../usefulincludes.h"
 
 #define MIN_BUS 0
 #define MAX_BUS 5

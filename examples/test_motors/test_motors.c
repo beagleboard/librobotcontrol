@@ -6,8 +6,8 @@
 * to the screen when called.
 *******************************************************************************/
 
-#include <useful_includes.h>
-#include <robotics_cape.h>
+#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape.h"
 
 // possible modes, user selected with command line arguments
 typedef enum m_mode_t{

@@ -32,8 +32,8 @@
 * as the BEC function is not needed when using the Robotics Cape.
 *******************************************************************************/
 
-#include <robotics_cape.h>
-#include <useful_includes.h>
+#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape.h"
 
 typedef enum test_mode_t{
 	DISABLED,

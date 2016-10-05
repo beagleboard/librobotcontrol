@@ -12,8 +12,9 @@
 * calibrate_dsm2 example to save your particular transmitter's min and max 
 * channel values.
 *******************************************************************************/
-#include <useful_includes.h>
-#include <robotics_cape.h>
+
+#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape.h"
 
 int main(){
 	if(initialize_cape()){
