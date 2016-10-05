@@ -13,7 +13,7 @@ all:
 
 install: all
 	@echo "Installing startup_routine Binary"
-	@$(MAKE)
+	@$(MAKE) -C robot_startup_routine install -s --no-print-directory
 	@echo "Installing systemd roboticscape Service"
 	@$(INSTALLDIR) $(DESTDIR)/etc/roboticscape
 	@$(INSTALLDIR) $(DESTDIR)/etc/systemd/system

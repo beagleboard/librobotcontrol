@@ -59,7 +59,8 @@ int main(){
 	while(setup_gpio()!=0){
 		if(check_timeout()){
 			system("echo 'timeout reached while waiting for gpio driver' >> " START_LOG);
-		 	return 1;
+			printf("timeout reached while waiting for gpio driver\n");
+		 	return -1;
 		}
 		usleep(500000);
 	}
@@ -72,7 +73,8 @@ int main(){
 	while(setup_pwm()!=0){
 		if(check_timeout()){
 			system("echo 'timeout reached while waiting for pwm driver' >> " START_LOG);
-		 	return 1;
+			printf("timeout reached while waiting for pwm driver\n");
+		 	return -1;
 		}
 		usleep(500000);
 	}
@@ -85,7 +87,8 @@ int main(){
 	while(setup_pru()!=0){
 		if(check_timeout()){
 			system("echo 'timeout reached while waiting for remoteproc pru' >> " START_LOG);
-		 	return 1;
+			printf("timeout reached while waiting for remoteproc pru\n");
+		 	return 0;
 		}
 		usleep(500000);
 	}
