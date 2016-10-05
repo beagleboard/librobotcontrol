@@ -83,19 +83,26 @@ int main(){
 	system(buf);
 	system("echo 'pwm initialized' >> " START_LOG);
 
-	// set up pru
-	while(setup_pru()!=0){
-		if(check_timeout()){
-			system("echo 'timeout reached while waiting for remoteproc pru' >> " START_LOG);
-			printf("timeout reached while waiting for remoteproc pru\n");
-		 	return 0;
-		}
-		usleep(500000);
+
+	// just check for PRU for now, don't wait since we know it doesn't work
+	if(setup_pru()!=0){
+		system("echo 'Failed to initialize remoteproc pru' >> " START_LOG);
+		printf("echo 'Failed to initialize remoteproc pru");
 	}
-	time = (micros_since_epoch()-start_us)/1000000;
-	sprintf(buf, "echo 'time (s): %5f' >> %s",time,START_LOG);
-	system(buf);
-	system("echo 'pru remoteproc initialized' >> " START_LOG);
+
+	// wait for pru
+	// while(setup_pru()!=0){
+	// 	if(check_timeout()){
+	// 		system("echo 'timeout reached while waiting for remoteproc pru' >> " START_LOG);
+	// 		printf("timeout reached while waiting for remoteproc pru\n");
+	// 	 	return 0;
+	// 	}
+	// 	usleep(500000);
+	// }
+	// time = (micros_since_epoch()-start_us)/1000000;
+	// sprintf(buf, "echo 'time (s): %5f' >> %s",time,START_LOG);
+	// system(buf);
+	// system("echo 'pru remoteproc initialized' >> " START_LOG);
 
 	cleanup_cape();
 	printf("startup routine complete\n");

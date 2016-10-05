@@ -12,6 +12,7 @@ install:
 	@make -C examples -s install
 	@make -C battery_monitor_service -s install
 	@make -C roboticscape_service -s install
+	@echo "roboticscape Installed"
 
 clean:
 	@make -C libraries -s clean
@@ -19,8 +20,13 @@ clean:
 	@make -C battery_monitor_service -s clean
 	@make -C roboticscape_service -s clean
 	@make -C project_template -s clean
-	@$(RM) debian/libroboticscape
-	@$(RM) debian/libroboticscape.debhelper.log
+	@$(RM) debian/roboticscape
+	@$(RM) debian/roboticscape.debhelper.log
+	@$(RM) debian/debhelper-build-stamp
+	@$(RM) debian/files
+	@$(RM) debian/roboticscape.debhelper.log
+	@$(RM) debian/roboticscape.postrm.debhelper
+	@$(RM) debian/roboticscape.substvars
 	@echo "All Directories Cleaned"
 
 
@@ -30,5 +36,5 @@ uninstall:
 	@make -C battery_monitor_service -s uninstall
 	@make -C roboticscape_service -s uninstall
 	@make -C project_template -s uninstall
-	@echo "libroboticscape Uninstalled"
+	@echo "roboticscape Uninstalled"
 

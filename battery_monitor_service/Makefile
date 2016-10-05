@@ -16,21 +16,23 @@ install: $(all)
 	@echo "Installing battery_monitor Binary"
 	@$(MAKE) -C battery_monitor -s install
 	@echo "Installing battery_monitor Service File"
-	@$(INSTALLDIR) $(DESTDIR)/etc/systemd/system
-	@$(INSTALL) $(SERVICE).service $(DESTDIR)/etc/systemd/system/
+	@$(INSTALLDIR) $(DESTDIR)/lib/systemd/system
+	@$(INSTALL) $(SERVICE).service $(DESTDIR)/lib/systemd/system/
 	@echo "Enabling battery_monitor Service"
-	@systemctl daemon-reload
-	@systemctl enable $(SERVICE)
-	@systemctl start $(SERVICE)
+	-systemctl daemon-reload
+	-systemctl enable $(SERVICE)
+	-systemctl start $(SERVICE)
 	@echo "battery_monitor Service Install Complete"
 	
 clean:
 	@$(MAKE) -C battery_monitor -s clean
 
 uninstall:
+	-systemctl -q stop --now $(SERVICE)
 	-systemctl -f -q --now disable $(SERVICE)
-	$(RM) $(DESTDIR)/etc/systemd/system/$(SERVICE).service
+	$(RM) $(DESTDIR)/lib/systemd/system/$(SERVICE).service
 	$(MAKE) -C battery_monitor -s uninstall
+	-systemctl -q daemon-reload
 	@echo "Battery Monitor Service Uninstall Complete"
 
 

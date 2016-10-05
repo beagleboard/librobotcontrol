@@ -1,11 +1,12 @@
 TARGET = libroboticscape.so
 
+
 SUBDIRS = $(shell find * -type d -print)
 CC = gcc
 LINKER   := gcc
 TOUCH 	 := $(shell touch *)
-CFLAGS := -Wall -fsingle-precision-constant -fpic -march=armv7-a -mtune=cortex-a8
-LFLAGS	:= -lm -lrt -lpthread -shared
+CFLAGS := -Wall -fsingle-precision-constant -fpic -march=armv7-a -mtune=cortex-a8 
+LFLAGS	:= -lm -lrt -lpthread -shared -Wl,-soname,$(TARGET)
 
 SOURCES := $(shell find ./ -name '*.c')
 INCLUDES := $(shell find ./ -name '*.h')
@@ -71,6 +72,8 @@ uninstall:
 	$(RM) $(DESTDIR)$(PREFIX)/include/usefulincludes.h
 	$(RM) $(DESTDIR)/etc/roboticscape/
 	$(RM) $(DESTDIR)/etc/modprobe.d/pruss-blacklist.conf
+	$(RM) $(DESTDIR)/lib/firmware/am335x-pru0-fw
+	$(RM) $(DESTDIR)/lib/firmware/am335x-pru1-fw 
 	@echo "$(TARGET) Uninstall Complete"
 
 	

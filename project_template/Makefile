@@ -53,6 +53,6 @@ uninstall:
 runonboot:
 	@$(MAKE) install --no-print-directory
 	@$(INSTALLDIR) $(DESTDIR)$(LINKDIR)
-	@ln -s /usr/bin/$(TARGET) $(LINKDIR)/$(LINKNAME)
+	@ln -s -f $(DESTDIR)$(PREFIX)/bin/$(TARGET) $(LINKDIR)/$(LINKNAME)
 	@echo "$(TARGET) Set to Run on Boot"
 	
