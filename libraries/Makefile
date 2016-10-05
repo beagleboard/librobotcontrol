@@ -15,6 +15,7 @@ PREFIX := /usr
 RM := rm -f -r
 INSTALL := install -m 755 
 INSTALLDIR := install -d -m 644
+INSTALLPRU := install -m 644
 
 
 # linking Objects
@@ -44,8 +45,8 @@ install:
 	$(INSTALLDIR) $(DESTDIR)/etc/roboticscape/
 	@# install pru binaries
 	$(INSTALLDIR) $(DESTDIR)/lib/firmware/
-	$(INSTALL) pru/am335x-pru0-fw $(DESTDIR)/lib/firmware/
-	$(INSTALL) pru/am335x-pru1-fw $(DESTDIR)/lib/firmware/
+	$(INSTALLPRU) pru/am335x-pru0-fw $(DESTDIR)/lib/firmware/
+	$(INSTALLPRU) pru/am335x-pru1-fw $(DESTDIR)/lib/firmware/
 	@#uipruss balcklist
 	@$(INSTALLDIR) $(DESTDIR)/etc/modprobe.d
 	@$(INSTALL) pruss-blacklist.conf $(DESTDIR)/etc/modprobe.d/

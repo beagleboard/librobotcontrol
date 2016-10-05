@@ -20,6 +20,7 @@ clean:
 	@make -C roboticscape_service -s clean
 	@make -C project_template -s clean
 	@$(RM) debian/libroboticscape
+	@$(RM) debian/libroboticscape.debhelper.log
 	@echo "All Directories Cleaned"
 
 
