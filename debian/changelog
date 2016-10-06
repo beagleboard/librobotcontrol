@@ -1,5 +1,5 @@
-roboticscape (0.0.3) unstable; urgency=low
+roboticscape (0.0.4) unstable; urgency=low
 
-  * roboticscape service now automatically starts blink on boot and ingores PRU errors
+  * provide configure_black_overlay.sh as part of package
 
- -- James Strawson <james@strawsondesign.com>  Sat, 17 Sep 2016 09:01:15 +0000
+ -- James Strawson <james@strawsondesign.com>  Wed, 5 Oct 2016 09:01:15 +0000

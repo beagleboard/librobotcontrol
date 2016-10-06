@@ -1,31 +1,33 @@
 
-OVERLAY = "RoboticsCape-00A0"
-CAPE = "RoboticsCape"
-UENV = "/boot/uEnv.txt"
-UNAME := "$(shell uname -r)"
-UUID := "$(shell blkid -c /dev/null -s UUID -o value /dev/mmcblk*)"
+OVERLAY := "RoboticsCape-00A0"
+CAPE := "RoboticsCape"
+BLACKDIR := /etc/roboticscape/black_install_files
+
+PREFIX := /usr
+RM := rm -f -r 
+INSTALL := install -m 755 
+INSTALLNONEXEC := install -m 644 
+INSTALLDIR := install -d -m 644 
 
 all:
 	@echo "Compiling Overlay"
 	@dtc -O dtb -o $(OVERLAY).dtbo -b 0 -@ $(OVERLAY).dts
 
-install: all
-	@echo "Installing Device Tree Overlay"
-	@install -d -m 755 $(DESTDIR)/lib/firmware
-	@install -m 644 $(OVERLAY).dtbo $(DESTDIR)/lib/firmware/
-	@echo "Installing PRU binaries"
-	@install -m 644 pru/am335x-pru0-fw $(DESTDIR)/lib/firmware/
-	@install -m 644 pru/am335x-pru1-fw $(DESTDIR)/lib/firmware/
-	@echo "Installing modprobe blacklist"
-	@install -d -m 755 $(DESTDIR)/etc/modprobe.d
-	@install -m 644 pruss-blacklist.conf $(DESTDIR)/etc/modprobe.d/
-	@echo "Updating uEnv.txt"
-	@install -m 644 --backup=numbered ./uEnv.txt /boot/ 
-	@sed -i s/^uuid=.*\$$/uuid=$(UUID)/ $(UENV)
-	@sed -i s/^uname_r=.*\$$/uname_r=$(UNAME)/ $(UENV)
-	@echo  "Setting Default Cape"
-	@sed -i s/^CAPE=.*\$$/CAPE=$(CAPE)/ /etc/default/capemgr
+install:
+	$(MAKE)
+	@$(INSTALLDIR) $(DESTDIR)/$(BLACKDIR)
+	@$(INSTALLDIR) $(DESTDIR)/usr/bin
+	@$(INSTALLNONEXEC) $(OVERLAY).dtbo $(DESTDIR)/$(BLACKDIR)
+	@$(INSTALLNONEXEC) uEnv.txt $(DESTDIR)/$(BLACKDIR)
+	@$(INSTALL) configure_black_overlay.sh $(DESTDIR)/usr/bin
+	@echo "black_install_files Install Complete"
 
 clean:
 	@rm -f $(OVERLAY).dtbo
 	@echo "Overlay Cleanup Complete"
+
+uninstall:
+	@$(RM) $(DESTDIR)/$(BLACKDIR)/$(OVERLAY).dtbo 
+	@$(RM) $(DESTDIR)/$(BLACKDIR)/uEnv.txt
+	@$(RM) $(DESTDIR)/usr/bin/configure_black_overlay.sh
+	@echo "black_install_files Uninstall Complete"

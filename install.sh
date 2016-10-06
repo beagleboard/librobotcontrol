@@ -45,51 +45,14 @@ if modprobe -n remoteproc | grep -q "not found" ; then
 fi
 
 # make sure the user really wants to install
-echo "This script will install all Robotics Cape supporting software."
+echo "This script will install all Robotics Cape supporting software"
+echo "for the BeagleBone black and BeagleBone Blue"
 read -r -p "Continue? [y/n] " response
 case $response in
     [yY]) echo " " ;;
     *) echo "cancelled"; exit;;
 esac
 echo " "
-
-echo "This script will install all Robotics Cape supporting software."
-echo "Enter 1 to install on a BeagleBone Black"
-echo "Enter 2 to install on Beaglebone Blue"
-echo "Enter 3 to abort and exit"
-select bfn in "black" "blue" "quit"; do
-    case $bfn in
-		black ) BOARD="black"; break;;
-        blue ) BOARD="blue"; break;;
-		quit ) exit;;
-    esac
-done
-
-
-################################################################################
-# Run Beaglebone Black specific installation steps
-################################################################################
-if [$BOARD == "black"]; then
-	
-	echo "Installing Cape Overlay"
-	install -m 644 black_install_files/RoboticsCape-00A0.dtbo /lib/firmware/
-	
-	echo "Updating uEnv.txt"
-	install -m 644 --backup=numbered ./uEnv.txt /boot/ 
-	sed -i s/^uuid=.*\$$/uuid=$(UUID)/ $(UENV)
-	sed -i s/^uname_r=.*\$$/$(UNAME)/ $(UENV)
-	
-	echo  "Setting Default Cape"
-	echo "CAPE=RoboticsCape" > /etc/default/capemgr
-fi
-
-################################################################################
-# Compile and install library, examples, and services
-# This works for Black and Blue
-################################################################################
-
-make install
-make clean
 
 
 #################################################
@@ -98,8 +61,11 @@ make clean
 
 echo " "
 echo "Which program should run on boot?"
+echo "Select 'blink' if you are unsure."
+echo "Select 'balance' for BeagleMiP"
+echo "Select 'none' to start nothing on boot"
 echo "Select 'existing' to keep current configuration."
-echo "Select blink if you are unsure."
+
 echo "type 1-4 then enter"
 select bfn in "blink" "balance" "none" "existing"; do
     case $bfn in
@@ -109,6 +75,15 @@ select bfn in "blink" "balance" "none" "existing"; do
 		existing ) PROG="existing"; break;;
     esac
 done
+
+
+################################################################################
+# Compile and install library, examples, and services
+# This works for Black and Blue
+################################################################################
+make clean
+make install
+
 
 # now make a link to the right program
 # if 'none' was selected then leave default as bare_minimum (does nothing)
@@ -121,15 +96,6 @@ elif  [ "$PROG" == "none" ]; then
 fi
 
 
-
-
-
-############
-# all done
-############
-echo " "
-echo "Robotics Cape Configured and Installed"
-echo "Reboot to complete installation."
-echo "After Rebooting we suggest running calibrate_gyro and calibrate_mag"
-echo " " 
-
+# normally here we would give a message to the user indicating all is complete
+# and tell them to run the balck cape installer script if they are on a black.
+# however, this message is now displayed by 'make install' above.
