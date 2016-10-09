@@ -65,6 +65,7 @@
 // Battery Indicator LEDs
 #define BATT_LED_1	27 // P8.17
 #define BATT_LED_2	65 // P8.18
+#define BATT_LED_2_BLUE 11 // different on BB Blue
 #define BATT_LED_3	61 // P8.26
 #define BATT_LED_4	26 // P8.14
 

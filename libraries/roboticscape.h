@@ -1230,6 +1230,27 @@ d_filter_t create_double_integrator(float dt);
 d_filter_t create_pid(float kp, float ki, float kd, float Tf, float dt);
 
 
+/*******************************************************************************
+* Board identification
+*
+* Because we wish to support different beagleboard products with this same
+* library, we must internally determine which board we are running on to decide
+* which pins to use. We make these functions available to the user in case they
+* wish to do the same. 
+* See the check_board example for a demonstration.
+*******************************************************************************/
+typedef enum bb_board_t{
+	UNKNOWN_BOARD,
+	BB_BLACK,
+	BB_BLACK_W,
+	BB_GREEN,
+	BB_GREEN_W,
+	BB_BLUE
+} bb_board_t;
+
+bb_board_t get_bb_board();
+void print_bb_board();
+
 	
 #endif //ROBOTICS_CAPE
 
