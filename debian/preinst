@@ -1,0 +1,6 @@
+#!/bin/sh
+
+systemctl stop battery_monitor
+systemctl stop roboticscape
+
+exit 0

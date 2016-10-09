@@ -1,0 +1,8 @@
+#!/bin/sh
+
+systemctl daemon-reload
+ldconfig
+
+echo "Uninstallation Complete"
+
+exit 0

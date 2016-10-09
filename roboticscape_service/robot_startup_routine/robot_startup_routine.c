@@ -13,7 +13,7 @@
 #include "../../libraries/simple_gpio/simple_gpio.h"
 #include "../../libraries/simple_pwm/simple_pwm.h"
 
-#define TIMEOUT_S 60
+#define TIMEOUT_S 25
 #define START_LOG "/etc/roboticscape/startup_log.txt"
 
 int is_cape_loaded();

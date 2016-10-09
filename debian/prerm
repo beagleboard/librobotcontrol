@@ -1,0 +1,12 @@
+#!/bin/sh
+
+
+# stop and disable the battery monitor service
+systemctl stop battery_monitor
+systemctl disable battery_monitor
+
+# stop and disable the roboticscape service
+systemctl stop roboticscape
+systemctl disable roboticscape
+
+exit 0
