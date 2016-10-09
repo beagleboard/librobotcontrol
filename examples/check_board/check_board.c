@@ -1,8 +1,9 @@
 /*******************************************************************************
-* bare_minimum.c
+* check_board.c
 *
 * James Strawson 2016
-* This is meant to be a skeleton program for robotics cape projects. 
+* print to the screen a human-readable string version of the bb_board_t enum
+* of the board that this code is currently running on.
 *******************************************************************************/
 
 #include "../../libraries/usefulincludes.h"

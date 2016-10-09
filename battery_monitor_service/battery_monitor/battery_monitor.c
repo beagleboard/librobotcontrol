@@ -29,6 +29,10 @@ int kill_existing_instance();
 void shutdown_signal_handler(int signo);
 
 
+// gpio designation for led 2 is a global variable
+// the rest are #defines but since led 2 is different on the blue
+// we must make it variable
+int batt_led_2;
 
 // main() takes only one optional argument: -k (kill)
 int main(int argc, char *argv[]){
@@ -78,13 +82,17 @@ int main(int argc, char *argv[]){
     signal(SIGINT, shutdown_signal_handler);	
 	signal(SIGTERM, shutdown_signal_handler);	
 
+	// set led 2 gpio designation depending on board
+	if(get_bb_board()==BB_BLUE) batt_led_2=BATT_LED_2_BLUE;
+	else batt_led_2=BATT_LED_2;
+
 	// open the gpio channels for 4 battery indicator LEDs
 	gpio_export(BATT_LED_1);
-	gpio_export(BATT_LED_2);
+	gpio_export(batt_led_2);
 	gpio_export(BATT_LED_3);
 	gpio_export(BATT_LED_4);
 	gpio_set_dir(BATT_LED_1, OUTPUT_PIN);
-	gpio_set_dir(BATT_LED_2, OUTPUT_PIN);
+	gpio_set_dir(batt_led_2, OUTPUT_PIN);
 	gpio_set_dir(BATT_LED_3, OUTPUT_PIN);
 	gpio_set_dir(BATT_LED_4, OUTPUT_PIN);
 	
@@ -246,31 +254,31 @@ void illuminate_leds(int i){
 	// now illuminate LEDs properly
 	case 4:
 		mmap_gpio_write(BATT_LED_1,HIGH);
-		mmap_gpio_write(BATT_LED_2,HIGH);
+		mmap_gpio_write(batt_led_2,HIGH);
 		mmap_gpio_write(BATT_LED_3,HIGH);
 		mmap_gpio_write(BATT_LED_4,HIGH);
 		break;
 	case 3:
 		mmap_gpio_write(BATT_LED_1,HIGH);
-		mmap_gpio_write(BATT_LED_2,HIGH);
+		mmap_gpio_write(batt_led_2,HIGH);
 		mmap_gpio_write(BATT_LED_3,HIGH);
 		mmap_gpio_write(BATT_LED_4,LOW);
 		break;
 	case 2:
 		mmap_gpio_write(BATT_LED_1,HIGH);
-		mmap_gpio_write(BATT_LED_2,HIGH);
+		mmap_gpio_write(batt_led_2,HIGH);
 		mmap_gpio_write(BATT_LED_3,LOW);
 		mmap_gpio_write(BATT_LED_4,LOW);
 		break;
 	case 1:
 		mmap_gpio_write(BATT_LED_1,HIGH);
-		mmap_gpio_write(BATT_LED_2,LOW);
+		mmap_gpio_write(batt_led_2,LOW);
 		mmap_gpio_write(BATT_LED_3,LOW);
 		mmap_gpio_write(BATT_LED_4,LOW);
 		break;
 	case 0:
 		mmap_gpio_write(BATT_LED_1,LOW);
-		mmap_gpio_write(BATT_LED_2,LOW);
+		mmap_gpio_write(batt_led_2,LOW);
 		mmap_gpio_write(BATT_LED_3,LOW);
 		mmap_gpio_write(BATT_LED_4,LOW);
 		break;
