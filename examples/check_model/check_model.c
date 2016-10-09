@@ -1,5 +1,5 @@
 /*******************************************************************************
-* check_board.c
+* check_model.c
 *
 * James Strawson 2016
 * print to the screen a human-readable string version of the bb_board_t enum
@@ -11,7 +11,7 @@
 
 int main(){
 	printf("\nCurrently running on a:\n");
-	print_bb_board();
+	print_bb_model();
 	printf("\n");
 	return 0;
 }

@@ -1239,17 +1239,17 @@ d_filter_t create_pid(float kp, float ki, float kd, float Tf, float dt);
 * wish to do the same. 
 * See the check_board example for a demonstration.
 *******************************************************************************/
-typedef enum bb_board_t{
-	UNKNOWN_BOARD,
+typedef enum bb_model_t{
+	UNKNOWN_MODEL,
 	BB_BLACK,
 	BB_BLACK_W,
 	BB_GREEN,
 	BB_GREEN_W,
 	BB_BLUE
-} bb_board_t;
+} bb_model_t;
 
-bb_board_t get_bb_board();
-void print_bb_board();
+bb_model_t get_bb_model();
+void print_bb_model();
 
 	
 #endif //ROBOTICS_CAPE

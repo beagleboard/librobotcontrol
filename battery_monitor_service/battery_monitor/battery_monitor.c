@@ -83,7 +83,7 @@ int main(int argc, char *argv[]){
 	signal(SIGTERM, shutdown_signal_handler);	
 
 	// set led 2 gpio designation depending on board
-	if(get_bb_board()==BB_BLUE) batt_led_2=BATT_LED_2_BLUE;
+	if(get_bb_model()==BB_BLUE) batt_led_2=BATT_LED_2_BLUE;
 	else batt_led_2=BATT_LED_2;
 
 	// open the gpio channels for 4 battery indicator LEDs
