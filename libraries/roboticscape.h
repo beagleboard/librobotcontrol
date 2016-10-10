@@ -537,12 +537,14 @@ typedef enum gyro_dlpf_t {
 } gyro_dlpf_t;
 
 typedef enum imu_orientation_t {
-	ORIENTATION_Z_UP 	= 136,
-	ORIENTATION_Z_DOWN 	= 396,
-	ORIENTATION_X_UP 	= 14,
-	ORIENTATION_X_DOWN 	= 266,
-	ORIENTATION_Y_UP 	= 112,
-	ORIENTATION_Y_DOWN 	= 336
+	ORIENTATION_Z_UP 	  = 136,
+	ORIENTATION_Z_DOWN    = 396,
+	ORIENTATION_X_UP 	  = 14,
+	ORIENTATION_X_DOWN 	  = 266,
+	ORIENTATION_Y_UP 	  = 112,
+	ORIENTATION_Y_DOWN 	  = 336,
+	ORIENTATION_X_FORWARD = 133,
+	ORIENTATION_X_BACK 	  = 161
 } imu_orientation_t;
 
 typedef struct imu_config_t {
@@ -561,7 +563,7 @@ typedef struct imu_config_t {
 	int dmp_sample_rate;
 	imu_orientation_t orientation; //orientation matrix
 	// higher mix_factor means less weight the compass has on fused_TaitBryan
-	int compass_time_constant; 	// time constant for filtering fused yaw
+	float compass_time_constant; 	// time constant for filtering fused yaw
 	int dmp_interrupt_priority; // scheduler priority for handler
 	int show_warnings;	// set to 1 to enable showing of i2c_bus warnings
 
@@ -591,7 +593,8 @@ typedef struct imu_data_t {
 	// TaitBryan angles will be available which add magnetometer data to filter
 	float fused_quat[4]; 	// normalized quaternion
 	float fused_TaitBryan[3]; 	// radians pitch/roll/yaw X/Y/Z
-	float compass_heading;	// heading in radians based purely on magnetometer
+	float compass_heading;	// heading filtered with gyro and accel data
+	float compass_heading_raw;	// heading in radians based purely on magnetometer
 } imu_data_t;
  
 // General functions
@@ -1226,6 +1229,27 @@ d_filter_t create_integrator(float dt);
 d_filter_t create_double_integrator(float dt);
 d_filter_t create_pid(float kp, float ki, float kd, float Tf, float dt);
 
+
+/*******************************************************************************
+* Board identification
+*
+* Because we wish to support different beagleboard products with this same
+* library, we must internally determine which board we are running on to decide
+* which pins to use. We make these functions available to the user in case they
+* wish to do the same. 
+* See the check_board example for a demonstration.
+*******************************************************************************/
+typedef enum bb_model_t{
+	UNKNOWN_MODEL,
+	BB_BLACK,
+	BB_BLACK_W,
+	BB_GREEN,
+	BB_GREEN_W,
+	BB_BLUE
+} bb_model_t;
+
+bb_model_t get_bb_model();
+void print_bb_model();
 
 	
 #endif //ROBOTICS_CAPE

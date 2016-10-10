@@ -32,8 +32,8 @@
 * as the BEC function is not needed when using the Robotics Cape.
 *******************************************************************************/
 
-#include <robotics_cape.h>
-#include <useful_includes.h>
+#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape.h"
 
 typedef enum test_mode_t{
 	DISABLED,
@@ -70,7 +70,8 @@ int main(int argc, char *argv[]){
 	test_mode_t mode = DISABLED; //start mode disabled
 	int power_en = 0; // change to 1 if user wishes to enable power rail
 	int frequency_hz = 50; // default 50hz frequency to send pulses
-	
+	int toggle = 0;
+
 	// parse arguments
 	opterr = 0;
 	while ((c = getopt(argc, argv, "c:f:vp:e:u:s:h")) != -1){
@@ -266,6 +267,10 @@ int main(int argc, char *argv[]){
 			set_state(EXITING); //should never actually get here
 			break;
 		}
+		
+		// blink green led
+		set_led(GREEN, toggle);
+		toggle = !toggle;
 		
 		// sleep roughly enough to maintain frequency_hz
 		usleep(1000000/frequency_hz);

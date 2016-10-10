@@ -8,13 +8,15 @@
 # Variables collected here for convenience
 ################################################################################
 
-UNAME="$(uname -r)"
+KERNEL="$(uname -r)"
 DEBIAN="$(cat /etc/debian_version)"
 
 echo " "
-echo "Detected Linux kernel $UNAME"
+echo "Detected Linux kernel $KERNEL"
 echo "Detected Debian version $DEBIAN"
 cat /etc/dogtag
+cat /proc/device-tree/model
+echo " "
 echo " "
 
 ################################################################################
@@ -39,11 +41,11 @@ fi
 if modprobe -n remoteproc | grep -q "not found" ; then
 	echo "ERROR: remoteproc module not found"
 	echo "Use a standard TI kernel with remoteproc instead."
-	exit
+	exit 1
 fi
 
 # make sure the user really wants to install
-echo "This script will install all Robotics Cape supporting software."
+echo "This script will install all Robotics Cape supporting software"
 read -r -p "Continue? [y/n] " response
 case $response in
     [yY]) echo " " ;;
@@ -52,23 +54,17 @@ esac
 echo " "
 
 
-
-################################################################################
-# Compile and install library, then examples, then battery monitor service
-################################################################################
-
-make install
-make clean
-
-
 #################################################
 # Prompt user for desired startup program
 #################################################
 
 echo " "
 echo "Which program should run on boot?"
+echo "Select 'blink' if you are unsure."
+echo "Select 'balance' for BeagleMiP"
+echo "Select 'none' to start nothing on boot"
 echo "Select 'existing' to keep current configuration."
-echo "Select blink if you are unsure."
+
 echo "type 1-4 then enter"
 select bfn in "blink" "balance" "none" "existing"; do
     case $bfn in
@@ -79,26 +75,26 @@ select bfn in "blink" "balance" "none" "existing"; do
     esac
 done
 
+
+################################################################################
+# Compile and install library, examples, and services
+# This works for Black and Blue
+################################################################################
+make clean
+make install
+
+
 # now make a link to the right program
 # if 'none' was selected then leave default as bare_minimum (does nothing)
 if [ "$PROG" == "blink" ]; then
-	ln -s /usr/bin/blink /etc/robotics/link_to_startup_program
+	ln -s /usr/bin/blink /etc/roboticscape/link_to_startup_program
 elif  [ "$PROG" == "balance" ]; then
-	ln -s /usr/bin/balance /etc/robotics/link_to_startup_program
+	ln -s /usr/bin/balance /etc/roboticscape/link_to_startup_program
 elif  [ "$PROG" == "none" ]; then
-	ln -s /usr/bin/bare_minimum /etc/robotics/link_to_startup_program
+	ln -s /usr/bin/bare_minimum /etc/roboticscape/link_to_startup_program
 fi
 
 
-
-
-
-############
-# all done
-############
-echo " "
-echo "Robotics Cape Configured and Installed"
-echo "Reboot to complete installation."
-echo "After Rebooting we suggest running calibrate_gyro and calibrate_mag"
-echo " " 
-
+# normally here we would give a message to the user indicating all is complete
+# and tell them to run the balck cape installer script if they are on a black.
+# however, this message is now displayed by 'make install' above.

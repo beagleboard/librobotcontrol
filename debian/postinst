@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# ld config to make sure libroboticscape.so is recognized
+ldconfig
+
+# start the battery monitor service
+systemctl daemon-reload
+systemctl enable battery_monitor
+systemctl start battery_monitor
+
+# Source debconf library.
+. /usr/share/debconf/confmodule
+ 
+# Fetching configuration from debconf
+# for answer to startup program
+db_get roboticscape/question1
+PROG=$RET
+
+echo "user selected $PROG"
+
+if [ "$PROG" = "blink" ]; then
+	ln -s -f /usr/bin/blink /etc/roboticscape/link_to_startup_program
+elif  [ "$PROG" = "balance" ]; then
+	ln -s -f /usr/bin/balance /etc/roboticscape/link_to_startup_program
+elif  [ "$PROG" = "none" ]; then
+	ln -s -f /usr/bin/bare_minimum /etc/roboticscape/link_to_startup_program
+fi
+
+systemctl enable roboticscape
+systemctl start -q roboticscape &
+
+echo "Installation Complete"
+echo "If you are running this on a beaglebone black, please"
+echo "run configure_black_overlay.sh once to configure the"
+echo "device tree overlay, then reboot to load device tree."
+echo "After rebooting we suggest running calibrate_gyro and calibrate_mag."
+
+exit 0

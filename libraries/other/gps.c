@@ -7,9 +7,9 @@
 *
 *******************************************************************************/
 
-#include "../useful_includes.h"
-#include "../robotics_cape.h"
-#include "../robotics_cape_defs.h"
+#include "../usefulincludes.h"
+#include "../roboticscape.h"
+#include "../roboticscape-defs.h"
 #include "../nmealib/nmea/nmea.h"
 
 // uncomment debug defines to print raw data for debugging

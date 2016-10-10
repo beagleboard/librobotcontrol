@@ -10,7 +10,7 @@
 * these ring_buf functions to perform normal operations. 
 *******************************************************************************/
 
-#include "../robotics_cape.h"
+#include "../roboticscape.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

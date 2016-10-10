@@ -6,7 +6,7 @@
 * SISO filters for arbitrary transfer functions. 
 *******************************************************************************/
 
-#include "../robotics_cape.h"
+#include "../roboticscape.h"
 #include <stdio.h>
 #include <math.h>
 #include <string.h> // for memset

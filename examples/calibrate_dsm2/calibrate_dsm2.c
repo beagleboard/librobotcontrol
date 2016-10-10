@@ -12,8 +12,8 @@
 * paired to, not your BeagleBone.
 *******************************************************************************/
 
-#include <useful_includes.h>
-#include <robotics_cape.h>
+#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape.h"
 
 int main(){
 	if(initialize_cape()<0){

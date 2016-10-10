@@ -9,8 +9,8 @@
 * The test strings this programs transmits will then loopback to the RX channel.
 *******************************************************************************/
 
-#include <robotics_cape.h>
-#include <useful_includes.h>
+#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape.h"
 
 #define BUF_SIZE 	32
 #define TIMEOUT_S 	0.5

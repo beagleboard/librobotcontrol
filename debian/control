@@ -1,12 +1,12 @@
-Source: roboticscape  
-Maintainer: James Strawson <james@strawsondesign.com>
-Build-Depends: debhelper (>= 8.0.0)
-Standards-Version: 3.9.3
+Source: roboticscape
 Section: utils
+Priority: optional
+Build-Depends: devscripts, debhelper (>= 9), debconf (>= 0.2.26)
+Standards-Version: 3.9.5
+Maintainer: James Strawson <james@strawsondesign.com>
+Homepage: <strawsondesign.com>
 
 Package: roboticscape
-Priority: extra  
 Architecture: armhf
-Depends: ${shlibs:Depends}, ${misc:Depends}  
-Description: Contains the supporting library for the robotics cape along with many example programs, supporting systemd services, and device tree overlay.
-
+Description: Robotics Cape Library and Examples
+	Supporting library and example programs for the Robotics Cape and Beaglebone Blue

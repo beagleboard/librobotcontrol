@@ -2,4 +2,4 @@
 # Just change the target name to match your main source code filename.
 TARGET = test_dsm2
 
-include /usr/include/robotics.mk 
+include ../robotics.mk 

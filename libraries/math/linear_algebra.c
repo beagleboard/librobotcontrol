@@ -4,7 +4,7 @@
 * James Strawson & Matt Atlas 2016
 *******************************************************************************/
 
-#include "../robotics_cape.h"
+#include "../roboticscape.h"
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>

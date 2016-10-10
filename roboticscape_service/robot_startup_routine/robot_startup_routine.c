@@ -7,14 +7,14 @@
 * in order.
 *******************************************************************************/
 
-#include <useful_includes.h>
-#include <robotics_cape.h>
-#include <robotics_cape_defs.h>
+#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape.h"
+#include "../../libraries/roboticscape-defs.h"
 #include "../../libraries/simple_gpio/simple_gpio.h"
 #include "../../libraries/simple_pwm/simple_pwm.h"
 
-#define TIMEOUT_S 60
-#define START_LOG "/etc/robotics/startup_log.txt"
+#define TIMEOUT_S 25
+#define START_LOG "/etc/roboticscape/startup_log.txt"
 
 int is_cape_loaded();
 int check_timeout();
@@ -32,6 +32,8 @@ uint64_t start_us;
 *
 *******************************************************************************/
 int main(){
+	char buf[128];
+	float time;
 
 	// log start time 
 	start_us = micros_since_epoch();
@@ -41,50 +43,66 @@ int main(){
 	// delete old pid file if it's left over from an improper shudown
 	kill_robot();
 
-	// check capemanager
-	while(is_cape_loaded()!=1){
-		if(check_timeout()){
-			system("echo 'timeout reached while waiting for overlay to load' >> " START_LOG);
-		 	return 1;
-		}
-		usleep(500000);
+	// // check capemanager
+	// while(is_cape_loaded()!=1){
+	// 	if(check_timeout()){
+	// 		system("echo 'timeout reached while waiting for overlay to load' >> " START_LOG);
+	// 	 	return 1;
+	// 	}
+	// 	usleep(500000);
 		
-	}
-	system("uptime -p >> " START_LOG);
-	system("echo 'cape overlay loaded' >> " START_LOG);
+	// }
+	// system("uptime -p >> " START_LOG);
+	// system("echo 'cape overlay loaded' >> " START_LOG);
 
 	// export gpio pins
 	while(setup_gpio()!=0){
 		if(check_timeout()){
 			system("echo 'timeout reached while waiting for gpio driver' >> " START_LOG);
-		 	return 1;
+			printf("timeout reached while waiting for gpio driver\n");
+		 	return -1;
 		}
 		usleep(500000);
 	}
-	system("uptime -p >> " START_LOG);
+	time = (micros_since_epoch()-start_us)/1000000;
+	sprintf(buf, "echo 'time (s): %5f' >> %s",time,START_LOG);
+	system(buf);
 	system("echo 'gpio pins exported' >> " START_LOG);
 
 	// set up pwm at desired frequnecy
 	while(setup_pwm()!=0){
 		if(check_timeout()){
 			system("echo 'timeout reached while waiting for pwm driver' >> " START_LOG);
-		 	return 1;
+			printf("timeout reached while waiting for pwm driver\n");
+		 	return -1;
 		}
 		usleep(500000);
 	}
-	system("uptime -p >> " START_LOG);
+	time = (micros_since_epoch()-start_us)/1000000;
+	sprintf(buf, "echo 'time (s): %5f' >> %s",time,START_LOG);
+	system(buf);
 	system("echo 'pwm initialized' >> " START_LOG);
 
-	// set up pru
-	while(setup_pru()!=0){
-		if(check_timeout()){
-			system("echo 'timeout reached while waiting for remoteproc pru' >> " START_LOG);
-		 	return 1;
-		}
-		usleep(500000);
+
+	// just check for PRU for now, don't wait since we know it doesn't work
+	if(setup_pru()!=0){
+		system("echo 'Failed to initialize remoteproc pru' >> " START_LOG);
+		printf("echo 'Failed to initialize remoteproc pru");
 	}
-	system("uptime -p >> " START_LOG);
-	system("echo 'pru remoteproc initialized' >> " START_LOG);
+
+	// wait for pru
+	// while(setup_pru()!=0){
+	// 	if(check_timeout()){
+	// 		system("echo 'timeout reached while waiting for remoteproc pru' >> " START_LOG);
+	// 		printf("timeout reached while waiting for remoteproc pru\n");
+	// 	 	return 0;
+	// 	}
+	// 	usleep(500000);
+	// }
+	// time = (micros_since_epoch()-start_us)/1000000;
+	// sprintf(buf, "echo 'time (s): %5f' >> %s",time,START_LOG);
+	// system(buf);
+	// system("echo 'pru remoteproc initialized' >> " START_LOG);
 
 	cleanup_cape();
 	printf("startup routine complete\n");
@@ -92,18 +110,18 @@ int main(){
 	return 0;
 }
 
-/*******************************************************************************
-* is_cape_loaded()
-*
-* check to make sure robotics cape overlay is loaded
-* return 1 if cape is loaded
-* return 0 if cape is missing
-*******************************************************************************/
-int is_cape_loaded(){
-	int ret = system("grep -q "CAPE_NAME" /sys/devices/platform/bone_capemgr*/slots");
-	if(ret == 0) return 1;
-	return 0;
-}
+// /******************************************************************************
+// * is_cape_loaded()
+// *
+// * check to make sure robotics cape overlay is loaded
+// * return 1 if cape is loaded
+// * return 0 if cape is missing
+// ******************************************************************************/
+// int is_cape_loaded(){
+// 	int ret = system("grep -q "CAPE_NAME" /sys/devices/platform/bone_capemgr*/slots");
+// 	if(ret == 0) return 1;
+// 	return 0;
+// }
 
 /*******************************************************************************
 * int check_timeout()

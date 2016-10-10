@@ -6,8 +6,8 @@
 * It simply prints to the screen when a button has been pressed or released.
 *******************************************************************************/
 
-#include <useful_includes.h>
-#include <robotics_cape.h>
+#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape.h"
 
 // pause button pressed interrupt function
 int on_pause_pressed(){

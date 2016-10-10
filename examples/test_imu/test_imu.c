@@ -5,8 +5,9 @@
 * This serves as an example of how to read the IMU with direct reads to the
 * sensor registers. To use the DMP or interrupt-driven timing see test_dmp.c
 *******************************************************************************/
-#include <useful_includes.h>
-#include <robotics_cape.h>
+
+#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape.h"
 
 int main(){
 	imu_data_t data; //struct to hold new data

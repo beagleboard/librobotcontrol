@@ -2,4 +2,4 @@
 # Just change the target name to match your main source code filename.
 TARGET = calibrate_mag
 
-include /usr/include/robotics.mk 
+include ../robotics.mk 

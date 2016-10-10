@@ -3,8 +3,8 @@
 
  ***************************************************************************/
 
-#include "../robotics_cape.h"
-#include "../robotics_cape_defs.h"
+#include "../roboticscape.h"
+#include "../roboticscape-defs.h"
 #include "bmp280_defs.h"
 
 #include <stdio.h>

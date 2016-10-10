@@ -8,8 +8,8 @@
 * in the MISO channel and be read.
 *******************************************************************************/
 
-#include <robotics_cape.h>
-#include <useful_includes.h>
+#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape.h"
 
 #define SPI_MODE	0
 #define SPI_SPEED	24000000

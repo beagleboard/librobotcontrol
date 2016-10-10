@@ -6,9 +6,9 @@
 *
 *******************************************************************************/
 
-#include "../useful_includes.h"
-#include "../robotics_cape.h"
-#include "../robotics_cape_defs.h"
+#include "../usefulincludes.h"
+#include "../roboticscape.h"
+#include "../roboticscape-defs.h"
 
 // used for setting interrupt input pin
 #include "../simple_gpio/simple_gpio.h" 

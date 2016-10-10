@@ -5,8 +5,8 @@
 * This is meant to be a skeleton program for robotics cape projects. 
 *******************************************************************************/
 
-#include <robotics_cape.h>
-#include <useful_includes.h>
+#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape.h"
 
 int main(){
 	// always initialize cape library first

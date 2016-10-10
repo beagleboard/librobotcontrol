@@ -6,13 +6,14 @@
 * Instructions are printed to the screen when called.
 *******************************************************************************/
 
-#include <useful_includes.h>
-#include <robotics_cape.h>
+#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape.h"
 
 // Global Variables
 int show_accel = 0;
 int show_gyro  = 0;
 int enable_mag = 0;
+int show_compass = 0;
 int show_temp  = 0;
 int show_quat  = 0;
 int show_tb = 0;
@@ -37,11 +38,12 @@ void print_usage(){
 	printf("-s {rate}	Set sample rate in HZ (default 100)\n");
 	printf("		Sample rate must be a divisor of 200\n");
 	printf("-m		Enable Magnetometer\n");
+	printf("-c		Show raw compass angle\n");
 	printf("-a		Print Accelerometer Data\n");
 	printf("-g		Print Gyro Data\n");
 	printf("-t		Print TaitBryan Angles\n");
 	printf("-q		Print Quaternion Vector\n");
-	printf("-T		Print Thermometer Data\n");
+	printf("-p {prio}	Set Interrupt Priority (default 98)\n");
 	printf("-w		Print I2C bus warnings\n");
 	printf("-o		Show a menu to select IMU orientation\n");
 	printf("-h		Print this help message\n\n");
@@ -58,8 +60,9 @@ int print_data(){
 	printf("\r");
 	printf(" ");
 	
-	if(enable_mag){
-		printf("   %6.1f   |", data.compass_heading);
+	if(show_compass){
+		printf("   %6.2f   |", data.compass_heading_raw);
+		printf("   %6.2f   |", data.compass_heading);
 	}
 	if(show_quat && enable_mag){
 		// print fused quaternion
@@ -97,12 +100,6 @@ int print_data(){
 											data.gyro[1],\
 											data.gyro[2]);
 	}
-	if(show_temp){
-		if(read_imu_temp(&data)<0){
-			printf("read temp data failed\n");
-		}
-		printf("  %3.1f  ", data.temp);
-	}
 													
 	fflush(stdout);
 	return 0;
@@ -116,8 +113,11 @@ int print_data(){
 *******************************************************************************/
 void print_header(){
 	printf(" ");
+	if(show_compass){
+		printf("Raw Compass |");
+		printf("FilteredComp|");
+	}
 	if(enable_mag){
-		printf("Compass(rad)|");
 		if(show_quat) printf("   Fused Quaternion  |");
 		if(show_tb) printf("FusedTaitBryan(rad)|");
 	} else{
@@ -151,6 +151,8 @@ imu_orientation_t orientation_prompt(){
 	printf(" 4: ORIENTATION_X_DOWN\n");
 	printf(" 5: ORIENTATION_Y_UP\n");
 	printf(" 6: ORIENTATION_Y_DOWN\n");
+	printf(" 7: ORIENTATION_X_FORWARD\n");
+	printf(" 8: ORIENTATION_X_BACK\n");
 
     while ((c = getchar()) != EOF){
         switch(c){
@@ -171,6 +173,12 @@ imu_orientation_t orientation_prompt(){
             break;
 		case '6':
             return ORIENTATION_Y_DOWN;
+            break;
+        case '7':
+            return ORIENTATION_X_FORWARD;
+            break;
+		case '8':
+            return ORIENTATION_X_BACK;
             break;
         case 'q':
             printf("Quitting\n");
@@ -195,7 +203,7 @@ imu_orientation_t orientation_prompt(){
 * to the screen after being set with set_imu_interrupt_func().
 *******************************************************************************/
 int main(int argc, char *argv[]){
-	int c, sample_rate;
+	int c, sample_rate, priority;
 	int show_something = 0; // set to 1 when any show data option is given.
 	
 	// start with default config and modify based on options
@@ -203,7 +211,7 @@ int main(int argc, char *argv[]){
 	
 	// parse arguments
 	opterr = 0;
-	while ((c=getopt(argc, argv, "s:magrqtThwo"))!=-1 && argc>1){
+	while ((c=getopt(argc, argv, "s:magrqtcp:hwo"))!=-1 && argc>1){
 		switch (c){
 		case 's': // sample rate option
 			sample_rate = atoi(optarg);
@@ -213,9 +221,24 @@ int main(int argc, char *argv[]){
 			}
 			conf.dmp_sample_rate = sample_rate;
 			break;
+		case 'p': // priority option
+			priority = atoi(optarg);
+			const int max_pri = sched_get_priority_max(SCHED_FIFO);
+			if(priority>max_pri || priority<0){
+				printf("priority must be between 0 & %d\n",max_pri);
+				return -1;
+			}
+			conf.dmp_interrupt_priority = priority;
+			break;
 		case 'm': // magnetometer option
 			show_something = 1;
 			enable_mag = 1;
+			conf.enable_magnetometer = 1;
+			break;
+		case 'c': // compass option
+			show_something = 1;
+			enable_mag = 1;
+			show_compass = 1;
 			conf.enable_magnetometer = 1;
 			break;
 		case 'a': // show accelerometer option

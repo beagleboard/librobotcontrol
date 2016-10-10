@@ -1,39 +1,15 @@
 /*******************************************************************************
-	robtics_cape.c
-
-Copyright (c) 2016, James Strawson
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
-2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
-either expressed or implied, of the FreeBSD Project.
+* robticscape.c
+* 
+* This is one of many c-files that are used to build libroboticscape.so
+* however it contains the majority of the core components.
 *******************************************************************************/
 
 //#define DEBUG
 
-#include "useful_includes.h"
-#include "robotics_cape.h"
-#include "robotics_cape_defs.h"
+#include "usefulincludes.h"
+#include "roboticscape.h"
+#include "roboticscape-defs.h"
 #include "simple_gpio/simple_gpio.h"// used for setting interrupt input pin
 #include "mmap/mmap_gpio_adc.h"		// used for fast gpio functions
 #include "mmap/mmap_pwmss.h"		// used for fast pwm functions
@@ -43,6 +19,7 @@ either expressed or implied, of the FreeBSD Project.
 #define PRU_ADDR		0x4A300000		// Start of PRU memory Page 184 am335x TRM
 #define PRU_LEN			0x80000			// Length of PRU memory
 #define PRU_SHAREDMEM	0x10000			// Offset to shared memory
+#define CAPE_NAME 	"RoboticsCape"
 
 /*******************************************************************************
 * Global Variables
@@ -50,6 +27,7 @@ either expressed or implied, of the FreeBSD Project.
 enum state_t state = UNINITIALIZED;
 int pause_btn_state, mode_btn_state;
 static unsigned int *prusharedMem_32int_ptr;
+
 
 
 /*******************************************************************************
@@ -108,6 +86,45 @@ int initialize_cape(){
 	printf("Initializing: GPIO\n");
 	#endif
 
+	//export all GPIO output pins
+	if(gpio_export(RED_LED)) return -1;
+	if(gpio_set_dir(RED_LED, OUTPUT_PIN)) return -1;
+	gpio_export(GRN_LED);
+	gpio_set_dir(GRN_LED, OUTPUT_PIN);
+	gpio_export(MDIR1A);
+	gpio_set_dir(MDIR1A, OUTPUT_PIN);
+	gpio_export(MDIR1B);
+	gpio_set_dir(MDIR1B, OUTPUT_PIN);
+	gpio_export(MDIR2A);
+	gpio_set_dir(MDIR2A, OUTPUT_PIN);
+	gpio_export(MDIR2B);
+	gpio_set_dir(MDIR2B, OUTPUT_PIN);
+	gpio_export(MDIR3A);
+	gpio_set_dir(MDIR3A, OUTPUT_PIN);
+	gpio_export(MDIR3B);
+	gpio_set_dir(MDIR3B, OUTPUT_PIN);
+	gpio_export(MDIR4A);
+	gpio_set_dir(MDIR4A, OUTPUT_PIN);
+	gpio_export(MDIR4B);
+	gpio_set_dir(MDIR4B, OUTPUT_PIN);
+	gpio_export(MOT_STBY);
+	gpio_set_dir(MOT_STBY, OUTPUT_PIN);
+	gpio_export(PAIRING_PIN);
+	gpio_set_dir(PAIRING_PIN, OUTPUT_PIN);
+	gpio_export(SERVO_PWR);
+	gpio_set_dir(SERVO_PWR, OUTPUT_PIN);
+
+	//set up mode pin
+	gpio_export(MODE_BTN);
+	gpio_set_dir(MODE_BTN, INPUT_PIN);
+	gpio_set_edge(MODE_BTN, "both");  // Can be rising, falling or both
+	
+	//set up pause pin
+	gpio_export(PAUSE_BTN);
+	gpio_set_dir(PAUSE_BTN, INPUT_PIN);
+	gpio_set_edge(PAUSE_BTN, "both");  // Can be rising, falling or both
+
+
 	if(initialize_mmap_gpio()){
 		printf("mmap_gpio_adc.c failed to initialize gpio\n");
 		return -1;
@@ -125,16 +142,16 @@ int initialize_cape(){
 	printf("Initializing: eQEP\n");
 	#endif
 	if(init_eqep(0)){
-		printf("mmap_pwmss.c failed to initialize eQEP\n");
-		return -1;
+		printf("ERROR: failed to initialize eQEP0\n");
+		// return -1;
 	}
 	if(init_eqep(1)){
-		printf("mmap_pwmss.c failed to initialize eQEP\n");
-		return -1;
+		printf("ERROR: failed to initialize eQEP1\n");
+		// return -1;
 	}
 	if(init_eqep(2)){
-		printf("mmap_pwmss.c failed to initialize eQEP\n");
-		return -1;
+		printf("ERROR: failed to initialize eQEP2\n");
+		// return -1;
 	}
 	
 	// setup pwm driver
@@ -142,12 +159,12 @@ int initialize_cape(){
 	printf("Initializing: PWM\n");
 	#endif
 	if(simple_init_pwm(1,PWM_FREQ)){
-		printf("simple_pwm.c failed to initialize PWMSS 1\n");
-		return -1;
+		printf("ERROR: failed to initialize hrpwm1\n");
+//		return -1;
 	}
 	if(simple_init_pwm(2,PWM_FREQ)){
-		printf("simple_pwm.c failed to initialize PWMSS 2\n");
-		return -1;
+		printf("ERROR: failed to initialize PWMSS 2\n");
+		// return -1;
 	}
 	
 	// start some gpio pins at defaults
@@ -159,13 +176,19 @@ int initialize_cape(){
 	#ifdef DEBUG
 	printf("Initializing: Buttons\n");
 	#endif
-	if(initialize_button_handlers()<0) return -1;
+	if(initialize_button_handlers()<0){
+		printf("ERROR: failed to start button threads\n");
+		return -1;
+	}
 	
 	// start PRU
 	#ifdef DEBUG
 	printf("Initializing: PRU\n");
 	#endif
-	if(initialize_pru()<0) return -1;
+	if(initialize_pru()<0){
+		printf("ERROR: failed to initialize PRU\n");
+//		return -1;
+	}
 
 	// create new pid file with process id
 	#ifdef DEBUG
@@ -775,7 +798,8 @@ int get_encoder_pos(int ch){
 	}
 	// 4th channel is counted by the PRU not eQEP
 	if(ch==4){
-		return (int) prusharedMem_32int_ptr[8];
+		if(prusharedMem_32int_ptr == NULL) return -1;
+		else return (int) prusharedMem_32int_ptr[8];
 	}
 	
 	// first 3 channels counted by eQEP
@@ -795,7 +819,8 @@ int set_encoder_pos(int ch, int val){
 	}
 	// 4th channel is counted by the PRU not eQEP
 	if(ch==4){
-		prusharedMem_32int_ptr[8] = val;
+		if(prusharedMem_32int_ptr == NULL) return -1;
+		else prusharedMem_32int_ptr[8] = val;
 		return 0;
 	}
 	// else write to eQEP
@@ -867,6 +892,9 @@ int initialize_pru(){
 	unsigned int	*pru;		// Points to start of PRU memory.
 	int	fd;
 	
+	// reset memory pointer to NULL so if init fails it doesn't point somewhere bad
+	prusharedMem_32int_ptr = NULL;
+
 	// check rpoc driver is up
 	if(access("/sys/bus/platform/drivers/pru-rproc/bind", F_OK ) != 0){
 		printf("ERROR: pru-rproc driver missing!\n");

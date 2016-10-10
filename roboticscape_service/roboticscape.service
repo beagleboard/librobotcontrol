@@ -1,0 +1,12 @@
+[Unit]
+Description=roboticscape
+
+[Service]
+User=root
+PIDFile=/var/run/robotcscape.pid
+ExecStartPre=/usr/bin/robot_startup_routine
+ExecStart=/etc/roboticscape/link_to_startup_program
+ExecStop=/usr/bin/kill_robot
+
+[Install]
+WantedBy=multi-user.target
