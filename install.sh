@@ -9,14 +9,14 @@
 ################################################################################
 
 KERNEL="$(uname -r)"
-UNAME="$(cat /boot/uEnv.txt | grep "uname_r")"
 DEBIAN="$(cat /etc/debian_version)"
-UUID = "$(shell blkid -c /dev/null -s UUID -o value /dev/mmcblk*)"
 
 echo " "
 echo "Detected Linux kernel $KERNEL"
 echo "Detected Debian version $DEBIAN"
 cat /etc/dogtag
+cat /proc/device-tree/model
+echo " "
 echo " "
 
 ################################################################################
@@ -41,12 +41,11 @@ fi
 if modprobe -n remoteproc | grep -q "not found" ; then
 	echo "ERROR: remoteproc module not found"
 	echo "Use a standard TI kernel with remoteproc instead."
-	exit
+	exit 1
 fi
 
 # make sure the user really wants to install
 echo "This script will install all Robotics Cape supporting software"
-echo "for the BeagleBone black and BeagleBone Blue"
 read -r -p "Continue? [y/n] " response
 case $response in
     [yY]) echo " " ;;

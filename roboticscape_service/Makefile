@@ -21,7 +21,6 @@ install: $(all)
 	@echo "Enabling roboticscape Service"
 	-systemctl daemon-reload
 	-systemctl enable $(SERVICE)
-	-systemctl start $(SERVICE)
 	@echo "roboticscape Service Install Complete"
 	
 clean:
@@ -29,8 +28,8 @@ clean:
 	@echo "roboticscape Service Cleanup Complete"
 
 uninstall:
-	-systemctl -q stop --now $(SERVICE)
-	-systemctl -f -q --now disable $(SERVICE)
+	-systemctl -q stop $(SERVICE)
+	-systemctl -f -q disable $(SERVICE)
 	$(RM) $(DESTDIR)/lib/systemd/system/$(SERVICE).service
 	$(MAKE) -C robot_startup_routine -s uninstall
 	-systemctl -q daemon-reload
