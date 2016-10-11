@@ -27,7 +27,6 @@ elif  [ "$PROG" = "none" ]; then
 fi
 
 systemctl enable roboticscape
-systemctl start -q roboticscape &
 
 echo "Installation Complete"
 echo "If you are running this on a beaglebone black, please"

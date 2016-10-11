@@ -70,7 +70,7 @@ fi
 
 # put overlay into /lib/firmware if it is missing
 # comes with newer images so this isn't really needed anymore
-if[ ! -f "/lib/firmware/$OVERLAY.dtbo" ]; then
+if [ ! -f "/lib/firmware/$OVERLAY.dtbo" ]; then
 	cp /etc/robotics/$OVERLAY.dtbo /lib/firmware/
 fi
 
