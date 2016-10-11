@@ -1,5 +1,5 @@
-roboticscape (0.0.6) unstable; urgency=low
+roboticscape (0.0.7) unstable; urgency=low
 
   * store overlay in /etc/robotics now since it comes with newer images
 
- -- James Strawson <james@strawsondesign.com>  Wed, 9 Oct 2016 09:01:15 +0000
+ -- James Strawson <james@strawsondesign.com>  Wed, 10 Oct 2016 19:18:0 +0000
