@@ -1,6 +1,6 @@
-roboticscape (0.0.7) unstable; urgency=low
+roboticscape (0.0.8) unstable; urgency=low
 
-  * store overlay in /etc/robotics now since it comes with newer images
+  * handle broken pru rproc more gracefully than bus error
 
- -- James Strawson <james@strawsondesign.com>  Wed, 10 Oct 2016 19:18:00 +0000
- 
+ -- James Strawson <james@strawsondesign.com>  Wed, 10 Oct 2016 20:25:00 +0000
+

@@ -1,7 +1,7 @@
 
 OVERLAY := "RoboticsCape-00A0"
 OVERLAY_SCRIPT := "configure_robotics_overlay.sh"
-ROBOTICS_DIR := "/etc/robotics"
+ROBOTICS_DIR := "/etc/roboticscape"
 
 PREFIX := /usr
 RM := rm -f -r 

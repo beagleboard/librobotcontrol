@@ -902,10 +902,22 @@ int initialize_pru(){
 	}
 
 	// reset each core
-	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind  > /dev/null");
-	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/bind > /dev/null");
-	system("echo 4a338000.pru1  > /sys/bus/platform/drivers/pru-rproc/unbind > /dev/null");
-	system("echo 4a338000.pru1 > /sys/bus/platform/drivers/pru-rproc/bind > /dev/null");
+	if(system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind")!=0){
+		printf("ERROR: RPROC driver present but failed to start PRU\n");
+		return -1;
+	}
+	if(system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/bind")!=0){
+		printf("ERROR: RPROC driver present but failed to start PRU\n");
+		return -1;
+	}
+	if(system("echo 4a338000.pru1  > /sys/bus/platform/drivers/pru-rproc/unbind")!=0){
+		printf("ERROR: RPROC driver present but failed to start PRU\n");
+		return -1;
+	}
+	if(system("echo 4a338000.pru1 > /sys/bus/platform/drivers/pru-rproc/bind")!=0){
+		printf("ERROR: RPROC driver present but failed to start PRU\n");
+		return -1;
+	}
 	
 	// start mmaping shared memory
 	fd = open("/dev/mem", O_RDWR | O_SYNC);

@@ -77,7 +77,7 @@ int main(){
 	if(access("/dev/i2c-2", F_OK ) != 0){
 		printf("ERROR:  i2c2 driver not loaded\n");
 	} else printf("PASSED: i2c2\n");
-	if(access("/dev/spidev2.0", F_OK ) != 0){
+	if(access("/dev/spidev1.0", F_OK ) != 0){
 		printf("ERROR:  spi driver not loaded\n");
 	} else printf("PASSED: spi\n");
 
