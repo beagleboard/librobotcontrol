@@ -9,6 +9,7 @@ systemctl enable battery_monitor
 systemctl start battery_monitor
 
 # Source debconf library.
+set -e
 . /usr/share/debconf/confmodule
  
 # Fetching configuration from debconf
