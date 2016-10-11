@@ -1,6 +1,7 @@
 
 OVERLAY := "RoboticsCape-00A0"
 OVERLAY_SCRIPT := "configure_robotics_overlay.sh"
+ROBOTICS_DIR := "/etc/robotics"
 
 PREFIX := /usr
 RM := rm -f -r 
@@ -16,8 +17,8 @@ install:
 	$(MAKE)
 	@$(INSTALLDIR) $(DESTDIR)/usr/bin
 	@$(INSTALL) $(OVERLAY_SCRIPT) $(DESTDIR)/usr/bin
-	@$(INSTALLDIR) $(DESTDIR)/lib/firmware
-	@$(INSTALLNONEXEC) $(OVERLAY).dtbo $(DESTDIR)/lib/firmware
+	@$(INSTALLDIR) $(DESTDIR)$(ROBOTICS_DIR)
+	@$(INSTALLNONEXEC) $(OVERLAY).dtbo $(DESTDIR)$(ROBOTICS_DIR)
 	@echo "Overlay Install Complete"
 	@echo "run configure_robotics_overlay.sh to apply it in uEnv.txt"
 
@@ -26,6 +27,6 @@ clean:
 	@echo "Overlay Cleanup Complete"
 
 uninstall:
-	@$(RM) $(DESTDIR)/lib/firmware/$(OVERLAY).dtbo 
+	@$(RM) $(DESTDIR)$(ROBOTICS_DIR)/$(OVERLAY).dtbo 
 	@$(RM) $(DESTDIR)/usr/bin/$(OVERLAY_SCRIPT)
 	@echo "RoboticsCape Overlay Uninstall Complete"

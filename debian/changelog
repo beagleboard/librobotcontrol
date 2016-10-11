@@ -1,7 +1,5 @@
-roboticscape (0.0.5) unstable; urgency=low
+roboticscape (0.0.6) unstable; urgency=low
 
-  * add API to chech Beagleboard model version
-  * use that API to light correct battery monitor LEDs on Blue
-  * new example program check_model
+  * store overlay in /etc/robotics now since it comes with newer images
 
  -- James Strawson <james@strawsondesign.com>  Wed, 9 Oct 2016 09:01:15 +0000
