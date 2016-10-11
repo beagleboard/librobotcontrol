@@ -1,6 +1,7 @@
-roboticscape (0.0.8) unstable; urgency=low
+roboticscape (0.1.0) unstable; urgency=low
 
-  * handle broken pru rproc more gracefully than bus error
+  * ask for default startup program during install
+  * version 0.1.0 to indicate successful run on black as well ad blue
 
- -- James Strawson <james@strawsondesign.com>  Wed, 10 Oct 2016 20:25:00 +0000
+ -- James Strawson <james@strawsondesign.com>  Wed, 10 Oct 2016 21:09:00 +0000
 
