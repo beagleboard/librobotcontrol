@@ -27,6 +27,7 @@
 enum state_t state = UNINITIALIZED;
 int pause_btn_state, mode_btn_state;
 static unsigned int *prusharedMem_32int_ptr;
+int mdir1a, mdir2b; // variable gpio pin assignments
 
 
 
@@ -91,14 +92,24 @@ int initialize_cape(){
 	if(gpio_set_dir(RED_LED, OUTPUT_PIN)) return -1;
 	gpio_export(GRN_LED);
 	gpio_set_dir(GRN_LED, OUTPUT_PIN);
-	gpio_export(MDIR1A);
-	gpio_set_dir(MDIR1A, OUTPUT_PIN);
+
+	if(get_bb_model()==BB_BLUE){
+		mdir1a = MDIR1A_BLUE;
+		mdir2b = MDIR2B_BLUE;
+	}
+	else{
+		mdir1a = MDIR1A;
+		mdir2b = MDIR2B;
+	}
+
+	gpio_export(mdir1a);
+	gpio_set_dir(mdir1a, OUTPUT_PIN);
 	gpio_export(MDIR1B);
 	gpio_set_dir(MDIR1B, OUTPUT_PIN);
 	gpio_export(MDIR2A);
 	gpio_set_dir(MDIR2A, OUTPUT_PIN);
-	gpio_export(MDIR2B);
-	gpio_set_dir(MDIR2B, OUTPUT_PIN);
+	gpio_export(mdir2b);
+	gpio_set_dir(mdir2b, OUTPUT_PIN);
 	gpio_export(MDIR3A);
 	gpio_set_dir(MDIR3A, OUTPUT_PIN);
 	gpio_export(MDIR3B);
@@ -649,13 +660,13 @@ int set_motor(int motor, float duty){
 	// set gpio direction outputs & duty
 	switch(motor){
 		case 1:
-			mmap_gpio_write(MDIR1A, a);
+			mmap_gpio_write(mdir1a, a);
 			mmap_gpio_write(MDIR1B, b);
 			set_pwm_duty(1, 'A', duty);
 			break;
 		case 2:
 			mmap_gpio_write(MDIR2A, b);
-			mmap_gpio_write(MDIR2B, a);
+			mmap_gpio_write(mdir2b, a);
 			set_pwm_duty(1, 'B', duty);
 			break;
 		case 3:
@@ -699,13 +710,13 @@ int set_motor_free_spin(int motor){
 	// set gpio direction outputs & duty
 	switch(motor){
 		case 1:
-			mmap_gpio_write(MDIR1A, 0);
+			mmap_gpio_write(mdir1a, 0);
 			mmap_gpio_write(MDIR1B, 0);
 			set_pwm_duty(1, 'A', 0.0);
 			break;
 		case 2:
 			mmap_gpio_write(MDIR2A, 0);
-			mmap_gpio_write(MDIR2B, 0);
+			mmap_gpio_write(mdir2b, 0);
 			set_pwm_duty(1, 'B', 0.0);
 			break;
 		case 3:
@@ -747,13 +758,13 @@ int set_motor_brake(int motor){
 	// set gpio direction outputs & duty
 	switch(motor){
 		case 1:
-			mmap_gpio_write(MDIR1A, 1);
+			mmap_gpio_write(mdir1a, 1);
 			mmap_gpio_write(MDIR1B, 1);
 			set_pwm_duty(1, 'A', 0.0);
 			break;
 		case 2:
 			mmap_gpio_write(MDIR2A, 1);
-			mmap_gpio_write(MDIR2B, 1);
+			mmap_gpio_write(mdir2b, 1);
 			set_pwm_duty(1, 'B', 0.0);
 			break;
 		case 3:

@@ -49,9 +49,11 @@
 #define RED_LED 	66	//gpio2.2	P8.7
 #define GRN_LED 	67	//gpio2.3	P8.8
 #define MDIR1A    	60	//gpio1.28  P9.12
+#define MDIR1A_BLUE 64  //gpio2.0 pin T13
 #define MDIR1B    	31	//gpio0.31	P9.13
 #define MDIR2A    	48	//gpio1.16  P9.15
 #define MDIR2B    	81	//gpio2.17  P8.34
+#define MDIR2B_BLUE 79  //gpio2.15 pin U2
 #define MDIR4A    	70	//gpio2.6   P8.45
 #define MDIR4B    	71	//gpio2.7   P8.46
 #define MDIR3B    	72	//gpio2.8   P8.43
