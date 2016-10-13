@@ -21,6 +21,7 @@ int check_timeout();
 int setup_gpio();
 int setup_pwm();
 int setup_pru();
+int check_eqep();
 
 uint64_t start_us;
 
@@ -43,18 +44,6 @@ int main(){
 	// delete old pid file if it's left over from an improper shudown
 	kill_robot();
 
-	// // check capemanager
-	// while(is_cape_loaded()!=1){
-	// 	if(check_timeout()){
-	// 		system("echo 'timeout reached while waiting for overlay to load' >> " START_LOG);
-	// 	 	return 1;
-	// 	}
-	// 	usleep(500000);
-		
-	// }
-	// system("uptime -p >> " START_LOG);
-	// system("echo 'cape overlay loaded' >> " START_LOG);
-
 	// export gpio pins
 	while(setup_gpio()!=0){
 		if(check_timeout()){
@@ -65,9 +54,23 @@ int main(){
 		usleep(500000);
 	}
 	time = (micros_since_epoch()-start_us)/1000000;
-	sprintf(buf, "echo 'time (s): %5f' >> %s",time,START_LOG);
+	sprintf(buf, "echo 'time (s): %5f GPIO loaded' >> %s",time,START_LOG);
 	system(buf);
-	system("echo 'gpio pins exported' >> " START_LOG);
+
+
+	// wait for eQEP to load
+	while(check_eqep()!=0){
+		if(check_timeout()){
+			system("echo 'timeout reached while waiting for eQEP driver' >> " START_LOG);
+			printf("timeout reached while waiting for eQEP driver\n");
+		 	return -1;
+		}
+		usleep(500000);
+	}
+	time = (micros_since_epoch()-start_us)/1000000;
+	sprintf(buf, "echo 'time (s): %5f eQEP loaded' >> %s",time,START_LOG);
+	system(buf);
+
 
 	// set up pwm at desired frequnecy
 	while(setup_pwm()!=0){
@@ -79,9 +82,8 @@ int main(){
 		usleep(500000);
 	}
 	time = (micros_since_epoch()-start_us)/1000000;
-	sprintf(buf, "echo 'time (s): %5f' >> %s",time,START_LOG);
+	sprintf(buf, "echo 'time (s): %5f PWM loaded' >> %s",time,START_LOG);
 	system(buf);
-	system("echo 'pwm initialized' >> " START_LOG);
 
 
 	// just check for PRU for now, don't wait since we know it doesn't work
@@ -203,6 +205,19 @@ int setup_gpio(){
 int setup_pwm(){
 	if(simple_init_pwm(1,PWM_FREQ)) return -1;
 	if(simple_init_pwm(2,PWM_FREQ)) return -1;
+	return 0;
+}
+
+
+/*******************************************************************************
+* int check_eqep()
+*
+* checks if eqep is loaded
+*******************************************************************************/
+int check_eqep(){
+	if(access("/sys/devices/platform/ocp/48300000.epwmss/48300180.eqep/enabled", F_OK)) return -1;
+	if(access("/sys/devices/platform/ocp/48302000.epwmss/48302180.eqep/enabled", F_OK)) return -1;
+	if(access("/sys/devices/platform/ocp/48304000.epwmss/48304180.eqep/enabled", F_OK)) return -1;
 	return 0;
 }
 
