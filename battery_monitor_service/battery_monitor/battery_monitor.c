@@ -180,6 +180,7 @@ END:
 	}
 
 	// exit
+	illuminate_leds(0);
 	printf("battery_monitor exiting cleanly\n");
 	remove(PID_FILE);
 	return 0;
