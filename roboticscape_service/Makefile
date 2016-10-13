@@ -4,6 +4,7 @@ PREFIX := /usr
 RM := rm -f -r 
 INSTALL := install -m 755 
 INSTALLDIR := install -d -m 644 
+INSTALLNONEXEC := install -m 644 
 
 
 
@@ -16,8 +17,10 @@ install: $(all)
 	@echo "Installing robot_startup_routine Binary"
 	@$(MAKE) -C robot_startup_routine -s install
 	@echo "Installing roboticscape Service File"
+	-systemctl stop $(SERVICE)
+	-systemctl disable $(SERVICE)
 	@$(INSTALLDIR) $(DESTDIR)/lib/systemd/system
-	@$(INSTALL) $(SERVICE).service $(DESTDIR)/lib/systemd/system/
+	@$(INSTALLNONEXEC) $(SERVICE).service $(DESTDIR)/lib/systemd/system/
 	@echo "Enabling roboticscape Service"
 	-systemctl daemon-reload
 	-systemctl enable $(SERVICE)

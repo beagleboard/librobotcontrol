@@ -4,6 +4,7 @@ PREFIX := /usr
 RM := rm -f -r 
 INSTALL := install -m 755 
 INSTALLDIR := install -d -m 644 
+INSTALLNONEXEC := install -m 644 
 
 
 
@@ -16,8 +17,10 @@ install: $(all)
 	@echo "Installing battery_monitor Binary"
 	@$(MAKE) -C battery_monitor -s install
 	@echo "Installing battery_monitor Service File"
+	-systemctl stop $(SERVICE)
+	-systemctl disable $(SERVICE)
 	@$(INSTALLDIR) $(DESTDIR)/lib/systemd/system
-	@$(INSTALL) $(SERVICE).service $(DESTDIR)/lib/systemd/system/
+	@$(INSTALLNONEXEC) $(SERVICE).service $(DESTDIR)/lib/systemd/system/
 	@echo "Enabling battery_monitor Service"
 	-systemctl daemon-reload
 	-systemctl enable $(SERVICE)
