@@ -15,7 +15,7 @@ identical but the latter has a different register map
 // internal DMP sample rate limits
 #define DMP_MAX_RATE 200
 #define DMP_MIN_RATE 4
-#define IMU_POLL_TIMEOUT 50 // milliseconds
+#define IMU_POLL_TIMEOUT 300 // milliseconds
 #define MAX_FIFO_BUFFER	128
 
 

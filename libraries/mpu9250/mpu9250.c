@@ -39,7 +39,7 @@ int dmp_en;
 int packet_len;
 pthread_t imu_interrupt_thread;
 int (*imu_interrupt_func)();
-int interrupt_running;
+int interrupt_func_set;
 float mag_factory_adjust[3];
 float mag_offsets[3];
 float mag_scales[3];
@@ -393,18 +393,29 @@ int read_imu_temp(imu_data_t* data){
 * to let the device compelete the reset process.
 *******************************************************************************/
 int reset_mpu9250(){
+	// disable the interrupt to prevent it from doing things while we reset
+	shutdown_interrupt_thread = 1;
+
 	// set the device address
 	i2c_set_device_address(IMU_BUS, IMU_ADDR);
 	
 	// write the reset bit
 	if(i2c_write_byte(IMU_BUS, PWR_MGMT_1, H_RESET)){
-		printf("I2C write to MPU9250 Failed\n");
-		return -1;
+		// wait and try again
+		usleep(10000);
+			if(i2c_write_byte(IMU_BUS, PWR_MGMT_1, H_RESET)){
+				printf("I2C write to MPU9250 Failed\n");
+			return -1;
+		}
 	}
 	// make sure all other power management features are off
 	if(i2c_write_byte(IMU_BUS, PWR_MGMT_1, 0)){
-		printf("I2C write to MPU9250 Failed\n");
+		// wait and try again
+		usleep(10000);
+		if(i2c_write_byte(IMU_BUS, PWR_MGMT_1, 0)){
+			printf("I2C write to MPU9250 Failed\n");
 		return -1;
+		}
 	}
 	
 	usleep(100000);
@@ -656,14 +667,22 @@ int power_off_imu(){
 	
 	// write the reset bit
 	if(i2c_write_byte(IMU_BUS, PWR_MGMT_1, H_RESET)){
-		printf("I2C write to MPU9250 Failed\n");
-		return -1;
+		//wait and try again
+		usleep(1000);
+		if(i2c_write_byte(IMU_BUS, PWR_MGMT_1, H_RESET)){
+			printf("I2C write to MPU9250 Failed\n");
+			return -1;
+		}
 	}
 	
 	// write the sleep bit
 	if(i2c_write_byte(IMU_BUS, PWR_MGMT_1, MPU_SLEEP)){
-		printf("I2C write to MPU9250 Failed\n");
-		return -1;
+		//wait and try again
+		usleep(1000);
+		if(i2c_write_byte(IMU_BUS, PWR_MGMT_1, MPU_SLEEP)){
+			printf("I2C write to MPU9250 Failed\n");
+			return -1;
+		}	
 	}
 	
 	// wait for the interrupt thread to exit
@@ -857,7 +876,7 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 	#endif
 	
 	// start the interrupt handler thread
-	interrupt_running = 1;
+	interrupt_func_set = 1;
 	shutdown_interrupt_thread = 0;
 	set_imu_interrupt_func(&null_func);
 	struct sched_param params;
@@ -1430,10 +1449,14 @@ void* imu_interrupt_handler(void* ptr){
 	fdset[0].events = POLLPRI;
 	// keep running until the program closes
 	mpu_reset_fifo();
-	while(get_state()!=EXITING && shutdown_interrupt_thread != 1) {
+	while(get_state()!=EXITING && shutdown_interrupt_thread!=1) {
 		// system hangs here until IMU FIFO interrupt
 		poll(fdset, 1, IMU_POLL_TIMEOUT); 
-		if (fdset[0].revents & POLLPRI) {
+
+		if(get_state()==EXITING || shutdown_interrupt_thread==1){
+			break;
+		}
+		else if (fdset[0].revents & POLLPRI) {
 			lseek(fdset[0].fd, 0, SEEK_SET);  
 			read(fdset[0].fd, buf, 64);
 			
@@ -1457,14 +1480,11 @@ void* imu_interrupt_handler(void* ptr){
 			if(first_run == 1){
 				first_run = 0;
 			}
-			else if(interrupt_running && last_read_successful){
+			else if(interrupt_func_set && last_read_successful){
 				 imu_interrupt_func(); 
 			}
 		}
 	}
-	#ifdef DEBUG
-	printf("exiting imu interrupt handler thread\n");
-	#endif
 	gpio_fd_close(imu_gpio_fd);
 	return 0;
 }
@@ -1476,7 +1496,7 @@ void* imu_interrupt_handler(void* ptr){
 *******************************************************************************/
 int set_imu_interrupt_func(int (*func)(void)){
 	imu_interrupt_func = func;
-	interrupt_running = 1;
+	interrupt_func_set = 1;
 	return 0;
 }
 
@@ -1486,7 +1506,7 @@ int set_imu_interrupt_func(int (*func)(void)){
 * stops the user function from being called when new data is available
 *******************************************************************************/
 int stop_imu_interrupt_func(){
-	interrupt_running = 0;
+	interrupt_func_set = 0;
 	return 0;
 }
 
@@ -1524,7 +1544,6 @@ int read_dmp_fifo(){
 	// make sure the i2c address is set correctly. 
 	// this shouldn't take any time at all if already set
 	i2c_set_device_address(IMU_BUS, IMU_ADDR);
-	
 	int is_new_dmp_data = 0;
 
 	// check fifo count register to make sure new data is there
@@ -1631,7 +1650,7 @@ int read_dmp_fifo(){
 
 	// finally, if we got a weird packet length, reset the fifo
 	if(config.show_warnings&& first_run!=1){
-		printf("WARNING: %d bytes in FIFO, expected %d\n", fifo_count,packet_len);
+		printf("warning: %d bytes in FIFO, expected %d\n", fifo_count,packet_len);
 	}
 	mpu_reset_fifo();
 	return -1;
@@ -1663,7 +1682,7 @@ READ_FIFO:
 	// if dmp data is available we must figure out if it's before or 
 	// after the magnetometer data. Usually before.
 	if(dmp_data_available){
-		if(check_quaternion_validity(raw,i+7)){
+		if(config.enable_magnetometer && check_quaternion_validity(raw,i+7)){
 			j=i+7; // 7 mag bytes before dmp data
 		}
 		else if(check_quaternion_validity(raw,i)){

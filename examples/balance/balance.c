@@ -97,6 +97,8 @@ imu_data_t imu_data;
 * Initialize the filters, IMU, threads, & wait untill shut down
 *******************************************************************************/
 int main(){
+	set_cpu_frequency(FREQ_1000MHZ);
+
 	if(initialize_cape()<0){
 		printf("ERROR: failed to initialize cape\n");
 		return -1;
@@ -104,6 +106,7 @@ int main(){
 	set_led(RED,1);
 	set_led(GREEN,0);
 	set_state(UNINITIALIZED);
+
 
 	// make sure setpoint starts at normal values
 	setpoint.arm_state = DISARMED;
@@ -178,6 +181,7 @@ int main(){
 	// cleanup
 	power_off_imu();
 	cleanup_cape();
+	set_cpu_frequency(FREQ_ONDEMAND);
 	return 0;
 }
 
