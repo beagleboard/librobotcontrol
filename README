@@ -2,17 +2,29 @@ Robotics Cape Library Installer
 For BeagleBone Black and BeagleBone Blue Running Debian Jessie.
 See the wheezy_archive branch for old Wheezy-compatible code.
 
+
 We recommend runnging this package with the latest lxqt 4gb image available here:
 http://elinux.org/Beagleboard:BeagleBoneBlack_Debian#Flasher:_.28lxqt-4gb.29_.28BeagleBone_Black.2FGreen_4GB_eMMC.29
 The Beaglebone community is very active and we try to keep up with the rapid development.
 
 
+We also recommend using the most recent 4.4-series rt kernel. Right now that is 4.4.24-ti-rt-r55
+The real-time (rt) kernels provide improved performance with fast IMU sensor sampling. 
+However, the non-real-time kernels provided in system images are perfectly fine for most 
+use cases.
 
-Installtion Method #1: Package Manager
+	root@beaglebone:~/ cd /opt/scripts/tools/
+	root@beaglebone:/opt/scripts/tools# git pull
+	root@beaglebone:/opt/scripts/tools# ./update_kernel.sh --lts-4_4 --ti-rt-kernel
+	root@beaglebone:/opt/scripts/tools# reboot
+
+
+
+RoboticsCape Installtion Method #1: Package Manager
 
 	If you are using a BeagleBone Black or Blue with a working internet connection then
-	you may elect to pull the librobotics-cape package from a repository with apt.
-	This will allow updates to the package with apt-get upgrade.
+	you may elect to pull the roboticscape package from our repository with apt.
+	This will allow future updates to the package with apt-get upgrade.
 
 	sudo echo "deb http://strawsondesign.com debian/" >> /etc/apt/sources.list
 	sudo apt-get update
@@ -26,7 +38,7 @@ Installtion Method #1: Package Manager
 
 
 
-Installtion Method #2: Compile from Source
+RoboticsCape Installtion Method #2: Compile from Source
 	
 	1) Download the source files from github:
 	https://github.com/StrawsonDesign/Robotics_Cape_Installer/archive/master.zip
@@ -51,11 +63,6 @@ Installtion Method #2: Compile from Source
 	green LEDs should be responsive to button presses. 
 
 
-
-Note on Drivers:
-
-For working encoder counting you will also need to install a 'bone' kernel
-root@beaglebone:~# apt-get install linux-image-4.4.23-bone14
 
 
 
