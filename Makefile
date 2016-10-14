@@ -2,7 +2,7 @@ prefix := /usr
 RM := rm -r -f 
 
 all:
-	@bash pru_firmware/configure_pre_cgt.sh
+	@bash pru_firmware/configure_pru_cgt.sh
 	@make -C pru_firmware --no-print-directory
 	@make -C libraries --no-print-directory
 	@make -C examples --no-print-directory

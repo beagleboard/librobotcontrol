@@ -9,8 +9,8 @@
 PRU_CGT=/usr/share/ti/cgt-pru
 
 LINKER_COMMAND_FILE=./AM335x_PRU.cmd
-LIBS=--library=../../lib/rpmsg_lib.lib
-INCLUDE=--include_path=../../include --include_path=../../include/am335x
+LIBS=--library=/opt/source/pru-software-support-package/lib/rpmsg_lib.lib
+INCLUDE=--include_path=/opt/source/pru-software-support-package/include --include_path=/opt/source/pru-software-support-package/include/am335x
 STACK_SIZE=0x100
 HEAP_SIZE=0x100
 
@@ -96,8 +96,8 @@ uninstall:
 
 reboot_pru:
 	@echo "rebooting pru core 0"
-	$(shell echo "4a334000.pru0" > /sys/bus/platform/drivers/pru-rproc/unbind 2> /dev/null)
-	$(shell echo "4a334000.pru0" > /sys/bus/platform/drivers/pru-rproc/bind)
+	echo "4a334000.pru0" > /sys/bus/platform/drivers/pru-rproc/unbind 2> /dev/null
+	echo "4a334000.pru0" > /sys/bus/platform/drivers/pru-rproc/bind
 	@echo "pru core 0 is now loaded with $(PRU0_FW)"
 	@echo "rebooting pru core 1"
 	$(shell echo "4a338000.pru1" > /sys/bus/platform/drivers/pru-rproc/unbind 2> /dev/null)
