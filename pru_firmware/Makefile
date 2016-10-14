@@ -93,13 +93,3 @@ uninstall:
 	@$(RM) $(DESTDIR)/lib/firmware/am335x-pru1-fw
 	@$(RM) $(DESTDIR)/etc/modprobe.d/pruss-blacklist.conf
 	@echo "PRU Firmware Uninstall Complete"
-
-reboot_pru:
-	@echo "rebooting pru core 0"
-	echo "4a334000.pru0" > /sys/bus/platform/drivers/pru-rproc/unbind 2> /dev/null
-	echo "4a334000.pru0" > /sys/bus/platform/drivers/pru-rproc/bind
-	@echo "pru core 0 is now loaded with $(PRU0_FW)"
-	@echo "rebooting pru core 1"
-	$(shell echo "4a338000.pru1" > /sys/bus/platform/drivers/pru-rproc/unbind 2> /dev/null)
-	$(shell echo "4a338000.pru1" > /sys/bus/platform/drivers/pru-rproc/bind)
-	@echo "pru core 1 is now loaded with $(PRU1_FW)"
