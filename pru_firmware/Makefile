@@ -1,0 +1,105 @@
+# 
+# Copyright (c) 2016 Zubeen Tolani <ZeekHuge - zeekhuge@gmail.com>
+#
+# much thanks to Zubeen Tolani and Mark Yoder for porting this pru code 
+# to remoteproc. 
+
+
+
+PRU_CGT=/usr/share/ti/cgt-pru
+
+LINKER_COMMAND_FILE=./AM335x_PRU.cmd
+LIBS=--library=../../lib/rpmsg_lib.lib
+INCLUDE=--include_path=../../include --include_path=../../include/am335x
+STACK_SIZE=0x100
+HEAP_SIZE=0x100
+
+
+CFLAGS=-v3 -O2 --display_error_number --endian=little --hardware_mac=on --obj_directory=$(GEN_DIR) --pp_directory=$(GEN_DIR) -ppd -ppa --asm_listing --c_src_interlist # --absolute_listing
+LFLAGS=--reread_libs --warn_sections --stack_size=$(STACK_SIZE) --heap_size=$(HEAP_SIZE) -m file.map
+
+
+GEN_DIR := build
+
+PRU1_FW		=$(GEN_DIR)/main_pru1_fw.out
+PRU0_FW		=$(GEN_DIR)/main_pru0_fw.out
+
+TARGETS		=$(PRU1_FW) $(PRU0_FW)
+LINK_PRU1_FW=$(GEN_DIR)/pru1-servo.object
+LINK_PRU0_FW=$(GEN_DIR)/pru0-encoder.object
+
+RM := rm -f -r 
+INSTALL := install -m 755 
+INSTALLDIR := install -d -m 644 
+INSTALLNONEXEC := install -m 644 
+
+
+
+all: $(TARGETS)
+	@echo "Generated: $^"
+
+
+$(PRU0_FW): $(GEN_DIR)/main_pru0.object $(LINK_PRU0_FW)
+	@echo 'LD	$^' 
+	@$(PRU_CGT)/bin/lnkpru -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
+
+$(PRU1_FW): $(GEN_DIR)/main_pru1.object $(LINK_PRU1_FW)
+	@echo 'LD	$^'
+	@$(PRU_CGT)/bin/lnkpru -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
+
+
+$(GEN_DIR)/main_pru0.object: main_pru0.c 
+	@mkdir -p $(GEN_DIR)
+	@echo 'CC	$<'
+	@$(PRU_CGT)/bin/clpru --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
+
+
+$(GEN_DIR)/main_pru1.object: main_pru1.c
+	@mkdir -p $(GEN_DIR)
+	@echo 'CC	$<'
+	@$(PRU_CGT)/bin/clpru --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
+
+
+$(GEN_DIR)/pru1-servo.object: pru1-servo.asm
+	@mkdir -p $(GEN_DIR)
+	@echo 'CC	$<'
+	@$(PRU_CGT)/bin/clpru --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
+
+$(GEN_DIR)/pru0-encoder.object: pru0-encoder.asm
+	@mkdir -p $(GEN_DIR)
+	@echo 'CC	$<'
+	@$(PRU_CGT)/bin/clpru --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
+
+
+
+
+
+install:
+	@$(MAKE)
+	@echo "copying firmware to /lib/firmware/am335x_pru0_fw"
+	@$(INSTALLNONEXEC) .$(GENDIR)/$(PRU0_FW) $(DESTDIR)/lib/firmware/am335x-pru0-fw
+	@echo 'copying firmware to /lib/firmware/am335x_pru1_fw'
+	@$(INSTALLNONEXEC) .$(GENDIR)/$(PRU1_FW) $(DESTDIR)/lib/firmware/am335x-pru1-fw
+	@$(INSTALLNONEXEC) pruss-blacklist.conf $(DESTDIR)/etc/modprobe.d/
+
+
+clean:
+	@rm -rf $(GEN_DIR)
+	@rm -f main_pru1.asm main_pru0.asm file.map
+	@echo 'PRU Firmware Cleanup Complete'
+
+uninstall:
+	@$(RM) $(DESTDIR)/lib/firmware/am335x-pru0-fw
+	@$(RM) $(DESTDIR)/lib/firmware/am335x-pru1-fw
+	@$(RM) $(DESTDIR)/etc/modprobe.d/pruss-blacklist.conf
+	@echo "PRU Firmware Uninstall Complete"
+
+reboot_pru:
+	@echo "rebooting pru core 0"
+	$(shell echo "4a334000.pru0" > /sys/bus/platform/drivers/pru-rproc/unbind 2> /dev/null)
+	$(shell echo "4a334000.pru0" > /sys/bus/platform/drivers/pru-rproc/bind)
+	@echo "pru core 0 is now loaded with $(PRU0_FW)"
+	@echo "rebooting pru core 1"
+	$(shell echo "4a338000.pru1" > /sys/bus/platform/drivers/pru-rproc/unbind 2> /dev/null)
+	$(shell echo "4a338000.pru1" > /sys/bus/platform/drivers/pru-rproc/bind)
+	@echo "pru core 1 is now loaded with $(PRU1_FW)"

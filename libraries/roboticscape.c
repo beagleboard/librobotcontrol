@@ -5,7 +5,7 @@
 * however it contains the majority of the core components.
 *******************************************************************************/
 
-//#define DEBUG
+#define DEBUG
 
 #include "usefulincludes.h"
 #include "roboticscape.h"
@@ -90,6 +90,7 @@ int initialize_cape(){
 	//export all GPIO output pins
 	if(gpio_export(RED_LED)) return -1;
 	if(gpio_set_dir(RED_LED, OUTPUT_PIN)) return -1;
+	if(gpio_set_value(RED_LED, LOW)) return -1;
 	gpio_export(GRN_LED);
 	gpio_set_dir(GRN_LED, OUTPUT_PIN);
 
@@ -104,26 +105,37 @@ int initialize_cape(){
 
 	gpio_export(mdir1a);
 	gpio_set_dir(mdir1a, OUTPUT_PIN);
+	gpio_set_value(mdir1a, LOW);
 	gpio_export(MDIR1B);
 	gpio_set_dir(MDIR1B, OUTPUT_PIN);
+	gpio_set_value(MDIR1B, LOW);
 	gpio_export(MDIR2A);
 	gpio_set_dir(MDIR2A, OUTPUT_PIN);
+	gpio_set_value(MDIR2A, LOW);
 	gpio_export(mdir2b);
 	gpio_set_dir(mdir2b, OUTPUT_PIN);
+	gpio_set_value(mdir2b, LOW);
 	gpio_export(MDIR3A);
 	gpio_set_dir(MDIR3A, OUTPUT_PIN);
+	gpio_set_value(MDIR3A, LOW);
 	gpio_export(MDIR3B);
 	gpio_set_dir(MDIR3B, OUTPUT_PIN);
+	gpio_set_value(MDIR3B, LOW);
 	gpio_export(MDIR4A);
 	gpio_set_dir(MDIR4A, OUTPUT_PIN);
+	gpio_set_value(MDIR4A, LOW);
 	gpio_export(MDIR4B);
 	gpio_set_dir(MDIR4B, OUTPUT_PIN);
+	gpio_set_value(MDIR4B, LOW);
 	gpio_export(MOT_STBY);
 	gpio_set_dir(MOT_STBY, OUTPUT_PIN);
+	gpio_set_value(MOT_STBY, LOW);
 	gpio_export(PAIRING_PIN);
 	gpio_set_dir(PAIRING_PIN, OUTPUT_PIN);
+	gpio_set_value(PAIRING_PIN, LOW);
 	gpio_export(SERVO_PWR);
 	gpio_set_dir(SERVO_PWR, OUTPUT_PIN);
+	gpio_set_value(SERVO_PWR, LOW);
 
 	//set up mode pin
 	gpio_export(MODE_BTN);
@@ -282,6 +294,9 @@ int cleanup_cape(){
 	printf("stopping dsm2 service\n");
 	#endif
 	stop_dsm2_service();	
+
+	// set pru pointer to NULL, to be refreshed next initialization
+    prusharedMem_32int_ptr = NULL;
 	
 	#ifdef DEBUG
 	printf("deleting PID file\n");
@@ -912,24 +927,48 @@ int initialize_pru(){
 		return -1;
 	}
 
-	// reset each core
-	if(system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind")!=0){
-		printf("ERROR: RPROC driver present but failed to start PRU\n");
-		return -1;
+	// check if firmware has already loaded and load if not
+	if(access("/sys/bus/platform/drivers/pru-rproc/4a334000.pru0/driver", F_OK )!=0){
+		if(access("/lib/firmware/am335x-pru0-fw", F_OK )!=0){
+			printf("ERROR: missing /lib/firmware/am335x-pru0-fw\n");
+			return -1;
+		}
+		// nope, try to load firmware
+		#ifdef DEBUG
+		printf("trying to load pru firmware\n");
+		#endif
+		if(system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/bind")!=0){
+			printf("ERROR: RPROC driver present but failed to start PRU\n");
+			return -1;
+		}
+		usleep(1000);
+		#ifdef DEBUG
+		printf("checking if PRU firmware loaded successfully\n");
+		#endif
+		if(access("/sys/bus/platform/drivers/pru-rproc/4a334000.pru0/driver", F_OK )!=0){
+			printf("ERROR: pru-rproc/bind binding failed\n");
+			return -1;
+		}
 	}
-	if(system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/bind")!=0){
-		printf("ERROR: RPROC driver present but failed to start PRU\n");
-		return -1;
-	}
-	if(system("echo 4a338000.pru1  > /sys/bus/platform/drivers/pru-rproc/unbind")!=0){
-		printf("ERROR: RPROC driver present but failed to start PRU\n");
-		return -1;
-	}
-	if(system("echo 4a338000.pru1 > /sys/bus/platform/drivers/pru-rproc/bind")!=0){
-		printf("ERROR: RPROC driver present but failed to start PRU\n");
-		return -1;
-	}
-	
+	#ifdef DEBUG
+	printf("PRU firmware loaded successfully\n");
+	#endif
+	// if(access("/sys/bus/platform/drivers/pru-rproc/4a338000.pru1/driver", F_OK )!=0){
+	// 	if(access("/lib/firmware/am335x-pru1-fw", F_OK )!=0){
+	// 		printf("ERROR: missing /lib/firmware/am335x-pru1-fw\n");
+	// 		return -1;
+	// 	}
+	// 	// nope, try to load firmware
+	// 	if(system("echo 4a338000.pru1 > /sys/bus/platform/drivers/pru-rproc/bind")!=0){
+	// 		printf("ERROR: RPROC driver present but failed to start PRU\n");
+	// 		return -1;
+	// 	}
+	// 	if(access("/sys/bus/platform/drivers/pru-rproc/4a338000.pru1/driver", F_OK )!=0){
+	// 		printf("ERROR: pru-rproc/bind binding failed\n");
+	// 		return -1;
+	// 	}
+	// }
+
 	// start mmaping shared memory
 	fd = open("/dev/mem", O_RDWR | O_SYNC);
 	if (fd == -1) {
@@ -969,9 +1008,9 @@ int power_off_pru(){
 	// set pointer to NULL
     prusharedMem_32int_ptr = NULL;
 
-    // unbind both cores
-	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind 2>/dev/null");
-	system("echo 4a338000.pru1  > /sys/bus/platform/drivers/pru-rproc/unbind 2> /dev/null");
+ //    // unbind both cores
+	// system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind 2>/dev/null");
+	// system("echo 4a338000.pru1  > /sys/bus/platform/drivers/pru-rproc/unbind 2> /dev/null");
 
     return 0;
 }
@@ -999,16 +1038,26 @@ int disable_servo_power_rail(){
 * 
 * Sends a single pulse of duration us (microseconds) to a single channel (ch)
 * This must be called regularly (>40hz) to keep servo or ESC awake.
+* returns -2 on fatal error (if the PRU is not set up or channel out of bounds)
+* returns -1 if the pulse was not sent because a pulse is already going
+* returns 0 if all went well.
 *******************************************************************************/
 int send_servo_pulse_us(int ch, int us){
 	// Sanity Checks
 	if(ch<1 || ch>SERVO_CHANNELS){
 		printf("ERROR: Servo Channel must be between 1&%d\n", SERVO_CHANNELS);
-		return -1;
+		return -2;
 	} if(prusharedMem_32int_ptr == NULL){
 		printf("ERROR: PRU servo Controller not initialized\n");
+		return -2;
+	}
+
+	// first check to make sure no pulse is currently being sent
+	if(prusharedMem_32int_ptr[ch-1] != 0){
+		printf("WARNING: Tried to start a new pulse amidst another\n");
 		return -1;
 	}
+
 	// PRU runs at 200Mhz. find #loops needed
 	unsigned int num_loops = ((us*200.0)/PRU_SERVO_LOOP_INSTRUCTIONS); 
 	// write to PRU shared memory
@@ -1023,11 +1072,14 @@ int send_servo_pulse_us(int ch, int us){
 * This must be called regularly (>40hz) to keep servos or ESCs awake.
 *******************************************************************************/
 int send_servo_pulse_us_all(int us){
-	int i;
+	int i, ret_ch;
+	int ret = 0;
 	for(i=1;i<=SERVO_CHANNELS; i++){
-		send_servo_pulse_us(i, us);
+		ret_ch = send_servo_pulse_us(i, us);
+		if(ret_ch == -2) return -2;
+		else if(ret_ch == -1) ret=-1;
 	}
-	return 0;
+	return ret;
 }
 
 /*******************************************************************************
@@ -1054,11 +1106,14 @@ int send_servo_pulse_normalized(int ch, float input){
 * 
 *******************************************************************************/
 int send_servo_pulse_normalized_all(float input){
-	int i;
+	int i, ret_ch;
+	int ret = 0;
 	for(i=1;i<=SERVO_CHANNELS; i++){
-		send_servo_pulse_normalized(i, input);
+		ret_ch = send_servo_pulse_normalized(i, input);
+		if(ret_ch == -2) return -2;
+		else if(ret_ch == -1) ret=-1;
 	}
-	return 0;
+	return ret;
 }
 
 /*******************************************************************************
@@ -1085,11 +1140,14 @@ int send_esc_pulse_normalized(int ch, float input){
 * 
 *******************************************************************************/
 int send_esc_pulse_normalized_all(float input){
-	int i;
+	int i, ret_ch;
+	int ret = 0;
 	for(i=1;i<=SERVO_CHANNELS; i++){
-		send_esc_pulse_normalized(i, input);
+		ret_ch = send_esc_pulse_normalized(i, input);
+		if(ret_ch == -2) return -2;
+		else if(ret_ch == -1) ret=-1;
 	}
-	return 0;
+	return ret;
 }
 
 

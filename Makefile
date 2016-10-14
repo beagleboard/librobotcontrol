@@ -2,6 +2,8 @@ prefix := /usr
 RM := rm -r -f 
 
 all:
+	@bash pru_firmware/configure_pre_cgt.sh
+	@make -C pru_firmware --no-print-directory
 	@make -C libraries --no-print-directory
 	@make -C examples --no-print-directory
 	@make -C battery_monitor_service --no-print-directory
@@ -9,6 +11,7 @@ all:
 	@make -C overlay --no-print-directory
 
 install:
+	@make -C pru_firmware -s install
 	@make -C libraries -s install
 	@make -C examples -s install
 	@make -C battery_monitor_service -s install
@@ -22,6 +25,7 @@ install:
 	@echo "we suggest running calibrate_gyro and calibrate_mag."
 
 clean:
+	@make -C pru_firmware -s clean
 	@make -C libraries -s clean
 	@make -C examples -s clean
 	@make -C battery_monitor_service -s clean
@@ -39,6 +43,7 @@ clean:
 
 
 uninstall:
+	@make -C pru_firmware -s uninstall
 	@make -C libraries -s uninstall
 	@make -C examples -s uninstall
 	@make -C battery_monitor_service -s uninstall

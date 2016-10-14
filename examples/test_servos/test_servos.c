@@ -175,6 +175,7 @@ int main(int argc, char *argv[]){
 	}
 	
 	// okay, off we go!
+	printf("Initializing Cape\n")
 	if(initialize_cape()){
 		printf("ERROR: failed to initialize_cape\n");
 		return -1;
