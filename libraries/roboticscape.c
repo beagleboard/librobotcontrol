@@ -937,11 +937,18 @@ int initialize_pru(){
 		#ifdef DEBUG
 		printf("trying to load pru firmware\n");
 		#endif
-		if(system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/bind")!=0){
-			printf("ERROR: RPROC driver present but failed to start PRU\n");
-			return -1;
-		}
-		usleep(1000);
+
+
+
+		system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind 2> /dev/null");
+		system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/bind 2> /dev/null");
+
+
+		// if(system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/bind")!=0){
+		// 	printf("ERROR: RPROC driver present but failed to start PRU\n");
+		// 	return -1;
+		// }
+		// usleep(1000);
 		#ifdef DEBUG
 		printf("checking if PRU firmware loaded successfully\n");
 		#endif
