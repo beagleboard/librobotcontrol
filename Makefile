@@ -1,5 +1,9 @@
 prefix := /usr
 RM := rm -r -f 
+INSTALL := install -m 755 
+INSTALLDIR := install -d -m 644 
+INSTALLNONEXEC := install -m 644 
+ETC_DIR := /etc/roboticscape
 
 all:
 	@make -C libraries --no-print-directory
@@ -9,11 +13,13 @@ all:
 	@make -C overlay --no-print-directory
 
 install:
+	@$(INSTALLDIR) $(DEST_DIR)/$(ETC_DIR)
 	@make -C libraries -s install
 	@make -C examples -s install
 	@make -C battery_monitor_service -s install
 	@make -C roboticscape_service -s install
 	@make -C overlay -s install
+	@cp -r -f  project_template/ $(DEST_DIR)/$(ETC_DIR)/
 	@echo " "
 	@echo "roboticscape Package Installed"
 	@echo "If you are not on a Bealgebone Blue, please"
@@ -45,5 +51,6 @@ uninstall:
 	@make -C roboticscape_service -s uninstall
 	@make -C project_template -s uninstall
 	@make -C overlay -s uninstall
+	@$(RM) $(DEST_DIR)/$(ETC_DIR)
 	@echo "Robotics Cape Uninstalled"
 
