@@ -5,7 +5,7 @@
 * however it contains the majority of the core components.
 *******************************************************************************/
 
-#define DEBUG
+//#define DEBUG
 
 #include "usefulincludes.h"
 #include "roboticscape.h"

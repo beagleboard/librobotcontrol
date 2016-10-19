@@ -44,10 +44,6 @@ install:
 	$(INSTALL) $(TARGET) $(DESTDIR)$(PREFIX)/lib
 	@# calibration directory
 	$(INSTALLDIR) $(DESTDIR)/etc/roboticscape/
-	@# install pru binaries
-	$(INSTALLDIR) $(DESTDIR)/lib/firmware/
-	$(INSTALLNOEXEC) pru/am335x-pru0-fw $(DESTDIR)/lib/firmware/
-	$(INSTALLNOEXEC) pru/am335x-pru1-fw $(DESTDIR)/lib/firmware/
 	@# ldconfig to update library index
 	ldconfig
 	@echo "$(TARGET) Install Complete"
