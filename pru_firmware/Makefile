@@ -7,6 +7,9 @@
 
 
 PRU_CGT=/usr/share/ti/cgt-pru
+LNKPRU=/usr/bin/lnkpru
+CLPRU=/usr/bin/clpru
+
 
 LINKER_COMMAND_FILE=./AM335x_PRU.cmd
 LIBS=--library=/opt/source/pru-software-support-package/lib/rpmsg_lib.lib
@@ -41,34 +44,34 @@ all: $(TARGETS)
 
 $(PRU0_FW): $(GEN_DIR)/main_pru0.object $(LINK_PRU0_FW)
 	@echo 'LD	$^' 
-	@$(PRU_CGT)/bin/lnkpru -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
+	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
 
 $(PRU1_FW): $(GEN_DIR)/main_pru1.object $(LINK_PRU1_FW)
 	@echo 'LD	$^'
-	@$(PRU_CGT)/bin/lnkpru -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
+	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
 
 
 $(GEN_DIR)/main_pru0.object: main_pru0.c 
 	@mkdir -p $(GEN_DIR)
 	@echo 'CC	$<'
-	@$(PRU_CGT)/bin/clpru --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
+	@$(CLPRU) --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
 
 
 $(GEN_DIR)/main_pru1.object: main_pru1.c
 	@mkdir -p $(GEN_DIR)
 	@echo 'CC	$<'
-	@$(PRU_CGT)/bin/clpru --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
+	@$(CLPRU) --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
 
 
 $(GEN_DIR)/pru1-servo.object: pru1-servo.asm
 	@mkdir -p $(GEN_DIR)
 	@echo 'CC	$<'
-	@$(PRU_CGT)/bin/clpru --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
+	@$(CLPRU) --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
 
 $(GEN_DIR)/pru0-encoder.object: pru0-encoder.asm
 	@mkdir -p $(GEN_DIR)
 	@echo 'CC	$<'
-	@$(PRU_CGT)/bin/clpru --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
+	@$(CLPRU) --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
 
 
 

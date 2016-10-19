@@ -3,9 +3,10 @@ For BeagleBone Black and BeagleBone Blue Running Debian Jessie.
 See the wheezy_archive branch for old Wheezy-compatible code.
 
 
-We recommend runnging this package with the latest lxqt 4gb image available here:
-http://elinux.org/Beagleboard:BeagleBoneBlack_Debian#Flasher:_.28lxqt-4gb.29_.28BeagleBone_Black.2FGreen_4GB_eMMC.29
 The Beaglebone community is very active and we try to keep up with the rapid development.
+We recommend runnging this package with the latest iot 4gb image available here:
+http://elinux.org/Beagleboard:BeagleBoneBlack_Debian#Flasher:_.28iot.29_.28BeagleBone_Black.2FGreen_eMMC.29
+
 
 
 We also recommend using the most recent 4.4-series rt kernel. Right now that is 4.4.24-ti-rt-r55
