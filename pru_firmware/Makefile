@@ -23,9 +23,10 @@ LFLAGS=--reread_libs --warn_sections --stack_size=$(STACK_SIZE) --heap_size=$(HE
 
 
 GEN_DIR := build
+FINAL_DIR := final_bins
 
-PRU1_FW		=$(GEN_DIR)/main_pru1_fw.out
-PRU0_FW		=$(GEN_DIR)/main_pru0_fw.out
+PRU1_FW		=$(FINAL_DIR)/main_pru1_fw
+PRU0_FW		=$(FINAL_DIR)/main_pru0_fw
 
 TARGETS		=$(PRU1_FW) $(PRU0_FW)
 LINK_PRU1_FW=$(GEN_DIR)/pru1-servo.object
@@ -53,23 +54,27 @@ $(PRU1_FW): $(GEN_DIR)/main_pru1.object $(LINK_PRU1_FW)
 
 $(GEN_DIR)/main_pru0.object: main_pru0.c 
 	@mkdir -p $(GEN_DIR)
+	@mkdir -p $(FINAL_DIR)
 	@echo 'CC	$<'
 	@$(CLPRU) --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
 
 
 $(GEN_DIR)/main_pru1.object: main_pru1.c
 	@mkdir -p $(GEN_DIR)
+	@mkdir -p $(FINAL_DIR)
 	@echo 'CC	$<'
 	@$(CLPRU) --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
 
 
 $(GEN_DIR)/pru1-servo.object: pru1-servo.asm
 	@mkdir -p $(GEN_DIR)
+	@mkdir -p $(FINAL_DIR)
 	@echo 'CC	$<'
 	@$(CLPRU) --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
 
 $(GEN_DIR)/pru0-encoder.object: pru0-encoder.asm
 	@mkdir -p $(GEN_DIR)
+	@mkdir -p $(FINAL_DIR)
 	@echo 'CC	$<'
 	@$(CLPRU) --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
 
@@ -78,17 +83,16 @@ $(GEN_DIR)/pru0-encoder.object: pru0-encoder.asm
 
 
 install:
-	@$(MAKE)
 	@echo "copying firmware to /lib/firmware/am335x_pru0_fw"
-	@$(INSTALLNONEXEC) .$(GENDIR)/$(PRU0_FW) $(DESTDIR)/lib/firmware/am335x-pru0-fw
+	@$(INSTALLNONEXEC) .$(GENDIR)/$(PRU0_FW) $(DESTDIR)/lib/firmware/
 	@echo 'copying firmware to /lib/firmware/am335x_pru1_fw'
-	@$(INSTALLNONEXEC) .$(GENDIR)/$(PRU1_FW) $(DESTDIR)/lib/firmware/am335x-pru1-fw
+	@$(INSTALLNONEXEC) .$(GENDIR)/$(PRU1_FW) $(DESTDIR)/lib/firmware/
 	@$(INSTALLNONEXEC) pruss-blacklist.conf $(DESTDIR)/etc/modprobe.d/
 
 
 clean:
-	@rm -rf $(GEN_DIR)
-	@rm -f main_pru1.asm main_pru0.asm file.map
+	@$(RM) $(GEN_DIR)
+	@$(RM) main_pru1.asm main_pru0.asm file.map
 	@echo 'PRU Firmware Cleanup Complete'
 
 uninstall:

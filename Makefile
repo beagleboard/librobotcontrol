@@ -2,8 +2,6 @@ prefix := /usr
 RM := rm -r -f 
 
 all:
-	@bash pru_firmware/configure_pru_cgt.sh
-	@make -C pru_firmware --no-print-directory
 	@make -C libraries --no-print-directory
 	@make -C examples --no-print-directory
 	@make -C battery_monitor_service --no-print-directory
