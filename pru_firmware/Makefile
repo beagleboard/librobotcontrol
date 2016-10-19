@@ -25,8 +25,8 @@ LFLAGS=--reread_libs --warn_sections --stack_size=$(STACK_SIZE) --heap_size=$(HE
 GEN_DIR := build
 FINAL_DIR := final_bins
 
-PRU1_FW		=$(FINAL_DIR)/main_pru1_fw
-PRU0_FW		=$(FINAL_DIR)/main_pru0_fw
+PRU1_FW		=$(FINAL_DIR)/main_pru1_fw.out
+PRU0_FW		=$(FINAL_DIR)/main_pru0_fw.out
 
 TARGETS		=$(PRU1_FW) $(PRU0_FW)
 LINK_PRU1_FW=$(GEN_DIR)/pru1-servo.object
@@ -84,9 +84,9 @@ $(GEN_DIR)/pru0-encoder.object: pru0-encoder.asm
 
 install:
 	@echo "copying firmware to /lib/firmware/am335x_pru0_fw"
-	@$(INSTALLNONEXEC) .$(GENDIR)/$(PRU0_FW) $(DESTDIR)/lib/firmware/
+	@$(INSTALLNONEXEC) $(PRU0_FW) $(DESTDIR)/lib/firmware/am335x_pru0_fw
 	@echo 'copying firmware to /lib/firmware/am335x_pru1_fw'
-	@$(INSTALLNONEXEC) .$(GENDIR)/$(PRU1_FW) $(DESTDIR)/lib/firmware/
+	@$(INSTALLNONEXEC) $(PRU1_FW) $(DESTDIR)/lib/firmware/am335x_pru1_fw
 	@$(INSTALLNONEXEC) pruss-blacklist.conf $(DESTDIR)/etc/modprobe.d/
 
 
