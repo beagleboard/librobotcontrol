@@ -44,13 +44,6 @@ install:
 	$(INSTALL) $(TARGET) $(DESTDIR)$(PREFIX)/lib
 	@# calibration directory
 	$(INSTALLDIR) $(DESTDIR)/etc/roboticscape/
-	@# install pru binaries
-	$(INSTALLDIR) $(DESTDIR)/lib/firmware/
-	$(INSTALLNOEXEC) pru/am335x-pru0-fw $(DESTDIR)/lib/firmware/
-	$(INSTALLNOEXEC) pru/am335x-pru1-fw $(DESTDIR)/lib/firmware/
-	@#uipruss balcklist
-	@$(INSTALLDIR) $(DESTDIR)/etc/modprobe.d
-	@$(INSTALLNOEXEC) pruss-blacklist.conf $(DESTDIR)/etc/modprobe.d/
 	@# ldconfig to update library index
 	ldconfig
 	@echo "$(TARGET) Install Complete"
@@ -71,7 +64,6 @@ uninstall:
 	$(RM) $(DESTDIR)$(PREFIX)/include/roboticscape-defs.h
 	$(RM) $(DESTDIR)$(PREFIX)/include/usefulincludes.h
 	$(RM) $(DESTDIR)/etc/roboticscape/
-	$(RM) $(DESTDIR)/etc/modprobe.d/pruss-blacklist.conf
 	$(RM) $(DESTDIR)/lib/firmware/am335x-pru0-fw
 	$(RM) $(DESTDIR)/lib/firmware/am335x-pru1-fw 
 	@echo "$(TARGET) Uninstall Complete"

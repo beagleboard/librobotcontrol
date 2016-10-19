@@ -14,6 +14,7 @@ all:
 
 install:
 	@$(INSTALLDIR) $(DEST_DIR)/$(ETC_DIR)
+	@make -C pru_firmware -s install
 	@make -C libraries -s install
 	@make -C examples -s install
 	@make -C battery_monitor_service -s install
@@ -28,6 +29,7 @@ install:
 	@echo "we suggest running calibrate_gyro and calibrate_mag."
 
 clean:
+	@make -C pru_firmware -s clean
 	@make -C libraries -s clean
 	@make -C examples -s clean
 	@make -C battery_monitor_service -s clean
@@ -45,6 +47,7 @@ clean:
 
 
 uninstall:
+	@make -C pru_firmware -s uninstall
 	@make -C libraries -s uninstall
 	@make -C examples -s uninstall
 	@make -C battery_monitor_service -s uninstall

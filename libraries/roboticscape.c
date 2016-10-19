@@ -11,14 +11,13 @@
 #include "roboticscape.h"
 #include "roboticscape-defs.h"
 #include "simple_gpio/simple_gpio.h"// used for setting interrupt input pin
+#include "simple_gpio/gpio_setup.h"
 #include "mmap/mmap_gpio_adc.h"		// used for fast gpio functions
 #include "mmap/mmap_pwmss.h"		// used for fast pwm functions
 #include "simple_pwm/simple_pwm.h" 	// for configuring pwm
+#include "other/robotics_pru.h"
 
-// defines
-#define PRU_ADDR		0x4A300000		// Start of PRU memory Page 184 am335x TRM
-#define PRU_LEN			0x80000			// Length of PRU memory
-#define PRU_SHAREDMEM	0x10000			// Offset to shared memory
+
 #define CAPE_NAME 	"RoboticsCape"
 
 /*******************************************************************************
@@ -26,7 +25,6 @@
 *******************************************************************************/
 enum state_t state = UNINITIALIZED;
 int pause_btn_state, mode_btn_state;
-static unsigned int *prusharedMem_32int_ptr;
 int mdir1a, mdir2b; // variable gpio pin assignments
 
 
@@ -40,7 +38,6 @@ int (*pause_released_func)();
 int (*pause_pressed_func)();
 int (*mode_released_func)();
 int (*mode_pressed_func)();
-int initialize_pru();
 void shutdown_signal_handler(int signo);
 
 /*******************************************************************************
@@ -82,17 +79,8 @@ int initialize_cape(){
 	signal(SIGINT, shutdown_signal_handler);	
 	signal(SIGTERM, shutdown_signal_handler);	
 
-	// initialize mmap io libs
-	#ifdef DEBUG
-	printf("Initializing: GPIO\n");
-	#endif
 
-	//export all GPIO output pins
-	if(gpio_export(RED_LED)) return -1;
-	if(gpio_set_dir(RED_LED, OUTPUT_PIN)) return -1;
-	gpio_export(GRN_LED);
-	gpio_set_dir(GRN_LED, OUTPUT_PIN);
-
+	// do any board-specific config
 	if(get_bb_model()==BB_BLUE){
 		mdir1a = MDIR1A_BLUE;
 		mdir2b = MDIR2B_BLUE;
@@ -102,45 +90,25 @@ int initialize_cape(){
 		mdir2b = MDIR2B;
 	}
 
-	gpio_export(mdir1a);
-	gpio_set_dir(mdir1a, OUTPUT_PIN);
-	gpio_export(MDIR1B);
-	gpio_set_dir(MDIR1B, OUTPUT_PIN);
-	gpio_export(MDIR2A);
-	gpio_set_dir(MDIR2A, OUTPUT_PIN);
-	gpio_export(mdir2b);
-	gpio_set_dir(mdir2b, OUTPUT_PIN);
-	gpio_export(MDIR3A);
-	gpio_set_dir(MDIR3A, OUTPUT_PIN);
-	gpio_export(MDIR3B);
-	gpio_set_dir(MDIR3B, OUTPUT_PIN);
-	gpio_export(MDIR4A);
-	gpio_set_dir(MDIR4A, OUTPUT_PIN);
-	gpio_export(MDIR4B);
-	gpio_set_dir(MDIR4B, OUTPUT_PIN);
-	gpio_export(MOT_STBY);
-	gpio_set_dir(MOT_STBY, OUTPUT_PIN);
-	gpio_export(PAIRING_PIN);
-	gpio_set_dir(PAIRING_PIN, OUTPUT_PIN);
-	gpio_export(SERVO_PWR);
-	gpio_set_dir(SERVO_PWR, OUTPUT_PIN);
+	// initialize gpio pins
+	#ifdef DEBUG
+	printf("Initializing: GPIO\n");
+	#endif
+	if(configure_gpio_pins()<0){
+		printf("ERROR: failed to configure GPIO\n");
+		return -1;
+	}
 
-	//set up mode pin
-	gpio_export(MODE_BTN);
-	gpio_set_dir(MODE_BTN, INPUT_PIN);
-	gpio_set_edge(MODE_BTN, "both");  // Can be rising, falling or both
-	
-	//set up pause pin
-	gpio_export(PAUSE_BTN);
-	gpio_set_dir(PAUSE_BTN, INPUT_PIN);
-	gpio_set_edge(PAUSE_BTN, "both");  // Can be rising, falling or both
-
-
+	// now use mmap for fast gpio
+	#ifdef DEBUG
+	printf("Initializing: MMAP GPIO\n");
+	#endif
 	if(initialize_mmap_gpio()){
 		printf("mmap_gpio_adc.c failed to initialize gpio\n");
 		return -1;
 	}
 	
+	// now adc
 	#ifdef DEBUG
 	printf("Initializing: ADC\n");
 	#endif
@@ -149,6 +117,7 @@ int initialize_cape(){
 		return -1;
 	}
 
+	// now eqep
 	#ifdef DEBUG
 	printf("Initializing: eQEP\n");
 	#endif
@@ -165,23 +134,18 @@ int initialize_cape(){
 		// return -1;
 	}
 	
-	// setup pwm driver
+	// now pwm
 	#ifdef DEBUG
 	printf("Initializing: PWM\n");
 	#endif
 	if(simple_init_pwm(1,PWM_FREQ)){
 		printf("ERROR: failed to initialize hrpwm1\n");
-//		return -1;
+		return -1;
 	}
 	if(simple_init_pwm(2,PWM_FREQ)){
 		printf("ERROR: failed to initialize PWMSS 2\n");
-		// return -1;
+		return -1;
 	}
-	
-	// start some gpio pins at defaults
-	deselect_spi1_slave(1);	
-	deselect_spi1_slave(2);
-	disable_motors();
 	
 	//set up function pointers for button press events
 	#ifdef DEBUG
@@ -198,7 +162,7 @@ int initialize_cape(){
 	#endif
 	if(initialize_pru()<0){
 		printf("ERROR: failed to initialize PRU\n");
-//		return -1;
+		return -1;
 	}
 
 	// create new pid file with process id
@@ -808,10 +772,7 @@ int get_encoder_pos(int ch){
 		return -1;
 	}
 	// 4th channel is counted by the PRU not eQEP
-	if(ch==4){
-		if(prusharedMem_32int_ptr == NULL) return -1;
-		else return (int) prusharedMem_32int_ptr[8];
-	}
+	if(ch==4) return get_pru_encoder_pos();
 	
 	// first 3 channels counted by eQEP
 	return  read_eqep(ch-1);
@@ -829,11 +790,8 @@ int set_encoder_pos(int ch, int val){
 		return -1;
 	}
 	// 4th channel is counted by the PRU not eQEP
-	if(ch==4){
-		if(prusharedMem_32int_ptr == NULL) return -1;
-		else prusharedMem_32int_ptr[8] = val;
-		return 0;
-	}
+	if(ch==4) return set_pru_encoder_pos(val);
+
 	// else write to eQEP
 	return write_eqep(ch-1, val);
 }
@@ -893,88 +851,7 @@ float get_adc_volt(int ch){
 
 
 
-/*******************************************************************************
-* int initialize_pru()
-* 
-* Enables the PRU and gets a pointer to the PRU shared memory which is used by 
-* the servo and encoder functions in this C file.
-*******************************************************************************/
-int initialize_pru(){
-	unsigned int	*pru;		// Points to start of PRU memory.
-	int	fd;
-	
-	// reset memory pointer to NULL so if init fails it doesn't point somewhere bad
-	prusharedMem_32int_ptr = NULL;
 
-	// check rpoc driver is up
-	if(access("/sys/bus/platform/drivers/pru-rproc/bind", F_OK ) != 0){
-		printf("ERROR: pru-rproc driver missing!\n");
-		return -1;
-	}
-
-	// reset each core
-	if(system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind")!=0){
-		printf("ERROR: RPROC driver present but failed to start PRU\n");
-		return -1;
-	}
-	if(system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/bind")!=0){
-		printf("ERROR: RPROC driver present but failed to start PRU\n");
-		return -1;
-	}
-	if(system("echo 4a338000.pru1  > /sys/bus/platform/drivers/pru-rproc/unbind")!=0){
-		printf("ERROR: RPROC driver present but failed to start PRU\n");
-		return -1;
-	}
-	if(system("echo 4a338000.pru1 > /sys/bus/platform/drivers/pru-rproc/bind")!=0){
-		printf("ERROR: RPROC driver present but failed to start PRU\n");
-		return -1;
-	}
-	
-	// start mmaping shared memory
-	fd = open("/dev/mem", O_RDWR | O_SYNC);
-	if (fd == -1) {
-		printf ("ERROR: could not open /dev/mem.\n\n");
-		return 1;
-	}
-	#ifdef DEBUG
-	printf("mmap'ing PRU shared memory\n");
-	#endif
-	pru = mmap(0, PRU_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PRU_ADDR);
-	if (pru == MAP_FAILED) {
-		printf ("ERROR: could not map memory.\n\n");
-		return 1;
-	}
-	close(fd);
-
-	// set global shared memory pointer
-	prusharedMem_32int_ptr = pru + PRU_SHAREDMEM/4;	// Points to start of shared memory
-
-	// zero out the 8 servo channels and encoder channel
-	#ifdef DEBUG
-	printf("zeroing out PRU shared memory\n");
-	#endif
-	memset(prusharedMem_32int_ptr, 0, 9*4);
-	
-    return 0;
-}
-
-/*******************************************************************************
-* int power_off_pru()
-* 
-* Enables the PRU and gets a pointer to the PRU shared memory which is used by 
-* the servo and encoder functions in this C file.
-*******************************************************************************/
-int power_off_pru(){
-	
-	// set pointer to NULL
-    prusharedMem_32int_ptr = NULL;
-
-    // unbind both cores
-	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind 2>/dev/null");
-	system("echo 4a338000.pru1  > /sys/bus/platform/drivers/pru-rproc/unbind 2> /dev/null");
-
-    return 0;
-}
 
 /*******************************************************************************
 * int enable_servo_power_rail()
@@ -994,103 +871,7 @@ int disable_servo_power_rail(){
 	return mmap_gpio_write(SERVO_PWR, LOW);
 }
 
-/*******************************************************************************
-* int send_servo_pulse_us(int ch, int us)
-* 
-* Sends a single pulse of duration us (microseconds) to a single channel (ch)
-* This must be called regularly (>40hz) to keep servo or ESC awake.
-*******************************************************************************/
-int send_servo_pulse_us(int ch, int us){
-	// Sanity Checks
-	if(ch<1 || ch>SERVO_CHANNELS){
-		printf("ERROR: Servo Channel must be between 1&%d\n", SERVO_CHANNELS);
-		return -1;
-	} if(prusharedMem_32int_ptr == NULL){
-		printf("ERROR: PRU servo Controller not initialized\n");
-		return -1;
-	}
-	// PRU runs at 200Mhz. find #loops needed
-	unsigned int num_loops = ((us*200.0)/PRU_SERVO_LOOP_INSTRUCTIONS); 
-	// write to PRU shared memory
-	prusharedMem_32int_ptr[ch-1] = num_loops;
-	return 0;
-}
 
-/*******************************************************************************
-* int send_servo_pulse_us_all(int us)
-* 
-* Sends a single pulse of duration us (microseconds) to all channels.
-* This must be called regularly (>40hz) to keep servos or ESCs awake.
-*******************************************************************************/
-int send_servo_pulse_us_all(int us){
-	int i;
-	for(i=1;i<=SERVO_CHANNELS; i++){
-		send_servo_pulse_us(i, us);
-	}
-	return 0;
-}
-
-/*******************************************************************************
-* int send_servo_pulse_normalized(int ch, float input)
-* 
-*
-*******************************************************************************/
-int send_servo_pulse_normalized(int ch, float input){
-	if(ch<1 || ch>SERVO_CHANNELS){
-		printf("ERROR: Servo Channel must be between 1&%d\n", SERVO_CHANNELS);
-		return -1;
-	}
-	if(input<-1.5 || input>1.5){
-		printf("ERROR: normalized input must be between -1 & 1\n");
-		return -1;
-	}
-	float micros = SERVO_MID_US + (input*(SERVO_NORMAL_RANGE/2));
-	return send_servo_pulse_us(ch, micros);
-}
-
-/*******************************************************************************
-* int send_servo_pulse_normalized_all(float input)
-* 
-* 
-*******************************************************************************/
-int send_servo_pulse_normalized_all(float input){
-	int i;
-	for(i=1;i<=SERVO_CHANNELS; i++){
-		send_servo_pulse_normalized(i, input);
-	}
-	return 0;
-}
-
-/*******************************************************************************
-* int send_esc_pulse_normalized(int ch, float input)
-* 
-* 
-*******************************************************************************/
-int send_esc_pulse_normalized(int ch, float input){
-	if(ch<1 || ch>SERVO_CHANNELS){
-		printf("ERROR: Servo Channel must be between 1&%d\n", SERVO_CHANNELS);
-		return -1;
-	}
-	if(input<0.0 || input>1.0){
-		printf("ERROR: normalized input must be between 0 & 1\n");
-		return -1;
-	}
-	float micros = SERVO_MID_US + ((input-0.5)*SERVO_NORMAL_RANGE);
-	return send_servo_pulse_us(ch, micros);
-}
-
-/*******************************************************************************
-* int send_esc_pulse_normalized_all(float input)
-* 
-* 
-*******************************************************************************/
-int send_esc_pulse_normalized_all(float input){
-	int i;
-	for(i=1;i<=SERVO_CHANNELS; i++){
-		send_esc_pulse_normalized(i, input);
-	}
-	return 0;
-}
 
 
 /*******************************************************************************

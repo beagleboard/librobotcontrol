@@ -329,14 +329,15 @@ float get_adc_volt(int ch);
 * Brushless motor controllers (ESCs) for planes and multirotors are
 * unidirectional and lend themselves better to a normalized range from 0 to 1.
 * send_esc_pulse_normalized(int ch, float input) also sends a single pulse
-* but the range is scaled as follows:
+* but the range is set for common ESCs
 *
 * input     width   power  
-* 0.0		900us	0%   off
+* -0.1		900     armed but idle
+* 0.0		1000us	0%   off
 * 0.5		1500us	50%  half-throttle
-* 1.0		2100us	100% full-throttle
+* 1.0		2000us	100% full-throttle
 *
-* This assumes the ESCs have been calibrated for the 900-2100us range. Use the
+* This assumes the ESCs have been calibrated for the 1000-2000us range. Use the
 * calibrate_escs example program to be sure.
 *
 * @ int send_servo_pulse_us(int ch, int us)
@@ -353,12 +354,14 @@ float get_adc_volt(int ch);
 ******************************************************************************/
 int enable_servo_power_rail();
 int disable_servo_power_rail();
+int send_servo_pulse_us(int ch, int us);
+int send_servo_pulse_us_all(int us);
 int send_servo_pulse_normalized(int ch, float input);
 int send_servo_pulse_normalized_all(float input);
 int send_esc_pulse_normalized(int ch, float input);
 int send_esc_pulse_normalized_all(float input);
-int send_servo_pulse_us(int ch, int us);
-int send_servo_pulse_us_all(int us);
+int send_oneshot_pulse_normalized(int ch, float input);
+int send_oneshot_pulse_normalized_all(float input);
 
 
 /******************************************************************************

@@ -31,7 +31,7 @@
 ; of the authors and should not be interpreted as representing official policies, 
 ; either expressed or implied, of the FreeBSD Project.
 
-	.cdecls "robotics_cape_defs.h"
+;	.cdecls "robotics_cape_defs.h"
 
 ; PRU setup definitions
 	; .asg    C4,     CONST_SYSCFG         
@@ -44,6 +44,7 @@
 	.asg	0x000,	OWN_RAM
 	.asg	0x020,	OTHER_RAM
 	.asg    0x100,	SHARED_RAM       ; This is so prudebug can find it.
+	.asg    64,     CNT_OFFSET
 
 ; Encoder counting definitions
 ; these pin definitions are specific to SD-101D Robotics Cape

@@ -11,7 +11,9 @@
 #include "../../libraries/roboticscape.h"
 #include "../../libraries/roboticscape-defs.h"
 #include "../../libraries/simple_gpio/simple_gpio.h"
+#include "../../libraries/simple_gpio/gpio_setup.h"
 #include "../../libraries/simple_pwm/simple_pwm.h"
+#include "../../libraries/other/robotics_pru.h"
 
 #define TIMEOUT_S 25
 #define START_LOG "/etc/roboticscape/startup_log.txt"
@@ -24,8 +26,6 @@ int setup_pru();
 int check_eqep();
 
 uint64_t start_us;
-
-
 
 
 /*******************************************************************************
@@ -45,7 +45,7 @@ int main(){
 	kill_robot();
 
 	// export gpio pins
-	while(setup_gpio()!=0){
+	while(configure_gpio_pins()!=0){
 		if(check_timeout()){
 			system("echo 'timeout reached while waiting for gpio driver' >> " START_LOG);
 			printf("timeout reached while waiting for gpio driver\n");
@@ -86,25 +86,19 @@ int main(){
 	system(buf);
 
 
-	// just check for PRU for now, don't wait since we know it doesn't work
-	if(setup_pru()!=0){
-		system("echo 'Failed to initialize remoteproc pru' >> " START_LOG);
-		printf("echo 'Failed to initialize remoteproc pru");
+	//wait for pru
+	while(restart_pru()!=0){
+		if(check_timeout()){
+			system("echo 'timeout reached while waiting for remoteproc pru' >> " START_LOG);
+			printf("timeout reached while waiting for remoteproc pru\n");
+		 	return 0;
+		}
+		usleep(500000);
 	}
-
-	// wait for pru
-	// while(setup_pru()!=0){
-	// 	if(check_timeout()){
-	// 		system("echo 'timeout reached while waiting for remoteproc pru' >> " START_LOG);
-	// 		printf("timeout reached while waiting for remoteproc pru\n");
-	// 	 	return 0;
-	// 	}
-	// 	usleep(500000);
-	// }
-	// time = (micros_since_epoch()-start_us)/1000000;
-	// sprintf(buf, "echo 'time (s): %5f' >> %s",time,START_LOG);
-	// system(buf);
-	// system("echo 'pru remoteproc initialized' >> " START_LOG);
+	time = (micros_since_epoch()-start_us)/1000000;
+	sprintf(buf, "echo 'time (s): %5f' >> %s",time,START_LOG);
+	system(buf);
+	system("echo 'pru remoteproc initialized' >> " START_LOG);
 
 	cleanup_cape();
 	printf("startup routine complete\n");
@@ -112,18 +106,7 @@ int main(){
 	return 0;
 }
 
-// /******************************************************************************
-// * is_cape_loaded()
-// *
-// * check to make sure robotics cape overlay is loaded
-// * return 1 if cape is loaded
-// * return 0 if cape is missing
-// ******************************************************************************/
-// int is_cape_loaded(){
-// 	int ret = system("grep -q "CAPE_NAME" /sys/devices/platform/bone_capemgr*/slots");
-// 	if(ret == 0) return 1;
-// 	return 0;
-// }
+
 
 /*******************************************************************************
 * int check_timeout()
@@ -142,59 +125,6 @@ int check_timeout(){
 	return 0;
 }
 
-/*******************************************************************************
-* int setup_gpio()
-*
-* exports and sets the direction of each gpio pin
-*******************************************************************************/
-int setup_gpio(){
-	
-	//export all GPIO output pins
-	if(gpio_export(RED_LED)) return -1;
-	if(gpio_set_dir(RED_LED, OUTPUT_PIN)) return -1;
-	gpio_export(GRN_LED);
-	gpio_set_dir(GRN_LED, OUTPUT_PIN);
-	gpio_export(MDIR1A);
-	gpio_set_dir(MDIR1A, OUTPUT_PIN);
-	gpio_export(MDIR1B);
-	gpio_set_dir(MDIR1B, OUTPUT_PIN);
-	gpio_export(MDIR2A);
-	gpio_set_dir(MDIR2A, OUTPUT_PIN);
-	gpio_export(MDIR2B);
-	gpio_set_dir(MDIR2B, OUTPUT_PIN);
-	gpio_export(MDIR3A);
-	gpio_set_dir(MDIR3A, OUTPUT_PIN);
-	gpio_export(MDIR3B);
-	gpio_set_dir(MDIR3B, OUTPUT_PIN);
-	gpio_export(MDIR4A);
-	gpio_set_dir(MDIR4A, OUTPUT_PIN);
-	gpio_export(MDIR4B);
-	gpio_set_dir(MDIR4B, OUTPUT_PIN);
-	gpio_export(MOT_STBY);
-	gpio_set_dir(MOT_STBY, OUTPUT_PIN);
-	gpio_export(PAIRING_PIN);
-	gpio_set_dir(PAIRING_PIN, OUTPUT_PIN);
-	gpio_export(SERVO_PWR);
-	gpio_set_dir(SERVO_PWR, OUTPUT_PIN);
-
-	//set up mode pin
-	gpio_export(MODE_BTN);
-	gpio_set_dir(MODE_BTN, INPUT_PIN);
-	gpio_set_edge(MODE_BTN, "both");  // Can be rising, falling or both
-	
-	//set up pause pin
-	gpio_export(PAUSE_BTN);
-	gpio_set_dir(PAUSE_BTN, INPUT_PIN);
-	gpio_set_edge(PAUSE_BTN, "both");  // Can be rising, falling or both
-
-	// set up IMU interrupt pin
-	//set up gpio interrupt pin connected to imu
-	gpio_export(IMU_INTERRUPT_PIN);
-	gpio_set_dir(IMU_INTERRUPT_PIN, INPUT_PIN);
-	gpio_set_edge(IMU_INTERRUPT_PIN, "falling");
-
-	return 0;
-}
 
 
 /*******************************************************************************
