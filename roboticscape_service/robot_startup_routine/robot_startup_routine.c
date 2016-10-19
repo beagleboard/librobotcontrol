@@ -86,19 +86,19 @@ int main(){
 	system(buf);
 
 
-	//wait for pru
-	while(restart_pru()!=0){
-		if(check_timeout()){
-			system("echo 'timeout reached while waiting for remoteproc pru' >> " START_LOG);
-			printf("timeout reached while waiting for remoteproc pru\n");
-		 	return 0;
-		}
-		usleep(500000);
-	}
-	time = (micros_since_epoch()-start_us)/1000000;
-	sprintf(buf, "echo 'time (s): %5f' >> %s",time,START_LOG);
-	system(buf);
-	system("echo 'pru remoteproc initialized' >> " START_LOG);
+	// //wait for pru
+	// while(restart_pru()!=0){
+	// 	if(check_timeout()){
+	// 		system("echo 'timeout reached while waiting for remoteproc pru' >> " START_LOG);
+	// 		printf("timeout reached while waiting for remoteproc pru\n");
+	// 	 	return 0;
+	// 	}
+	// 	usleep(500000);
+	// }
+	// time = (micros_since_epoch()-start_us)/1000000;
+	// sprintf(buf, "echo 'time (s): %5f' >> %s",time,START_LOG);
+	// system(buf);
+	// system("echo 'pru remoteproc initialized' >> " START_LOG);
 
 	cleanup_cape();
 	printf("startup routine complete\n");

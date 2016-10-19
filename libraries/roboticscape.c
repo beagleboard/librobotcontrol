@@ -156,14 +156,14 @@ int initialize_cape(){
 		return -1;
 	}
 	
-	// start PRU
-	#ifdef DEBUG
-	printf("Initializing: PRU\n");
-	#endif
-	if(initialize_pru()<0){
-		printf("ERROR: failed to initialize PRU\n");
-		return -1;
-	}
+	// // start PRU
+	// #ifdef DEBUG
+	// printf("Initializing: PRU\n");
+	// #endif
+	// if(initialize_pru()<0){
+	// 	printf("ERROR: failed to initialize PRU\n");
+	// 	return -1;
+	// }
 
 	// create new pid file with process id
 	#ifdef DEBUG

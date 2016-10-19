@@ -80,6 +80,7 @@ done
 # Compile and install library, examples, and services
 # This works for Black and Blue
 ################################################################################
+find . -exec touch {} \;
 make clean
 make install
 
