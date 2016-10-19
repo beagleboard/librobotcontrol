@@ -7,8 +7,8 @@
 
 BIN_DIR := bin
 
-PRU1_FW		=$(FINAL_DIR)/main_pru1_fw.out
-PRU0_FW		=$(FINAL_DIR)/main_pru0_fw.out
+PRU1_FW		=$(BIN_DIR)/main_pru1_fw.out
+PRU0_FW		=$(BIN_DIR)/main_pru0_fw.out
 
 TARGETS		=$(PRU1_FW) $(PRU0_FW)
 LINK_PRU1_FW=$(BIN_DIR)/pru1-servo.object
