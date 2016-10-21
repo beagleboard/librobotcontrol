@@ -113,7 +113,7 @@ int restart_pru(){
 
 	// if pru0 is loaded, unload it
 	if(access(PRU0_UEVENT, F_OK)==0){
-		printf("unbinding pru0\n");
+		//printf("unbinding pru0\n");
 		if(write(unbind_fd, PRU0_NAME, PRU_NAME_LEN)<0){
 			printf("ERROR: pru0 unbind failed\n");
 			return -1;
@@ -121,7 +121,7 @@ int restart_pru(){
 	}
 	// if pru1 is loaded, unload it
 	if(access(PRU1_UEVENT, F_OK)==0){
-		printf("unbinding pru1\n");
+		//printf("unbinding pru1\n");
 		if(write(unbind_fd, PRU1_NAME, PRU_NAME_LEN)<0){
 			printf("ERROR: pru1 unbind failed\n");
 			return -1;

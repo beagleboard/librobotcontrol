@@ -22,7 +22,6 @@ int is_cape_loaded();
 int check_timeout();
 int setup_gpio();
 int setup_pwm();
-int setup_pru();
 int check_eqep();
 
 uint64_t start_us;
@@ -86,21 +85,20 @@ int main(){
 	system(buf);
 
 
-	// //wait for pru
-	// while(restart_pru()!=0){
-	// 	if(check_timeout()){
-	// 		system("echo 'timeout reached while waiting for remoteproc pru' >> " START_LOG);
-	// 		printf("timeout reached while waiting for remoteproc pru\n");
-	// 	 	return 0;
-	// 	}
-	// 	usleep(500000);
-	// }
-	// time = (micros_since_epoch()-start_us)/1000000;
-	// sprintf(buf, "echo 'time (s): %5f' >> %s",time,START_LOG);
-	// system(buf);
-	// system("echo 'pru remoteproc initialized' >> " START_LOG);
+	//wait for pru
+	while(restart_pru()!=0){
+		if(check_timeout()){
+			system("echo 'timeout reached while waiting for remoteproc pru' >> " START_LOG);
+			printf("timeout reached while waiting for remoteproc pru\n");
+		 	return 0;
+		}
+		usleep(500000);
+	}
+	time = (micros_since_epoch()-start_us)/1000000;
+	sprintf(buf, "echo 'time (s): %5f' >> %s",time,START_LOG);
+	system(buf);
+	system("echo 'pru remoteproc initialized' >> " START_LOG);
 
-	cleanup_cape();
 	printf("startup routine complete\n");
 	system("echo 'startup routine complete' >> " START_LOG);
 	return 0;
@@ -152,19 +150,3 @@ int check_eqep(){
 }
 
 
-/*******************************************************************************
-* int setup_pru()
-*
-* makes sure remoteproc for the pru is up and running, then reboots both cores
-*******************************************************************************/
-int setup_pru(){
-
-	// make sure driver is running
-	if(access("/sys/bus/platform/drivers/pru-rproc/bind", F_OK)) return -1;
-
-	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/unbind  > /dev/null");
-	system("echo 4a334000.pru0 > /sys/bus/platform/drivers/pru-rproc/bind > /dev/null");
-	system("echo 4a338000.pru1  > /sys/bus/platform/drivers/pru-rproc/unbind > /dev/null");
-	system("echo 4a338000.pru1 > /sys/bus/platform/drivers/pru-rproc/bind > /dev/null");
-	return 0;
-}

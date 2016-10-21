@@ -63,9 +63,6 @@ uninstall:
 	$(RM) $(DESTDIR)$(PREFIX)/include/roboticscape.h
 	$(RM) $(DESTDIR)$(PREFIX)/include/roboticscape-defs.h
 	$(RM) $(DESTDIR)$(PREFIX)/include/usefulincludes.h
-	$(RM) $(DESTDIR)/etc/roboticscape/
-	$(RM) $(DESTDIR)/lib/firmware/am335x-pru0-fw
-	$(RM) $(DESTDIR)/lib/firmware/am335x-pru1-fw 
 	@echo "$(TARGET) Uninstall Complete"
 
 	

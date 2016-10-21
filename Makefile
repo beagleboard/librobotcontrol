@@ -22,12 +22,6 @@ install:
 	@make -C roboticscape_service -s install
 	@make -C overlay -s install
 	@cp -r -f  project_template/ $(DEST_DIR)/$(ETC_DIR)/
-	@echo " "
-	@echo "roboticscape Package Installed"
-	@echo "If you are not on a Bealgebone Blue, please"
-	@echo "run configure_robotics_overlay.sh once to configure the"
-	@echo "overlay, then reboot to load device tree. After rebooting"
-	@echo "we suggest running calibrate_gyro and calibrate_mag."
 
 clean:
 	@make -C pru_firmware -s clean

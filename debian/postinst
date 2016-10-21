@@ -29,10 +29,13 @@ fi
 
 systemctl enable roboticscape
 
-echo "Installation Complete"
-echo "If you are running this on a beaglebone black, please"
-echo "run configure_black_overlay.sh once to configure the"
-echo "device tree overlay, then reboot to load device tree."
-echo "After rebooting we suggest running calibrate_gyro and calibrate_mag."
+echo " "
+echo " "
+echo " "
+echo "roboticscape Package Installed"
+echo "If you are not on a Bealgebone Blue, please"
+echo "run configure_robotics_overlay.sh once to configure the"
+echo "overlay, then reboot to load device tree. After rebooting"
+echo "we suggest running calibrate_gyro and calibrate_mag."
 
 exit 0

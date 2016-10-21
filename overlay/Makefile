@@ -20,7 +20,6 @@ install:
 	@$(INSTALLDIR) $(DESTDIR)$(ROBOTICS_DIR)
 	@$(INSTALLNONEXEC) $(OVERLAY).dtbo $(DESTDIR)$(ROBOTICS_DIR)
 	@echo "Overlay Install Complete"
-	@echo "run configure_robotics_overlay.sh to apply it in uEnv.txt"
 
 clean:
 	@rm -f $(OVERLAY).dtbo

@@ -54,6 +54,17 @@ esac
 echo " "
 
 
+
+################################################################################
+# Compile and install library, examples, and services
+# This works for Black and Blue
+################################################################################
+find . -exec touch {} \;
+bash debian/preinst
+make clean
+make install
+
+
 #################################################
 # Prompt user for desired startup program
 #################################################
@@ -75,16 +86,6 @@ select bfn in "blink" "balance" "none" "existing"; do
     esac
 done
 
-
-################################################################################
-# Compile and install library, examples, and services
-# This works for Black and Blue
-################################################################################
-find . -exec touch {} \;
-make clean
-make install
-
-
 # now make a link to the right program
 # if 'none' was selected then leave default as bare_minimum (does nothing)
 if [ "$PROG" == "blink" ]; then
@@ -96,6 +97,22 @@ elif  [ "$PROG" == "none" ]; then
 fi
 
 
-# normally here we would give a message to the user indicating all is complete
-# and tell them to run the balck cape installer script if they are on a black.
-# however, this message is now displayed by 'make install' above.
+# enable services
+systemctl daemon-reload
+systemctl enable battery_monitor
+systemctl start battery_monitor
+systemctl enable roboticscape
+
+
+#################################################
+# Prompt user for desired startup program
+#################################################
+
+echo " "
+echo " "
+echo " "
+echo "roboticscape Package Installed"
+echo "If you are not on a Bealgebone Blue, please"
+echo "run configure_robotics_overlay.sh once to configure the"
+echo "overlay, then reboot to load device tree. After rebooting"
+echo "we suggest running calibrate_gyro and calibrate_mag."

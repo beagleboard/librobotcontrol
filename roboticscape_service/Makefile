@@ -13,29 +13,17 @@ all:
 	@echo "robot_startup_routine Make Complete"
 
 install: $(all)
-	@$(MAKE) --no-print-directory
-	@echo "Installing robot_startup_routine Binary"
 	@$(MAKE) -C robot_startup_routine -s install
-	@echo "Installing roboticscape Service File"
-	-systemctl stop $(SERVICE)
-	-systemctl disable $(SERVICE)
 	@$(INSTALLDIR) $(DESTDIR)/lib/systemd/system
 	@$(INSTALLNONEXEC) $(SERVICE).service $(DESTDIR)/lib/systemd/system/
-	@echo "Enabling roboticscape Service"
-	-systemctl daemon-reload
-	-systemctl enable $(SERVICE)
 	@echo "roboticscape Service Install Complete"
 	
 clean:
 	@$(MAKE) -C robot_startup_routine -s clean
-	@echo "roboticscape Service Cleanup Complete"
 
 uninstall:
-	-systemctl -q stop $(SERVICE)
-	-systemctl -f -q disable $(SERVICE)
 	$(RM) $(DESTDIR)/lib/systemd/system/$(SERVICE).service
 	$(MAKE) -C robot_startup_routine -s uninstall
-	-systemctl -q daemon-reload
 	@echo "roboticscape Service Uninstall Complete"
 
 
