@@ -89,11 +89,11 @@ done
 # now make a link to the right program
 # if 'none' was selected then leave default as bare_minimum (does nothing)
 if [ "$PROG" == "blink" ]; then
-	ln -s /usr/bin/blink /etc/roboticscape/link_to_startup_program
+	ln -s -f /usr/bin/blink /etc/roboticscape/link_to_startup_program
 elif  [ "$PROG" == "balance" ]; then
-	ln -s /usr/bin/balance /etc/roboticscape/link_to_startup_program
+	ln -s -f /usr/bin/balance /etc/roboticscape/link_to_startup_program
 elif  [ "$PROG" == "none" ]; then
-	ln -s /usr/bin/bare_minimum /etc/roboticscape/link_to_startup_program
+	ln -s -f /usr/bin/bare_minimum /etc/roboticscape/link_to_startup_program
 fi
 
 
