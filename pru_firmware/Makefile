@@ -7,8 +7,8 @@
 
 BIN_DIR := bin
 
-PRU1_FW		=$(BIN_DIR)/main_pru1_fw.out
-PRU0_FW		=$(BIN_DIR)/main_pru0_fw.out
+PRU1_FW		=$(BIN_DIR)/main-pru1-fw.out
+PRU0_FW		=$(BIN_DIR)/main-pru0-fw.out
 
 TARGETS		=$(PRU1_FW) $(PRU0_FW)
 LINK_PRU1_FW=$(BIN_DIR)/pru1-servo.object
@@ -76,10 +76,9 @@ $(BIN_DIR)/pru0-encoder.object: pru0-encoder.asm
 
 install:
 	$(MAKE)
-	@echo "copying firmware to /lib/firmware/am335x_pru0_fw"
-	@$(INSTALLNONEXEC) $(PRU0_FW) $(DESTDIR)/lib/firmware/am335x_pru0_fw
-	@echo 'copying firmware to /lib/firmware/am335x_pru1_fw'
-	@$(INSTALLNONEXEC) $(PRU1_FW) $(DESTDIR)/lib/firmware/am335x_pru1_fw
+	@$(INSTALLDIR) $(DESTDIR)/lib/firmware/
+	@$(INSTALLNONEXEC) $(PRU0_FW) $(DESTDIR)/lib/firmware/am335x-pru0-fw
+	@$(INSTALLNONEXEC) $(PRU1_FW) $(DESTDIR)/lib/firmware/am335x-pru1-fw
 	@$(INSTALLNONEXEC) pruss-blacklist.conf $(DESTDIR)/etc/modprobe.d/
 
 
