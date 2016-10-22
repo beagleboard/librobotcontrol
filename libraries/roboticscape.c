@@ -162,7 +162,7 @@ int initialize_cape(){
 	#endif
 	if(initialize_pru()<0){
 		//printf("ERROR: failed to initialize PRU\n");
-		return 0;
+		//return 0;
 	}
 
 	// create new pid file with process id
