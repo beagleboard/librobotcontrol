@@ -12,13 +12,6 @@ UUID="$(blkid -c /dev/null -s UUID -o value /dev/mmcblk*)"
 MODEL="$(cat /proc/device-tree/model)"
 
 
-echo " "
-echo "Detected Linux kernel $KERNEL"
-echo "Detected Debian version $DEBIAN"
-echo "Detected Model $MODEL"
-cat /etc/dogtag
-echo " "
-
 ################################################################################
 # Sanity Checks
 ################################################################################
@@ -37,15 +30,15 @@ if ! grep -q "8." /etc/debian_version ; then
 	exit 1
 fi
 
-# make sure the user really wants to install
-echo "This will configure uEnv.txt and install the Robotics Cape overlay."
-echo "This step is not needed on the BeagleBone Blue."
-read -r -p "Continue? [y/n] " response
-case $response in
-    [yY]) echo " " ;;
-    *) echo "cancelled"; exit;;
-esac
-echo " "
+# # make sure the user really wants to install
+# echo "This will configure uEnv.txt and install the Robotics Cape overlay."
+# echo "This step is not needed on the BeagleBone Blue."
+# read -r -p "Continue? [y/n] " response
+# case $response in
+#     [yY]) echo " " ;;
+#     *) echo "cancelled"; exit;;
+# esac
+# echo " "
 
 ################################################################################
 # off we go!
@@ -61,7 +54,7 @@ elif [ "$MODEL" == "TI AM335x BeagleBone Green" ]; then
 elif [ "$MODEL" == "TI AM335x BeagleBone Green Wireless" ]; then
 	 DTB="am335x-bonegreen-wireless.dtb"
 elif [ "$MODEL" == "TI AM335x BeagleBone Blue" ]; then
-	 echo "I told you not to run this on the Blue!"
+	 echo "No overlay needed on the Blue!"
 	 exit 1
 else
 	 echo "unknown or unsupported BB model"
@@ -111,9 +104,4 @@ echo " " >> $UENV
 # modify default cape to load
 echo CAPE=$CAPE > /etc/default/capemgr
 
-#all done
-echo " "
 echo "Robotics Cape Overlay Configured and Installed"
-echo "Reboot to complete installation."
-echo "After Rebooting we suggest running calibrate_gyro and calibrate_mag"
-echo " " 

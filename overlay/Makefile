@@ -16,7 +16,7 @@ all:
 install:
 	$(MAKE)
 	@$(INSTALLDIR) $(DESTDIR)/usr/bin
-	@$(INSTALL) $(OVERLAY_SCRIPT) $(DESTDIR)/usr/bin
+	@$(INSTALL) $(OVERLAY_SCRIPT) $(DESTDIR)/usr/bin/
 	@$(INSTALLDIR) $(DESTDIR)$(ROBOTICS_DIR)
 	@$(INSTALLNONEXEC) $(OVERLAY).dtbo $(DESTDIR)$(ROBOTICS_DIR)
 	@echo "Overlay Install Complete"

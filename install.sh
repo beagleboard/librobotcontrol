@@ -10,12 +10,14 @@
 
 KERNEL="$(uname -r)"
 DEBIAN="$(cat /etc/debian_version)"
+MODEL="$(cat /proc/device-tree/model)"
+DOGTAG="$(cat /etc/dogtag)"
 
 echo " "
-echo "Detected Linux kernel $KERNEL"
-echo "Detected Debian version $DEBIAN"
-cat /etc/dogtag
-cat /proc/device-tree/model
+echo "Detected Linux kernel: $KERNEL"
+echo "Detected Debian version: $DEBIAN"
+echo "Detected Model: $MODEL"
+echo "Detected $DOGTAG"
 echo " "
 echo " "
 
@@ -64,6 +66,22 @@ bash debian/preinst
 make clean
 make install
 
+# enable services
+echo "systemctl daemon-reload"
+systemctl daemon-reload
+echo "Enabling battery_monitor Service"
+systemctl enable battery_monitor
+echo "Starting battery_monitor Service"
+systemctl start battery_monitor
+echo "Enabling roboticscape Service"
+systemctl enable roboticscape
+
+# set up overlay if not on the blue
+if [ "$MODEL" != "TI AM335x BeagleBone Blue" ]; then
+	echo "Configuring Device Tree Overlay"
+	/usr/bin/configure_robotics_overlay.sh
+fi
+
 
 #################################################
 # Prompt user for desired startup program
@@ -97,13 +115,6 @@ elif  [ "$PROG" == "none" ]; then
 fi
 
 
-# enable services
-systemctl daemon-reload
-systemctl enable battery_monitor
-systemctl start battery_monitor
-systemctl enable roboticscape
-
-
 #################################################
 # Prompt user for desired startup program
 #################################################
@@ -111,8 +122,11 @@ systemctl enable roboticscape
 echo " "
 echo " "
 echo " "
-echo "roboticscape Package Installed"
-echo "If you are not on a Bealgebone Blue, please"
-echo "run configure_robotics_overlay.sh once to configure the"
-echo "overlay, then reboot to load device tree. After rebooting"
-echo "we suggest running calibrate_gyro and calibrate_mag."
+echo "Robotics Cape Package Installed"
+echo " "
+
+# set up overlay if not on the blue
+if [ "$MODEL" != "TI AM335x BeagleBone Blue" ]; then
+	echo "Reboot to load device tree overlay."
+fi
+
