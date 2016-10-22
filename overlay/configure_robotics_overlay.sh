@@ -75,7 +75,7 @@ if [ ! -f "/lib/firmware/$OVERLAY.dtbo" ]; then
 fi
 
 # make backup if not already one
-if [ -a "$UENV_TXT.backup" ];then
+if [ -a "$UENV.backup" ];then
 	echo "backup of $UENV already exists"
 else
 	echo "making backup copy of $UENV"
