@@ -1,11 +1,11 @@
 #!/bin/bash
 
-OVERLAY=RoboticsCape-00A0
-CAPE=RoboticsCape
+OVERLAY=RoboticsCape
+TREE=am335x-boneblack-roboticscape.dtb
 UENV=/boot/uEnv.txt
 
 KERNEL="$(uname -r)"
-UNAME="$(cat /boot/uEnv.txt | grep "uname_r=")"
+UNAME="$(sed -n -e '/uname_r=/ s/.*\= *//p' /boot/uEnv.txt)"
 DEBIAN="$(cat /etc/debian_version)"
 UUID="$(blkid -c /dev/null -s UUID -o value /dev/mmcblk*)"
 # get the model number so we can set the right device tree
@@ -45,8 +45,16 @@ fi
 ################################################################################
 
 
+# use custom boneblack-roboticscape dtb if it's there
+# otherwise we will have to load the overlay later
 if   [ "$MODEL" == "TI AM335x BeagleBone Black" ]; then
-	 DTB="am335x-boneblack-emmc-overlay.dtb"
+	 
+	 if [ -a "/boot/dtbs/$UNAME/$TREE" ]; then
+	 	DTB="$TREE"
+	 else
+	 	DTB="am335x-boneblack-emmc-overlay.dtb"
+	 fi
+
 elif [ "$MODEL" == "TI AM335x BeagleBone Black Wireless" ]; then
 	 DTB="am335x-boneblack-wireless.dtb"
 elif [ "$MODEL" == "TI AM335x BeagleBone Green" ]; then
@@ -61,14 +69,11 @@ else
 	 exit 1
 fi
 
-# put overlay into /lib/firmware if it is missing
-# comes with newer images so this isn't really needed anymore
-if [ ! -f "/lib/firmware/$OVERLAY.dtbo" ]; then
-	cp /etc/robotics/$OVERLAY.dtbo /lib/firmware/
-fi
+echo "Using $DTB"
+
 
 # make backup if not already one
-if [ -a "$UENV.backup" ];then
+if [ -a "$UENV.backup" ]; then
 	echo "backup of $UENV already exists"
 else
 	echo "making backup copy of $UENV"
@@ -82,26 +87,31 @@ echo " " >> $UENV
 
 # write in kernel name from last UENV file
 # if it's empty use currently booted kernel instead
-if [ "$UNAME" == "uname_r=" ]; then
+if [ ! "$UNAME" ]; then
 	echo "uname_r=$KERNEL" >> $UENV
 	echo "Setting kernel $KERNEL to load on boot"
 else
 	echo "Using previously listed kernel $UNAME"
-	echo $UNAME >> $UENV
+	echo "uname_r=$UNAME" >> $UENV
 fi
 
 # write in the device tree name
 echo dtb=$DTB >> $UENV
 
-# standard entries
+# standard entry
 echo cmdline=coherent_pool=1M >> $UENV
-echo cape_enable=bone_capemgr.enable_partno=RoboticsCape >> $UENV
+
+# if not using custom device tree, load the overlay
+if [ "$DTB" != "$TREE" ]; then
+	echo cape_enable=bone_capemgr.enable_partno=$OVERLAY >> $UENV
+	echo "enabling overlay"
+fi
 
 #uuid of emmc to boot from
 echo uuid=$UUID >> $UENV
 echo " " >> $UENV
 
 # modify default cape to load
-echo CAPE=$CAPE > /etc/default/capemgr
+echo CAPE=$OVERLAY > /etc/default/capemgr
 
 echo "Robotics Cape Overlay Configured and Installed"

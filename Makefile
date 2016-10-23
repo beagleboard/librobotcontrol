@@ -5,22 +5,24 @@ INSTALLDIR := install -d -m 644
 INSTALLNONEXEC := install -m 644 
 ETC_DIR := /etc/roboticscape
 
+CONFIG_SH := configure_robotics_overlay.sh
+
 all:
 	@make -C pru_firmware --no-print-directory
 	@make -C libraries --no-print-directory
 	@make -C examples --no-print-directory
 	@make -C battery_monitor_service --no-print-directory
 	@make -C roboticscape_service --no-print-directory
-	@make -C overlay --no-print-directory
 
 install:
 	@$(INSTALLDIR) $(DEST_DIR)/$(ETC_DIR)
+	@$(INSTALLDIR) $(DEST_DIR)/usr/bin
 	@make -C pru_firmware -s install
 	@make -C libraries -s install
 	@make -C examples -s install
 	@make -C battery_monitor_service -s install
 	@make -C roboticscape_service -s install
-	@make -C overlay -s install
+	@$(install) device_tree/$(CONFIG_SH) $(DESTDIR)/usr/bin
 	@cp -r -f  project_template/ $(DEST_DIR)/$(ETC_DIR)/
 
 clean:
@@ -30,7 +32,6 @@ clean:
 	@make -C battery_monitor_service -s clean
 	@make -C roboticscape_service -s clean
 	@make -C project_template -s clean
-	@make -C overlay -s clean
 	@$(RM) debian/roboticscape
 	@$(RM) debian/roboticscape.debhelper.log
 	@$(RM) debian/debhelper-build-stamp
@@ -48,7 +49,7 @@ uninstall:
 	@make -C battery_monitor_service -s uninstall
 	@make -C roboticscape_service -s uninstall
 	@make -C project_template -s uninstall
-	@make -C overlay -s uninstall
-	@$(RM) $(DEST_DIR)/$(ETC_DIR)
+	@$(RM) $(ETC_DIR)
+	@$(RM) /usr/bin/$(CONFIG_SH)
 	@echo "Robotics Cape Uninstalled"
 

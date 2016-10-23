@@ -127,6 +127,6 @@ echo " "
 
 # set up overlay if not on the blue
 if [ "$MODEL" != "TI AM335x BeagleBone Blue" ]; then
-	echo "Reboot to load device tree overlay."
+	echo "Reboot to load device tree."
 fi
 
