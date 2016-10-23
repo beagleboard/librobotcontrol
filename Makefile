@@ -22,7 +22,7 @@ install:
 	@make -C examples -s install
 	@make -C battery_monitor_service -s install
 	@make -C roboticscape_service -s install
-	@$(install) device_tree/$(CONFIG_SH) $(DESTDIR)/usr/bin
+	@$(INSTALL) device_tree/$(CONFIG_SH) $(DESTDIR)/usr/bin/
 	@cp -r -f  project_template/ $(DEST_DIR)/$(ETC_DIR)/
 
 clean:
