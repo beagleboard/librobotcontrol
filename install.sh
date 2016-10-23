@@ -76,11 +76,8 @@ systemctl start battery_monitor
 echo "Enabling roboticscape Service"
 systemctl enable roboticscape
 
-# set up overlay if not on the blue
-if [ "$MODEL" != "TI AM335x BeagleBone Blue" ]; then
-	echo "Configuring Device Tree Overlay"
-	/usr/bin/configure_robotics_overlay.sh
-fi
+echo "Configuring Device Tree"
+bash /usr/bin/configure_robotics_dt.sh
 
 
 #################################################
@@ -122,11 +119,6 @@ fi
 echo " "
 echo " "
 echo " "
-echo "Robotics Cape Package Installed"
+echo "Robotics Cape package installation complete."
+echo "Please reboot now."
 echo " "
-
-# set up overlay if not on the blue
-if [ "$MODEL" != "TI AM335x BeagleBone Blue" ]; then
-	echo "Reboot to load device tree."
-fi
-

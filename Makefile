@@ -5,7 +5,7 @@ INSTALLDIR := install -d -m 644
 INSTALLNONEXEC := install -m 644 
 ETC_DIR := /etc/roboticscape
 
-CONFIG_SH := configure_robotics_overlay.sh
+CONFIG_SH := configure_robotics_dt.sh
 
 all:
 	@make -C pru_firmware --no-print-directory

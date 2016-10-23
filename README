@@ -1,68 +1,10 @@
 Robotics Cape Library Installer 
-For BeagleBone Black and BeagleBone Blue Running Debian Jessie.
-See the wheezy_archive branch for old Wheezy-compatible code.
+Version 0.1.2
 
+For BeagleBone Black and BeagleBone Blue running Debian Jessie.
 
-The Beaglebone community is very active and we try to keep up with the rapid development.
-We recommend runnging this package with the latest iot 4gb image available here:
-http://elinux.org/Beagleboard:BeagleBoneBlack_Debian#Flasher:_.28iot.29_.28BeagleBone_Black.2FGreen_eMMC.29
-
-
-
-We also recommend using the most recent 4.4-series rt kernel. Right now that is 4.4.24-ti-rt-r55
-The real-time (rt) kernels provide improved performance with fast IMU sensor sampling. 
-However, the non-real-time kernels provided in system images are perfectly fine for most 
-use cases.
-
-	root@beaglebone:~/ cd /opt/scripts/tools/
-	root@beaglebone:/opt/scripts/tools# git pull
-	root@beaglebone:/opt/scripts/tools# ./update_kernel.sh --lts-4_4 --ti-rt-kernel
-	root@beaglebone:/opt/scripts/tools# reboot
-
-
-
-RoboticsCape Installtion Method #1: Package Manager
-
-	If you are using a BeagleBone Black or Blue with a working internet connection then
-	you may elect to pull the roboticscape package from our repository with apt.
-	This will allow future updates to the package with apt-get upgrade.
-
-	sudo echo "deb http://strawsondesign.com debian/" >> /etc/apt/sources.list
-	sudo apt-get update
-	sudo apt-get install roboticscape
-
-	BeagleBone Black users must take one additional step. After installing the
-	package, run the configure_robotics_overlay.sh shell script from the command
-	line to set up the RoboticsCape device tree overlay. This only needs to be done
-	once after installation. After that all updates to the library binaries itself 
-	may be pulled using apt-get.
-
-
-
-RoboticsCape Installtion Method #2: Compile from Source
-	
-	1) Download the source files from github:
-	https://github.com/StrawsonDesign/Robotics_Cape_Installer/archive/master.zip
-
-	2) Unzip the source code package to the /root/ directory of your BeagleBone
-
-	3) Log in as root and execute the install.sh script. You will be prompted with
-   	further instructions during installation.
-
-   	root@beaglebone:~# cd Robotics_Cape_Installer
-   	root@beaglebone:~/Robotics_Cape_Installer# bash install.sh
-	
-	4) BeagleBone Black users must take one additional step. After installing the
-	package, run the configure_robotics_overlay.sh shell script from the command
-	line to set up the RoboticsCape device tree overlay. Reboot when complete.
-	
-	root@beaglebone:~# configure_robotics_overlay.sh
-	root@beaglebone:~# reboot
-	
-	5) If all went well, restarting will result in the selected example
-  	program loading on boot. If the blink example was selected, both red and 
-	green LEDs should be responsive to button presses. 
-
+Installation instructions and user manual can be found here:
+http://strawsondesign.com/#!manual-install
 
 
 

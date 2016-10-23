@@ -1,19 +1,26 @@
 #!/bin/sh
 
+
 # ld config to make sure libroboticscape.so is recognized
 ldconfig
 
-# start the battery monitor service
+# enable services
+echo "systemctl daemon-reload"
 systemctl daemon-reload
+echo "Enabling battery_monitor Service"
 systemctl enable battery_monitor
+echo "Starting battery_monitor Service"
 systemctl start battery_monitor
+echo "Enabling roboticscape Service"
+systemctl enable roboticscape
 
-# Source debconf library.
+
+# startup program question
+echo "Sourcing debconf Library"
 set -e
 . /usr/share/debconf/confmodule
- 
-# Fetching configuration from debconf
-# for answer to startup program
+
+echo "Getting roboticscape/question1"
 db_get roboticscape/question1
 PROG=$RET
 
@@ -27,15 +34,18 @@ elif  [ "$PROG" = "none" ]; then
 	ln -s -f /usr/bin/bare_minimum /etc/roboticscape/link_to_startup_program
 fi
 
-systemctl enable roboticscape
+
+echo "Configuring Device Tree"
+configure_robotics_dt.sh
+echo "Done Configuring Device Tree"
+
+
 
 echo " "
 echo " "
 echo " "
-echo "roboticscape Package Installed"
-echo "If you are not on a Bealgebone Blue, please"
-echo "run configure_robotics_overlay.sh once to configure the"
-echo "overlay, then reboot to load device tree. After rebooting"
-echo "we suggest running calibrate_gyro and calibrate_mag."
+echo "Robotics Cape package installation complete."
+echo "Please reboot now."
+echo " "
 
 exit 0

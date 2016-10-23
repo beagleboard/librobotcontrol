@@ -76,10 +76,12 @@ $(BIN_DIR)/pru0-encoder.object: pru0-encoder.asm
 
 install:
 	$(MAKE)
-	@$(INSTALLDIR) $(DESTDIR)/lib/firmware/
+	@$(INSTALLDIR) $(DESTDIR)/lib/firmware
+	@$(INSTALLDIR) $(DESTDIR)/etc/modprobe.d
 	@$(INSTALLNONEXEC) $(PRU0_FW) $(DESTDIR)/lib/firmware/am335x-pru0-fw
 	@$(INSTALLNONEXEC) $(PRU1_FW) $(DESTDIR)/lib/firmware/am335x-pru1-fw
 	@$(INSTALLNONEXEC) pruss-blacklist.conf $(DESTDIR)/etc/modprobe.d/
+	@echo 'PRU Firmware Install Complete'
 
 
 clean:
@@ -88,7 +90,7 @@ clean:
 	@echo 'PRU Firmware Cleanup Complete'
 
 uninstall:
-	@$(RM) $(DESTDIR)/lib/firmware/am335x-pru0-fw
-	@$(RM) $(DESTDIR)/lib/firmware/am335x-pru1-fw
-	@$(RM) $(DESTDIR)/etc/modprobe.d/pruss-blacklist.conf
+	@$(RM) /lib/firmware/am335x-pru0-fw
+	@$(RM) /lib/firmware/am335x-pru1-fw
+	@$(RM) /etc/modprobe.d/pruss-blacklist.conf
 	@echo "PRU Firmware Uninstall Complete"

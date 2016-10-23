@@ -30,15 +30,6 @@ if ! grep -q "8." /etc/debian_version ; then
 	exit 1
 fi
 
-# # make sure the user really wants to install
-# echo "This will configure uEnv.txt and install the Robotics Cape overlay."
-# echo "This step is not needed on the BeagleBone Blue."
-# read -r -p "Continue? [y/n] " response
-# case $response in
-#     [yY]) echo " " ;;
-#     *) echo "cancelled"; exit;;
-# esac
-# echo " "
 
 ################################################################################
 # off we go!
@@ -63,7 +54,7 @@ elif [ "$MODEL" == "TI AM335x BeagleBone Green Wireless" ]; then
 	 DTB="am335x-bonegreen-wireless.dtb"
 elif [ "$MODEL" == "TI AM335x BeagleBone Blue" ]; then
 	 echo "No overlay needed on the Blue!"
-	 exit 1
+	 exit 0
 else
 	 echo "unknown or unsupported BB model"
 	 exit 1
@@ -114,4 +105,6 @@ echo " " >> $UENV
 # modify default cape to load
 echo CAPE=$OVERLAY > /etc/default/capemgr
 
-echo "Robotics Cape Overlay Configured and Installed"
+echo "Robotics Cape Device Tree Configured and Installed"
+
+exit 0
