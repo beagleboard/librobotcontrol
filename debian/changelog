@@ -1,4 +1,4 @@
-roboticscape (0.1.1) unstable; urgency=low
+roboticscape (0.1.2) unstable; urgency=low
 
   * working PRU
   * new am335x-boneblack-roboticscape.dts

@@ -33,12 +33,6 @@ clean:
 	@make -C roboticscape_service -s clean
 	@make -C project_template -s clean
 	@$(RM) debian/roboticscape
-	@$(RM) debian/roboticscape.debhelper.log
-	@$(RM) debian/debhelper-build-stamp
-	@$(RM) debian/files
-	@$(RM) debian/roboticscape.debhelper.log
-	@$(RM) debian/roboticscape.postrm.debhelper
-	@$(RM) debian/roboticscape.substvars
 	@echo "All Directories Cleaned"
 
 
