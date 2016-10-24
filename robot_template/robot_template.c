@@ -64,8 +64,8 @@ int main(){
 *******************************************************************************/
 int on_pause_released(){
 	// toggle betewen paused and running modes
-	if(get_state()==RUNNING) set_state(PAUSED);
-	if(get_state()==PAUSED) set_state(RUNNING);
+	if(get_state()==RUNNING)   		set_state(PAUSED);
+	else if(get_state()==PAUSED)	set_state(RUNNING);
 	return 0;
 }
 

@@ -184,6 +184,9 @@ int initialize_cape(){
 	printf("Process ID: %d\n", (int)current_pid); 
  	#endif
 
+	// wait to let threads start up
+	usleep(10000);
+	
 	// all done
 	set_state(PAUSED);
 
@@ -440,9 +443,20 @@ void* pause_pressed_handler(void* ptr){
 		if (fdset[0].revents & POLLPRI) {
 			lseek(fdset[0].fd, 0, SEEK_SET);  
 			read(fdset[0].fd, buf, MAX_BUF);
+			// delay debouce
+			usleep(500); 
 			if(get_pause_button()==PRESSED){
-				pause_pressed_func(); 
+				usleep(500);
+				if(get_pause_button()==PRESSED){
+					usleep(500);
+					if(get_pause_button()==PRESSED){
+						pause_pressed_func(); 
+					}
+				}
 			}
+			// purge any interrupts that may have stacked up
+			lseek(fdset[0].fd, 0, SEEK_SET);  
+			read(fdset[0].fd, buf, MAX_BUF);
 		}
 	}
 	gpio_fd_close(gpio_fd);
@@ -467,9 +481,20 @@ void* pause_released_handler(void* ptr){
 		if (fdset[0].revents & POLLPRI) {
 			lseek(fdset[0].fd, 0, SEEK_SET);  
 			read(fdset[0].fd, buf, MAX_BUF);
+			// delay debouce
+			usleep(500); 
 			if(get_pause_button()==RELEASED){
-				pause_released_func(); 
+				usleep(500);
+				if(get_pause_button()==RELEASED){
+					usleep(500);
+					if(get_pause_button()==RELEASED){
+						pause_released_func(); 
+					}
+				}
 			}
+			// purge any interrupts that may have stacked up
+			lseek(fdset[0].fd, 0, SEEK_SET);  
+			read(fdset[0].fd, buf, MAX_BUF);
 		}
 	}
 	gpio_fd_close(gpio_fd);
@@ -493,9 +518,20 @@ void* mode_pressed_handler(void* ptr){
 		if (fdset[0].revents & POLLPRI) {
 			lseek(fdset[0].fd, 0, SEEK_SET);  
 			read(fdset[0].fd, buf, MAX_BUF);
+			// delay debouce
+			usleep(500); 
 			if(get_mode_button()==PRESSED){
-				mode_pressed_func(); 
+				usleep(500);
+				if(get_mode_button()==PRESSED){
+					usleep(500);
+					if(get_mode_button()==PRESSED){
+						mode_pressed_func(); 
+					}
+				}
 			}
+			// purge any interrupts that may have stacked up
+			lseek(fdset[0].fd, 0, SEEK_SET);  
+			read(fdset[0].fd, buf, MAX_BUF);
 		}
 	}
 	gpio_fd_close(gpio_fd);
@@ -519,9 +555,20 @@ void* mode_released_handler(void* ptr){
 		if (fdset[0].revents & POLLPRI) {
 			lseek(fdset[0].fd, 0, SEEK_SET);  
 			read(fdset[0].fd, buf, MAX_BUF);
+			// delay debouce
+			usleep(500); 
 			if(get_mode_button()==RELEASED){
-				mode_released_func(); 
+				usleep(500);
+				if(get_mode_button()==RELEASED){
+					usleep(500);
+					if(get_mode_button()==RELEASED){
+						mode_released_func(); 
+					}
+				}
 			}
+			// purge any interrupts that may have stacked up
+			lseek(fdset[0].fd, 0, SEEK_SET);  
+			read(fdset[0].fd, buf, MAX_BUF);
 		}
 	}
 	gpio_fd_close(gpio_fd);
