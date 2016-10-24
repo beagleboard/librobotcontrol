@@ -1,0 +1,16 @@
+
+
+
+0.1.4
+- implement debounce for buttons
+
+0.1.3
+- fix debconf question on install
+- move project template to /etc/robot_template
+- preserve /etc/roboticscape on reinstall to keep startup link
+
+0.1.2
+- new device tree to enable PRU support on Black
+
+0.1.0
+- installs on Blue as well and Black
