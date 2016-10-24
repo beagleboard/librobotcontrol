@@ -1,6 +1,5 @@
 #!/bin/sh
 
-
 SERVICE_DIR=/lib/systemd/system
 BATT_SERVICE=battery_monitor
 ROBOT_SERVICE=roboticscape

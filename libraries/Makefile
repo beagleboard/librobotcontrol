@@ -42,8 +42,6 @@ install:
 	@# library .so
 	$(INSTALLDIR) $(DESTDIR)$(PREFIX)/lib
 	$(INSTALL) $(TARGET) $(DESTDIR)$(PREFIX)/lib
-	@# calibration directory
-	$(INSTALLDIR) $(DESTDIR)/etc/roboticscape/
 	@# ldconfig to update library index
 	ldconfig
 	@echo "$(TARGET) Install Complete"

@@ -1,23 +1,12 @@
 #!/bin/sh
 
 
-SERVICE_DIR=/lib/systemd/system
-BATT_SERVICE=battery_monitor
-ROBOT_SERVICE=roboticscape
+# stop and disable the battery monitor service
+systemctl stop battery_monitor
+systemctl disable battery_monitor
 
-if [ -f "$SERVICE_DIR/$BATT_SERVICE.service" ]
-then
-	echo "Stopping battery_monitor service"
-  	systemctl stop $BATT_SERVICE
-  	systemctl disable $BATT_SERVICE
-fi
-
-if [ -f "$SERVICE_DIR/$ROBOT_SERVICE.service" ]
-then
-	echo "Stopping roboticscape service"
-  	systemctl stop $ROBOT_SERVICE
-  	systemctl disable $ROBOT_SERVICE
-fi
-
+# stop and disable the roboticscape service
+systemctl stop roboticscape
+systemctl disable roboticscape
 
 exit 0

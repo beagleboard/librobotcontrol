@@ -3,7 +3,6 @@ RM := rm -r -f
 INSTALL := install -m 755 
 INSTALLDIR := install -d -m 644 
 INSTALLNONEXEC := install -m 644 
-ETC_DIR := /etc/roboticscape
 
 CONFIG_SH := configure_robotics_dt.sh
 
@@ -15,7 +14,6 @@ all:
 	@make -C roboticscape_service --no-print-directory
 
 install:
-	@$(INSTALLDIR) $(DEST_DIR)/$(ETC_DIR)
 	@$(INSTALLDIR) $(DEST_DIR)/usr/bin
 	@make -C pru_firmware -s install
 	@make -C libraries -s install
@@ -23,7 +21,7 @@ install:
 	@make -C battery_monitor_service -s install
 	@make -C roboticscape_service -s install
 	@$(INSTALL) device_tree/$(CONFIG_SH) $(DESTDIR)/usr/bin/
-	@cp -r -f  project_template/ $(DEST_DIR)/$(ETC_DIR)/
+	@cp -r -f  robot_template/ $(DEST_DIR)/etc/
 
 clean:
 	@make -C pru_firmware -s clean
@@ -31,7 +29,7 @@ clean:
 	@make -C examples -s clean
 	@make -C battery_monitor_service -s clean
 	@make -C roboticscape_service -s clean
-	@make -C project_template -s clean
+	@make -C robot_template -s clean
 	@$(RM) debian/roboticscape
 	@echo "All Directories Cleaned"
 
@@ -42,8 +40,7 @@ uninstall:
 	@make -C examples -s uninstall
 	@make -C battery_monitor_service -s uninstall
 	@make -C roboticscape_service -s uninstall
-	@make -C project_template -s uninstall
-	@$(RM) $(ETC_DIR)
+	@$(RM) /etc/robot_template
 	@$(RM) /usr/bin/$(CONFIG_SH)
 	@echo "Robotics Cape Uninstalled"
 

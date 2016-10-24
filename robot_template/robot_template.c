@@ -1,5 +1,5 @@
 /*******************************************************************************
-* project_template.c
+* robot_template.c
 *
 * This is meant to be a skeleton program for robotics cape projects. 
 * Change this description and file name 

@@ -1,7 +1,6 @@
-roboticscape (0.1.2) unstable; urgency=low
+roboticscape (0.1.3) unstable; urgency=low
 
-  * working PRU
-  * new am335x-boneblack-roboticscape.dts
+  * fix package install issues
 
- -- James Strawson <james@strawsondesign.com>  Wed, 23 Oct 2016 03:09:00 +0000
+ -- James Strawson <james@strawsondesign.com>  Wed, 23 Oct 2016 21:11:00 +0000
 
