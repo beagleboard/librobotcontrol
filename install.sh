@@ -66,6 +66,12 @@ bash debian/preinst
 make clean
 make install
 
+# make roboticscape directory if it's not there yet
+if [ ! -d "/etc/roboticscape" ]; then
+  echo "making /etc/roboticscape"
+  mkdir /etc/roboticscape
+fi
+
 # enable services
 echo "systemctl daemon-reload"
 systemctl daemon-reload
