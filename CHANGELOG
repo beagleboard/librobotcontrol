@@ -1,5 +1,6 @@
 
-
+0.1.5
+- add userspace pinmux configuration for some headers
 
 0.1.4
 - implement debounce for buttons
