@@ -1254,6 +1254,43 @@ typedef enum bb_model_t{
 bb_model_t get_bb_model();
 void print_bb_model();
 
+
+/*******************************************************************************
+* Pin Multiplexing (pinmux)
+*
+* On the Robotics Cape, we allow changing the pinmux on the SPI, GPS, and UART1
+* headers in case you wish to expose GPIO, CAN, or PWM functionality.
+* We use the GPIO number to identify the pins even though they may be used
+* for things other than GPIO as this provides consistency with the GPIO
+* functions which will likely be used. A list of defines are also given here
+* to make your code easier to read and to indicate which pins are available
+* for pinmuxing.
+*
+* enum pinmux_mode_t gives options for pinmuxing. Not every mode if available on
+* each pin. refer to the pin table for which to use. 
+*******************************************************************************/
+#define GPS_HEADER_PIN_3  		2	// P9_22, normally GPS UART2 RX
+#define GPS_HEADER_PIN_4  		3	// P9_21, normally GPS UART2 TX
+#define UART1_HEADER_PIN_3		14	// P9_26, normally UART1 RX
+#define UART1_HEADER_PIN_4		15	// P9_24, normally UART1 TX
+#define SPI_HEADER_PIN_3		112	// P9_30, normally SPI1 MOSI		
+#define SPI_HEADER_PIN_4		111	// P9_29, normally SPI1 MISO	
+#define SPI_HEADER_PIN_5		110	// P9_31, normally SPI1 SCLK	
+#define SPI_HEADER_PIN_6_SS1	113	// P9_28, normally SPI1 SS1
+
+typedef enum pinmux_mode_t{
+	PINMUX_GPIO,
+	PINMUX_GPIO_PU,
+	PINMUX_GPIO_PD,
+	PINMUX_PWM,
+	PINMUX_SPI,
+	PINMUX_UART,
+	PINMUX_CAN,
+	PINMUX_I2C
+} pinmux_mode_t;
+
+int set_pinmux_mode(int pin, pinmux_mode_t mode);
+
 	
 #endif //ROBOTICS_CAPE
 
