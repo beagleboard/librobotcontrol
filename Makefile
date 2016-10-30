@@ -14,14 +14,16 @@ all:
 	@make -C roboticscape_service --no-print-directory
 
 install:
-	@$(INSTALLDIR) $(DEST_DIR)/usr/bin
+	@$(INSTALLDIR) $(DESTDIR)$(prefix)/bin
+	@$(INSTALLDIR) $(DESTDIR)$(prefix)/share/roboticscape
+	@$(INSTALLDIR) $(DESTDIR)/var/lib/roboticscape
 	@make -C pru_firmware -s install
 	@make -C libraries -s install
 	@make -C examples -s install
 	@make -C battery_monitor_service -s install
 	@make -C roboticscape_service -s install
-	@$(INSTALL) device_tree/$(CONFIG_SH) $(DESTDIR)/usr/bin/
-	@cp -r -f  robot_template/ $(DEST_DIR)/etc/
+	@$(INSTALL) device_tree/$(CONFIG_SH) $(DESTDIR)$(prefix)/bin
+	@cp -r -f  robot_template/ $(DESTDIR)$(prefix)/share/roboticscape/
 
 clean:
 	@make -C pru_firmware -s clean
@@ -40,7 +42,8 @@ uninstall:
 	@make -C examples -s uninstall
 	@make -C battery_monitor_service -s uninstall
 	@make -C roboticscape_service -s uninstall
-	@$(RM) /etc/robot_template
-	@$(RM) /usr/bin/$(CONFIG_SH)
+	@$(RM) $(DESTDIR)$(prefix)/share/roboticscape
+	@$(RM) $(DESTDIR)$(prefix)/bin/$(CONFIG_SH)
+	@$(RM) $(DESTDIR)/var/lib/roboticscape
 	@echo "Robotics Cape Uninstalled"
 

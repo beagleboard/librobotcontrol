@@ -3,9 +3,9 @@
 TARGET = robot_template
 
 
-TOUCH 	 := $(shell touch *)
+TOUCH 	:= $(shell touch *)
 CC	:= gcc
-LINKER   := gcc -o
+LINKER  := gcc -o
 CFLAGS	:= -c -Wall -g
 LFLAGS	:= -lm -lrt -lpthread -lroboticscape
 
@@ -13,7 +13,7 @@ SOURCES  := $(wildcard *.c)
 INCLUDES := $(wildcard *.h)
 OBJECTS  := $(SOURCES:$%.c=$%.o)
 
-PREFIX := /usr
+prefix := /usr/local
 RM := rm -f
 INSTALL := install -m 755 
 INSTALLDIR := install -d -m 644 
@@ -37,8 +37,8 @@ all:
 
 install: 
 	@$(MAKE) --no-print-directory
-	@$(INSTALLDIR) $(DESTDIR)$(PREFIX)/bin
-	@$(INSTALL) $(TARGET) $(DESTDIR)$(PREFIX)/bin
+	@$(INSTALLDIR) $(DESTDIR)$(prefix)/bin
+	@$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/bin
 	@echo "$(TARGET) Install Complete"
 	
 clean:
@@ -47,12 +47,12 @@ clean:
 	@echo "$(TARGET) Clean Complete"
 
 uninstall:
-	@$(RM) $(DESTDIR)$(PREFIX)/bin/$(TARGET)
+	@$(RM) $(DESTDIR)$(prefix)/bin/$(TARGET)
 	@echo "$(TARGET) Uninstall Complete"
 
 runonboot:
 	@$(MAKE) install --no-print-directory
 	@$(INSTALLDIR) $(DESTDIR)$(LINKDIR)
-	@ln -s -f $(DESTDIR)$(PREFIX)/bin/$(TARGET) $(LINKDIR)/$(LINKNAME)
+	@ln -s -f $(DESTDIR)$(prefix)/bin/$(TARGET) $(LINKDIR)/$(LINKNAME)
 	@echo "$(TARGET) Set to Run on Boot"
 	

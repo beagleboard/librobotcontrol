@@ -12,7 +12,7 @@ SOURCES := $(shell find ./ -name '*.c')
 INCLUDES := $(shell find ./ -name '*.h')
 OBJECTS  := $(SOURCES:$%.c=$%.o)
 
-PREFIX := /usr
+prefix := /usr
 RM := rm -f -r
 INSTALL := install -m 755 
 INSTALLDIR := install -d -m 644
@@ -35,32 +35,30 @@ all:
 install:
 	$(MAKE)
 	@# includes
-	$(INSTALLDIR) $(DESTDIR)$(PREFIX)/include
-	$(INSTALL) roboticscape.h $(DESTDIR)$(PREFIX)/include/
-	$(INSTALL) roboticscape-defs.h $(DESTDIR)$(PREFIX)/include/
-	$(INSTALL) usefulincludes.h $(DESTDIR)$(PREFIX)/include/
+	$(INSTALLDIR) $(DESTDIR)$(prefix)/include
+	$(INSTALL) roboticscape.h $(DESTDIR)$(prefix)/include/
+	$(INSTALL) roboticscape-defs.h $(DESTDIR)$(prefix)/include/
+	$(INSTALL) roboticscape-usefulincludes.h $(DESTDIR)$(prefix)/include/
 	@# library .so
-	$(INSTALLDIR) $(DESTDIR)$(PREFIX)/lib
-	$(INSTALL) $(TARGET) $(DESTDIR)$(PREFIX)/lib
+	$(INSTALLDIR) $(DESTDIR)$(prefix)/lib
+	$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/lib
 	@# ldconfig to update library index
 	ldconfig
 	@echo "$(TARGET) Install Complete"
 	
 
 clean:
-	@for dir in $(SUBDIRS) ; do \
-		$(RM) $$dir/*.o ; \
-	done
+	@$(RM) */*.o
 	@$(RM) *.o
 	@$(RM) *.so
 	@echo "$(TARGET) Clean Complete"
 
 
 uninstall:
-	$(RM) $(DESTDIR)$(PREFIX)/lib/$(TARGET)
-	$(RM) $(DESTDIR)$(PREFIX)/include/roboticscape.h
-	$(RM) $(DESTDIR)$(PREFIX)/include/roboticscape-defs.h
-	$(RM) $(DESTDIR)$(PREFIX)/include/usefulincludes.h
+	$(RM) $(DESTDIR)$(prefix)/lib/$(TARGET)
+	$(RM) $(DESTDIR)$(prefix)/include/roboticscape.h
+	$(RM) $(DESTDIR)$(prefix)/include/roboticscape-defs.h
+	$(RM) $(DESTDIR)$(prefix)/include/roboticscape-usefulincludes.h
 	@echo "$(TARGET) Uninstall Complete"
 
 	
