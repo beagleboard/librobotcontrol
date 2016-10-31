@@ -90,6 +90,12 @@ int initialize_cape(){
 		mdir2b = MDIR2B;
 	}
 
+	// initialize pinmux
+	#ifdef DEBUG
+	printf("Initializing: PINMUX\n");
+	#endif
+	set_default_pinmux();
+
 	// initialize gpio pins
 	#ifdef DEBUG
 	printf("Initializing: GPIO\n");
@@ -160,10 +166,7 @@ int initialize_cape(){
 	#ifdef DEBUG
 	printf("Initializing: PRU\n");
 	#endif
-	if(initialize_pru()<0){
-		//printf("ERROR: failed to initialize PRU\n");
-		//return 0;
-	}
+	initialize_pru();
 
 	// create new pid file with process id
 	#ifdef DEBUG
