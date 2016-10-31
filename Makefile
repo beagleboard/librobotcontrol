@@ -17,13 +17,15 @@ install:
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/bin
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/share/roboticscape
 	@$(INSTALLDIR) $(DESTDIR)/var/lib/roboticscape
+	@$(INSTALLDIR) $(DESTDIR)/etc/roboticscape
+	@$(INSTALL) device_tree/$(CONFIG_SH) $(DESTDIR)$(prefix)/bin
+	@cp -r -f  project_template $(DESTDIR)$(prefix)/share/roboticscape/
 	@make -C pru_firmware -s install
 	@make -C libraries -s install
 	@make -C examples -s install
 	@make -C battery_monitor_service -s install
 	@make -C roboticscape_service -s install
-	@$(INSTALL) device_tree/$(CONFIG_SH) $(DESTDIR)$(prefix)/bin
-	@cp -r -f  robot_template/ $(DESTDIR)$(prefix)/share/roboticscape/
+	
 
 clean:
 	@make -C pru_firmware -s clean
@@ -31,8 +33,10 @@ clean:
 	@make -C examples -s clean
 	@make -C battery_monitor_service -s clean
 	@make -C roboticscape_service -s clean
-	@make -C robot_template -s clean
+	@make -C project_template -s clean
 	@$(RM) debian/roboticscape
+	@$(RM) debian/roboticscape.postrm.debhelper
+	@$(RM) debian/roboticscape.substvars
 	@echo "All Directories Cleaned"
 
 
@@ -42,8 +46,11 @@ uninstall:
 	@make -C examples -s uninstall
 	@make -C battery_monitor_service -s uninstall
 	@make -C roboticscape_service -s uninstall
-	@$(RM) $(DESTDIR)$(prefix)/share/roboticscape
 	@$(RM) $(DESTDIR)$(prefix)/bin/$(CONFIG_SH)
+	@$(RM) $(DESTDIR)$(prefix)/share/roboticscape
 	@$(RM) $(DESTDIR)/var/lib/roboticscape
 	@echo "Robotics Cape Uninstalled"
+
+package:
+	debuild -us -uc
 

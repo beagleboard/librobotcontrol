@@ -8,7 +8,7 @@ SOURCES  := $(wildcard *.c)
 INCLUDES := $(wildcard *.h)
 OBJECTS  := $(SOURCES:$%.c=$%.o)
 
-PREFIX := /usr
+prefix := /usr
 RM := rm -f
 INSTALL := install -m 755 
 INSTALLDIR := install -d -m 644
@@ -30,14 +30,14 @@ all:
 
 install: 
 	@$(MAKE) --no-print-directory
-	@$(INSTALLDIR) $(DESTDIR)$(PREFIX)/bin
-	@$(INSTALL) $(TARGET) $(DESTDIR)$(PREFIX)/bin
-	
+	@$(INSTALLDIR) $(DESTDIR)$(prefix)/bin
+	@$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/bin
+
 clean:
 	@$(RM) $(OBJECTS)
 	@$(RM) $(TARGET)
 
 uninstall:
-	@$(RM) $(DESTDIR)$(PREFIX)/bin/$(TARGET)
+	@$(RM) $(DESTDIR)$(prefix)/bin/$(TARGET)
 
 	

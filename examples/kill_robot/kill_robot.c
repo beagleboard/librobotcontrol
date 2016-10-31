@@ -8,7 +8,7 @@
 * shutdown signal SIGINT. If that doesn't work then kill it with SIGKILL.
 *******************************************************************************/ 
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
 int main(){

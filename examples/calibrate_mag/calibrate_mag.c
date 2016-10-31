@@ -7,7 +7,7 @@
 * will be saved which is loaded automatically the next time the IMU is used.
 *******************************************************************************/
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
 int main(){

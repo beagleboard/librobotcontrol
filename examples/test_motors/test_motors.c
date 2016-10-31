@@ -6,7 +6,7 @@
 * to the screen when called.
 *******************************************************************************/
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
 // possible modes, user selected with command line arguments

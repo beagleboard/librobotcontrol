@@ -18,8 +18,6 @@
 //#define DEBUG_RAW
 
 #define MAX_DSM2_CHANNELS 9
-#define GPIO_PIN_BIND 30 //P9.11 gpio_0[30]
-#define PINMUX_PATH "/sys/devices/platform/ocp/ocp:P9_11_pinmux/state"
 #define PAUSE 115	//microseconds
 #define DEFAULT_MIN 1142
 #define DEFAULT_MAX 1858
@@ -87,6 +85,8 @@ int initialize_dsm2(){
 		#endif
 		fclose(cal);
 	}
+
+	set_pinmux_mode(DSM2_PIN, PINMUX_UART);
 	
 	
 	dsm2_frame_rate = 0; // zero until mode is detected on first packet
@@ -463,25 +463,23 @@ int bind_dsm2(){
 	int pulses = 9; 
 	int delay = 200000;
 	
-	// check pinmux helper is enbaled for this pin
-	if(access(PINMUX_PATH, F_OK)!=0){
-		printf("error, pinmux helper not enabled for P9_11\n");
+	if(initialize_mmap_gpio()<0){
+		printf("ERROR: can't proceed without mmap \n");
 		return -1;
 	}
 
-	// swap pinmux from UART4_RX to GPIO
-	if(system("echo gpio > " PINMUX_PATH)){
-		printf("error: can't set pinmux to gpio for P9_11\n");
+	// first set the pin as input (pulldown) to detect when receiver is attached
+	if(set_pinmux_mode(DSM2_PIN, PINMUX_GPIO_PD)<0){
+		printf("ERROR: pinmux helper not enabled for P9_11\n");
 		return -1;
 	}
 
 	//export GPIO pin to userspace
-	if(gpio_export(GPIO_PIN_BIND)){
+	if(gpio_export(DSM2_PIN)){
 		printf("error exporting gpio pin\n");
 		return -1;
 	}
-	// first set the pin as input (pulldown) to detect when receiver is attached
-	gpio_set_dir(GPIO_PIN_BIND, INPUT_PIN);
+	gpio_set_dir(DSM2_PIN, INPUT_PIN);
 	
 	// give user instructions
 	printf("\n\nYou must choose which DSM mode to request from your transmitter\n");
@@ -538,19 +536,22 @@ enter:
 	// wait for the receiver to be disconnected
 	value = 1;
 	while(value==1){ //pin will go low when disconnected
-		gpio_get_value(GPIO_PIN_BIND, &value);
+		gpio_get_value(DSM2_PIN, &value);
+		usleep(1000);
 	}
 	usleep(100000);
 	
 	//wait for the receiver to be plugged in
 	//receiver will pull pin up when connected
 	while(value==0){ 
-		gpio_get_value(GPIO_PIN_BIND, &value);
+		gpio_get_value(DSM2_PIN, &value);
+		usleep(1000);
 	}
 	
-	// start pairing packet
-	gpio_set_dir(GPIO_PIN_BIND, OUTPUT_PIN);
-	gpio_set_value(GPIO_PIN_BIND, HIGH);
+	// now set pin as output
+	gpio_set_dir(DSM2_PIN, OUTPUT_PIN);
+	mmap_gpio_write(DSM2_PIN, HIGH);
+	set_pinmux_mode(DSM2_PIN, PINMUX_GPIO);
 	
 	// wait as long as possible before sending pulses
 	// in case the user plugs in the receiver slowly at an angle
@@ -558,19 +559,16 @@ enter:
 	usleep(delay); 
 	
 	for(i=0; i<pulses; i++){
-		gpio_set_value(GPIO_PIN_BIND, LOW);
+		mmap_gpio_write(DSM2_PIN, LOW);
 		usleep(PAUSE);
-		gpio_set_value(GPIO_PIN_BIND, HIGH);
+		mmap_gpio_write(DSM2_PIN, HIGH);
 		usleep(PAUSE);
 	}
 	
 	usleep(1000000);
 
 	// swap pinmux from GPIO back to uart
-	if(system("echo uart > " PINMUX_PATH)){
-		printf("error: can't set pinmux to uart on P9_11\n");
-		return -1;
-	}
+	set_pinmux_mode(DSM2_PIN, PINMUX_UART);
 	
 	// all done
 	printf("\n\n\nYour receiver should now be blinking. If not try again.\n");

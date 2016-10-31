@@ -7,7 +7,7 @@
 
 //#define DEBUG
 
-#include "usefulincludes.h"
+#include "roboticscape-usefulincludes.h"
 #include "roboticscape.h"
 #include "roboticscape-defs.h"
 #include "simple_gpio/simple_gpio.h"// used for setting interrupt input pin

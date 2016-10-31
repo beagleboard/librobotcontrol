@@ -16,7 +16,7 @@
 * you execute the program.
 *******************************************************************************/
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
 float width; // global variable for normalized pulse width to send

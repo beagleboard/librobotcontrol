@@ -8,7 +8,7 @@
 * in the MISO channel and be read.
 *******************************************************************************/
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
 #define SPI_MODE	0

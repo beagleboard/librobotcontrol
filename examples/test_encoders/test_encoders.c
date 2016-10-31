@@ -6,7 +6,7 @@
 * channels 1-3 are counted using eQEP 0-2. Channel 4 is counted by PRU0
 *******************************************************************************/
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
 int main(){

@@ -12,7 +12,7 @@
 * paired to, not your BeagleBone.
 *******************************************************************************/
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
 int main(){

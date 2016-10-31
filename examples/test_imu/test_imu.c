@@ -6,7 +6,7 @@
 * sensor registers. To use the DMP or interrupt-driven timing see test_dmp.c
 *******************************************************************************/
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
 int main(){

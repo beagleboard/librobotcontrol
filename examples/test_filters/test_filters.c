@@ -8,7 +8,7 @@
 * filters to demonstrate how they sum to 1
 *******************************************************************************/
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
 #define SAMPLE_RATE 	50

@@ -5,7 +5,7 @@
 * This is meant to be a skeleton program for robotics cape projects. 
 *******************************************************************************/
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
 int main(){

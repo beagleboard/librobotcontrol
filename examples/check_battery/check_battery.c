@@ -5,7 +5,7 @@
 * Simple program to display battery state
 *******************************************************************************/
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
 #define VOLTAGE_DISCONNECT	1	 // Threshold for detecting disconnected battery

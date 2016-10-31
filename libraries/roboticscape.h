@@ -1268,6 +1268,8 @@ void print_bb_model();
 *
 * enum pinmux_mode_t gives options for pinmuxing. Not every mode if available on
 * each pin. refer to the pin table for which to use. 
+*
+* set_default_pinmux() puts everything back to standard and is used by init
 *******************************************************************************/
 #define GPS_HEADER_PIN_3  		2	// P9_22, normally GPS UART2 RX
 #define GPS_HEADER_PIN_4  		3	// P9_21, normally GPS UART2 TX
@@ -1290,6 +1292,7 @@ typedef enum pinmux_mode_t{
 } pinmux_mode_t;
 
 int set_pinmux_mode(int pin, pinmux_mode_t mode);
+int set_default_pinmux();
 
 	
 #endif //ROBOTICS_CAPE

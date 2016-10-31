@@ -5,7 +5,7 @@
 * Reference solution for balancing EduMiP
 *******************************************************************************/
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
 #include "balance_config.h"

@@ -43,7 +43,7 @@ int set_pinmux_mode(int pin, pinmux_mode_t mode){
 	switch(pin){
 
 	// DSM2 data/pairing pin, for internal use only
-	case PAIRING_PIN:
+	case DSM2_PIN:
 		if( mode!=PINMUX_GPIO    	&& \
 			mode!=PINMUX_GPIO_PU 	&& \
 			mode!=PINMUX_GPIO_PD 	&& \
@@ -213,5 +213,38 @@ int set_pinmux_mode(int pin, pinmux_mode_t mode){
 	}
 
 	close(fd);
+	return 0;
+}
+
+
+
+int set_default_pinmux(){
+	int ret = 0;
+
+	// bb blue device tree not done yet, so just one pinmux for now
+	if(get_bb_model()==BB_BLUE){
+		ret |= set_pinmux_mode(DSM2_PIN, PINMUX_UART);
+
+	}
+
+	// bb black and everything else should use this
+	else{
+		ret |= set_pinmux_mode(DSM2_PIN, PINMUX_UART);
+		ret |= set_pinmux_mode(GPS_HEADER_PIN_3, PINMUX_UART);
+		ret |= set_pinmux_mode(GPS_HEADER_PIN_4, PINMUX_UART);
+		ret |= set_pinmux_mode(UART1_HEADER_PIN_3, PINMUX_UART);
+		ret |= set_pinmux_mode(UART1_HEADER_PIN_4, PINMUX_UART);
+		ret |= set_pinmux_mode(SPI_HEADER_PIN_3, PINMUX_SPI);
+		ret |= set_pinmux_mode(SPI_HEADER_PIN_4, PINMUX_SPI);
+		ret |= set_pinmux_mode(SPI_HEADER_PIN_5, PINMUX_SPI);
+		ret |= set_pinmux_mode(SPI_HEADER_PIN_6_SS1, PINMUX_SPI);
+	}
+
+	if(ret){
+		printf("WARNING: missing PINMUX driver\n");
+		printf("You probbaly just need a newer kernel\n");
+		return -1;
+	}
+
 	return 0;
 }

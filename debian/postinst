@@ -28,9 +28,6 @@ else
 	exit 1
 fi
 
-# ld config to make sure libroboticscape.so is recognized
-echo "running ldconfig"
-ldconfig
 
 # enable services
 echo "systemctl daemon-reload"

@@ -55,9 +55,9 @@ int configure_gpio_pins(){
 	gpio_set_value(MOT_STBY, LOW);
 
 	// dsm2 pairing pin
-	gpio_export(PAIRING_PIN);
-	gpio_set_dir(PAIRING_PIN, OUTPUT_PIN);
-	gpio_set_value(PAIRING_PIN, LOW);
+	gpio_export(DSM2_PIN);
+	gpio_set_dir(DSM2_PIN, OUTPUT_PIN);
+	gpio_set_value(DSM2_PIN, LOW);
 
 	// servo power
 	gpio_export(SERVO_PWR);

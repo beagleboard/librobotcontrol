@@ -11,7 +11,7 @@
 * Raw data is also printed to the terminal for monitoring.
 *******************************************************************************/
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
 typedef enum p_mode_t{

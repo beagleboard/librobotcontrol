@@ -9,7 +9,7 @@
 * The test strings this programs transmits will then loopback to the RX channel.
 *******************************************************************************/
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
 #define BUF_SIZE 	32

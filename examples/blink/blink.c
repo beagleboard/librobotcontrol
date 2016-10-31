@@ -14,7 +14,7 @@
 * control program flow cleanly utilizing get_state() and set_state().
 *******************************************************************************/
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
 #define QUIT_TIMEOUT_US 1500000 // quit after 1.5 seconds holding pause button

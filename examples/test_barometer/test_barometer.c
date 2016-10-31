@@ -5,7 +5,7 @@
 * This serves as an example of how to read the barometer.
 *******************************************************************************/
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
 // choice of 1,2,4,8,16 oversampling. Here we use 16 and sample at 25hz which

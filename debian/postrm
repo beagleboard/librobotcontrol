@@ -2,13 +2,12 @@
 
 systemctl daemon-reload
 
-if [ "$1" = "purge" -a -e /usr/share/debconf/confmodule ]; then
-    # Source debconf library.
-    . /usr/share/debconf/confmodule
-    # Remove my changes to the db.
-    db_purge
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
 fi
 
 echo "Uninstallation Complete"
 
 exit 0
+

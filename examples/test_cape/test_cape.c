@@ -7,7 +7,7 @@
 * end-user.
 *******************************************************************************/
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
 #define INSTRUCTION_LINE 16
