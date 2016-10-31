@@ -13,6 +13,9 @@ RM := rm -f
 INSTALL := install -m 755 
 INSTALLDIR := install -d -m 644
 
+LINK := ln -s -f
+LINKDIR := /etc/roboticscape
+LINKNAME := link_to_startup_program
 
 # linking Objects
 $(TARGET): $(OBJECTS)
@@ -39,5 +42,10 @@ clean:
 
 uninstall:
 	@$(RM) $(DESTDIR)$(prefix)/bin/$(TARGET)
+
+runonboot:
+	@$(MAKE) install --no-print-directory
+	@$(LINK) $(DESTDIR)$(prefix)/bin/$(TARGET) $(LINKDIR)/$(LINKNAME)
+	@echo "$(TARGET) Set to Run on Boot"
 
 	
