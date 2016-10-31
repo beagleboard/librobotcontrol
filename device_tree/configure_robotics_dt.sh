@@ -36,29 +36,32 @@ fi
 ################################################################################
 
 
-# use custom boneblack-roboticscape dtb if it's there
-# otherwise we will have to load the overlay later
-if   [ "$MODEL" == "TI AM335x BeagleBone Black" ]; then
-	 
-	 if [ -a "/boot/dtbs/$UNAME/$TREE" ]; then
-	 	DTB="$TREE"
-	 else
-	 	DTB="am335x-boneblack-emmc-overlay.dtb"
-	 fi
+# here we decide what device tree to use
+# Blue needs no modification
+if [ "$MODEL" == "TI AM335x BeagleBone Blue" ]; then
+	echo "No overlay needed on the Blue!"
+	exit 0
+# if the roboticscape tree is available, use that
+elif [ -a "/boot/dtbs/$UNAME/$TREE" ]; then
+	DTB="$TREE"
 
-elif [ "$MODEL" == "TI AM335x BeagleBone Black Wireless" ]; then
-	 DTB="am335x-boneblack-wireless.dtb"
-elif [ "$MODEL" == "TI AM335x BeagleBone Green" ]; then
-	 DTB="am335x-bonegreen.dtb"
-elif [ "$MODEL" == "TI AM335x BeagleBone Green Wireless" ]; then
-	 DTB="am335x-bonegreen-wireless.dtb"
-elif [ "$MODEL" == "TI AM335x BeagleBone Blue" ]; then
-	 echo "No overlay needed on the Blue!"
-	 exit 0
+# otherwise choose overlay for board
+elif   [ "$MODEL" == "TI AM335x BeagleBone Black" ]; then
+	DTB="am335x-boneblack-emmc-overlay.dtb"
+
+# no device tree and not a black, just leave it alone
 else
-	 echo "unknown or unsupported BB model"
-	 exit 1
+	echo "leaving uEnv.txt alone"
+	exit 0
 fi
+
+## left here commented out for future use
+# elif [ "$MODEL" == "TI AM335x BeagleBone Black Wireless" ]; then
+# 	 DTB="am335x-boneblack-wireless.dtb"
+# elif [ "$MODEL" == "TI AM335x BeagleBone Green" ]; then
+# 	 DTB="am335x-bonegreen.dtb"
+# elif [ "$MODEL" == "TI AM335x BeagleBone Green Wireless" ]; then
+# 	 DTB="am335x-bonegreen-wireless.dtb"
 
 echo "Using $DTB"
 
