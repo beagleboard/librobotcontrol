@@ -10,15 +10,14 @@
 #include "roboticscape-usefulincludes.h"
 #include "roboticscape.h"
 #include "roboticscape-defs.h"
-#include "simple_gpio/simple_gpio.h"// used for setting interrupt input pin
 #include "simple_gpio/gpio_setup.h"
 #include "mmap/mmap_gpio_adc.h"		// used for fast gpio functions
 #include "mmap/mmap_pwmss.h"		// used for fast pwm functions
-#include "simple_pwm/simple_pwm.h" 	// for configuring pwm
 #include "other/robotics_pru.h"
 
 
 #define CAPE_NAME 	"RoboticsCape"
+#define MAX_BUF 	512
 
 /*******************************************************************************
 * Global Variables
@@ -676,22 +675,22 @@ int set_motor(int motor, float duty){
 		case 1:
 			mmap_gpio_write(mdir1a, a);
 			mmap_gpio_write(MDIR1B, b);
-			set_pwm_duty(1, 'A', duty);
+			mmap_set_pwm_duty(1, 'A', duty);
 			break;
 		case 2:
 			mmap_gpio_write(MDIR2A, b);
 			mmap_gpio_write(mdir2b, a);
-			set_pwm_duty(1, 'B', duty);
+			mmap_set_pwm_duty(1, 'B', duty);
 			break;
 		case 3:
 			mmap_gpio_write(MDIR3A, b);
 			mmap_gpio_write(MDIR3B, a);
-			set_pwm_duty(2, 'A', duty);
+			mmap_set_pwm_duty(2, 'A', duty);
 			break;
 		case 4:
 			mmap_gpio_write(MDIR4A, a);
 			mmap_gpio_write(MDIR4B, b);
-			set_pwm_duty(2, 'B', duty);
+			mmap_set_pwm_duty(2, 'B', duty);
 			break;
 		default:
 			printf("enter a motor value between 1 and 4\n");
@@ -726,22 +725,22 @@ int set_motor_free_spin(int motor){
 		case 1:
 			mmap_gpio_write(mdir1a, 0);
 			mmap_gpio_write(MDIR1B, 0);
-			set_pwm_duty(1, 'A', 0.0);
+			mmap_set_pwm_duty(1, 'A', 0.0);
 			break;
 		case 2:
 			mmap_gpio_write(MDIR2A, 0);
 			mmap_gpio_write(mdir2b, 0);
-			set_pwm_duty(1, 'B', 0.0);
+			mmap_set_pwm_duty(1, 'B', 0.0);
 			break;
 		case 3:
 			mmap_gpio_write(MDIR3A, 0);
 			mmap_gpio_write(MDIR3B, 0);
-			set_pwm_duty(2, 'A', 0.0);
+			mmap_set_pwm_duty(2, 'A', 0.0);
 			break;
 		case 4:
 			mmap_gpio_write(MDIR4A, 0);
 			mmap_gpio_write(MDIR4B, 0);
-			set_pwm_duty(2, 'B', 0.0);
+			mmap_set_pwm_duty(2, 'B', 0.0);
 			break;
 		default:
 			printf("enter a motor value between 1 and 4\n");
@@ -774,22 +773,22 @@ int set_motor_brake(int motor){
 		case 1:
 			mmap_gpio_write(mdir1a, 1);
 			mmap_gpio_write(MDIR1B, 1);
-			set_pwm_duty(1, 'A', 0.0);
+			mmap_set_pwm_duty(1, 'A', 0.0);
 			break;
 		case 2:
 			mmap_gpio_write(MDIR2A, 1);
 			mmap_gpio_write(mdir2b, 1);
-			set_pwm_duty(1, 'B', 0.0);
+			mmap_set_pwm_duty(1, 'B', 0.0);
 			break;
 		case 3:
 			mmap_gpio_write(MDIR3A, 1);
 			mmap_gpio_write(MDIR3B, 1);
-			set_pwm_duty(2, 'A', 0.0);
+			mmap_set_pwm_duty(2, 'A', 0.0);
 			break;
 		case 4:
 			mmap_gpio_write(MDIR4A, 1);
 			mmap_gpio_write(MDIR4B, 1);
-			set_pwm_duty(2, 'B', 0.0);
+			mmap_set_pwm_duty(2, 'B', 0.0);
 			break;
 		default:
 			printf("enter a motor value between 1 and 4\n");

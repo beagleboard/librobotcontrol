@@ -1,7 +1,6 @@
 
 
 #include "../roboticscape-defs.h"
-#include "simple_gpio.h"
 #include "../roboticscape.h"
 
 int configure_gpio_pins(){
@@ -75,10 +74,10 @@ int configure_gpio_pins(){
 	// buttons
 	gpio_export(MODE_BTN);
 	gpio_set_dir(MODE_BTN, INPUT_PIN);
-	gpio_set_edge(MODE_BTN, "both");  // Can be rising, falling or both
+	gpio_set_edge(MODE_BTN, EDGE_BOTH);  // Can be rising, falling or both
 	gpio_export(PAUSE_BTN);
 	gpio_set_dir(PAUSE_BTN, INPUT_PIN);
-	gpio_set_edge(PAUSE_BTN, "both");  // Can be rising, falling or both
+	gpio_set_edge(PAUSE_BTN, EDGE_BOTH);  // Can be rising, falling or both
 
 	return 0;
 }

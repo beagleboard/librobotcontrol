@@ -34,7 +34,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*******************************************************************************
+* Thank you Derek Molloy for this excellent gpio code. Here is it distributed
+* as a modified version for better integration into the rest of the library
+*******************************************************************************/
 
+#include "../roboticscape.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,13 +48,13 @@
 #include <fcntl.h>
 #include <poll.h>
 
-#include "simple_gpio.h"
+#define SYSFS_GPIO_DIR "/sys/class/gpio"
+#define MAX_BUF 64
 
 /****************************************************************
  * gpio_export
  ****************************************************************/
-int gpio_export(unsigned int gpio)
-{
+int gpio_export(unsigned int gpio){
 	int fd, len;
 	char buf[MAX_BUF];
 
@@ -69,8 +74,7 @@ int gpio_export(unsigned int gpio)
 /****************************************************************
  * gpio_unexport
  ****************************************************************/
-int gpio_unexport(unsigned int gpio)
-{
+int gpio_unexport(unsigned int gpio){
 	int fd, len;
 	char buf[MAX_BUF];
 
@@ -89,8 +93,7 @@ int gpio_unexport(unsigned int gpio)
 /****************************************************************
  * gpio_set_dir
  ****************************************************************/
-int gpio_set_dir(int gpio, PIN_DIRECTION out_flag)
-{
+int gpio_set_dir(int gpio, gpio_pin_direction_t out_flag){
 	int fd;
 	char buf[MAX_BUF];
 	snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%i/direction", gpio);
@@ -113,8 +116,7 @@ int gpio_set_dir(int gpio, PIN_DIRECTION out_flag)
 /****************************************************************
  * gpio_set_value
  ****************************************************************/
-int gpio_set_value(unsigned int gpio, PIN_VALUE value)
-{
+int gpio_set_value(unsigned int gpio, int value){
 	int fd;
 	char buf[MAX_BUF];
 
@@ -126,10 +128,10 @@ int gpio_set_value(unsigned int gpio, PIN_VALUE value)
 		return fd;
 	}
 
-	if (value==LOW)
-		write(fd, "0", 2);
-	else
+	if(value)
 		write(fd, "1", 2);
+	else
+		write(fd, "0", 2);
 
 	close(fd);
 	return 0;
@@ -138,8 +140,7 @@ int gpio_set_value(unsigned int gpio, PIN_VALUE value)
 /****************************************************************
  * gpio_get_value
  ****************************************************************/
-int gpio_get_value(unsigned int gpio, int *value)
-{
+int gpio_get_value(unsigned int gpio, int *value){
 	int fd;
 	char buf[MAX_BUF];
 	char ch;
@@ -169,9 +170,8 @@ int gpio_get_value(unsigned int gpio, int *value)
  * gpio_set_edge
  ****************************************************************/
 
-int gpio_set_edge(unsigned int gpio, char *edge)
-{
-	int fd;
+int gpio_set_edge(unsigned int gpio, gpio_pin_edge_t edge){
+	int fd, ret, bytes;
 	char buf[MAX_BUF];
 
 	snprintf(buf, sizeof(buf), SYSFS_GPIO_DIR "/gpio%d/edge", gpio);
@@ -182,7 +182,34 @@ int gpio_set_edge(unsigned int gpio, char *edge)
 		return fd;
 	}
 
-	write(fd, edge, strlen(edge) + 1);
+	switch(edge){
+		case EDGE_NONE:
+			bytes=5;
+			ret=write(fd, "none", bytes);
+			break;
+		case EDGE_RISING:
+			bytes=7;
+			ret=write(fd, "rising", bytes);
+			break;
+		case EDGE_FALLING:
+			bytes=8;
+			ret=write(fd, "falling", bytes);
+			break;
+		case EDGE_BOTH:
+			bytes=5;
+			ret=write(fd, "both", bytes);
+			break;
+		default:
+			printf("ERROR: invalid edge direction\n");
+			return -1;
+	}
+	
+	if(ret!=bytes){
+		printf("ERROR: failed to set edge\n");
+		close(fd);
+		return -1;
+	}
+
 	close(fd);
 	return 0;
 }
@@ -209,26 +236,8 @@ int gpio_fd_open(unsigned int gpio)
  * gpio_fd_close
  ****************************************************************/
 
-int gpio_fd_close(int fd)
-{
+int gpio_fd_close(int fd){
 	return close(fd);
 }
 
 
-/****************************************************************
- * gpio_omap_mux_setup - Allow us to setup the omap mux mode for a pin
- ****************************************************************/
-int gpio_omap_mux_setup(const char *omap_pin0_name, const char *mode)
-{
-	int fd;
-	char buf[MAX_BUF];
-	snprintf(buf, sizeof(buf), SYSFS_OMAP_MUX_DIR "%s", omap_pin0_name);
-	fd = open(buf, O_WRONLY);
-	if (fd < 0) {
-		perror("failed to open OMAP_MUX");
-		return fd;
-	}
-	write(fd, mode, strlen(mode) + 1);
-	close(fd);
-	return 0;
-}

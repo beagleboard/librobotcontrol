@@ -248,7 +248,7 @@ int write_eqep(int ch, int val){
 
 // set duty cycle for either channel A or B in a given subsystem
 // input channel is a character 'A' or 'B'
-int set_pwm_duty(int ss, char ch, float duty){
+int mmap_set_pwm_duty(int ss, char ch, float duty){
 	// make sure the subsystem is mapped
 	if(map_pwmss(ss)){
 		printf("failed to map PWMSS %d\n", ss);

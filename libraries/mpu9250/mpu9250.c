@@ -7,9 +7,8 @@
 *******************************************************************************/
 
 #include "../roboticscape-defs.h"
-#include "../usefulincludes.h"
+#include "../roboticscape-usefulincludes.h"
 #include "../roboticscape.h"
-#include "../simple_gpio/simple_gpio.h"
 #include "mpu9250_defs.h"
 #include "dmp_firmware.h"
 #include "dmpKey.h"
@@ -747,7 +746,7 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 		printf("ERROR: failed to configure GPIO %d", IMU_INTERRUPT_PIN);
 		return -1;
 	}
-	if(gpio_set_edge(IMU_INTERRUPT_PIN, "falling")<0){
+	if(gpio_set_edge(IMU_INTERRUPT_PIN, EDGE_FALLING)<0){
 		printf("ERROR: failed to configure GPIO %d", IMU_INTERRUPT_PIN);
 		return -1;
 	}

@@ -13,7 +13,7 @@
 * each pin. refer to the pin table for which to use. 
 *******************************************************************************/
 
-#include "../usefulincludes.h"
+#include "../roboticscape-usefulincludes.h"
 #include "../roboticscape.h"
 #include "../roboticscape-defs.h"
 

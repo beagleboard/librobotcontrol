@@ -66,12 +66,11 @@ bash debian/preinst
 make clean
 make install
 
-# make roboticscape directory if it's not there yet
-if [ ! -d "/etc/roboticscape" ]; then
-  echo "making /etc/roboticscape"
-  mkdir /etc/roboticscape
-fi
-
+###############################################################################
+# Normally the package manager would call postinst here, but we don't want
+# to invoke debconf when installing from source, so we re-implement the
+# postinst script here
+##############################################################################
 # enable services
 echo "systemctl daemon-reload"
 systemctl daemon-reload
@@ -118,9 +117,6 @@ elif  [ "$PROG" == "none" ]; then
 fi
 
 
-#################################################
-# Prompt user for desired startup program
-#################################################
 
 echo " "
 echo " "

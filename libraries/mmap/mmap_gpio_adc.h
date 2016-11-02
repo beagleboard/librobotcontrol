@@ -20,8 +20,7 @@ Big thanks to Ethan Hayon for the GPIO code
 
 // GPIO
 int initialize_mmap_gpio();
-int mmap_gpio_write(int pin, int state);
-int mmap_gpio_read(int pin);
+
 
 // ADC
 int initialize_mmap_adc();

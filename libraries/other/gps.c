@@ -7,7 +7,7 @@
 *
 *******************************************************************************/
 
-#include "../usefulincludes.h"
+#include "../roboticscape-usefulincludes.h"
 #include "../roboticscape.h"
 #include "../roboticscape-defs.h"
 #include "../nmealib/nmea/nmea.h"

@@ -3,10 +3,11 @@
 * organizational purposes.
 ******************************************************************************/
 
+#include "../roboticscape-usefulincludes.h"
 #include "../roboticscape.h"
-#include "../usefulincludes.h"
-#include "robotics_pru.h"
 #include "../roboticscape-defs.h"
+#include "robotics_pru.h"
+
 
 #define PRU_UNBIND_PATH "/sys/bus/platform/drivers/pru-rproc/unbind"
 #define PRU_BIND_PATH "/sys/bus/platform/drivers/pru-rproc/bind"

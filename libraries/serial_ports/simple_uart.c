@@ -7,7 +7,7 @@
 *******************************************************************************/
 
 #include "../roboticscape.h"
-#include "../usefulincludes.h"
+#include "../roboticscape-usefulincludes.h"
 
 #define MIN_BUS 0
 #define MAX_BUS 5

@@ -6,7 +6,6 @@
 
 #include "../roboticscape.h"
 #include "../roboticscape-defs.h"
-#include "../simple_gpio/simple_gpio.h" // for configuring gpio pins
 #include "../mmap/mmap_gpio_adc.h"		// for toggling gpio pins
 #include <stdint.h>
 #include <stdlib.h>

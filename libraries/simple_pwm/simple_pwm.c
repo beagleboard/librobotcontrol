@@ -1,5 +1,5 @@
 
-#include "simple_pwm.h"
+#include "../roboticscape.h"
 #include "ti_pwm_userspace_defs.h"
 #include <stdio.h>
 #include <dirent.h>

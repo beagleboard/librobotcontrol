@@ -8,7 +8,7 @@
 * See the check_model example for a demonstration.
 *******************************************************************************/
 
-#include "../usefulincludes.h"
+#include "../roboticscape-usefulincludes.h"
 #include "../roboticscape.h"
 
 #define MODEL_DIR "/proc/device-tree/model"

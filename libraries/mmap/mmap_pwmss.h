@@ -20,8 +20,6 @@ int init_eqep(int ss);
 int read_eqep(int ch);
 int write_eqep(int ch, int val);
 
-// PWM
-int set_pwm_duty(int subsystem, char ch, float duty);
 
 #endif
 

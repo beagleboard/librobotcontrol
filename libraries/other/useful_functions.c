@@ -6,7 +6,7 @@
 *******************************************************************************/
 
 #include "../roboticscape.h"
-#include "../usefulincludes.h"
+#include "../roboticscape-usefulincludes.h"
 
 /*******************************************************************************
 * @ int null_func()

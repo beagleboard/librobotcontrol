@@ -1294,6 +1294,60 @@ typedef enum pinmux_mode_t{
 int set_pinmux_mode(int pin, pinmux_mode_t mode);
 int set_default_pinmux();
 
+
+
+
+
+
+
+
+/****************************************************************
+* GPIO
+****************************************************************/
+#define HIGH 1
+#define LOW 0
+
+typedef enum gpio_pin_direction_t{
+	INPUT_PIN,
+	OUTPUT_PIN
+}gpio_pin_direction_t;
+
+typedef enum gpio_pin_edge_t{
+	EDGE_NONE,
+	EDGE_RISING,
+	EDGE_FALLING,
+	EDGE_BOTH
+}gpio_pin_edge_t;
+
+
+int gpio_export(unsigned int gpio);
+int gpio_unexport(unsigned int gpio);
+int gpio_set_dir(int gpio, gpio_pin_direction_t dir);
+int gpio_set_value(unsigned int gpio, int value);
+int gpio_get_value(unsigned int gpio, int *value);
+int gpio_set_edge(unsigned int gpio, gpio_pin_edge_t edge);
+int gpio_fd_open(unsigned int gpio);
+int gpio_fd_close(int fd);
+int mmap_gpio_write(int pin, int state);
+int mmap_gpio_read(int pin);
+
+
+
+
+/*******************************************************************************
+* PWM
+*******************************************************************************/
+int simple_init_pwm(int ss, int frequency);
+int simple_uninit_pwm(int ss);
+int simple_set_pwm_duty(int ss, char ch, float duty);
+int simple_set_pwm_duty_ns(int ss, char ch, int duty_ns);
+int mmap_set_pwm_duty(int subsystem, char ch, float duty);
+
+
+
+
+
+
 	
 #endif //ROBOTICS_CAPE
 

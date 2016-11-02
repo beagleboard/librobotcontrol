@@ -6,12 +6,11 @@
 *
 *******************************************************************************/
 
-#include "../usefulincludes.h"
+#include "../roboticscape-usefulincludes.h"
 #include "../roboticscape.h"
 #include "../roboticscape-defs.h"
+#include "../mmap/mmap_gpio_adc.h"
 
-// used for setting interrupt input pin
-#include "../simple_gpio/simple_gpio.h" 
 
 // uncomment debug defines to print raw data for debugging
 //#define DEBUG
