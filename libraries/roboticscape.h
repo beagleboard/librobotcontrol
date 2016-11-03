@@ -1287,8 +1287,7 @@ typedef enum pinmux_mode_t{
 	PINMUX_PWM,
 	PINMUX_SPI,
 	PINMUX_UART,
-	PINMUX_CAN,
-	PINMUX_I2C
+	PINMUX_CAN
 } pinmux_mode_t;
 
 int set_pinmux_mode(int pin, pinmux_mode_t mode);

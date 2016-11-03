@@ -1,5 +1,6 @@
 [Unit]
 Description=roboticscape
+Requires=systemd-modules-load.service
 
 [Service]
 User=root

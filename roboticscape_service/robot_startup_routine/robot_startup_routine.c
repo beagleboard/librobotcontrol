@@ -7,16 +7,14 @@
 * in order.
 *******************************************************************************/
 
-#include "../../libraries/usefulincludes.h"
+#include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 #include "../../libraries/roboticscape-defs.h"
-#include "../../libraries/simple_gpio/simple_gpio.h"
 #include "../../libraries/simple_gpio/gpio_setup.h"
-#include "../../libraries/simple_pwm/simple_pwm.h"
 #include "../../libraries/other/robotics_pru.h"
 
 #define TIMEOUT_S 25
-#define START_LOG "/etc/roboticscape/startup_log.txt"
+#define START_LOG "/var/log/roboticscape/startup_log.txt"
 
 int is_cape_loaded();
 int check_timeout();
@@ -53,7 +51,7 @@ int main(){
 		usleep(500000);
 	}
 	time = (micros_since_epoch()-start_us)/1000000;
-	sprintf(buf, "echo 'time (s): %5f GPIO loaded' >> %s",time,START_LOG);
+	sprintf(buf, "echo 'time (s): %4.1f GPIO loaded' >> %s",time,START_LOG);
 	system(buf);
 
 
@@ -67,7 +65,7 @@ int main(){
 		usleep(500000);
 	}
 	time = (micros_since_epoch()-start_us)/1000000;
-	sprintf(buf, "echo 'time (s): %5f eQEP loaded' >> %s",time,START_LOG);
+	sprintf(buf, "echo 'time (s): %4.1f eQEP loaded' >> %s",time,START_LOG);
 	system(buf);
 
 
@@ -81,7 +79,7 @@ int main(){
 		usleep(500000);
 	}
 	time = (micros_since_epoch()-start_us)/1000000;
-	sprintf(buf, "echo 'time (s): %5f PWM loaded' >> %s",time,START_LOG);
+	sprintf(buf, "echo 'time (s): %4.1f PWM loaded' >> %s",time,START_LOG);
 	system(buf);
 
 
@@ -95,9 +93,8 @@ int main(){
 		usleep(500000);
 	}
 	time = (micros_since_epoch()-start_us)/1000000;
-	sprintf(buf, "echo 'time (s): %5f' >> %s",time,START_LOG);
+	sprintf(buf, "echo 'time (s): %4.1f PRU rproc loaded' >> %s",time,START_LOG);
 	system(buf);
-	system("echo 'pru remoteproc initialized' >> " START_LOG);
 
 	printf("startup routine complete\n");
 	system("echo 'startup routine complete' >> " START_LOG);

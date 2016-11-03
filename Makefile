@@ -17,6 +17,7 @@ install:
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/bin
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/share/roboticscape
 	@$(INSTALLDIR) $(DESTDIR)/var/lib/roboticscape
+	@$(INSTALLDIR) $(DESTDIR)/var/log/roboticscape
 	@$(INSTALLDIR) $(DESTDIR)/etc/roboticscape
 	@$(INSTALL) device_tree/$(CONFIG_SH) $(DESTDIR)$(prefix)/bin
 	@cp -r -f  project_template $(DESTDIR)$(prefix)/share/roboticscape/
@@ -49,6 +50,7 @@ uninstall:
 	@$(RM) $(DESTDIR)$(prefix)/bin/$(CONFIG_SH)
 	@$(RM) $(DESTDIR)$(prefix)/share/roboticscape
 	@$(RM) $(DESTDIR)/var/lib/roboticscape
+	@$(RM) $(DESTDIR)/var/log/roboticscape
 	@echo "Robotics Cape Uninstalled"
 
 package:

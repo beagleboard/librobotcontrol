@@ -336,20 +336,10 @@
 * UART
 *******************************************************************************/
 &uart1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <
-		&P9_24_uart_pin	/* uart1_txd */
-		&P9_26_uart_pin	/* uart1_rxd */
-	>;
 	status = "okay";
 };
 
 &uart2 {
-	pinctrl-names = "default";
-	pinctrl-0 = <
-		&P9_21_uart_pin	/* uart2_txd */
-		&P9_22_uart_pin	/* uart2_rxd */
-	>;
 	status = "okay";
 };
 
@@ -425,14 +415,6 @@
 * SPI
 *******************************************************************************/
 &spi1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&P9_31_spi_pin	/* spi1_sclk */
-		&P9_29_spi_pin		/* spi1_d0 */
-		&P9_30_spi_pin		/* spi1_d1 */
-		&P9_23_gpio_pu_pin	/* gpio1.17 ss2 */
-		&P9_28_gpio_pu_pin	/* gpio3.17 ss1 */
-	>;
-
 	#address-cells = <1>;
 	#size-cells = <0>;
 	status = "okay";

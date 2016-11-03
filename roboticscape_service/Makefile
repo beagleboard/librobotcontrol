@@ -16,14 +16,16 @@ install: $(all)
 	@$(MAKE) -C robot_startup_routine -s install
 	@$(INSTALLDIR) $(DESTDIR)/lib/systemd/system
 	@$(INSTALLNONEXEC) $(SERVICE).service $(DESTDIR)/lib/systemd/system/
+	@$(INSTALLNONEXEC) roboticscape_modules.conf $(DESTDIR)/etc/modules-load.d/
 	@echo "roboticscape Service Install Complete"
 	
 clean:
 	@$(MAKE) -C robot_startup_routine -s clean
 
 uninstall:
-	$(RM) $(DESTDIR)/lib/systemd/system/$(SERVICE).service
-	$(MAKE) -C robot_startup_routine -s uninstall
+	@$(RM) $(DESTDIR)/lib/systemd/system/$(SERVICE).service
+	@$(RM) $(DESTDIR)/etc/modules-load.d/roboticscape_modules.conf
+	@$(MAKE) -C robot_startup_routine -s uninstall
 	@echo "roboticscape Service Uninstall Complete"
 
 

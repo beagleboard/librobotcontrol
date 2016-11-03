@@ -31,7 +31,7 @@
 #define P9_31_PATH "/sys/devices/platform/ocp/ocp:P9_31_pinmux/state"
 #define P9_28_PATH "/sys/devices/platform/ocp/ocp:P9_28_pinmux/state"
 
-
+#define MAX_PATH_LENGTH 64
 
 
 
@@ -61,9 +61,8 @@ int set_pinmux_mode(int pin, pinmux_mode_t mode){
 			mode!=PINMUX_GPIO_PU 	&& \
 			mode!=PINMUX_GPIO_PD 	&& \
 			mode!=PINMUX_PWM	 	&& \
-			mode!=PINMUX_I2C 	 	&& \
 			mode!=PINMUX_UART){
-			printf("ERROR: GPS_HEADER_PIN_3 can only be put in GPIO, UART, PWM, or I2C modes\n");
+			printf("ERROR: GPS_HEADER_PIN_3 can only be put in GPIO, UART, or PWM modes\n");
 			return -1;
 		}
 		path = P9_22_PATH;
@@ -74,9 +73,8 @@ int set_pinmux_mode(int pin, pinmux_mode_t mode){
 			mode!=PINMUX_GPIO_PU 	&& \
 			mode!=PINMUX_GPIO_PD 	&& \
 			mode!=PINMUX_PWM	 	&& \
-			mode!=PINMUX_I2C 	 	&& \
 			mode!=PINMUX_UART){
-			printf("ERROR: GPS_HEADER_PIN_4 can only be put in GPIO, UART, PWM, or I2C modes\n");
+			printf("ERROR: GPS_HEADER_PIN_4 can only be put in GPIO, UART, or PWM modes\n");
 			return -1;
 		}
 		path = P9_21_PATH;
@@ -159,18 +157,12 @@ int set_pinmux_mode(int pin, pinmux_mode_t mode){
 		return -1;
 	}
 
-
-	// check pinmux driver is loaded
-	if(access(path, F_OK)!=0){
-		printf("ERROR: userspace PINMUX driver not loaded\n");
-		printf("check that you are using a kernel newer than 4.4.4-ti-r62\n");
-		return -1;
-	}
-
 	// open pin state fd
 	fd = open(path, O_WRONLY);
 	if(fd == -1){
-		printf("ERROR: can't open userspace pinmux driver\n");
+		printf("can't open: ");
+		printf(path);
+		printf("\n");
 		return -1;
 	}
 
@@ -196,9 +188,6 @@ int set_pinmux_mode(int pin, pinmux_mode_t mode){
 		break;
 	case PINMUX_CAN:
 		ret = write(fd, "can", 3);
-		break;
-	case PINMUX_I2C:
-		ret = write(fd, "i2c", 3);
 		break;
 	default:
 		printf("ERROR: unknown PINMUX mode\n");
