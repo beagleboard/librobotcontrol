@@ -1,7 +1,8 @@
 #!/bin/bash
 
 OVERLAY=RoboticsCape
-TREE=am335x-boneblack-roboticscape.dtb
+TREE_BLACK=am335x-boneblack-roboticscape.dtb
+TREE_BW=am335x-boneblack-wireless-roboticscape.dtb
 UENV=/boot/uEnv.txt
 
 KERNEL="$(uname -r)"
@@ -41,27 +42,28 @@ fi
 if [ "$MODEL" == "TI AM335x BeagleBone Blue" ]; then
 	echo "No overlay needed on the Blue!"
 	exit 0
-# if the roboticscape tree is available, use that
-elif [ -a "/boot/dtbs/$UNAME/$TREE" ]; then
-	DTB="$TREE"
 
-# otherwise choose overlay for board
-elif   [ "$MODEL" == "TI AM335x BeagleBone Black" ]; then
-	DTB="am335x-boneblack-emmc-overlay.dtb"
+# test for BBB wireless
+elif   [ "$MODEL" == "TI AM335x BeagleBone Black Wireless" ]; then
 
-# no device tree and not a black, just leave it alone
-else
-	echo "leaving uEnv.txt alone"
-	exit 0
+	# if the roboticscape tree is available, use that
+	if [ -a "/boot/dtbs/$UNAME/$TREE_BW" ]; then
+		DTB="$TREE_BW"
+	else
+		DTB="am335x-boneblack-wireless-emmc-overlay.dtb"
+	fi
+
+# for black and all others (green, etc) just use boneblack dtb
+else  
+	# if the roboticscape tree is available, use that
+	if [ -a "/boot/dtbs/$UNAME/$TREE_BLACK" ]; then
+		DTB="$TREE_BLACK"
+	else
+		DTB="am335x-boneblack-emmc-overlay.dtb"
+	fi
 fi
 
-## left here commented out for future use
-# elif [ "$MODEL" == "TI AM335x BeagleBone Black Wireless" ]; then
-# 	 DTB="am335x-boneblack-wireless.dtb"
-# elif [ "$MODEL" == "TI AM335x BeagleBone Green" ]; then
-# 	 DTB="am335x-bonegreen.dtb"
-# elif [ "$MODEL" == "TI AM335x BeagleBone Green Wireless" ]; then
-# 	 DTB="am335x-bonegreen-wireless.dtb"
+
 
 echo "Using $DTB"
 
@@ -96,8 +98,10 @@ echo dtb=$DTB >> $UENV
 echo cmdline=coherent_pool=1M >> $UENV
 
 # if not using custom device tree, load the overlay
-if [ "$DTB" != "$TREE" ]; then
+if [ "$DTB" != "$TREE_BLACK" ] && [ "$DTB" != "$TREE_BW" ]; then
 	echo cape_enable=bone_capemgr.enable_partno=$OVERLAY >> $UENV
+	# modify default cape to load in case missing from initramfs
+	echo CAPE=$OVERLAY > /etc/default/capemgr
 	echo "enabling overlay"
 fi
 
@@ -105,8 +109,6 @@ fi
 echo uuid=$UUID >> $UENV
 echo " " >> $UENV
 
-# modify default cape to load
-echo CAPE=$OVERLAY > /etc/default/capemgr
 
 echo "Robotics Cape Device Tree Configured and Installed"
 
