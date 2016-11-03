@@ -13,7 +13,7 @@
 #include "../../libraries/simple_gpio/gpio_setup.h"
 #include "../../libraries/other/robotics_pru.h"
 
-#define TIMEOUT_S 25
+#define TIMEOUT_S 5
 #define START_LOG "/var/log/roboticscape/startup_log.txt"
 
 int is_cape_loaded();
@@ -94,6 +94,20 @@ int main(){
 	}
 	time = (micros_since_epoch()-start_us)/1000000;
 	sprintf(buf, "echo 'time (s): %4.1f PRU rproc loaded' >> %s",time,START_LOG);
+	system(buf);
+
+
+	//wait for pinmux
+	while(set_default_pinmux()!=0){
+		if(check_timeout()){
+			system("echo 'timeout reached while waiting for pinmux' >> " START_LOG);
+			printf("timeout reached while waiting for pinmux\n");
+		 	return 0;
+		}
+		usleep(500000);
+	}
+	time = (micros_since_epoch()-start_us)/1000000;
+	sprintf(buf, "echo 'time (s): %4.1f pinmux driver loaded' >> %s",time,START_LOG);
 	system(buf);
 
 	printf("startup routine complete\n");
