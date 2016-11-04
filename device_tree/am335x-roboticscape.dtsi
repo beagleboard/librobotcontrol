@@ -66,14 +66,14 @@
 			0x038 0x36	/* P8_16,PRU0_r31_16,MODE6 */
 			
 			/* PRU Servo output */
-			0x0e0 0x25	/*pru1_pru_r30_8, MODE5*/
-			0x0e8 0x25	/*pru1_pru_r30_10, MODE5 */
-			0x0e4 0x25	/*pr1_pru1_pru_r30_9, MODE5 */
-			0x0ec 0x25	/*pru1_pru_r30_11, MODE5 */
-			0x0b8 0x25	/*pru1_pru_r30_6, MODE5 */
-			0x0bc 0x25	/*pru1_pru_r30_7, MODE5 */
-			0x0b0 0x25	/*pru1_pru_r30_4, MODE5 */
-			0x0b4 0x25	/*pru1_pru_r30_5, MODE5 */
+			0x0e0 0x05	/*pru1_pru_r30_8, MODE5*/
+			0x0e8 0x05	/*pru1_pru_r30_10, MODE5 */
+			0x0e4 0x05	/*pr1_pru1_pru_r30_9, MODE5 */
+			0x0ec 0x05	/*pru1_pru_r30_11, MODE5 */
+			0x0b8 0x05	/*pru1_pru_r30_6, MODE5 */
+			0x0bc 0x05	/*pru1_pru_r30_7, MODE5 */
+			0x0b0 0x05	/*pru1_pru_r30_4, MODE5 */
+			0x0b4 0x05	/*pru1_pru_r30_5, MODE5 */
 			
 			
 			/* I2C1 */
