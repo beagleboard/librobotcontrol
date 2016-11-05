@@ -16,13 +16,16 @@
 #include <sys/ioctl.h>
 #include <linux/spi/spidev.h>
 
-#define SPI1_PATH 			"/dev/spidev1.0"
+#define SPI10_PATH 			"/dev/spidev1.0"
+#define SPI11_PATH 			"/dev/spidev1.1"
 #define SPI_MAX_SPEED 		24000000 	// 24mhz
 #define SPI_MIN_SPEED 		1000		// 1khz
 #define SPI_BITS_PER_WORD 	8
 #define SPI_BUF_SIZE		2		
 
-int fd; // file descriptor for SPI1_PATH device
+int fd0; // file descriptor for SPI1_PATH device cs0
+int fd1; // cs1
+
 int initialized; 	// set to 1 after successful initialized. 
 int slave_selected; // set to 1 once a slave has been selected.
 
@@ -31,11 +34,11 @@ char tx_buf[SPI_BUF_SIZE];
 char rx_buf[SPI_BUF_SIZE];
 
 /*******************************************************************************
-* @ int initialize_spi1(int mode, int speed_hz)
+* @ int initialize_spi(int mode, int speed_hz)
 *
 * Functions for interfacing with SPI1 on the beaglebone and Robotics Cape
 *******************************************************************************/
-int initialize_spi1(int mode, int speed_hz){
+int initialize_spi(int spi_mode, int speed_hz, int slave, spi_ss_mode_t ss_mode){
 	int bits = SPI_BITS_PER_WORD;
 	int mode_proper;
 	
@@ -58,26 +61,6 @@ int initialize_spi1(int mode, int speed_hz){
 			return -1;
 	}
 	
-	// set up slave select gpio pins
-	if(gpio_export(SPI1_SS1_GPIO_PIN)){
-		printf("ERROR: can't export gpio %d\n", SPI1_SS1_GPIO_PIN);
-		return -1;
-	}if(gpio_export(SPI1_SS2_GPIO_PIN)){
-		printf("ERROR: can't export gpio %d\n", SPI1_SS2_GPIO_PIN);
-		return -1;
-	}if(gpio_set_dir(SPI1_SS1_GPIO_PIN, OUTPUT_PIN)){
-		printf("ERROR: can't set direction gpio %d\n", SPI1_SS1_GPIO_PIN);
-		return -1;
-	}if(gpio_set_dir(SPI1_SS2_GPIO_PIN, OUTPUT_PIN)){
-		printf("ERROR: can't set direction gpio %d\n", SPI1_SS2_GPIO_PIN);
-		return -1;
-	}if(mmap_gpio_write(SPI1_SS1_GPIO_PIN, HIGH)){
-		printf("ERROR: can't write to gpio %d\n", SPI1_SS1_GPIO_PIN);
-		return -1;
-	}if(mmap_gpio_write(SPI1_SS2_GPIO_PIN, HIGH)){
-		printf("ERROR: can't write to gpio %d\n", SPI1_SS2_GPIO_PIN);
-		return -1;
-	}
 
 	// get file descriptor for spi1 device
 	fd = open(SPI1_PATH, O_RDWR);

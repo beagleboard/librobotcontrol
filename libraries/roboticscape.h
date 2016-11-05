@@ -790,22 +790,31 @@ int i2c_send_byte(int bus, uint8_t data);
 /*******************************************************************************
 * SPI - Serial Peripheral Interface
 *
-* The Sitara's SPI1 bus is broken out on two JST SH 6-pin sockets
-* labeled SPI1.1 and SPI1.2 These share clock and serial IO signals.
-* However, each socket has its own slave select line allowing two
+* The Sitara's SPI1 bus is broken out on two JST SH 6-pin sockets labeled SPI1.1 
+* and SPI1.2 These share clock and serial IO signals, but have independent slave
+* select lines. 
 * 
+* The slaves can be selected automatically by the SPI linux driver or manually
+* with select/deselect_spi_slave() functions. On the Robotics Cape, slave 1
+* can be used in either mode, but slave 2 must be selected manually. On the
+* BB Blue either slave can be used in manual or automatic modes. 
 *******************************************************************************/
-int initialize_spi1(int mode, int speed_hz);
-int get_spi1_fd();
-int close_spi1();
-int select_spi1_slave(int slave);
-int deselect_spi1_slave(int slave);	
-int spi1_send_bytes(char* data, int bytes);
-int spi1_read_bytes(char* data, int bytes);
-int spi1_write_reg_byte(char reg_addr, char data);
-char spi1_read_reg_byte(char reg_addr);
-int spi1_read_reg_bytes(char reg_addr, char* data, int bytes);
-int spi1_transfer(char* tx_data, int tx_bytes, char* rx_data);
+typedef enum spi_ss_mode_t{
+	SPI_SS_MODE_AUTO,
+	SPI_SS_MODE_MANUAL
+} spi_ss_mode_t;
+
+int initialize_spi(int mode, int speed_hz);
+int get_spi_fd();
+int close_spi();
+int select_spi_slave(int slave);
+int deselect_spi_slave(int slave);	
+int spi_send_bytes(char* data, int bytes);
+int spi_read_bytes(char* data, int bytes);
+int spi_write_reg_byte(char reg_addr, char data);
+char spi_read_reg_byte(char reg_addr);
+int spi_read_reg_bytes(char reg_addr, char* data, int bytes);
+int spi_transfer(char* tx_data, int tx_bytes, char* rx_data);
 
 
 /*******************************************************************************
