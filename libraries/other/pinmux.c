@@ -46,13 +46,25 @@
 
 
 
+/*******************************************************************************
+* int set_pinmux_mode(int pin, pinmux_mode_t mode)
+*
+* checks the desired pin and mode for validity depending on if you are running
+* a blue or cape. Returns -1 on failure, 0 on success.
+*******************************************************************************/
 int set_pinmux_mode(int pin, pinmux_mode_t mode){
 	int fd, ret;
-	char * path;
+	char* path;
+
+	// flag set when parsing pin switch case
+	int blue_only = 0;
 
 	// big switch case checks validity of pins and mode
 	switch(pin){
 
+	/***************************************************************************
+	* Cape and Blue pins
+	***************************************************************************/
 	// DSM2 data/pairing pin, for internal use only
 	case DSM_PIN:
 		if( mode!=PINMUX_GPIO    	&& \
@@ -152,19 +164,131 @@ int set_pinmux_mode(int pin, pinmux_mode_t mode){
 		path = P9_31_PATH;
 		break;
 
+	/***************************************************************************
+	* SPI_HEADER_PIN_6_SS1 is the same as BLUE_GP0_PIN_6
+	***************************************************************************/
 	case SPI_HEADER_PIN_6_SS1:
 		if( mode!=PINMUX_GPIO    	&& \
 			mode!=PINMUX_GPIO_PU 	&& \
 			mode!=PINMUX_GPIO_PD 	&& \
 			mode!=PINMUX_SPI){
-			printf("ERROR: SPI_HEADER_PIN_6_SS1 can only be put in GPIO, or SPI modes\n");
+			if(get_bb_model()==BB_BLUE){
+				printf("ERROR: BLUE_GP0_PIN_6 can only be put in GPIO modes\n");
+			}
+			else{
+				printf("ERROR: SPI_HEADER_PIN_6_SS1 can only be put in GPIO or SPI modes\n");
+			}
 			return -1;
 		}
 		path = P9_28_PATH;
 		break;
 
+	/***************************************************************************
+	* SPI_HEADER_PIN_6_SS2  is the same as BLUE_GP0_PIN_4:
+	***************************************************************************/
+	case SPI_HEADER_PIN_6_SS2:
+		if( mode!=PINMUX_GPIO    	&& \
+			mode!=PINMUX_GPIO_PU 	&& \
+			mode!=PINMUX_GPIO_PD ){
+			if(get_bb_model()==BB_BLUE){
+				printf("ERROR: BLUE_GP0_PIN_4 can only be put in GPIO modes\n");
+			}
+			else{
+				printf("ERROR: SPI_HEADER_PIN_6_SS2 can only be put in GPIO modes\n");
+			}
+			return -1;
+		}
+		path = P9_23_PATH;
+		break;
+
+	/***************************************************************************
+	* Blue Only
+	***************************************************************************/
+	case BLUE_SPI_PIN_6_SS1:
+		if( mode!=PINMUX_GPIO    	&& \
+			mode!=PINMUX_GPIO_PU 	&& \
+			mode!=PINMUX_GPIO_PD 	&& \
+			mode!=PINMUX_SPI ){
+			printf("ERROR: BLUE_SPI_PIN_6_SS1 can only be put in GPIO, or SPI modes\n");
+			return -1;
+		}
+		path = E17_PATH;
+		blue_only = 1;
+		break;
+
+	case BLUE_SPI_PIN_6_SS2:
+		if( mode!=PINMUX_GPIO    	&& \
+			mode!=PINMUX_GPIO_PU 	&& \
+			mode!=PINMUX_GPIO_PD 	&& \
+			mode!=PINMUX_SPI ){
+			printf("ERROR: BLUE_SPI_PIN_6_SS2 can only be put in GPIO, or SPI modes\n");
+			return -1;
+		}
+		path = A15_PATH;
+		blue_only = 1;
+		break;
+
+	case BLUE_GP0_PIN_3:
+		if( mode!=PINMUX_GPIO    	&& \
+			mode!=PINMUX_GPIO_PU 	&& \
+			mode!=PINMUX_GPIO_PD ){
+			printf("ERROR: BLUE_GP0_PIN_3 can only be put in GPIO modes\n");
+			return -1;
+		}
+		path = U16_PATH;
+		blue_only = 1;
+		break;
+
+	// BLUE_GP0_PIN_4 defined above with cape pins since it is shared
+
+	case BLUE_GP0_PIN_5:
+		if( mode!=PINMUX_GPIO    	&& \
+			mode!=PINMUX_GPIO_PU 	&& \
+			mode!=PINMUX_GPIO_PD ){
+			printf("ERROR: BLUE_GP0_PIN_5 can only be put in GPIO modes\n");
+			return -1;
+		}
+		path = D13_PATH;
+		blue_only = 1;
+		break;
+
+	// BLUE_GP0_PIN_6 defined above with cape pins since it is shared
+
+	case BLUE_GP1_PIN_3:
+		if( mode!=PINMUX_GPIO    	&& \
+			mode!=PINMUX_GPIO_PU 	&& \
+			mode!=PINMUX_GPIO_PD ){
+			printf("ERROR: BLUE_GP1_PIN_3 can only be put in GPIO modes\n");
+			return -1;
+		}
+		path = J15_PATH;
+		blue_only = 1;
+		break;
+
+	case BLUE_GP1_PIN_4:
+		if( mode!=PINMUX_GPIO    	&& \
+			mode!=PINMUX_GPIO_PU 	&& \
+			mode!=PINMUX_GPIO_PD ){
+			printf("ERROR: BLUE_GP1_PIN_4 can only be put in GPIO modes\n");
+			return -1;
+		}
+		path = H17_PATH;
+		blue_only = 1;
+		break;
+
+
+	/***************************************************************************
+	* Phew, end of long switch case. Print error if pin not supported.
+	***************************************************************************/
 	default:
 		printf("ERROR: Pinmuxing on pin %d is not supported\n", pin);
+		return -1;
+	}
+
+
+	// check for board incompatibility
+	if(blue_only && get_bb_model()!=BB_BLUE){
+		printf("ERROR: Trying to set pinmux on pin that should only used on BB Blue\n");
 		return -1;
 	}
 
@@ -218,6 +342,11 @@ int set_pinmux_mode(int pin, pinmux_mode_t mode){
 
 
 
+/*******************************************************************************
+* int set_default_pinmux()
+*
+* puts everything back to standard and is used by initialize_cape
+*******************************************************************************/
 int set_default_pinmux(){
 	int ret = 0;
 
@@ -233,12 +362,12 @@ int set_default_pinmux(){
 		ret |= set_pinmux_mode(SPI_HEADER_PIN_5, PINMUX_SPI);
 		ret |= set_pinmux_mode(BLUE_SPI_PIN_6_SS1, PINMUX_SPI);
 		ret |= set_pinmux_mode(BLUE_SPI_PIN_6_SS2, PINMUX_SPI);
-		ret |= set_pinmux_mode(BLUE_GP0_PIN_3, PINMUX_SPI);
-		ret |= set_pinmux_mode(BLUE_GP0_PIN_4, PINMUX_SPI);
-		ret |= set_pinmux_mode(BLUE_GP0_PIN_5, PINMUX_SPI);
-		ret |= set_pinmux_mode(BLUE_GP0_PIN_6, PINMUX_SPI);
-		ret |= set_pinmux_mode(BLUE_GP1_PIN_3, PINMUX_SPI);
-		ret |= set_pinmux_mode(BLUE_GP1_PIN_4, PINMUX_SPI);
+		ret |= set_pinmux_mode(BLUE_GP0_PIN_3, PINMUX_GPIO_PU);
+		ret |= set_pinmux_mode(BLUE_GP0_PIN_4, PINMUX_GPIO_PU);
+		ret |= set_pinmux_mode(BLUE_GP0_PIN_5, PINMUX_GPIO_PU);
+		ret |= set_pinmux_mode(BLUE_GP0_PIN_6, PINMUX_GPIO_PU);
+		ret |= set_pinmux_mode(BLUE_GP1_PIN_3, PINMUX_GPIO_PU);
+		ret |= set_pinmux_mode(BLUE_GP1_PIN_4, PINMUX_GPIO_PU);
 
 	}
 
@@ -253,6 +382,7 @@ int set_default_pinmux(){
 		ret |= set_pinmux_mode(SPI_HEADER_PIN_4, PINMUX_SPI);
 		ret |= set_pinmux_mode(SPI_HEADER_PIN_5, PINMUX_SPI);
 		ret |= set_pinmux_mode(SPI_HEADER_PIN_6_SS1, PINMUX_SPI);
+		ret |= set_pinmux_mode(SPI_HEADER_PIN_6_SS2, PINMUX_GPIO);
 	}
 
 	if(ret){
