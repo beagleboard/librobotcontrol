@@ -20,7 +20,7 @@
 #define VOLTAGE_50			3.55
 #define VOLTAGE_25			3.1
 #define VOLTAGE_DISCONNECT	2	 // Threshold for detecting disconnected battery
-#define VOLTAGE_CHG_DETECT  4.1
+#define VOLTAGE_CHG_DETECT  4.15
 int running;
 
 void illuminate_leds(int i);
