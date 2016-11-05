@@ -20,7 +20,7 @@
 #define VOLTAGE_50			3.55
 #define VOLTAGE_25			3.1
 #define VOLTAGE_DISCONNECT	2	 // Threshold for detecting disconnected battery
-
+#define VOLTAGE_CHG_DETECT  4.1
 int running;
 
 void illuminate_leds(int i);
@@ -122,7 +122,7 @@ int main(int argc, char *argv[]){
 		// check if a pack is on the 2S balance connector and if it's charging
 		if(pack_voltage>(2*VOLTAGE_DISCONNECT)){
 			cell_voltage = pack_voltage/2;
-			if(jack_voltage>10.0 && cell_voltage<VOLTAGE_FULL){
+			if(jack_voltage>10.0 && cell_voltage<VOLTAGE_CHG_DETECT){
 				charging = 1;
 			}
 		}
