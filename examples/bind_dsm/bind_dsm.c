@@ -1,7 +1,7 @@
 /*******************************************************************************
-* bind_dsm2.c
+* bind_dsm.c
 *
-* routine to put a DSM2 satellite receiver into pairing mode
+* routine to put a DSM2/DSMX satellite receiver into pairing mode
 * James Strawson 2014
 *
 * DSM satellite receivers are put into bind mode by sending them a sequence of
@@ -32,6 +32,6 @@
 
 // just run the bind function
 int main(){
-	bind_dsm2();
+	bind_dsm();
 	return 0;
 }

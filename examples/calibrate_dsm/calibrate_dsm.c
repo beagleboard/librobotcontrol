@@ -20,7 +20,7 @@ int main(){
 		printf("ERROR: failed to initialize_cape\n");
 	}
 	
-	printf("Please connect a DSM2 sattelite reciever to your Robotics Cape\n");
+	printf("Please connect a DSM sattelite reciever to your Robotics Cape\n");
 	printf("and make sure your transmitter is on and paired to the receiver\n");
 	printf("\n");
 	printf("Press ENTER to continue or anything else to quit\n");
@@ -30,7 +30,7 @@ int main(){
 	}
 	
 	// run the calibration routine
-	calibrate_dsm2_routine();
+	calibrate_dsm_routine();
 	
 	// cleanup and close, calibration file already saved by the routine
 	cleanup_cape();

@@ -1,5 +1,5 @@
 /******************************************************************************
-* test_dsm2.c
+* test_dsm.c
 *
 * James Strawson 2016
 * test_dsm2 will print out the normalized dsm2 values.
@@ -9,7 +9,7 @@
 * transmitter it is paired to, not your BeagleBone. 
 *
 * If the values you read are not normalized between +-1, then you should run the
-* calibrate_dsm2 example to save your particular transmitter's min and max 
+* calibrate_dsm example to save your particular transmitter's min and max 
 * channel values.
 *******************************************************************************/
 
@@ -21,10 +21,10 @@ int main(){
 		printf("ERROR: failed to initialize cape\n");
 		return -1;
 	}
-	if(initialize_dsm2()){
+	if(initialize_dsm()){
 		// if init returns -1 if there was a problem 
 		// most likely no calibration file found
-		printf("run calibrate_dsm2 first\n");
+		printf("run calibrate_dsm first\n");
 		return -1;
 	}
 	
@@ -39,22 +39,22 @@ int main(){
 	
 	int i;
 	while(get_state()!=EXITING){
-		if(is_new_dsm2_data()){	
+		if(is_new_dsm_data()){	
 			printf("\r");// keep printing on same line
-			int channels = get_num_dsm2_channels();
+			int channels = get_num_dsm_channels();
 			// print framerate
-			printf("%d-bit ", get_dsm2_frame_resolution());
+			printf("%d-bit ", get_dsm_frame_resolution());
 			// print num channels in use
 			printf("%d-ch ", channels);
 			//print all channels
 			for(i=0;i<channels;i++){
-				printf("%d:% 0.2f ", i+1, get_dsm2_ch_normalized(i+1));
+				printf("%d:% 0.2f ", i+1, get_dsm_ch_normalized(i+1));
 			}
 			fflush(stdout);
 		}
 		else{
-			printf("\rSeconds since last DSM2 packet: ");
-			printf("%0.2f ", ms_since_last_dsm2_packet()/1000.0);
+			printf("\rSeconds since last DSM packet: ");
+			printf("%0.2f ", ms_since_last_dsm_packet()/1000.0);
 			printf("                             ");
 		}
 		fflush(stdout);

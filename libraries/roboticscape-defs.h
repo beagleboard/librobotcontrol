@@ -15,7 +15,7 @@
 
 // Calibration File Locations
 #define CONFIG_DIRECTORY "/var/lib/roboticscape/"
-#define DSM2_CAL_FILE	"dsm2.cal"
+#define DSM_CAL_FILE	"dsm.cal"
 #define GYRO_CAL_FILE 	"gyro.cal"
 #define MAG_CAL_FILE	"mag.cal"
 
@@ -59,7 +59,7 @@
 #define MDIR3B    	72	//gpio2.8   P8.43
 #define MDIR3A    	73	//gpio2.9   P8.44
 #define MOT_STBY  	20	//gpio0.20  P9.41
-#define DSM2_PIN    30 	//gpio0.30 	P9.11
+#define DSM_PIN    30 	//gpio0.30 	P9.11
 #define SERVO_PWR	80	//gpio2.16 P8.36
 #define SPI1_SS1_GPIO_PIN 	113 //gpio3.17	P9.28 
 #define SPI1_SS2_GPIO_PIN 	49  //gpio1.17	P9.23 

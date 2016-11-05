@@ -30,9 +30,9 @@ int send_pulses(){
 
 	//print all channels
 	printf("\r");
-	ch =  get_num_dsm2_channels();
+	ch =  get_num_dsm_channels();
 	for(i=0;i<ch;i++){
-		printf("% 4d   ", get_dsm2_ch_raw(i+1));
+		printf("% 4d   ", get_dsm_ch_raw(i+1));
 	}
 	fflush(stdout);	
 	return 0;
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]){
 		return -1;
 	}
 	
-	if(initialize_dsm2()){
+	if(initialize_dsm()){
 		printf("ERROR: failed to initialize_dsm2\n");
 		return -1;
 	}
@@ -110,12 +110,12 @@ int main(int argc, char *argv[]){
 	printf("8:Aux2  ");
 	printf("\n");
 	
-	printf("Waiting for DSM2 Connection");
+	printf("Waiting for DSM Connection");
 	fflush(stdout);
 	
-	set_new_dsm2_data_func(&send_pulses);
+	set_new_dsm_data_func(&send_pulses);
 	while(get_state()!=EXITING){
-		ms = ms_since_last_dsm2_packet();
+		ms = ms_since_last_dsm_packet();
 		if(ms>500){	
 			printf("\rMilliseconds since last packet: %d         ", ms);
 			fflush(stdout);

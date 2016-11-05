@@ -370,24 +370,24 @@ int send_oneshot_pulse_normalized_all(float input);
 * The Robotics Cape features a 3-pin JST ZH socket for connecting a DSM2/DSMX
 * compatible satellite receiver. See the online manual for more details.
 *
-* @ int initialize_dsm2()
+* @ int initialize_dsm()
 * Starts the background service.
 *
-* @ is_new_dsm2_data()
+* @ is_new_dsm_data()
 * 
 * Returns 1 when new data is available. 
 *
-* @ int is_dsm2_active()
+* @ int is_dsm_active()
 * 
 * Returns 1 if packets are arriving in good health without timeouts.
 * Returns 0 otherwise.
 *
-* @ int set_new_dsm2_data_func(int (*func)(void));
+* @ int set_new_dsm_data_func(int (*func)(void));
 *
 * Much like the button handlers, this assigns a user function to be called when
 * new data arrives. Be careful as you should still check for radio disconnects 
 *
-* @ int get_dsm2_ch_raw(int channel) 
+* @ int get_dsm_ch_raw(int channel) 
 * 
 * Returns the pulse width in microseconds commanded by the transmitter for a
 * particular channel. The user can specify channels 1 through 9 but non-zero 
@@ -395,46 +395,46 @@ int send_oneshot_pulse_normalized_all(float input);
 * The raw values in microseconds typically range from 900-2100us for a standard
 * radio with default settings.
 *
-* @ get_dsm2_ch_normalized(int channel) 
+* @ get_dsm_ch_normalized(int channel) 
 *
 * Returns a scaled value from -1 to 1 corresponding to the min and max values
 * recorded during calibration. The user
-* MUST run the clalibrate_dsm2 example to ensure the normalized values returned
+* MUST run the clalibrate_dsm example to ensure the normalized values returned
 * by this function are correct.
 *
-* @ int ms_since_last_dsm2_packet()
+* @ int ms_since_last_dsm_packet()
 * 
-* returns the number of milliseconds since the last dsm2 packet was received.
+* returns the number of milliseconds since the last dsm packet was received.
 * if no packet has ever been received, return -1;
 *
-* @ int stop_dsm2_service()
+* @ int stop_dsm_service()
 *
 * stops the background thread. Not necessary to be called by the user as
 * cleanup_cape() calls this anyway.
 *
-* @ int bind_dsm2()
+* @ int bind_dsm()
 *
-* Puts a satellite receiver in bind mode. Use the bind_dsm2 example program
+* Puts a satellite receiver in bind mode. Use the bind_dsm example program
 * instead of calling this in your own program.
 *
-* int calibrate_dsm2_routine()
+* int calibrate_dsm_routine()
 *
 * Starts a calibration routine. 
 *
-* see test_dsm2, calibrate_dsm2, and dsm2_passthroguh examples for use cases.
+* see test_dsm, calibrate_dsm, and dsm_passthroguh examples for use cases.
 ******************************************************************************/
-int   initialize_dsm2();
-int   is_new_dsm2_data();
-int   is_dsm2_active();
-int   set_new_dsm2_data_func(int (*func)(void));
-int   get_dsm2_ch_raw(int channel);
-float get_dsm2_ch_normalized(int channel);
-int   ms_since_last_dsm2_packet();
-int   get_dsm2_frame_resolution();
-int   get_num_dsm2_channels();
-int   stop_dsm2_service();
-int   bind_dsm2();
-int   calibrate_dsm2_routine();
+int   initialize_dsm();
+int   is_new_dsm_data();
+int   is_dsm_active();
+int   set_new_dsm_data_func(int (*func)(void));
+int   get_dsm_ch_raw(int channel);
+float get_dsm_ch_normalized(int channel);
+int   ms_since_last_dsm_packet();
+int   get_dsm_frame_resolution();
+int   get_num_dsm_channels();
+int   stop_dsm_service();
+int   bind_dsm();
+int   calibrate_dsm_routine();
 
 
 /******************************************************************************

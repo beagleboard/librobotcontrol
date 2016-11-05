@@ -21,7 +21,8 @@
 
 // P9_11 used for DSM2 radio and not exposed to user
 #define P9_11_PATH "/sys/devices/platform/ocp/ocp:P9_11_pinmux/state"
-// options from robotics_cape.h
+
+// cape and blue
 #define P9_22_PATH "/sys/devices/platform/ocp/ocp:P9_22_pinmux/state"
 #define P9_21_PATH "/sys/devices/platform/ocp/ocp:P9_21_pinmux/state"
 #define P9_26_PATH "/sys/devices/platform/ocp/ocp:P9_26_pinmux/state"
@@ -31,7 +32,17 @@
 #define P9_31_PATH "/sys/devices/platform/ocp/ocp:P9_31_pinmux/state"
 #define P9_28_PATH "/sys/devices/platform/ocp/ocp:P9_28_pinmux/state"
 
-#define MAX_PATH_LENGTH 64
+// cape only
+#define P9_23_PATH "/sys/devices/platform/ocp/ocp:P9_23_pinmux/state"
+
+// Blue Only
+#define E17_PATH "/sys/devices/platform/ocp/ocp:E17_pinmux/state"
+#define A15_PATH "/sys/devices/platform/ocp/ocp:A15_pinmux/state"
+#define U16_PATH "/sys/devices/platform/ocp/ocp:U16_pinmux/state"
+#define P9_23_PATH "/sys/devices/platform/ocp/ocp:P9_23_pinmux/state"
+#define D13_PATH "/sys/devices/platform/ocp/ocp:D13_pinmux/state"
+#define J15_PATH "/sys/devices/platform/ocp/ocp:J15_pinmux/state"
+#define H17_PATH "/sys/devices/platform/ocp/ocp:H17_pinmux/state"
 
 
 
@@ -43,12 +54,12 @@ int set_pinmux_mode(int pin, pinmux_mode_t mode){
 	switch(pin){
 
 	// DSM2 data/pairing pin, for internal use only
-	case DSM2_PIN:
+	case DSM_PIN:
 		if( mode!=PINMUX_GPIO    	&& \
 			mode!=PINMUX_GPIO_PU 	&& \
 			mode!=PINMUX_GPIO_PD 	&& \
 			mode!=PINMUX_UART){
-			printf("ERROR: DSM2 pairing pin can only be put in GPIO or UART mode\n");
+			printf("ERROR: DSM pairing pin can only be put in GPIO or UART mode\n");
 			return -1;
 		}
 		path = P9_11_PATH;
@@ -210,13 +221,28 @@ int set_pinmux_mode(int pin, pinmux_mode_t mode){
 int set_default_pinmux(){
 	int ret = 0;
 
-	// bb blue device tree not done yet, so just one pinmux for now
+	// bb blue available pinmux
 	if(get_bb_model()==BB_BLUE){
 		ret |= set_pinmux_mode(DSM2_PIN, PINMUX_UART);
+		ret |= set_pinmux_mode(GPS_HEADER_PIN_3, PINMUX_UART);
+		ret |= set_pinmux_mode(GPS_HEADER_PIN_4, PINMUX_UART);
+		ret |= set_pinmux_mode(UART1_HEADER_PIN_3, PINMUX_UART);
+		ret |= set_pinmux_mode(UART1_HEADER_PIN_4, PINMUX_UART);
+		ret |= set_pinmux_mode(SPI_HEADER_PIN_3, PINMUX_SPI);
+		ret |= set_pinmux_mode(SPI_HEADER_PIN_4, PINMUX_SPI);
+		ret |= set_pinmux_mode(SPI_HEADER_PIN_5, PINMUX_SPI);
+		ret |= set_pinmux_mode(BLUE_SPI_PIN_6_SS1, PINMUX_SPI);
+		ret |= set_pinmux_mode(BLUE_SPI_PIN_6_SS2, PINMUX_SPI);
+		ret |= set_pinmux_mode(BLUE_GP0_PIN_3, PINMUX_SPI);
+		ret |= set_pinmux_mode(BLUE_GP0_PIN_4, PINMUX_SPI);
+		ret |= set_pinmux_mode(BLUE_GP0_PIN_5, PINMUX_SPI);
+		ret |= set_pinmux_mode(BLUE_GP0_PIN_6, PINMUX_SPI);
+		ret |= set_pinmux_mode(BLUE_GP1_PIN_3, PINMUX_SPI);
+		ret |= set_pinmux_mode(BLUE_GP1_PIN_4, PINMUX_SPI);
 
 	}
 
-	// bb black and everything else should use this
+	// bb black and everything else
 	else{
 		ret |= set_pinmux_mode(DSM2_PIN, PINMUX_UART);
 		ret |= set_pinmux_mode(GPS_HEADER_PIN_3, PINMUX_UART);
