@@ -1271,14 +1271,29 @@ void print_bb_model();
 *
 * set_default_pinmux() puts everything back to standard and is used by init
 *******************************************************************************/
+// Cape and Blue
 #define GPS_HEADER_PIN_3  		2	// P9_22, normally GPS UART2 RX
 #define GPS_HEADER_PIN_4  		3	// P9_21, normally GPS UART2 TX
 #define UART1_HEADER_PIN_3		14	// P9_26, normally UART1 RX
 #define UART1_HEADER_PIN_4		15	// P9_24, normally UART1 TX
 #define SPI_HEADER_PIN_3		112	// P9_30, normally SPI1 MOSI		
 #define SPI_HEADER_PIN_4		111	// P9_29, normally SPI1 MISO	
-#define SPI_HEADER_PIN_5		110	// P9_31, normally SPI1 SCLK	
-#define SPI_HEADER_PIN_6_SS1	113	// P9_28, normally SPI1 SS1
+#define SPI_HEADER_PIN_5		110	// P9_31, normally SPI1 SCLK
+
+// Cape Only
+#define SPI_HEADER_PIN_6_SS1	113	// P9_28, normally SPI mode
+#define SPI_HEADER_PIN_6_SS2	49	// P9_23, normally GPIO mode
+
+// Blue Only
+#define BLUE_SPI_PIN_6_SS1		9   // gpio 0_9  pin E17
+#define BLUE_SPI_PIN_6_SS2		19	// gpio 0_19 pin A15		
+#define BLUE_GP0_PIN_3 			57  // gpio 1_25 pin U16
+#define BLUE_GP0_PIN_4 			49  // gpio 1_17 pin P9.23
+#define BLUE_GP0_PIN_5 			116 // gpio 3_20 pin D13
+#define BLUE_GP0_PIN_6 			113 // gpio 3_17 pin P9_28
+#define BLUE_GP1_PIN_3 			98  // gpio 3_2  pin J15
+#define BLUE_GP1_PIN_4 			97  // gpio 3_1  pin H17
+
 
 typedef enum pinmux_mode_t{
 	PINMUX_GPIO,

@@ -79,7 +79,7 @@
 			0x074 0x0F	/*P9.13 MDIR_1B*/
 			0x040 0x0F	/*P9.15 MDIR_2A*/
 			0x1b4 0x0F	/*P9.41 MOT_STBY*/
-			0x??? 0x0F	/*T13 MDIR_1A diff from cape! */
+			0x088 0x0F	/*T13 MDIR_1A diff from cape! */
 			0x0D8 0x0F	/*P8.31  MDIR_2B diff from cape! */
 
 			/* Servo Power Ctrl GPIO Out */
@@ -276,16 +276,16 @@
         pinctrl-7 = <&P9_26_pruin_pin>;
     };
 
-
+    // SPI SS2
     A15_pinmux {
         compatible = "bone-pinmux-helper";
         status = "okay";
         pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "spi";
-        pinctrl-0 = <&P9_26_default_pin>;
-        pinctrl-1 = <&P9_26_gpio_pin>;
-        pinctrl-2 = <&P9_26_gpio_pu_pin>;
-        pinctrl-3 = <&P9_26_gpio_pd_pin>;
-        pinctrl-4 = <&P9_26_spi_pin>;
+        pinctrl-0 = <&A15_default_pin>;
+        pinctrl-1 = <&A15_gpio_pin>;
+        pinctrl-2 = <&A15_gpio_pu_pin>;
+        pinctrl-3 = <&A15_gpio_pd_pin>;
+        pinctrl-4 = <&A15_spi_pin>;
     };
 };
 
@@ -430,3 +430,4 @@
 		spi-max-frequency = <16000000>;
 	};
 };
+
