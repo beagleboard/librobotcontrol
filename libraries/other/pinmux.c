@@ -31,15 +31,12 @@
 #define P9_29_PATH "/sys/devices/platform/ocp/ocp:P9_29_pinmux/state"
 #define P9_31_PATH "/sys/devices/platform/ocp/ocp:P9_31_pinmux/state"
 #define P9_28_PATH "/sys/devices/platform/ocp/ocp:P9_28_pinmux/state"
-
-// cape only
 #define P9_23_PATH "/sys/devices/platform/ocp/ocp:P9_23_pinmux/state"
 
 // Blue Only
 #define E17_PATH "/sys/devices/platform/ocp/ocp:E17_pinmux/state"
 #define A15_PATH "/sys/devices/platform/ocp/ocp:A15_pinmux/state"
 #define U16_PATH "/sys/devices/platform/ocp/ocp:U16_pinmux/state"
-#define P9_23_PATH "/sys/devices/platform/ocp/ocp:P9_23_pinmux/state"
 #define D13_PATH "/sys/devices/platform/ocp/ocp:D13_pinmux/state"
 #define J15_PATH "/sys/devices/platform/ocp/ocp:J15_pinmux/state"
 #define H17_PATH "/sys/devices/platform/ocp/ocp:H17_pinmux/state"
