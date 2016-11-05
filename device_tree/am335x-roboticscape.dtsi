@@ -113,7 +113,6 @@
 		compatible = "bone-pinmux-helper";
 		status = "okay";
 		pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "uart";
-
 		pinctrl-0 = <&P9_11_default_pin>;
 		pinctrl-1 = <&P9_11_gpio_pin>;
 		pinctrl-2 = <&P9_11_gpio_pu_pin>;
@@ -151,6 +150,7 @@
     };
 
     /* SPI Header Pins */
+    /* ss1 */
 	P9_28_pinmux {
         compatible = "bone-pinmux-helper";
         status = "okay";
@@ -166,6 +166,7 @@
         pinctrl-8 = <&P9_28_pruin_pin>;
     };
 
+    /* MISO */
     P9_29_pinmux {
         compatible = "bone-pinmux-helper";
         status = "okay";
@@ -180,6 +181,7 @@
         pinctrl-7 = <&P9_29_pruin_pin>;
     };
 
+    /* MOSI */
     P9_30_pinmux {
         compatible = "bone-pinmux-helper";
         status = "okay";
@@ -194,6 +196,7 @@
         pinctrl-7 = <&P9_30_pruin_pin>;
     };
 
+    /* SCK */
     P9_31_pinmux {
         compatible = "bone-pinmux-helper";
         status = "okay";
@@ -260,9 +263,6 @@
 	status = "okay";
 };
 
-/*******************************************************************************
-* PWM and Motor GPIO Pins
-*******************************************************************************/
 &ehrpwm1 {
 	status = "okay";
 };
@@ -341,10 +341,7 @@
 *******************************************************************************/
 &i2c1 {	   
 	status = "okay";
-
-	/* this is the configuration part */
 	clock-frequency = <400000>;
-
 	#address-cells = <1>;
 	#size-cells = <0>;
 };
@@ -352,7 +349,6 @@
 &i2c2 {	    
 	status = "okay";
 	clock-frequency = <400000>;
-
 	#address-cells = <1>;
 	#size-cells = <0>;
 };
@@ -366,9 +362,24 @@
 	#size-cells = <0>;
 	status = "okay";
 
-	spidev@1 {
-		spi-max-frequency = <24000000>;
+	channel@0 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		compatible = "spidev";
+
 		reg = <0>;
-		compatible = "linux,spidev";
+		spi-max-frequency = <16000000>;
+		spi-cpha;
+	};
+
+	channel@1 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		compatible = "spidev";
+
+		reg = <1>;
+		spi-max-frequency = <16000000>;
 	};
 };

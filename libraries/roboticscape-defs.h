@@ -53,7 +53,7 @@
 #define MDIR1B    	31	//gpio0.31	P9.13
 #define MDIR2A    	48	//gpio1.16  P9.15
 #define MDIR2B    	81	//gpio2.17  P8.34
-#define MDIR2B_BLUE 79  //gpio2.15 pin U2
+#define MDIR2B_BLUE 10  //gpio0.10  P8_31
 #define MDIR4A    	70	//gpio2.6   P8.45
 #define MDIR4B    	71	//gpio2.7   P8.46
 #define MDIR3B    	72	//gpio2.8   P8.43
@@ -63,6 +63,9 @@
 #define SERVO_PWR	80	//gpio2.16 P8.36
 #define SPI1_SS1_GPIO_PIN 	113 //gpio3.17	P9.28 
 #define SPI1_SS2_GPIO_PIN 	49  //gpio1.17	P9.23 
+
+//// BB Blue GPIO OUT
+#define BLUE_GP0_PIN_4 49 // gpio 1_17 pin P9.23
 
 // Battery Indicator LEDs
 #define BATT_LED_1	27 // P8.17
