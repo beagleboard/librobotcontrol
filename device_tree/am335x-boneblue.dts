@@ -5,6 +5,7 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
+
 /dts-v1/;
 
 #include "am33xx.dtsi"
@@ -13,7 +14,7 @@
 #include "am335x-boneblue-wl1835.dtsi"
 #include "am33xx-pruss-rproc.dtsi"
 
-#define BLUE_IO(x, y) AM33XX_IOPAD((x)*4+0x800, (y))
+#define BLUE_IO(x, y) AM33XX_IOPAD((x)*4+0x800, (y)) /* not used anymore */
 
 
 / {
@@ -50,11 +51,14 @@
 	};
 };
 
-/****************************************
+/*******************************************************************************
 * Pin Muxing
-****************************************/
+*******************************************************************************/
 &am33xx_pinmux {
 
+	/***************************************************************************
+	* Static Pinmux
+	***************************************************************************/
 	mux_helper_pins: pins {
 		pinctrl-single,pins = <
 
@@ -79,11 +83,8 @@
 			0x074 0x0F	/*P9.13 MDIR_1B*/
 			0x040 0x0F	/*P9.15 MDIR_2A*/
 			0x1b4 0x0F	/*P9.41 MOT_STBY*/
-			0x088 0x0F	/*T13 MDIR_1A diff from cape! */
-			0x0D8 0x0F	/*P8.31  MDIR_2B diff from cape! */
-
-			/* Servo Power Ctrl GPIO Out */
-			0x0C8 0x0F	/*P8.36, SERVO_PWR*/
+			0x088 0x0F	/*T13   MDIR_1A different from cape! */
+			0x0D8 0x0F	/*P8.31 MDIR_2B different from cape! */
 
 			/* HRPWM 1 */
 			0x048  0x6 /* P9_14 | MODE 6 */
@@ -114,6 +115,7 @@
 			0x0bc 0x05	/*pru1_pru_r30_7, MODE5 */
 			0x0b0 0x05	/*pru1_pru_r30_4, MODE5 */
 			0x0b4 0x05	/*pru1_pru_r30_5, MODE5 */
+			0x0C8 0x0F	/*P8.36, SERVO_PWR GPIO OUT*/
 			
 			/* I2C1 */
 			0x15C 0x32	/* P9.17,i2c1_scl,INPUT_PULLUP,MODE2 */
@@ -130,28 +132,89 @@
 			/* WILINK 8 */
 			0x08c 0x0F	/*P8.18 V12 A2DP FSYNC */
 			0x078 0x0F	/*P9.12 A2DP_CLOCK*/
+
+			/* DCAN */
+			0x16c ( PIN_INPUT  | MUX_MODE2 ) /* (E17) uart0_rtsn.dcan1_rx */
+			0x168 ( PIN_OUTPUT | MUX_MODE2 ) /* (E18) uart0_ctsn.dcan1_tx */
 		>;
 
-		/* A15 SPI1_CS1    */
-		A15_default_pin: pinmux_A15_default_pin {
-			pinctrl-single,pins = <( PIN_OUTPUT | MUX_MODE4 )>; };
-		A15_gpio_pin: pinmux_A15_gpio_pin {
-			pinctrl-single,pins = <( PIN_OUTPUT | MUX_MODE7 )>; };
-		A15_gpio_pu_pin: pinmux_A15_gpio_pu_pin {
-			pinctrl-single,pins = <( PIN_INPUT_PULLUP | MUX_MODE7 )>; };
-		A15_gpio_pd_pin: pinmux_A15_gpio_pd_pin {
-			pinctrl-single,pins = <( PIN_INPUT_PULLDOWN | MUX_MODE7 )>; };
-		A15_spi_pin: pinmux_A15_spi_pin {
-			pinctrl-single,pins = <( PIN_OUTPUT | MUX_MODE4 )>; };
+		/***********************************************************************
+		* New configurable pinmux modes for pins not on Black headers
+		***********************************************************************/
+		/* E17 SPI1_SS1    */
+		E17_default_pin: pinmux_E17_default_pin {
+			pinctrl-single,pins = < 0x16C ( PIN_OUTPUT | MUX_MODE4 ) >; };
+		E17_gpio_pin: pinmux_E17_gpio_pin {
+			pinctrl-single,pins = < 0x16C ( PIN_OUTPUT | MUX_MODE7 ) >; };
+		E17_gpio_pu_pin: pinmux_E17_gpio_pu_pin {
+			pinctrl-single,pins = < 0x16C ( PIN_INPUT_PULLUP | MUX_MODE7 ) >; };
+		E17_gpio_pd_pin: pinmux_E17_gpio_pd_pin {
+			pinctrl-single,pins = < 0x16C ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) >; };
+		E17_spi_pin: pinmux_E17_spi_pin {
+			pinctrl-single,pins = < 0x16C ( PIN_OUTPUT | MUX_MODE4 ) >; };
 
+		/* A15 SPI1_SS2    */
+		A15_default_pin: pinmux_A15_default_pin {
+			pinctrl-single,pins = < 0x1B0 ( PIN_OUTPUT | MUX_MODE4 ) >; };
+		A15_gpio_pin: pinmux_A15_gpio_pin {
+			pinctrl-single,pins = < 0x1B0 ( PIN_OUTPUT | MUX_MODE7 ) >; };
+		A15_gpio_pu_pin: pinmux_A15_gpio_pu_pin {
+			pinctrl-single,pins = < 0x1B0 ( PIN_INPUT_PULLUP | MUX_MODE7 ) >; };
+		A15_gpio_pd_pin: pinmux_A15_gpio_pd_pin {
+			pinctrl-single,pins = < 0x1B0 ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) >; };
+		A15_spi_pin: pinmux_A15_spi_pin {
+			pinctrl-single,pins = < 0x1B0 ( PIN_OUTPUT | MUX_MODE4 ) >; };
+
+		/* U16 BLUE_GP0_PIN_3 gpio 1_25   */
+		U16_default_pin: pinmux_U16_default_pin {
+			pinctrl-single,pins = < 0x064 ( PIN_INPUT_PULLUP | MUX_MODE7 ) >; };
+		U16_gpio_pin: pinmux_U16_gpio_pin {
+			pinctrl-single,pins = < 0x064 ( PIN_OUTPUT | MUX_MODE7 ) >; };
+		U16_gpio_pu_pin: pinmux_U16_gpio_pu_pin {
+			pinctrl-single,pins = < 0x064 ( PIN_INPUT_PULLUP | MUX_MODE7 ) >; };
+		U16_gpio_pd_pin: pinmux_U16_gpio_pd_pin {
+			pinctrl-single,pins = < 0x064 ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) >; };
+
+		/* D13 BLUE_GP0_PIN_5 gpio 3_20  */
+		D13_default_pin: pinmux_D13_default_pin {
+			pinctrl-single,pins = < 0x1A8 ( PIN_INPUT_PULLUP | MUX_MODE7 ) >; };
+		D13_gpio_pin: pinmux_D13_gpio_pin {
+			pinctrl-single,pins = < 0x1A8 ( PIN_OUTPUT | MUX_MODE7 ) >; };
+		D13_gpio_pu_pin: pinmux_D13_gpio_pu_pin {
+			pinctrl-single,pins = < 0x1A8 ( PIN_INPUT_PULLUP | MUX_MODE7 ) >; };
+		D13_gpio_pd_pin: pinmux_D13_gpio_pd_pin {
+			pinctrl-single,pins = < 0x1A8 ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) >; };
+
+		/* J15 BLUE_GP1_PIN_3 gpio 3_2  */
+		J15_default_pin: pinmux_J15_default_pin {
+			pinctrl-single,pins = < 0x110 ( PIN_INPUT_PULLUP | MUX_MODE7 ) >; };
+		J15_gpio_pin: pinmux_J15_gpio_pin {
+			pinctrl-single,pins = < 0x110 ( PIN_OUTPUT | MUX_MODE7 ) >; };
+		J15_gpio_pu_pin: pinmux_J15_gpio_pu_pin {
+			pinctrl-single,pins = < 0x110 ( PIN_INPUT_PULLUP | MUX_MODE7 ) >; };
+		J15_gpio_pd_pin: pinmux_J15_gpio_pd_pin {
+			pinctrl-single,pins = < 0x110 ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) >; };
+
+		/* H17 BLUE_GP1_PIN_4 gpio 3_1  */
+		H17_default_pin: pinmux_H17_default_pin {
+			pinctrl-single,pins = < 0x10C ( PIN_INPUT_PULLUP | MUX_MODE7 ) >; };
+		H17_gpio_pin: pinmux_H17_gpio_pin {
+			pinctrl-single,pins = < 0x10C ( PIN_OUTPUT | MUX_MODE7 ) >; };
+		H17_gpio_pu_pin: pinmux_H17_gpio_pu_pin {
+			pinctrl-single,pins = < 0x10C ( PIN_INPUT_PULLUP | MUX_MODE7 ) >; };
+		H17_gpio_pd_pin: pinmux_H17_gpio_pd_pin {
+			pinctrl-single,pins = < 0x10C ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) >; };
 	};
 	
 };
 
+
+/*******************************************************************************
+* apply static and dynamic pinmux modes listed above. Pins shared with the black
+* header pins get the modes from am335x-boneblack-common-universal-pins.dtsi
+*******************************************************************************/
 &ocp {
-	/****************************************
-	 * activates the pinmux helper list of pin modes
-	 ****************************************/
+	/* activate the static pinmux helper list of pin modes above */
 	test_helper: helper {
 		compatible = "bone-pinmux-helper";
 		pinctrl-names = "default";
@@ -160,7 +223,7 @@
 		status = "okay";
 	};
 
-	/* DSM2 Pins */
+	/* UART4 RX DSM */
 	P9_11_pinmux {
 		compatible = "bone-pinmux-helper";
 		status = "okay";
@@ -172,7 +235,7 @@
 		pinctrl-4 = <&P9_11_uart_pin>;
 	};
 
-	/* GPS UART header pins */
+	/* UART 2 TX GPS*/
 	P9_21_pinmux {
         compatible = "bone-pinmux-helper";
         status = "okay";
@@ -187,6 +250,7 @@
         pinctrl-7 = <&P9_21_pwm_pin>;
     };
 
+    /* UART 2 RX GPS */
     P9_22_pinmux {
         compatible = "bone-pinmux-helper";
         status = "okay";
@@ -201,8 +265,7 @@
         pinctrl-7 = <&P9_22_pwm_pin>;
     };
 
-    /* SPI Header Pins */
-    /* MISO */
+    /* SPI MISO */
     P9_29_pinmux {
         compatible = "bone-pinmux-helper";
         status = "okay";
@@ -217,7 +280,7 @@
         pinctrl-7 = <&P9_29_pruin_pin>;
     };
 
-    /* MOSI */
+    /* SPI MOSI */
     P9_30_pinmux {
         compatible = "bone-pinmux-helper";
         status = "okay";
@@ -232,7 +295,7 @@
         pinctrl-7 = <&P9_30_pruin_pin>;
     };
 
-    /* SCK */
+    /* SPI SCK */
     P9_31_pinmux {
         compatible = "bone-pinmux-helper";
         status = "okay";
@@ -247,7 +310,31 @@
         pinctrl-7 = <&P9_31_pruin_pin>;
     };
 
-    /* uart 1 / can */
+     /* SPI SS1 */
+    E17_pinmux {
+        compatible = "bone-pinmux-helper";
+        status = "okay";
+        pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "spi";
+        pinctrl-0 = <&E17_default_pin>;
+        pinctrl-1 = <&E17_gpio_pin>;
+        pinctrl-2 = <&E17_gpio_pu_pin>;
+        pinctrl-3 = <&E17_gpio_pd_pin>;
+        pinctrl-4 = <&E17_spi_pin>;
+    };
+
+    /* SPI SS2 */
+    A15_pinmux {
+        compatible = "bone-pinmux-helper";
+        status = "okay";
+        pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "spi";
+        pinctrl-0 = <&A15_default_pin>;
+        pinctrl-1 = <&A15_gpio_pin>;
+        pinctrl-2 = <&A15_gpio_pu_pin>;
+        pinctrl-3 = <&A15_gpio_pd_pin>;
+        pinctrl-4 = <&A15_spi_pin>;
+    };
+
+    /* UART 1 TX */
      P9_24_pinmux {
         compatible = "bone-pinmux-helper";
         status = "okay";
@@ -262,6 +349,7 @@
         pinctrl-7 = <&P9_24_pruin_pin>;
     };
 
+    /* UART 1 RX */
     P9_26_pinmux {
         compatible = "bone-pinmux-helper";
         status = "okay";
@@ -276,23 +364,87 @@
         pinctrl-7 = <&P9_26_pruin_pin>;
     };
 
-    // SPI SS2
-    A15_pinmux {
+    /* U16 BLUE_GP0_PIN_3 gpio 1_25*/
+    U16_pinmux {
         compatible = "bone-pinmux-helper";
         status = "okay";
-        pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "spi";
-        pinctrl-0 = <&A15_default_pin>;
-        pinctrl-1 = <&A15_gpio_pin>;
-        pinctrl-2 = <&A15_gpio_pu_pin>;
-        pinctrl-3 = <&A15_gpio_pd_pin>;
-        pinctrl-4 = <&A15_spi_pin>;
+        pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd";
+        pinctrl-0 = <&U16_default_pin>;
+        pinctrl-1 = <&U16_gpio_pin>;
+        pinctrl-2 = <&U16_gpio_pu_pin>;
+        pinctrl-3 = <&U16_gpio_pd_pin>;
     };
+
+
+    /* BLUE_GP0_PIN_3 gpio1_17*/
+    P9_23_pinmux {
+        compatible = "bone-pinmux-helper";
+        status = "okay";
+        pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "pwm";
+        pinctrl-0 = <&P9_23_default_pin>;
+        pinctrl-1 = <&P9_23_gpio_pin>;
+        pinctrl-2 = <&P9_23_gpio_pu_pin>;
+        pinctrl-3 = <&P9_23_gpio_pd_pin>;
+        pinctrl-4 = <&P9_23_pwm_pin>;
+    };
+
+    /* BLUE_GP0_PIN_5 gpio3_20 */
+    D13_pinmux {
+        compatible = "bone-pinmux-helper";
+        status = "okay";
+        pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd";
+        pinctrl-0 = <&D13_default_pin>;
+        pinctrl-1 = <&D13_gpio_pin>;
+        pinctrl-2 = <&D13_gpio_pu_pin>;
+        pinctrl-3 = <&D13_gpio_pd_pin>;
+    };
+
+    /* BLUE_GP0_PIN_6 gpio3_17 */
+    P9_28_pinmux {
+        compatible = "bone-pinmux-helper";
+        status = "okay";
+        pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "pwm", "spi", "pwm2", "pruout", "pruin";
+        pinctrl-0 = <&P9_28_default_pin>;
+        pinctrl-1 = <&P9_28_gpio_pin>;
+        pinctrl-2 = <&P9_28_gpio_pu_pin>;
+        pinctrl-3 = <&P9_28_gpio_pd_pin>;
+        pinctrl-4 = <&P9_28_pwm_pin>;
+        pinctrl-5 = <&P9_28_spi_pin>;
+        pinctrl-6 = <&P9_28_pwm2_pin>;
+        pinctrl-7 = <&P9_28_pruout_pin>;
+        pinctrl-8 = <&P9_28_pruin_pin>;
+    };
+
+    /* BLUE_GP1_PIN_3 gpio3_2 */
+    J15_pinmux {
+        compatible = "bone-pinmux-helper";
+        status = "okay";
+        pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd";
+        pinctrl-0 = <&J15_default_pin>;
+        pinctrl-1 = <&J15_gpio_pin>;
+        pinctrl-2 = <&J15_gpio_pu_pin>;
+        pinctrl-3 = <&J15_gpio_pd_pin>;
+    };
+
+    /* BLUE_GP1_PIN_4 gpio3_1 */
+    H17_pinmux {
+        compatible = "bone-pinmux-helper";
+        status = "okay";
+        pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd";
+        pinctrl-0 = <&H17_default_pin>;
+        pinctrl-1 = <&H17_gpio_pin>;
+        pinctrl-2 = <&H17_gpio_pu_pin>;
+        pinctrl-3 = <&H17_gpio_pd_pin>;
+    };
+
+
+
 };
 
 
-/****************************************
-		PWMSS
-****************************************/
+/*******************************************************************************
+*	PWMSS
+*******************************************************************************/
 &epwmss0 {
 	status = "okay";
 };
@@ -352,12 +504,9 @@
 };
 
 
-/****************************************
+/*******************************************************************************
 	UART
-
-	UART 1, 2, 5 are used on the cape.
-	The Beaglebone Blue uses others so all are enabled here.
-****************************************/
+*******************************************************************************/
 
 &uart1 {
 	status = "okay";
@@ -376,34 +525,34 @@
 };
 
 
-/****************************************
-		PRU
-****************************************/
+/*******************************************************************************
+	PRU
+*******************************************************************************/
 &pruss {
 	status = "okay";
 };
 
 
-/****************************************
-		I2C
-****************************************/
+/*******************************************************************************
+	I2C
+*******************************************************************************/
 &i2c1 {
-	status = "okay";
-	clock-frequency = <400000>;
 	#address-cells = <1>;
 	#size-cells = <0>;
+	status = "okay";
+	clock-frequency = <400000>;
 };
 
 &i2c2 {	 
-	status = "okay";
-	clock-frequency = <400000>;
 	#address-cells = <1>;
 	#size-cells = <0>;
+	status = "okay";
+	clock-frequency = <400000>;
 };
 
-/****************************************
-		SPI
-****************************************/
+/*******************************************************************************
+	SPI
+*******************************************************************************/
 &spi1 {
 	#address-cells = <1>;
 	#size-cells = <0>;
@@ -412,22 +561,17 @@
 	channel@0 {
 		#address-cells = <1>;
 		#size-cells = <0>;
-
 		compatible = "spidev";
-
 		reg = <0>;
-		spi-max-frequency = <16000000>;
-		spi-cpha;
+		spi-max-frequency = <24000000>;
 	};
 
 	channel@1 {
 		#address-cells = <1>;
 		#size-cells = <0>;
-
 		compatible = "spidev";
-
 		reg = <1>;
-		spi-max-frequency = <16000000>;
+		spi-max-frequency = <24000000>;
 	};
 };
 
