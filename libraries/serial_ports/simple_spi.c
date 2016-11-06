@@ -32,11 +32,11 @@ char tx_buf[SPI_BUF_SIZE];
 char rx_buf[SPI_BUF_SIZE];
 
 /*******************************************************************************
-* @ int initialize_spi(int slave, ss_mode_t ss_mode, int spi_mode, int speed_hz)
+* @ int initialize_spi(ss_mode_t ss_mode, int spi_mode, int speed_hz, int slave)
 *
 * Functions for interfacing with SPI1 on the beaglebone and Robotics Cape
 *******************************************************************************/
-int initialize_spi(int slave, ss_mode_t ss_mode, int spi_mode, int speed_hz){
+int initialize_spi(ss_mode_t ss_mode, int spi_mode, int speed_hz, int slave){
 	int bits = SPI_BITS_PER_WORD;
 	int mode_proper;
 	
@@ -156,7 +156,7 @@ int initialize_spi(int slave, ss_mode_t ss_mode, int spi_mode, int speed_hz){
 }
 
 /*******************************************************************************
-* int get_spi_fd()
+* int get_spi_fd(int slave)
 *
 * Returns the file descriptor for spi1 once initialized.
 * Use this if you want to do your own reading and writing to the bus instead
@@ -287,11 +287,11 @@ int spi_send_bytes(char* data, int bytes, int slave){
 }
 
 /*******************************************************************************
-* int spi1_read_bytes(char* data, int bytes, int slave)
+* int spi_read_bytes(char* data, int bytes, int slave)
 *
 * Like uart_read_bytes, this lets you read a byte sequence without sending.
 *******************************************************************************/
-int spi1_read_bytes(char* data, int bytes, int slave){
+int spi_read_bytes(char* data, int bytes, int slave){
 	// sanity checks
 	if(slave!=1 && slave!=2){
 		printf("ERROR: SPI slave must be 1 or 2\n");
@@ -323,13 +323,13 @@ int spi1_read_bytes(char* data, int bytes, int slave){
 }
 
 /*******************************************************************************
-* @ int spi1_transfer(char* tx_data, int tx_bytes, char* rx_data, inst slave)
+* @ int spi_transfer(char* tx_data, int tx_bytes, char* rx_data, inst slave)
 *
 * This is a generic wrapper for the ioctl spi transfer function. It lets the
 * user send any sequence of bytes and read the response. The return value is
 * the number of bytes received or -1 on error.
 *******************************************************************************/
-int spi1_transfer(char* tx_data, int tx_bytes, char* rx_data, int slave){
+int spi_transfer(char* tx_data, int tx_bytes, char* rx_data, int slave){
 	// sanity checks
 	if(slave!=1 && slave!=2){
 		printf("ERROR: SPI slave must be 1 or 2\n");
@@ -360,14 +360,14 @@ int spi1_transfer(char* tx_data, int tx_bytes, char* rx_data, int slave){
 }
 
 /*******************************************************************************
-* int spi1_write_reg_byte(char reg_addr, char data, int slave)
+* int spi_write_reg_byte(char reg_addr, char data, int slave)
 *
 * Used for writing a byte value to a register. This sends in order the address
 * and byte to be written. It also sets the MSB of the register to 1 which 
 * indicates a write operation on many ICs. If you do not want this particular 
 * functionality, use spi1_send_bytes() to send a byte string of your choosing.
 *******************************************************************************/
-int spi1_write_reg_byte(char reg_addr, char data, int slave){
+int spi_write_reg_byte(char reg_addr, char data, int slave){
 	// sanity checks
 	if(slave!=1 && slave!=2){
 		printf("ERROR: SPI slave must be 1 or 2\n");
@@ -396,13 +396,13 @@ int spi1_write_reg_byte(char reg_addr, char data, int slave){
 }
 
 /*******************************************************************************
-* char spi1_read_reg_byte(char reg_addr, int slave)
+* char spi_read_reg_byte(char reg_addr, int slave)
 *
 * Reads a single character located at address reg_addr. This is accomplished
 * by sending the reg_addr with the MSB set to 0 indicating a read on many
 * ICs. 
 *******************************************************************************/
-char spi1_read_reg_byte(char reg_addr, int slave){
+char spi_read_reg_byte(char reg_addr, int slave){
 	// sanity checks
 	if(slave!=1 && slave!=2){
 		printf("ERROR: SPI slave must be 1 or 2\n");
@@ -431,13 +431,13 @@ char spi1_read_reg_byte(char reg_addr, int slave){
 }
 
 /*******************************************************************************
-* int spi1_read_reg_bytes(char reg_addr, char* data, int bytes, int slave)
+* int spi_read_reg_bytes(char reg_addr, char* data, int bytes, int slave)
 *
 * Reads multiple bytes located at address reg_addr. This is accomplished
 * by sending the reg_addr with the MSB set to 0 indicating a read on many
 * ICs. 
 *******************************************************************************/
-int spi1_read_reg_bytes(char reg_addr, char* data, int bytes, int slave){
+int spi_read_reg_bytes(char reg_addr, char* data, int bytes, int slave){
 	// sanity checks
 	if(slave!=1 && slave!=2){
 		printf("ERROR: SPI slave must be 1 or 2\n");

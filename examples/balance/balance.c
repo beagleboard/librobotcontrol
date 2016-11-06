@@ -189,11 +189,11 @@ int main(){
 * void* setpoint_manager(void* ptr)
 *
 * This thread is in charge of adjusting the controller setpoint based on user
-* inputs from DSM2 radio control. Also detects pickup to control arming the
+* inputs from dsm radio control. Also detects pickup to control arming the
 * controller.
 *******************************************************************************/
 void* setpoint_manager(void* ptr){
-	float drive_stick, turn_stick; // dsm2 input sticks
+	float drive_stick, turn_stick; // dsm input sticks
 
 	// wait for IMU to settle
 	disarm_controller();
@@ -222,20 +222,20 @@ void* setpoint_manager(void* ptr){
 			else continue;
 		}
 	
-		// if dsm2 is active, update the setpoint rates
-		if(is_new_dsm2_data()){
+		// if dsm is active, update the setpoint rates
+		if(is_new_dsm_data()){
 			// Read normalized (+-1) inputs from RC radio stick and multiply by 
 			// polarity setting so positive stick means positive setpoint
-			turn_stick  = get_dsm2_ch_normalized(DSM2_TURN_CH) * DSM2_TURN_POL;
-			drive_stick = get_dsm2_ch_normalized(DSM2_DRIVE_CH)* DSM2_DRIVE_POL;
+			turn_stick  = get_dsm_ch_normalized(DSM_TURN_CH) * DSM_TURN_POL;
+			drive_stick = get_dsm_ch_normalized(DSM_DRIVE_CH)* DSM_DRIVE_POL;
 			
 			// saturate the inputs to avoid possible erratic behavior
 			saturate_float(&drive_stick,-1,1);
 			saturate_float(&turn_stick,-1,1);
 			
 			// use a small deadzone to prevent slow drifts in position
-			if(fabs(drive_stick)<DSM2_DEAD_ZONE) drive_stick = 0.0;
-			if(fabs(turn_stick)<DSM2_DEAD_ZONE)  turn_stick  = 0.0;
+			if(fabs(drive_stick)<DSM_DEAD_ZONE) drive_stick = 0.0;
+			if(fabs(turn_stick)<DSM_DEAD_ZONE)  turn_stick  = 0.0;
 
 			// translate normalized user input to real setpoint values
 			switch(setpoint.drive_mode){
@@ -250,8 +250,8 @@ void* setpoint_manager(void* ptr){
 			default: break;
 			}
 		}
-		// if dsm2 had timed out, put setpoint rates back to 0
-		else if(is_dsm2_active()==0){
+		// if dsm had timed out, put setpoint rates back to 0
+		else if(is_dsm_active()==0){
 			setpoint.theta = 0;
 			setpoint.phi_dot = 0;
 			setpoint.gamma_dot = 0;

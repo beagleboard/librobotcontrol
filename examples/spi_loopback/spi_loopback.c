@@ -11,7 +11,8 @@
 #include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
-#define SPI_MODE	0
+#define SLAVE 		1
+#define SPI_MODE	SPI_MODE_CPOL0_CPHA0
 #define SPI_SPEED	24000000
 
 int main(){
@@ -23,8 +24,8 @@ int main(){
 	
 	// Initialization
 	initialize_cape();
-	printf("Testing SPI1 \n\n");
-	if(initialize_spi1(SPI_MODE,SPI_SPEED)){
+	printf("Testing SPI \n\n");
+	if(initialize_spi(SS_MODE_AUTO, SPI_MODE, SPI_SPEED, SLAVE)){
 		printf("Failed to initialize_spi1\n");
 		cleanup_cape();
 		return -1;
@@ -32,7 +33,7 @@ int main(){
 
 	// attempt a string send/receive test
 	printf("Sending  %d bytes: %s\n", bytes, test_str);
-	ret=spi1_transfer(test_str, bytes, buf);
+	ret=spi_transfer(test_str, bytes, buf, SLAVE);
 
 	// print error or response
 	if(ret<0){
@@ -43,7 +44,7 @@ int main(){
 	
 	// attempt a single byte send/receive test
 	printf("Sending byte:      0x%x\n", test_char);
-	ret = spi1_read_reg_byte(test_char); 
+	ret = spi_read_reg_byte(test_char, SLAVE); 
 
 	// print error or response
 	if(ret<0){
@@ -61,7 +62,7 @@ int main(){
 	else printf("Success!\n");
 
 cleanup:
-	close_spi1();
+	close_spi(SLAVE);
 	cleanup_cape();
 	return 0;
 }

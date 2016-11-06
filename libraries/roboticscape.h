@@ -809,9 +809,9 @@ typedef enum ss_mode_t{
 #define SPI_MODE_CPOL1_CPHA0 2
 #define SPI_MODE_CPOL1_CPHA1 3
 
-int initialize_spi(int slave, ss_mode_t ss_mode, int spi_mode, int speed_hz);
-int get_spi_fd();
-int close_spi();
+int initialize_spi(ss_mode_t ss_mode, int spi_mode, int speed_hz, int slave);
+int get_spi_fd(int slave);
+int close_spi(int slave);
 int manual_select_spi_slave(int slave);
 int manual_deselect_spi_slave(int slave);	
 int spi_send_bytes(char* data, int bytes, int slave);

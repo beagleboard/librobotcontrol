@@ -25,7 +25,7 @@ int send_pulses(){
 	int i, ch;
 	// send single pulse to each servo
 	for(i=0; i<8; i++){
-		send_servo_pulse_us(i+1,get_dsm2_ch_raw(i+1));
+		send_servo_pulse_us(i+1,get_dsm_ch_raw(i+1));
 	}
 
 	//print all channels
