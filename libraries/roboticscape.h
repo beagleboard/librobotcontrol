@@ -1300,8 +1300,8 @@ void print_bb_model();
 #define CAPE_SPI_PIN_6_SS2		49	// P9_23, normally GPIO mode
 
 // Blue Only
-#define BLUE_SPI_PIN_6_SS1		9   // gpio 0_9  pin E17
-#define BLUE_SPI_PIN_6_SS2		19	// gpio 0_19 pin A15		
+#define BLUE_SPI_PIN_6_SS1		29  // gpio 0_29  pin H18
+#define BLUE_SPI_PIN_6_SS2		7	// gpio 0_7  pin C18		
 #define BLUE_GP0_PIN_3 			57  // gpio 1_25 pin U16
 #define BLUE_GP0_PIN_4 			49  // gpio 1_17 pin P9.23
 #define BLUE_GP0_PIN_5 			116 // gpio 3_20 pin D13

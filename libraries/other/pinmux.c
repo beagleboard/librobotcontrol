@@ -34,8 +34,8 @@
 #define P9_23_PATH "/sys/devices/platform/ocp/ocp:P9_23_pinmux/state"
 
 // Blue Only
-#define E17_PATH "/sys/devices/platform/ocp/ocp:E17_pinmux/state"
-#define A15_PATH "/sys/devices/platform/ocp/ocp:A15_pinmux/state"
+#define H18_PATH "/sys/devices/platform/ocp/ocp:H18_pinmux/state"
+#define C18_PATH "/sys/devices/platform/ocp/ocp:C18_pinmux/state"
 #define U16_PATH "/sys/devices/platform/ocp/ocp:U16_pinmux/state"
 #define D13_PATH "/sys/devices/platform/ocp/ocp:D13_pinmux/state"
 #define J15_PATH "/sys/devices/platform/ocp/ocp:J15_pinmux/state"
@@ -209,7 +209,7 @@ int set_pinmux_mode(int pin, pinmux_mode_t mode){
 			printf("ERROR: BLUE_SPI_PIN_6_SS1 can only be put in GPIO, or SPI modes\n");
 			return -1;
 		}
-		path = E17_PATH;
+		path = H18_PATH;
 		blue_only = 1;
 		break;
 
@@ -221,7 +221,7 @@ int set_pinmux_mode(int pin, pinmux_mode_t mode){
 			printf("ERROR: BLUE_SPI_PIN_6_SS2 can only be put in GPIO, or SPI modes\n");
 			return -1;
 		}
-		path = A15_PATH;
+		path = C18_PATH;
 		blue_only = 1;
 		break;
 

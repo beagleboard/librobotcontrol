@@ -14,7 +14,7 @@
 
 // uncomment debug defines to print raw data for debugging
 //#define DEBUG
-//#define DEBUG_RAW
+#define DEBUG_RAW
 
 #define MAX_DSM_CHANNELS 9
 #define PAUSE 115	//microseconds
@@ -238,8 +238,21 @@ void* serial_parser(void *ptr){
 	// mostly likely that will be called by cleanup_cape()
 	while(running && get_state()!=EXITING){
 		memset(&buf, 0, sizeof(buf)); // clear buffer
+		
 		// read the buffer and decide what to do
-		ret = uart_read_bytes(DSM_UART_BUS, DSM_PACKET_SIZE, buf);
+		ret = uart_read_bytes(DSM_UART_BUS, DSM_PACKET_SIZE+1, buf);
+		
+		#ifdef DEBUG_RAW
+		printf("ret=%d : ", ret);
+		for(i=0; i<(ret/2); i++){
+			printf(byte_to_binary(buf[i*2]));
+			printf(" ");
+			printf(byte_to_binary(buf[(i*2)+1]));
+			printf("   ");
+		}
+		printf("\n");
+		#endif
+
 		if(ret<0){ //error
 			printf("ERROR reading uart %d\n", DSM_UART_BUS);
 			is_dsm_active_flag=0;
@@ -256,24 +269,7 @@ void* serial_parser(void *ptr){
 		}
 		
 		// okay, must have a full packet now
-		
-		#ifdef DEBUG
-			printf("read %d bytes, ", j+i);
-		#endif
-		
-		#ifdef DEBUG_RAW
-		printf("read %d bytes, ", j+i);
-		for(i=0; i<8; i++){
-			printf(byte_to_binary(buf[i*2]));
-			printf(" ");
-			printf(byte_to_binary(buf[(i*2)+1]));
-			printf("   ");
-		}
-		printf("\n");
-		#endif
-		
-		
-		
+	
 		// Next we must check if the packets are 10-bit 1024/22ms mode
 		// or 11bit 2048/11ms mode. read through and decide which one, then read
 		int mode = 22; // start assuming 10-bit 1024 mode, 22ms

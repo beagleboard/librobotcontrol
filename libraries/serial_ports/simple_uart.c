@@ -147,7 +147,8 @@ int initialize_uart(int bus, int baudrate, float timeout_s){
     config.c_cflag |= CLOCAL;	// ignore modem status lines
 	
 	// convert float timeout in seconds to int timeout in tenths of a second
-    config.c_cc[VTIME] = timeout_s*10;
+    config.c_cc[VTIME] = (int)(timeout_s*10)+1;
+
     //config.c_cc[VTIME]=0;
 	// if VTIME>0 & VMIN>0, read() will return when either the requested number
 	// of bytes are ready or when VMIN bytes are ready, whichever is smaller.

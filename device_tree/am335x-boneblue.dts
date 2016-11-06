@@ -141,29 +141,29 @@
 		/***********************************************************************
 		* New configurable pinmux modes for pins not on Black headers
 		***********************************************************************/
-		/* E17 SPI1_SS1    */
-		E17_default_pin: pinmux_E17_default_pin {
-			pinctrl-single,pins = < 0x16C ( PIN_OUTPUT | MUX_MODE4 ) >; };
-		E17_gpio_pin: pinmux_E17_gpio_pin {
-			pinctrl-single,pins = < 0x16C ( PIN_OUTPUT | MUX_MODE7 ) >; };
-		E17_gpio_pu_pin: pinmux_E17_gpio_pu_pin {
-			pinctrl-single,pins = < 0x16C ( PIN_INPUT_PULLUP | MUX_MODE7 ) >; };
-		E17_gpio_pd_pin: pinmux_E17_gpio_pd_pin {
-			pinctrl-single,pins = < 0x16C ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) >; };
-		E17_spi_pin: pinmux_E17_spi_pin {
-			pinctrl-single,pins = < 0x16C ( PIN_OUTPUT | MUX_MODE4 ) >; };
+		/* H18 SPI1_SS1    */
+		H18_default_pin: pinmux_H18_default_pin {
+			pinctrl-single,pins = < 0x144 ( PIN_OUTPUT | MUX_MODE4 ) >; };
+		H18_gpio_pin: pinmux_H18_gpio_pin {
+			pinctrl-single,pins = < 0x144 ( PIN_OUTPUT | MUX_MODE7 ) >; };
+		H18_gpio_pu_pin: pinmux_H18_gpio_pu_pin {
+			pinctrl-single,pins = < 0x144 ( PIN_INPUT_PULLUP | MUX_MODE7 ) >; };
+		H18_gpio_pd_pin: pinmux_H18_gpio_pd_pin {
+			pinctrl-single,pins = < 0x144 ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) >; };
+		H18_spi_pin: pinmux_H18_spi_pin {
+			pinctrl-single,pins = < 0x144 ( PIN_OUTPUT | MUX_MODE2 ) >; };
 
-		/* A15 SPI1_SS2    */
-		A15_default_pin: pinmux_A15_default_pin {
-			pinctrl-single,pins = < 0x1B0 ( PIN_OUTPUT | MUX_MODE4 ) >; };
-		A15_gpio_pin: pinmux_A15_gpio_pin {
-			pinctrl-single,pins = < 0x1B0 ( PIN_OUTPUT | MUX_MODE7 ) >; };
-		A15_gpio_pu_pin: pinmux_A15_gpio_pu_pin {
-			pinctrl-single,pins = < 0x1B0 ( PIN_INPUT_PULLUP | MUX_MODE7 ) >; };
-		A15_gpio_pd_pin: pinmux_A15_gpio_pd_pin {
-			pinctrl-single,pins = < 0x1B0 ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) >; };
-		A15_spi_pin: pinmux_A15_spi_pin {
-			pinctrl-single,pins = < 0x1B0 ( PIN_OUTPUT | MUX_MODE4 ) >; };
+		/* C18 SPI1_SS2    */
+		C18_default_pin: pinmux_C18_default_pin {
+			pinctrl-single,pins = < 0x164 ( PIN_OUTPUT | MUX_MODE4 ) >; };
+		C18_gpio_pin: pinmux_C18_gpio_pin {
+			pinctrl-single,pins = < 0x164 ( PIN_OUTPUT | MUX_MODE7 ) >; };
+		C18_gpio_pu_pin: pinmux_C18_gpio_pu_pin {
+			pinctrl-single,pins = < 0x164 ( PIN_INPUT_PULLUP | MUX_MODE7 ) >; };
+		C18_gpio_pd_pin: pinmux_C18_gpio_pd_pin {
+			pinctrl-single,pins = < 0x164 ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) >; };
+		C18_spi_pin: pinmux_C18_spi_pin {
+			pinctrl-single,pins = < 0x164 ( PIN_OUTPUT | MUX_MODE2 ) >; };
 
 		/* U16 BLUE_GP0_PIN_3 gpio 1_25   */
 		U16_default_pin: pinmux_U16_default_pin {
@@ -311,27 +311,27 @@
     };
 
      /* SPI SS1 */
-    E17_pinmux {
+    H18_pinmux {
         compatible = "bone-pinmux-helper";
         status = "okay";
         pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "spi";
-        pinctrl-0 = <&E17_default_pin>;
-        pinctrl-1 = <&E17_gpio_pin>;
-        pinctrl-2 = <&E17_gpio_pu_pin>;
-        pinctrl-3 = <&E17_gpio_pd_pin>;
-        pinctrl-4 = <&E17_spi_pin>;
+        pinctrl-0 = <&H18_default_pin>;
+        pinctrl-1 = <&H18_gpio_pin>;
+        pinctrl-2 = <&H18_gpio_pu_pin>;
+        pinctrl-3 = <&H18_gpio_pd_pin>;
+        pinctrl-4 = <&H18_spi_pin>;
     };
 
     /* SPI SS2 */
-    A15_pinmux {
+    C18_pinmux {
         compatible = "bone-pinmux-helper";
         status = "okay";
         pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "spi";
-        pinctrl-0 = <&A15_default_pin>;
-        pinctrl-1 = <&A15_gpio_pin>;
-        pinctrl-2 = <&A15_gpio_pu_pin>;
-        pinctrl-3 = <&A15_gpio_pd_pin>;
-        pinctrl-4 = <&A15_spi_pin>;
+        pinctrl-0 = <&C18_default_pin>;
+        pinctrl-1 = <&C18_gpio_pin>;
+        pinctrl-2 = <&C18_gpio_pu_pin>;
+        pinctrl-3 = <&C18_gpio_pd_pin>;
+        pinctrl-4 = <&C18_spi_pin>;
     };
 
     /* UART 1 TX */
