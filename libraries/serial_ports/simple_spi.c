@@ -23,22 +23,20 @@
 #define SPI_BITS_PER_WORD 	8
 #define SPI_BUF_SIZE		2		
 
-int fd0; // file descriptor for SPI1_PATH device cs0
-int fd1; // cs1
-
-int initialized; 	// set to 1 after successful initialized. 
-int slave_selected; // set to 1 once a slave has been selected.
+int fd[2]; // file descriptor for SPI1_PATH device cs0, cs1
+int initialized[2]; // set to 1 after successful initialization 
+int gpio_ss[2];		// holds gpio pins for slave select lines
 
 struct spi_ioc_transfer xfer[2]; // ioctl transfer structs for tx & rx
 char tx_buf[SPI_BUF_SIZE];
 char rx_buf[SPI_BUF_SIZE];
 
 /*******************************************************************************
-* @ int initialize_spi(int mode, int speed_hz)
+* @ int initialize_spi(int slave, ss_mode_t ss_mode, int spi_mode, int speed_hz)
 *
 * Functions for interfacing with SPI1 on the beaglebone and Robotics Cape
 *******************************************************************************/
-int initialize_spi(int spi_mode, int speed_hz, int slave, spi_ss_mode_t ss_mode){
+int initialize_spi(int slave, ss_mode_t ss_mode, int spi_mode, int speed_hz){
 	int bits = SPI_BITS_PER_WORD;
 	int mode_proper;
 	
@@ -48,9 +46,14 @@ int initialize_spi(int spi_mode, int speed_hz, int slave, spi_ss_mode_t ss_mode)
 																SPI_MAX_SPEED);
 		return -1;
 	}
+
+	if(get_bb_model()!=BB_BLUE && slave==2 && ss_mode==SS_MODE_AUTO){
+		printf("ERROR: Can't use SS_MODE_AUTO on slave 2 with Cape\n");
+		return -1;
+	}
 	
 	// switch 4 standard SPI modes 0-3. return error otherwise
-	switch(mode){
+	switch(spi_mode){
 		case 0: mode_proper = SPI_MODE_0; break;
 		case 1: mode_proper = SPI_MODE_1; break;
 		case 2: mode_proper = SPI_MODE_2; break;
@@ -63,152 +66,219 @@ int initialize_spi(int spi_mode, int speed_hz, int slave, spi_ss_mode_t ss_mode)
 	
 
 	// get file descriptor for spi1 device
-	fd = open(SPI1_PATH, O_RDWR);
-    if (fd <0) {
-        printf("spidev not found in /dev/\n"); 
-        return -1; 
-    } 
+	switch(slave){
+	case 1: 
+		fd[0] = open(SPI10_PATH, O_RDWR);
+	    if(fd[0] < 0) {
+	        printf("ERROR: %s missing\n", SPI10_PATH); 
+	        return -1; 
+	    }
+	    break;
+	case 2: 
+		fd[1] = open(SPI11_PATH, O_RDWR);
+	    if(fd[1] < 0) {
+	        printf("ERROR: %s missing\n", SPI11_PATH); 
+	        return -1; 
+	    }
+	    break;
+	default:
+		printf("ERROR: SPI slave must be 1 or 2\n");
+		return -1;
+	}
+	
 	// set settings
-	if(ioctl(fd, SPI_IOC_WR_MODE, &mode_proper)<0){
+	if(ioctl(fd[slave-1], SPI_IOC_WR_MODE, &mode_proper)<0){
 		printf("can't set spi mode");
-		close(fd);
+		close(fd[slave-1]);
 		return -1;
-	}if(ioctl(fd, SPI_IOC_RD_MODE, &mode_proper)<0){
+	}if(ioctl(fd[slave-1], SPI_IOC_RD_MODE, &mode_proper)<0){
 		printf("can't get spi mode");
-		close(fd);
+		close(fd[slave-1]);
 		return -1;
-	}if(ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits)<0){
+	}if(ioctl(fd[slave-1], SPI_IOC_WR_BITS_PER_WORD, &bits)<0){
 		printf("can't set bits per word");
-		close(fd);
+		close(fd[slave-1]);
 		return -1;
-	}if(ioctl(fd, SPI_IOC_RD_BITS_PER_WORD, &bits)<0){
+	}if(ioctl(fd[slave-1], SPI_IOC_RD_BITS_PER_WORD, &bits)<0){
 		printf("can't get bits per word");
-		close(fd);
+		close(fd[slave-1]);
 		return -1;
-	} if(ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed_hz)<0){
+	} if(ioctl(fd[slave-1], SPI_IOC_WR_MAX_SPEED_HZ, &speed_hz)<0){
 		printf("can't set max speed hz");
-		close(fd);
+		close(fd[slave-1]);
 		return -1;
-	} if(ioctl(fd, SPI_IOC_RD_MAX_SPEED_HZ, &speed_hz)<0){
+	} if(ioctl(fd[slave-1], SPI_IOC_RD_MAX_SPEED_HZ, &speed_hz)<0){
 		 printf("can't get max speed hz");
-		 close(fd);
+		 close(fd[slave-1]);
 		 return -1;
 	}
 
 	// store settings
-    xfer[0].cs_change = 0; // don't toggle CS
+    xfer[0].cs_change = 1;
     xfer[0].delay_usecs = 0;
     xfer[0].speed_hz = speed_hz;
     xfer[0].bits_per_word = SPI_BITS_PER_WORD;
-    xfer[1].cs_change = 0;
+    xfer[1].cs_change = 1;
     xfer[1].delay_usecs = 0;
     xfer[1].speed_hz = speed_hz;
     xfer[1].bits_per_word = SPI_BITS_PER_WORD;
 	
+
+    // set up slave select pins
+    if(get_bb_model()==BB_BLUE){
+    	gpio_ss[0] = BLUE_SPI_PIN_6_SS1;
+    	gpio_ss[1] = BLUE_SPI_PIN_6_SS2;
+    }
+    else{
+    	gpio_ss[0] = CAPE_SPI_PIN_6_SS1;
+    	gpio_ss[1] = CAPE_SPI_PIN_6_SS2;
+    }
+
+    if(ss_mode==SS_MODE_AUTO){
+    	if(set_pinmux_mode(gpio_ss[slave-1], PINMUX_SPI)){
+    		printf("ERROR: failed to set slave select pin to SPI mode\n");
+    		return -1;
+    	}
+    }
+    else{
+    	set_pinmux_mode(gpio_ss[slave-1], PINMUX_GPIO);
+    	if(gpio_export(gpio_ss[slave-1])){
+    		printf("ERROR: failed to export gpio %d for manual slave select\n",\
+    														 gpio_ss[slave-1]);
+    		return -1;
+    	}
+    	manual_deselect_spi_slave(slave);
+    }
+
 	// all done
-	initialized = 1;
+	initialized[slave-1] = 1;
 	return 0;
 }
 
 /*******************************************************************************
-* int get_spi1_fd()
+* int get_spi_fd()
 *
 * Returns the file descriptor for spi1 once initialized.
 * Use this if you want to do your own reading and writing to the bus instead
 * of the basic functions defined here. If the bus has not been initialized, 
 * return -1
 *******************************************************************************/
-int get_spi1_fd(){
-	// sanity checks
-	if (initialized==0){
-		printf("ERROR: SPI1 not initialized yet\n");
-		return -1;
+int get_spi_fd(int slave){
+	switch(slave){
+	case 1:
+		if(initialized[0]==0){
+			printf("ERROR: SPI1 slave 1 not initialized yet\n");
+			return -1;
+		}
+		else return fd[0];
+	case 2:
+		if(initialized[1]==0){
+			printf("ERROR: SPI1 slave 2 not initialized yet\n");
+			return -1;
+		}
+		else return fd[1];
 	}
-	return fd;
+	
+	printf("ERROR: SPI Slave must be 1 or 2\n");
+	return -1;
 }
 
 /*******************************************************************************
-* @ int close_spi1()
+* @ int close_spi(int slave)
 *
 * Closes the file descriptor and sets initialized to 0.
 *******************************************************************************/
-int close_spi1(){
-	if(close(fd)) printf("failed to close spi1 file descriptor\n");
-	initialized = 0;
-	return 0;
+int close_spi(int slave){
+	switch(slave){
+	case 1:
+		manual_deselect_spi_slave(slave);
+		close(fd[0]);
+		initialized[0] = 0;
+		return 0;
+	case 2:
+		manual_deselect_spi_slave(slave);
+		close(fd[1]);
+		initialized[1] = 0;
+		return 0;
+	}
+	
+	printf("ERROR: SPI Slave must be 1 or 2\n");
+	return -1;
 }
 
 /*******************************************************************************
-* @ int select_spi1_slave(int slave)
+* @ int manual_select_spi1_slave(int slave)
 *
 * Selects a slave (1 or 2) by pulling the corresponding slave select pin
 * to ground. It also ensures the other slave is not selected.
 *******************************************************************************/
-int select_spi1_slave(int slave){
+int manual_select_spi_slave(int slave){
 	switch(slave){
 		case 1:
-			mmap_gpio_write(SPI1_SS2_GPIO_PIN, HIGH);
-			mmap_gpio_write(SPI1_SS1_GPIO_PIN, LOW);
+			mmap_gpio_write(gpio_ss[0], LOW);
+			mmap_gpio_write(gpio_ss[1], HIGH);
 			break;
 		case 2:
-			mmap_gpio_write(SPI1_SS1_GPIO_PIN, HIGH);
-			mmap_gpio_write(SPI1_SS2_GPIO_PIN, LOW);
+			mmap_gpio_write(gpio_ss[0], HIGH);
+			mmap_gpio_write(gpio_ss[1], LOW);
 			break;
 		default:
 			printf("SPI slave number must be 1 or 2\n");
 			return -1;
 	}
-	slave_selected = 1;
 	return 0;
 }	
 
 /*******************************************************************************
-* @ int deselect_spi1_slave(int slave)
+* @ int manual_deselect_spi_slave(int slave)
 *
 * Deselects a slave (1 or 2) by pulling the corresponding slave select pin
 * to to 3.3V.
 *******************************************************************************/
-int deselect_spi1_slave(int slave){
+int manual_deselect_spi_slave(int slave){
 	switch(slave){
 		case 1:
-			mmap_gpio_write(SPI1_SS1_GPIO_PIN, HIGH);
+			mmap_gpio_write(gpio_ss[0], HIGH);
 			break;
 		case 2:
-			mmap_gpio_write(SPI1_SS2_GPIO_PIN, HIGH);
+			mmap_gpio_write(gpio_ss[1], HIGH);
 			break;
 		default:
-			printf("SPI slave number must be 1 or 2\n");
+			printf("ERROR: SPI slave number must be 1 or 2\n");
 			return -1;
 	}
-	slave_selected = 0;
 	return 0;
 }	
 
 /*******************************************************************************
-* int spi1_send_bytes(char* data, int bytes)
+* int spi_send_bytes(char* data, int bytes, int slave)
 *
 * Like uart_send_bytes, this lets you send any byte sequence you like.
 *******************************************************************************/
-int spi1_send_bytes(char* data, int bytes){
+int spi_send_bytes(char* data, int bytes, int slave){
 	// sanity checks
-	if(initialized==0){
-		printf("ERROR: SPI1 not yet initialized\n");
+	if(slave!=1 && slave!=2){
+		printf("ERROR: SPI slave must be 1 or 2\n");
+		return -1;
+	}
+	if(initialized[slave-1]==0){
+		printf("ERROR: SPI slave %d not yet initialized\n", slave);
 		return -1;
 	} 
 	if(bytes<1){
 		printf("ERROR: spi_send_bytes, bytes to send must be >=1\n");
 		return -1;
 	}
-  
+
 	int ret;
 
-	// fill in ioctl zfer struct. speed and bits were already set in initialize
+	// fill in ioctl xfer struct. speed and bits were already set in initialize
 	xfer[0].rx_buf = 0;
 	xfer[0].tx_buf = (unsigned long) data;
 	xfer[0].len = bytes;
 	
 	// send
-	ret=ioctl(fd, SPI_IOC_MESSAGE(1), xfer);
+	ret = ioctl(fd[slave-1], SPI_IOC_MESSAGE(1), xfer);
 	if(ret<0){
 		printf("ERROR: SPI_IOC_MESSAGE_FAILED\n");
 		return -1;
@@ -217,30 +287,34 @@ int spi1_send_bytes(char* data, int bytes){
 }
 
 /*******************************************************************************
-* int spi1_read_bytes(char* data, int bytes)
+* int spi1_read_bytes(char* data, int bytes, int slave)
 *
 * Like uart_read_bytes, this lets you read a byte sequence without sending.
 *******************************************************************************/
-int spi1_read_bytes(char* data, int bytes){
+int spi1_read_bytes(char* data, int bytes, int slave){
 	// sanity checks
-	if(initialized==0){
-		printf("ERROR: SPI1 not yet initialized\n");
+	if(slave!=1 && slave!=2){
+		printf("ERROR: SPI slave must be 1 or 2\n");
+		return -1;
+	}
+	if(initialized[slave-1]==0){
+		printf("ERROR: SPI slave %d not yet initialized\n", slave);
 		return -1;
 	} 
 	if(bytes<1){
-		printf("ERROR: spi_send_bytes, bytes to send must be >=1\n");
+		printf("ERROR: spi_read_bytes, bytes to read must be >=1\n");
 		return -1;
 	}
 
 	int ret;
 
-	// fill in ioctl zfer struct. speed and bits were already set in initialize
+	// fill in ioctl xfer struct. speed and bits were already set in initialize
 	xfer[0].rx_buf = (unsigned long) data;;
 	xfer[0].tx_buf = 0;
 	xfer[0].len = bytes;
 	
 	// receive
-	ret=ioctl(fd, SPI_IOC_MESSAGE(1), xfer);
+	ret=ioctl(fd[slave-1], SPI_IOC_MESSAGE(1), xfer);
 	if(ret<0){
 		printf("ERROR: SPI_IOC_MESSAGE_FAILED\n");
 		return -1;
@@ -249,18 +323,23 @@ int spi1_read_bytes(char* data, int bytes){
 }
 
 /*******************************************************************************
-* @ int spi1_transfer(char* tx_data, int tx_bytes, char* rx_data)
+* @ int spi1_transfer(char* tx_data, int tx_bytes, char* rx_data, inst slave)
 *
 * This is a generic wrapper for the ioctl spi transfer function. It lets the
 * user send any sequence of bytes and read the response. The return value is
 * the number of bytes received or -1 on error.
 *******************************************************************************/
-int spi1_transfer(char* tx_data, int tx_bytes, char* rx_data){
+int spi1_transfer(char* tx_data, int tx_bytes, char* rx_data, int slave){
 	// sanity checks
-	if(initialized==0){
-		printf("ERROR: SPI1 not yet initialized\n");
+	if(slave!=1 && slave!=2){
+		printf("ERROR: SPI slave must be 1 or 2\n");
 		return -1;
-	} if(tx_bytes<1){
+	}
+	if(initialized[slave-1]==0){
+		printf("ERROR: SPI slave %d not yet initialized\n", slave);
+		return -1;
+	} 
+	if(tx_bytes<1){
 		printf("ERROR: spi1_transfer, bytes must be >=1\n");
 	}
 	
@@ -271,7 +350,7 @@ int spi1_transfer(char* tx_data, int tx_bytes, char* rx_data){
 	xfer[0].rx_buf = (unsigned long) rx_data;
 	xfer[0].len = tx_bytes;
 
-	ret=ioctl(fd, SPI_IOC_MESSAGE(1), xfer);
+	ret=ioctl(fd[slave-1], SPI_IOC_MESSAGE(1), xfer);
 	if(ret<0){
 		printf("SPI_IOC_MESSAGE_FAILED\n");
 		return -1;
@@ -281,17 +360,21 @@ int spi1_transfer(char* tx_data, int tx_bytes, char* rx_data){
 }
 
 /*******************************************************************************
-* int spi1_write_reg_byte(char reg_addr, char data)
+* int spi1_write_reg_byte(char reg_addr, char data, int slave)
 *
 * Used for writing a byte value to a register. This sends in order the address
 * and byte to be written. It also sets the MSB of the register to 1 which 
 * indicates a write operation on many ICs. If you do not want this particular 
 * functionality, use spi1_send_bytes() to send a byte string of your choosing.
 *******************************************************************************/
-int spi1_write_reg_byte(char reg_addr, char data){
+int spi1_write_reg_byte(char reg_addr, char data, int slave){
 	// sanity checks
-	if(initialized==0){
-		printf("ERROR: SPI1 not yet initialized\n");
+	if(slave!=1 && slave!=2){
+		printf("ERROR: SPI slave must be 1 or 2\n");
+		return -1;
+	}
+	if(initialized[slave-1]==0){
+		printf("ERROR: SPI slave %d not yet initialized\n", slave);
 		return -1;
 	} 
 	
@@ -305,7 +388,7 @@ int spi1_write_reg_byte(char reg_addr, char data){
 	xfer[0].len = 2;
 	
 	// send
-	if(ioctl(fd, SPI_IOC_MESSAGE(1), xfer)<0){
+	if(ioctl(fd[slave-1], SPI_IOC_MESSAGE(1), xfer)<0){
 		printf("ERROR: SPI_IOC_MESSAGE_FAILED\n");
 		return -1;
 	}
@@ -313,16 +396,20 @@ int spi1_write_reg_byte(char reg_addr, char data){
 }
 
 /*******************************************************************************
-* char spi1_read_reg_byte(char reg_addr)
+* char spi1_read_reg_byte(char reg_addr, int slave)
 *
 * Reads a single character located at address reg_addr. This is accomplished
 * by sending the reg_addr with the MSB set to 0 indicating a read on many
 * ICs. 
 *******************************************************************************/
-char spi1_read_reg_byte(char reg_addr){
+char spi1_read_reg_byte(char reg_addr, int slave){
 	// sanity checks
-	if(initialized==0){
-		printf("ERROR: SPI1 not yet initialized\n");
+	if(slave!=1 && slave!=2){
+		printf("ERROR: SPI slave must be 1 or 2\n");
+		return -1;
+	}
+	if(initialized[slave-1]==0){
+		printf("ERROR: SPI slave %d not yet initialized\n", slave);
 		return -1;
 	} 
 	
@@ -336,7 +423,7 @@ char spi1_read_reg_byte(char reg_addr){
 	xfer[0].rx_buf = (unsigned long) rx_buf;
 	xfer[0].len = 1;
 
-	if(ioctl(fd, SPI_IOC_MESSAGE(1), xfer)<0){
+	if(ioctl(fd[slave-1], SPI_IOC_MESSAGE(1), xfer)<0){
 		printf("SPI_IOC_MESSAGE_FAILED\n");
 		return -1;
 	}
@@ -344,18 +431,23 @@ char spi1_read_reg_byte(char reg_addr){
 }
 
 /*******************************************************************************
-* int spi1_read_reg_bytes(char reg_addr, char* data, int bytes)
+* int spi1_read_reg_bytes(char reg_addr, char* data, int bytes, int slave)
 *
 * Reads multiple bytes located at address reg_addr. This is accomplished
 * by sending the reg_addr with the MSB set to 0 indicating a read on many
 * ICs. 
 *******************************************************************************/
-int spi1_read_reg_bytes(char reg_addr, char* data, int bytes){
+int spi1_read_reg_bytes(char reg_addr, char* data, int bytes, int slave){
 	// sanity checks
-	if(initialized==0){
-		printf("ERROR: SPI1 not yet initialized\n");
+	if(slave!=1 && slave!=2){
+		printf("ERROR: SPI slave must be 1 or 2\n");
 		return -1;
-	} if(bytes<1){
+	}
+	if(initialized[slave-1]==0){
+		printf("ERROR: SPI slave %d not yet initialized\n", slave);
+		return -1;
+	} 
+	if(bytes<1){
 		printf("ERROR: spi1_read_reg_bytes, bytes must be >=1\n");
 	}
 
@@ -375,7 +467,7 @@ int spi1_read_reg_bytes(char reg_addr, char* data, int bytes){
 	xfer[1].rx_buf = (unsigned long) data;
 	xfer[1].len = bytes;
 
-	ret=ioctl(fd, SPI_IOC_MESSAGE(2), xfer);
+	ret=ioctl(fd[slave-1], SPI_IOC_MESSAGE(2), xfer);
 	if (ret<0){
 		printf("SPI_IOC_MESSAGE_FAILED\n");
 		return -1;

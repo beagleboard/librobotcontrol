@@ -162,9 +162,9 @@ int set_pinmux_mode(int pin, pinmux_mode_t mode){
 		break;
 
 	/***************************************************************************
-	* SPI_HEADER_PIN_6_SS1 is the same as BLUE_GP0_PIN_6
+	* CAPE_SPI_PIN_6_SS1 is the same as BLUE_GP0_PIN_6
 	***************************************************************************/
-	case SPI_HEADER_PIN_6_SS1:
+	case CAPE_SPI_PIN_6_SS1:
 		if( mode!=PINMUX_GPIO    	&& \
 			mode!=PINMUX_GPIO_PU 	&& \
 			mode!=PINMUX_GPIO_PD 	&& \
@@ -181,9 +181,9 @@ int set_pinmux_mode(int pin, pinmux_mode_t mode){
 		break;
 
 	/***************************************************************************
-	* SPI_HEADER_PIN_6_SS2  is the same as BLUE_GP0_PIN_4:
+	* CAPE_SPI_PIN_6_SS2  is the same as BLUE_GP0_PIN_4:
 	***************************************************************************/
-	case SPI_HEADER_PIN_6_SS2:
+	case CAPE_SPI_PIN_6_SS2:
 		if( mode!=PINMUX_GPIO    	&& \
 			mode!=PINMUX_GPIO_PU 	&& \
 			mode!=PINMUX_GPIO_PD ){
@@ -349,14 +349,6 @@ int set_default_pinmux(){
 
 	// bb blue available pinmux
 	if(get_bb_model()==BB_BLUE){
-		ret |= set_pinmux_mode(DSM2_PIN, PINMUX_UART);
-		ret |= set_pinmux_mode(GPS_HEADER_PIN_3, PINMUX_UART);
-		ret |= set_pinmux_mode(GPS_HEADER_PIN_4, PINMUX_UART);
-		ret |= set_pinmux_mode(UART1_HEADER_PIN_3, PINMUX_UART);
-		ret |= set_pinmux_mode(UART1_HEADER_PIN_4, PINMUX_UART);
-		ret |= set_pinmux_mode(SPI_HEADER_PIN_3, PINMUX_SPI);
-		ret |= set_pinmux_mode(SPI_HEADER_PIN_4, PINMUX_SPI);
-		ret |= set_pinmux_mode(SPI_HEADER_PIN_5, PINMUX_SPI);
 		ret |= set_pinmux_mode(BLUE_SPI_PIN_6_SS1, PINMUX_SPI);
 		ret |= set_pinmux_mode(BLUE_SPI_PIN_6_SS2, PINMUX_SPI);
 		ret |= set_pinmux_mode(BLUE_GP0_PIN_3, PINMUX_GPIO_PU);
@@ -370,17 +362,20 @@ int set_default_pinmux(){
 
 	// bb black and everything else
 	else{
-		ret |= set_pinmux_mode(DSM2_PIN, PINMUX_UART);
-		ret |= set_pinmux_mode(GPS_HEADER_PIN_3, PINMUX_UART);
-		ret |= set_pinmux_mode(GPS_HEADER_PIN_4, PINMUX_UART);
-		ret |= set_pinmux_mode(UART1_HEADER_PIN_3, PINMUX_UART);
-		ret |= set_pinmux_mode(UART1_HEADER_PIN_4, PINMUX_UART);
-		ret |= set_pinmux_mode(SPI_HEADER_PIN_3, PINMUX_SPI);
-		ret |= set_pinmux_mode(SPI_HEADER_PIN_4, PINMUX_SPI);
-		ret |= set_pinmux_mode(SPI_HEADER_PIN_5, PINMUX_SPI);
-		ret |= set_pinmux_mode(SPI_HEADER_PIN_6_SS1, PINMUX_SPI);
-		ret |= set_pinmux_mode(SPI_HEADER_PIN_6_SS2, PINMUX_GPIO);
+		ret |= set_pinmux_mode(CAPE_SPI_PIN_6_SS1, PINMUX_SPI);
+		ret |= set_pinmux_mode(CAPE_SPI_PIN_6_SS2, PINMUX_GPIO);
 	}
+
+	// shared pins
+	ret |= set_pinmux_mode(DSM_PIN, PINMUX_UART);
+	ret |= set_pinmux_mode(GPS_HEADER_PIN_3, PINMUX_UART);
+	ret |= set_pinmux_mode(GPS_HEADER_PIN_4, PINMUX_UART);
+	ret |= set_pinmux_mode(UART1_HEADER_PIN_3, PINMUX_UART);
+	ret |= set_pinmux_mode(UART1_HEADER_PIN_4, PINMUX_UART);
+	ret |= set_pinmux_mode(SPI_HEADER_PIN_3, PINMUX_SPI);
+	ret |= set_pinmux_mode(SPI_HEADER_PIN_4, PINMUX_SPI);
+	ret |= set_pinmux_mode(SPI_HEADER_PIN_5, PINMUX_SPI);
+
 
 	if(ret){
 		printf("WARNING: missing PINMUX driver\n");

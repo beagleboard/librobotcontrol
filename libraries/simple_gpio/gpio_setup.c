@@ -1,83 +1,109 @@
 
-
+#include <stdio.h>
 #include "../roboticscape-defs.h"
 #include "../roboticscape.h"
 
+
+int setup_output_pin(int pin, int val){
+
+	if(gpio_export(pin)){
+		printf("ERROR: Failed to export gpio pin %d\n", pin);
+		return -1;
+	}
+	if(gpio_set_dir(pin, OUTPUT_PIN)){
+		printf("ERROR: Failed to set gpio pin %d as output\n", pin);
+		return -1;
+	}
+	if(gpio_set_value(pin, val)){
+		printf("ERROR: Failed to set gpio pin %d value\n", pin);
+		return -1;
+	}
+	return 0;
+}
+
+int setup_input_pin(int pin){
+
+	if(gpio_export(pin)){
+		printf("ERROR: Failed to export gpio pin %d\n", pin);
+		return -1;
+	}
+	if(gpio_set_dir(pin, INPUT_PIN)){
+		printf("ERROR: Failed to set gpio pin %d as output\n", pin);
+		return -1;
+	}
+	return 0;
+}
+
+
 int configure_gpio_pins(){
 	int mdir1a, mdir2b;
+	int ret = 0;
 
-
-	// board_specific setup
+	// Blue-only setup
 	if(get_bb_model()==BB_BLUE){
 		mdir1a = MDIR1A_BLUE;
 		mdir2b = MDIR2B_BLUE;
+		ret |= setup_output_pin(BLUE_SPI_PIN_6_SS1, HIGH);
+		ret |= setup_output_pin(BLUE_SPI_PIN_6_SS2, HIGH);
+		ret |= setup_input_pin(BLUE_GP0_PIN_3);
+		ret |= setup_input_pin(BLUE_GP0_PIN_4);
+		ret |= setup_input_pin(BLUE_GP0_PIN_5);
+		ret |= setup_input_pin(BLUE_GP0_PIN_6);
+		ret |= setup_input_pin(BLUE_GP1_PIN_3);
+		ret |= setup_input_pin(BLUE_GP1_PIN_4);
 	}
+	// Cape-Only stuff
 	else{
 		mdir1a = MDIR1A;
 		mdir2b = MDIR2B;
+		ret |= setup_output_pin(CAPE_SPI_PIN_6_SS1, HIGH);
+		ret |= setup_output_pin(CAPE_SPI_PIN_6_SS2, HIGH);
 	}
 
+	// Shared Pins
+
 	// LEDs
-	if(gpio_export(RED_LED)) return -1;
-	if(gpio_set_dir(RED_LED, OUTPUT_PIN)) return -1;
-	if(gpio_set_value(RED_LED, LOW)) return -1;
-	gpio_export(GRN_LED);
-	gpio_set_dir(GRN_LED, OUTPUT_PIN);
+	ret |= setup_output_pin(RED_LED, LOW);
+	ret |= setup_output_pin(GRN_LED, LOW);
 
-	// motor
-	gpio_export(mdir1a);
-	gpio_set_dir(mdir1a, OUTPUT_PIN);
-	gpio_set_value(mdir1a, LOW);
-	gpio_export(MDIR1B);
-	gpio_set_dir(MDIR1B, OUTPUT_PIN);
-	gpio_set_value(MDIR1B, LOW);
-	gpio_export(MDIR2A);
-	gpio_set_dir(MDIR2A, OUTPUT_PIN);
-	gpio_set_value(MDIR2A, LOW);
-	gpio_export(mdir2b);
-	gpio_set_dir(mdir2b, OUTPUT_PIN);
-	gpio_set_value(mdir2b, LOW);
-	gpio_export(MDIR3A);
-	gpio_set_dir(MDIR3A, OUTPUT_PIN);
-	gpio_set_value(MDIR3A, LOW);
-	gpio_export(MDIR3B);
-	gpio_set_dir(MDIR3B, OUTPUT_PIN);
-	gpio_set_value(MDIR3B, LOW);
-	gpio_export(MDIR4A);
-	gpio_set_dir(MDIR4A, OUTPUT_PIN);
-	gpio_set_value(MDIR4A, LOW);
-	gpio_export(MDIR4B);
-	gpio_set_dir(MDIR4B, OUTPUT_PIN);
-	gpio_set_value(MDIR4B, LOW);
-	gpio_export(MOT_STBY);
-	gpio_set_dir(MOT_STBY, OUTPUT_PIN);
-	gpio_set_value(MOT_STBY, LOW);
-
-	// dsm2 pairing pin
-	gpio_export(DSM2_PIN);
-	gpio_set_dir(DSM2_PIN, OUTPUT_PIN);
-	gpio_set_value(DSM2_PIN, LOW);
-
+	// MOTOR Direction and Standby pins
+	ret |= setup_output_pin(mdir1a, LOW);
+	ret |= setup_output_pin(MDIR1B, LOW);
+	ret |= setup_output_pin(MDIR2A, LOW);
+	ret |= setup_output_pin(mdir2b, LOW);
+	ret |= setup_output_pin(MDIR3A, LOW);
+	ret |= setup_output_pin(MDIR3B, LOW);
+	ret |= setup_output_pin(MDIR4A, LOW);
+	ret |= setup_output_pin(MDIR4B, LOW);
+	ret |= setup_output_pin(MOT_STBY, LOW);
+	
+	// DSM
+	ret |= setup_output_pin(DSM_PIN, LOW);
+	
 	// servo power
-	gpio_export(SERVO_PWR);
-	gpio_set_dir(SERVO_PWR, OUTPUT_PIN);
-	gpio_set_value(SERVO_PWR, LOW);
-
-	// spi
-	gpio_export(SPI1_SS1_GPIO_PIN);
-	gpio_set_dir(SPI1_SS1_GPIO_PIN, OUTPUT_PIN);
-	gpio_set_value(SPI1_SS1_GPIO_PIN, HIGH);
-	gpio_export(SPI1_SS2_GPIO_PIN);
-	gpio_set_dir(SPI1_SS2_GPIO_PIN, OUTPUT_PIN);
-	gpio_set_value(SPI1_SS2_GPIO_PIN, HIGH);
+	ret |= setup_output_pin(SERVO_PWR, LOW);
 
 	// buttons
-	gpio_export(MODE_BTN);
-	gpio_set_dir(MODE_BTN, INPUT_PIN);
-	gpio_set_edge(MODE_BTN, EDGE_BOTH);  // Can be rising, falling or both
-	gpio_export(PAUSE_BTN);
-	gpio_set_dir(PAUSE_BTN, INPUT_PIN);
-	gpio_set_edge(PAUSE_BTN, EDGE_BOTH);  // Can be rising, falling or both
+	ret |= setup_input_pin(MODE_BTN); 
+	ret |= setup_input_pin(PAUSE_BTN);
+
+	// IMU
+	ret |= setup_input_pin(IMU_INTERRUPT_PIN);
+
+	// UART1, GPS, and SPI pins
+	ret |= setup_input_pin(GPS_HEADER_PIN_3); 
+	ret |= setup_input_pin(GPS_HEADER_PIN_4);
+	ret |= setup_input_pin(UART1_HEADER_PIN_3); 
+	ret |= setup_input_pin(UART1_HEADER_PIN_4);
+	ret |= setup_input_pin(SPI_HEADER_PIN_3);
+	ret |= setup_input_pin(SPI_HEADER_PIN_4);
+	ret |= setup_input_pin(SPI_HEADER_PIN_5);
+
+
+	if(ret){
+		printf("WARNING: Failed to configure all gpio pins\n");
+		return -1;
+	}
 
 	return 0;
 }

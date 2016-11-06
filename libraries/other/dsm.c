@@ -16,7 +16,7 @@
 //#define DEBUG
 //#define DEBUG_RAW
 
-#define MAX_dsm_CHANNELS 9
+#define MAX_DSM_CHANNELS 9
 #define PAUSE 115	//microseconds
 #define DEFAULT_MIN 1142
 #define DEFAULT_MAX 1858
@@ -29,9 +29,9 @@
 * Local Global Variables
 *******************************************************************************/
 int running;
-int rc_channels[MAX_dsm_CHANNELS];
-int rc_maxes[MAX_dsm_CHANNELS];
-int rc_mins[MAX_dsm_CHANNELS];
+int rc_channels[MAX_DSM_CHANNELS];
+int rc_maxes[MAX_DSM_CHANNELS];
+int rc_mins[MAX_DSM_CHANNELS];
 int num_channels; // actual number of channels being sent
 int resolution; // 10 or 11
 int new_dsm_flag;
@@ -63,8 +63,8 @@ int initialize_dsm(){
 	char file_path[100];
 
 	// construct a new file path string
-	strcpy (file_path, CONFIG_DIRECTORY);
-	strcat (file_path, dsm_CAL_FILE);
+	strcpy(file_path, CONFIG_DIRECTORY);
+	strcat(file_path, DSM_CAL_FILE);
 	
 	// open for reading
 	cal = fopen(file_path, "r");
@@ -76,16 +76,16 @@ int initialize_dsm(){
 		load_default_calibration();
 	}
 	else{
-		for(i=0;i<MAX_dsm_CHANNELS;i++){
+		for(i=0;i<MAX_DSM_CHANNELS;i++){
 			fscanf(cal,"%d %d", &rc_mins[i],&rc_maxes[i]);
 		}
 		#ifdef DEBUG
-		printf("dsm Calibration Loaded\n");
+		printf("DSM Calibration Loaded\n");
 		#endif
 		fclose(cal);
 	}
 
-	set_pinmux_mode(dsm_PIN, PINMUX_UART);
+	set_pinmux_mode(DSM_PIN, PINMUX_UART);
 	
 	
 	dsm_frame_rate = 0; // zero until mode is detected on first packet
@@ -117,8 +117,8 @@ int initialize_dsm(){
 * radio with default settings.
 *******************************************************************************/
 int get_dsm_ch_raw(int ch){
-	if(ch<1 || ch > MAX_dsm_CHANNELS){
-		printf("please enter a channel between 1 & %d",MAX_dsm_CHANNELS);
+	if(ch<1 || ch > MAX_DSM_CHANNELS){
+		printf("please enter a channel between 1 & %d",MAX_DSM_CHANNELS);
 		return -1;
 	}
 	else{
@@ -136,8 +136,8 @@ int get_dsm_ch_raw(int ch){
 * by this function are correct.
 *******************************************************************************/
 float get_dsm_ch_normalized(int ch){
-	if(ch<1 || ch > MAX_dsm_CHANNELS){
-		printf("please enter a channel between 1 & %d",MAX_dsm_CHANNELS);
+	if(ch<1 || ch > MAX_DSM_CHANNELS){
+		printf("please enter a channel between 1 & %d",MAX_DSM_CHANNELS);
 		return -1;
 	}
 	float range = rc_maxes[ch-1]-rc_mins[ch-1];
@@ -230,7 +230,7 @@ int ms_since_last_dsm_packet(){
 void* serial_parser(void *ptr){
 	char buf[DSM_PACKET_SIZE]; // large serial buffer to catch doubled up packets
 	int i, ret;
-	int new_values[MAX_dsm_CHANNELS]; // hold new values before committing
+	int new_values[MAX_DSM_CHANNELS]; // hold new values before committing
 	
 	flush_uart(DSM_UART_BUS); // flush the buffer
 	
@@ -290,7 +290,7 @@ void* serial_parser(void *ptr){
 				ch_id = (buf[i*2]&0b01111100)>>2;
 				// maximum 9 channels, if the channel id exceeds that,
 				// we must be reading it wrong, swap to 11ms mode
-				if((ch_id+1)>MAX_dsm_CHANNELS){
+				if((ch_id+1)>MAX_DSM_CHANNELS){
 					#ifdef DEBUG
 					printf("2048/11ms ");
 					#endif
@@ -468,17 +468,17 @@ int bind_dsm(){
 	}
 
 	// first set the pin as input (pulldown) to detect when receiver is attached
-	if(set_pinmux_mode(dsm_PIN, PINMUX_GPIO_PD)<0){
+	if(set_pinmux_mode(DSM_PIN, PINMUX_GPIO_PD)<0){
 		printf("ERROR: pinmux helper not enabled for P9_11\n");
 		return -1;
 	}
 
 	//export GPIO pin to userspace
-	if(gpio_export(dsm_PIN)){
+	if(gpio_export(DSM_PIN)){
 		printf("error exporting gpio pin\n");
 		return -1;
 	}
-	gpio_set_dir(dsm_PIN, INPUT_PIN);
+	gpio_set_dir(DSM_PIN, INPUT_PIN);
 	
 	// give user instructions
 	printf("\n\nYou must choose which DSM mode to request from your transmitter\n");
@@ -535,7 +535,7 @@ enter:
 	// wait for the receiver to be disconnected
 	value = 1;
 	while(value==1){ //pin will go low when disconnected
-		gpio_get_value(dsm_PIN, &value);
+		gpio_get_value(DSM_PIN, &value);
 		usleep(1000);
 	}
 	usleep(100000);
@@ -543,14 +543,14 @@ enter:
 	//wait for the receiver to be plugged in
 	//receiver will pull pin up when connected
 	while(value==0){ 
-		gpio_get_value(dsm_PIN, &value);
+		gpio_get_value(DSM_PIN, &value);
 		usleep(1000);
 	}
 	
 	// now set pin as output
-	gpio_set_dir(dsm_PIN, OUTPUT_PIN);
-	mmap_gpio_write(dsm_PIN, HIGH);
-	set_pinmux_mode(dsm_PIN, PINMUX_GPIO);
+	gpio_set_dir(DSM_PIN, OUTPUT_PIN);
+	mmap_gpio_write(DSM_PIN, HIGH);
+	set_pinmux_mode(DSM_PIN, PINMUX_GPIO);
 	
 	// wait as long as possible before sending pulses
 	// in case the user plugs in the receiver slowly at an angle
@@ -558,16 +558,16 @@ enter:
 	usleep(delay); 
 	
 	for(i=0; i<pulses; i++){
-		mmap_gpio_write(dsm_PIN, LOW);
+		mmap_gpio_write(DSM_PIN, LOW);
 		usleep(PAUSE);
-		mmap_gpio_write(dsm_PIN, HIGH);
+		mmap_gpio_write(DSM_PIN, HIGH);
 		usleep(PAUSE);
 	}
 	
 	usleep(1000000);
 
 	// swap pinmux from GPIO back to uart
-	set_pinmux_mode(dsm_PIN, PINMUX_UART);
+	set_pinmux_mode(DSM_PIN, PINMUX_UART);
 	
 	// all done
 	printf("\n\n\nYour receiver should now be blinking. If not try again.\n");
@@ -585,7 +585,7 @@ enter:
 *******************************************************************************/
 int load_default_calibration(){
 	int i;
-	for(i=0;i<MAX_dsm_CHANNELS;i++){
+	for(i=0;i<MAX_DSM_CHANNELS;i++){
 		rc_mins[i]=DEFAULT_MIN;
 		rc_maxes[i]=DEFAULT_MAX;
 	}
@@ -611,7 +611,7 @@ void *calibration_listen_func(void *params){
 	
 	//start limits at first value
 	int j;
-	for(j=0;j<MAX_dsm_CHANNELS;j++){
+	for(j=0;j<MAX_DSM_CHANNELS;j++){
 		rc_mins[j]=get_dsm_ch_raw(j+1);
 		rc_maxes[j]=get_dsm_ch_raw(j+1);
 	}
@@ -620,7 +620,7 @@ void *calibration_listen_func(void *params){
 	while(listening && get_state()!=EXITING){
 		printf("\r");
 		if (is_new_dsm_data()){
-			for(j=0;j<MAX_dsm_CHANNELS;j++){
+			for(j=0;j<MAX_DSM_CHANNELS;j++){
 				if(get_dsm_ch_raw(j+1) > 0){ //record only non-zero channels
 					if(get_dsm_ch_raw(j+1)>rc_maxes[j]){
 						rc_maxes[j] = get_dsm_ch_raw(j+1);
@@ -699,7 +699,7 @@ int calibrate_dsm_routine(){
 	// construct a new file path string
 	char file_path[100];
 	strcpy (file_path, CONFIG_DIRECTORY);
-	strcat (file_path, dsm_CAL_FILE);
+	strcat (file_path, DSM_CAL_FILE);
 	
 	// open for writing
 	FILE* cal;
@@ -718,7 +718,7 @@ int calibrate_dsm_routine(){
 	// if new data was captures for a channel, write data to cal file
 	// otherwise fill in defaults for unused channels in case
 	// a higher channel radio is used in the future with this cal file
-	for(i=0;i<MAX_dsm_CHANNELS;i++){
+	for(i=0;i<MAX_DSM_CHANNELS;i++){
 		if((rc_mins[i]==0) || (rc_mins[i]==rc_maxes[i])){
 			fprintf(cal, "%d %d\n",DEFAULT_MIN, DEFAULT_MAX);
 		}

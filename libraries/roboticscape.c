@@ -243,14 +243,14 @@ int cleanup_cape(){
 	set_led(GREEN,LOW);
 	set_led(RED,LOW);	
 	disable_motors();
-	deselect_spi1_slave(1);	
-	deselect_spi1_slave(2);	
+	manual_deselect_spi_slave(1);	
+	manual_deselect_spi_slave(2);	
 	disable_servo_power_rail();
 	
 	#ifdef DEBUG
-	printf("stopping dsm2 service\n");
+	printf("stopping dsm service\n");
 	#endif
-	stop_dsm2_service();	
+	stop_dsm_service();	
 	
 	#ifdef DEBUG
 	printf("deleting PID file\n");
