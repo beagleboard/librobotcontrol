@@ -61,14 +61,36 @@ int destroy_filter(d_filter_t* filter){
 }
 
 /*******************************************************************************
-* d_filter_t create_empty_filter()
+* d_filter_t create_empty_filter(int order)
 *
-* Returns an empty d_filter_t struct initialized to 0
+* Returns a working initialized d_filter_t with enough memory allocated for
+* the given order. However, all TF constants are set to zero ready to be
+* set by the user.
 *******************************************************************************/
-d_filter_t create_empty_filter(){
-	d_filter_t out;
-	memset(&out,0,sizeof(d_filter_t));
-	return out;
+d_filter_t create_empty_filter(int order){
+	d_filter_t filter;
+	if(order<1){
+		printf("ERROR: order must be >=1\n");
+		return filter;
+	}
+	filter.order = order;
+	filter.gain = 1;
+	filter.newest_input = 0;
+	filter.newest_output = 0;
+	filter.saturation_en = 0;
+	filter.saturation_min = 0;
+	filter.saturation_max = 0;
+	filter.saturation_flag = 0;
+	filter.soft_start_en = 0;
+	filter.soft_start_steps = 0;
+	filter.numerator   = create_vector(order+1);
+	filter.denominator = create_vector(order+1);
+	filter.in_buf 	   = create_ring_buf(order+1);
+	filter.out_buf     = create_ring_buf(order+1);
+	filter.initialized = 1;
+	filter.step = 0;
+	return filter;
+	
 }
 
 /*******************************************************************************
@@ -324,7 +346,7 @@ int print_filter_details(d_filter_t* filter){
 * 
 *******************************************************************************/
 d_filter_t multiply_filters(d_filter_t f1, d_filter_t f2){
-	d_filter_t out = create_empty_filter();
+	d_filter_t out;
 	if(f1.initialized!=1 || f2.initialized!=1){
 		printf("ERROR: filter not initialized\n");
 		return out;
@@ -369,7 +391,7 @@ d_filter_t multiply_filters(d_filter_t f1, d_filter_t f2){
 *******************************************************************************/
 d_filter_t C2DTustin(vector_t num, vector_t den, float dt, float w){
 	int i,j;
-	d_filter_t out = create_empty_filter();
+	d_filter_t out;
 	if(!num.initialized || !den.initialized){
 		printf("ERROR: vector not initialized yet\n");
 		return out;
