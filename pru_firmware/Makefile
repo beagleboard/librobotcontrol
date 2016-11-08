@@ -26,8 +26,8 @@ CLPRU=/usr/bin/clpru
 
 
 LINKER_COMMAND_FILE=./AM335x_PRU.cmd
-LIBS=--library=/opt/source/pru-software-support-package/lib/rpmsg_lib.lib
-INCLUDE=--include_path=/opt/source/pru-software-support-package/include --include_path=/opt/source/pru-software-support-package/include/am335x
+LIBS=--library=/usr/lib/ti/pru-software-support-package/lib/rpmsg_lib.lib
+INCLUDE=--include_path=/usr/lib/ti/pru-software-support-package/include --include_path=/usr/lib/ti/pru-software-support-package/include/am335x
 STACK_SIZE=0x100
 HEAP_SIZE=0x100
 
