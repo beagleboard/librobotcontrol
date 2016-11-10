@@ -24,10 +24,20 @@ PRU_CGT=/usr/share/ti/cgt-pru
 LNKPRU=/usr/bin/lnkpru
 CLPRU=/usr/bin/clpru
 
+# use the location of pru libraries as included with the BBB images if they exist
+# otherwise use the pru-software-support-package location
+ifneq ("$(wildcard /opt/source/pru-software-support-package/lib/rpmsg_lib.lib)","")
+LIBS=--library=/opt/source/pru-software-support-package/lib/rpmsg_lib.lib
+INCLUDE=--include_path=/opt/source/pru-software-support-package/include \
+--include_path=/opt/source/pru-software-support-package/include/am335x
+else
+LIBS=--library=/usr/lib/ti/pru-software-support-package/lib/rpmsg_lib.lib
+INCLUDE=--include_path=/usr/lib/ti/pru-software-support-package/include \
+--include_path=/usr/lib/ti/pru-software-support-package/include/am335x
+endif
+
 
 LINKER_COMMAND_FILE=./AM335x_PRU.cmd
-LIBS=--library=/usr/lib/ti/pru-software-support-package/lib/rpmsg_lib.lib
-INCLUDE=--include_path=/usr/lib/ti/pru-software-support-package/include --include_path=/usr/lib/ti/pru-software-support-package/include/am335x
 STACK_SIZE=0x100
 HEAP_SIZE=0x100
 
@@ -53,24 +63,24 @@ $(PRU1_FW): $(BIN_DIR)/main_pru1.object $(LINK_PRU1_FW)
 $(BIN_DIR)/main_pru0.object: main_pru0.c 
 	@mkdir -p $(BIN_DIR)
 	@echo 'CC	$<'
-	@$(CLPRU) --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
+	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
 
 
 $(BIN_DIR)/main_pru1.object: main_pru1.c
 	@mkdir -p $(BIN_DIR)
 	@echo 'CC	$<'
-	@$(CLPRU) --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
+	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
 
 
 $(BIN_DIR)/pru1-servo.object: pru1-servo.asm
 	@mkdir -p $(BIN_DIR)
 	@echo 'CC	$<'
-	@$(CLPRU) --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
+	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
 
 $(BIN_DIR)/pru0-encoder.object: pru0-encoder.asm
 	@mkdir -p $(BIN_DIR)
 	@echo 'CC	$<'
-	@$(CLPRU) --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
+	@$(CLPRU) $(INCLUDE) $(CFLAGS) -fe $@ $<
 
 
 
