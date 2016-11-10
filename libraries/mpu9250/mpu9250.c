@@ -2575,16 +2575,16 @@ int calibrate_mag_routine(){
  	destroy_matrix(&A); // empty memory, we are done with A
  	
  	// do some sanity checks to make sure data is reasonable
- 	if(fabs(center.data[0])>70 || fabs(center.data[1])>70 || \
- 											fabs(center.data[2])>70){
+ 	if(fabs(center.data[0])>200 || fabs(center.data[1])>200 || \
+ 											fabs(center.data[2])>200){
  		printf("ERROR: center of fitted ellipsoid out of bounds\n");
  		destroy_vector(&center);
  		destroy_vector(&lengths);
  		return -1;
  	}
- 	if(lengths.data[0]>140 || lengths.data[0]<5 || \
- 	   lengths.data[1]>140 || lengths.data[1]<5 || \
- 	   lengths.data[2]>140 || lengths.data[2]<5){
+ 	if(lengths.data[0]>200 || lengths.data[0]<5 || \
+ 	   lengths.data[1]>200 || lengths.data[1]<5 || \
+ 	   lengths.data[2]>200 || lengths.data[2]<5){
  		printf("ERROR: length of fitted ellipsoid out of bounds\n");
  		destroy_vector(&center);
  		destroy_vector(&lengths);
