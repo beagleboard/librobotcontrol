@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h> // for memset
-
+#include <stdlib.h>
 
 /*******************************************************************************
 * d_filter_t create_filter(int order, float dt, float* num, float* den)
@@ -503,13 +503,13 @@ d_filter_t create_butterworth_highpass(int order, float dt, float wc){
 
 
 /*******************************************************************************
-* d_ftiler_t create_moving_average(int samples)
+* d_filter_t create_moving_average(int samples)
 *
 * Makes a FIR moving average filter that averages over 'samples' which must be
 * greater than or equal to 2 otherwise no averaging would be performed.
 *******************************************************************************/
-d_ftiler_t create_moving_average(int samples){
-	dfilter_t filter;
+d_filter_t create_moving_average(int samples){
+	d_filter_t filter;
 	if(samples<2){
 		printf("ERROR: moving average samples must be >= 2\n");
 		return filter;
@@ -519,7 +519,7 @@ d_ftiler_t create_moving_average(int samples){
 	float* den = (float*)calloc(samples, sizeof(float));
 
 	int i;
-	for(i=0,i<samples,i++)   num[i] = 1.0 / (float)samples;
+	for(i=0;i<samples;i++)   num[i] = 1.0 / (float)samples;
 	
 	filter = create_filter(samples, 0, num, den);
 	return filter;

@@ -1242,7 +1242,7 @@ d_filter_t create_first_order_lowpass(float dt, float time_constant);
 d_filter_t create_first_order_highpass(float dt, float time_constant);
 d_filter_t create_butterworth_lowpass(int order, float dt, float wc);
 d_filter_t create_butterworth_highpass(int order, float dt, float wc);
-d_ftiler_t create_moving_average(int samples);
+d_filter_t create_moving_average(int samples);
 d_filter_t create_integrator(float dt);
 d_filter_t create_double_integrator(float dt);
 d_filter_t create_pid(float kp, float ki, float kd, float Tf, float dt);
