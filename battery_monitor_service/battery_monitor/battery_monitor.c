@@ -23,8 +23,8 @@
 #define V_CHG_DETECT  	4.15 // above this assume finished charging
 
 // filter
-#define LOOP_SLEEP_US 300000 		// 2hz sample
-#define FITLER_SAMPLES 		8		// average over 6 samples, 3 seconds
+#define LOOP_SLEEP_US 		300000 	// 2hz sample
+#define FITLER_SAMPLES 		6		// average over 6 samples, 3 seconds
 #define STD_DEV_TOLERANCE 	0.04 	// above 0.1 definitely charging
 
 // functions
@@ -212,7 +212,9 @@ int main(int argc, char *argv[]){
 		// illuminate LEDs properly if not charging
 		else if(num_cells==0) illuminate_leds(0);
 		// turn off LEDs if obviously 12v power supply
-		else if(v_jack>11.5 && v_jack<12.5)	illuminate_leds(0);
+		else if(num_cells!=2 && v_jack>11.5 && v_jack<12.5){
+			illuminate_leds(0);
+		}	
 		// normal battery discharging
 		else if(cell_voltage<CELL_DIS)	illuminate_leds(0);
 		else if(cell_voltage>CELL_FULL) illuminate_leds(4);
