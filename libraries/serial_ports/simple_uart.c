@@ -119,9 +119,9 @@ int initialize_uart(int bus, int baudrate, float timeout_s){
 	close_uart(bus);
 	
 	// open file descriptor for blocking reads
-	if ((fd[bus] = open(paths[bus], O_RDWR | O_NOCTTY)) < 0) {
+	if ((fd[bus] = open(paths[bus], O_RDWR | O_NOCTTY | O_NDELAY)) < 0) {
 		printf("error opening uart%d in /dev/\n", bus);
-		printf("device tree overlay probably isn't loaded\n");
+		printf("device tree probably isn't loaded\n");
 		return -1;
 	}
 	
@@ -147,15 +147,17 @@ int initialize_uart(int bus, int baudrate, float timeout_s){
     config.c_cflag |= CLOCAL;	// ignore modem status lines
 	
 	// convert float timeout in seconds to int timeout in tenths of a second
-    config.c_cc[VTIME] = (int)(timeout_s*10)+1;
+	int tenths = (timeout_s*10);
+	printf("tenths: %d\n", tenths);
 
     //config.c_cc[VTIME]=0;
 	// if VTIME>0 & VMIN>0, read() will return when either the requested number
 	// of bytes are ready or when VMIN bytes are ready, whichever is smaller.
 	// since we set VMIN to the size of the buffer, read() should always return
 	// when the user's requested number of bytes are ready.
-	//config.c_cc[VMIN]=MAX_READ_LEN; //
-	config.c_cc[VMIN] = 0;
+	config.c_cc[VMIN]=MAX_READ_LEN;
+	//config.c_cc[VMIN] = 0;
+	config.c_cc[VTIME] = tenths+1;
 	
 	if(cfsetispeed(&config, speed) < 0) {
 		printf("ERROR: cannot set uart%d baud rate\n", bus);
@@ -173,6 +175,9 @@ int initialize_uart(int bus, int baudrate, float timeout_s){
 		return -1;
 	}
 	tcflush(fd[bus],TCIOFLUSH);
+
+	// turn off the FNDELAY flag
+	fcntl(fd[bus], F_SETFL, 0);
 	
 	initialized[bus] = 1;
 	bus_timeout_s[bus]=timeout_s;
@@ -308,7 +313,7 @@ int uart_send_byte(int bus, char data){
 * 128bytes, we run a loop instead.
 *******************************************************************************/
 int uart_read_bytes(int bus, int bytes, char* buf){
-	int bytes_to_read;
+	int bytes_to_read, ret;
 	// sanity checks
 	if(bus<MIN_BUS || bus>MAX_BUS){
 		printf("ERROR: uart bus must be between %d & %d\n", MIN_BUS, MAX_BUS);
@@ -322,16 +327,19 @@ int uart_read_bytes(int bus, int bytes, char* buf){
 		printf("ERROR: uart%d must be initialized first\n", bus);
 		return -1;
 	}
-	if(bytes<=MAX_READ_LEN){
-		// small read, return in one read() call
-		// this uses built-in timeout instead of select()
-		return read(fd[bus], buf, bytes);
-	}
+	
+	// // a single call to 'read' just isn't reliable, don't do it
+	// if(bytes<=MAX_READ_LEN){
+	// 	// small read, return in one read() call
+	// 	// this uses built-in timeout instead of select()
+	// 	ret = read(fd[bus], buf, bytes);
+	// 	return ret;
+	// }
 
 	// any read under 128 bytes should have returned by now.
 	// everything below this line is for longer extended reads >128 bytes
 	
-	int ret; // holder for return values
+	
 	fd_set set; // for select()
 	struct timeval timeout;
 	int bytes_read; // number of bytes read so far

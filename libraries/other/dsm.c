@@ -103,6 +103,8 @@ int initialize_dsm(){
 	#ifdef DEBUG
 	printf("dsm Thread Started\n");
 	#endif
+
+	usleep(10000); // let thread start
 	return 0;
 }
 
@@ -232,23 +234,20 @@ void* serial_parser(void *ptr){
 	int i, ret;
 	int new_values[MAX_DSM_CHANNELS]; // hold new values before committing
 	
-	flush_uart(DSM_UART_BUS); // flush the buffer
-	
 	// running will become 0 when stop_dsm_service() is called
 	// mostly likely that will be called by cleanup_cape()
 	while(running && get_state()!=EXITING){
-		memset(&buf, 0, sizeof(buf)); // clear buffer
-		
+
 		// read the buffer and decide what to do
-		ret = uart_read_bytes(DSM_UART_BUS, DSM_PACKET_SIZE+1, buf);
+		memset(&buf, 0, sizeof(buf)); // clear buffer
+		flush_uart(DSM_UART_BUS); // flush first
+		ret = uart_read_bytes(DSM_UART_BUS, DSM_PACKET_SIZE, buf);
 		
 		#ifdef DEBUG_RAW
 		printf("ret=%d : ", ret);
-		for(i=0; i<(ret/2); i++){
-			printf(byte_to_binary(buf[i*2]));
+		for(i=0; i<ret; i++){
+			printf(byte_to_binary(buf[i]));
 			printf(" ");
-			printf(byte_to_binary(buf[(i*2)+1]));
-			printf("   ");
 		}
 		printf("\n");
 		#endif
@@ -259,12 +258,13 @@ void* serial_parser(void *ptr){
 			goto end;
 		}
 		else if(ret==0){//timeout
+			#ifdef DEBUG_RAW
+			printf("read timeout\n");
+			#endif
 			is_dsm_active_flag=0; // indicate connection is no longer active
 			goto end;
 		}
 		else if (ret>0 && ret<DSM_PACKET_SIZE){ // partial packet
-			// try to get back in sync
-			flush_uart(DSM_UART_BUS); // flush the buffer
 			goto end;
 		}
 		
@@ -335,7 +335,7 @@ read_packet:
 				printf("%d %d  ",ch_id,value);
 				#endif
 				
-				if((ch_id+1)>9){
+				if((ch_id+1)>MAX_DSM_CHANNELS){
 					#ifdef DEBUG
 					printf("error: bad channel id\n");
 					#endif
@@ -386,7 +386,6 @@ read_packet:
 		#ifdef DEBUG
 		printf("\n");
 		#endif
-		
 end: ;
 
 	}
@@ -401,8 +400,8 @@ end: ;
 *******************************************************************************/
 int stop_dsm_service(){
 	int ret = 0;
-	
-	if (running){
+
+	//if(running){
 		running = 0; // this tells serial_parser_thread loop to stop
 		// allow up to 0.3 seconds for thread cleanup
 		timespec thread_timeout;
@@ -415,7 +414,11 @@ int stop_dsm_service(){
 			printf("WARNING: dsm serial_parser_thread exit timeout\n");
 			ret = -1;
 		}
-	}
+		#ifdef DEBUG_RAW
+		printf("DSM thread exited successfully\n");
+		#endif
+
+	//}
 	
 	running = 0;
 	return ret;
@@ -483,11 +486,11 @@ int bind_dsm(){
 	printf("We suggest option 1 for 6-channel dsm radios,\n");
 	printf("and option 4 for 7-9 channel DSMX radios\n");
 	printf("\n");
-	printf("1: Spektrum  dsm 10-bit 22ms framerate\n");
-	printf("2: Spektrum  dsm 11-bit 11ms framerate\n"); 
+	printf("1: Spektrum  DSM2 10-bit 22ms framerate\n");
+	printf("2: Spektrum  DSM2 11-bit 11ms framerate\n"); 
 	printf("3: Spektrum  DSMX 10-bit 22ms framerate\n"); 
 	printf("4: Spektrum  DSMX 11-bit 11ms framerate\n"); 
-	printf("5: Orange/JR dsm 10-bit 22ms framerate\n");
+	printf("5: Orange/JR DSM2 10-bit 22ms framerate\n");
 	printf("\n"); 
 	printf("Enter mode 1-5: ");
 	

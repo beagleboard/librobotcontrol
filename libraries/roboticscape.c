@@ -5,7 +5,7 @@
 * however it contains the majority of the core components.
 *******************************************************************************/
 
-//#define DEBUG
+define DEBUG
 
 #include "roboticscape-usefulincludes.h"
 #include "roboticscape.h"
@@ -263,6 +263,10 @@ int cleanup_cape(){
 		fclose(fd);
 		remove(PID_FILE);
 	}
+
+	#ifdef DEBUG
+	printf("end of cleanup_cape\n");
+	#endif
 	return 0;
 }
 

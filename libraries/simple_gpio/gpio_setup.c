@@ -86,6 +86,8 @@ int configure_gpio_pins(){
 	// buttons
 	ret |= setup_input_pin(MODE_BTN); 
 	ret |= setup_input_pin(PAUSE_BTN);
+	gpio_set_edge(MODE_BTN, EDGE_BOTH);
+	gpio_set_edge(PAUSE_BTN, EDGE_BOTH);
 
 	// IMU
 	ret |= setup_input_pin(IMU_INTERRUPT_PIN);
