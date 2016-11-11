@@ -14,35 +14,46 @@
 #define BATTPIDFILE	"/var/run/battery_monitor.pid"
 
 // Critical Max voltages of packs used to detect number of cells in pack
-#define CELL_MAX			4.25 // set higher than actual to detect num cells
-#define VOLTAGE_FULL		3.9	 // minimum V to consider battery full
-#define VOLTAGE_75			3.8	
-#define VOLTAGE_50			3.55
-#define VOLTAGE_25			3.1
-#define VOLTAGE_DISCONNECT	2	 // Threshold for detecting disconnected battery
-#define VOLTAGE_CHG_DETECT  4.15
-int running;
+#define CELL_MAX		4.25 // set higher than actual to detect num cells
+#define CELL_FULL		3.90 // minimum V to consider battery full
+#define CELL_75			3.80 // minimum V to consider battery 75%
+#define CELL_50			3.60 // minimum V to consider battery 50%
+#define CELL_25			3.25 // minimum V to consider battery 25%
+#define CELL_DIS		2.70 // Threshold for detecting disconnected battery
+#define V_CHG_DETECT  	4.15 // above this assume finished charging
 
+// filter
+#define LOOP_SLEEP_US 300000 		// 2hz sample
+#define FITLER_SAMPLES 		8		// average over 6 samples, 3 seconds
+#define STD_DEV_TOLERANCE 	0.04 	// above 0.1 definitely charging
+
+// functions
 void illuminate_leds(int i);
 int kill_existing_instance();
 void shutdown_signal_handler(int signo);
-
 
 // gpio designation for led 2 is a global variable
 // the rest are #defines but since led 2 is different on the blue
 // we must make it variable
 int batt_led_2;
+int running;
+
 
 // main() takes only one optional argument: -k (kill)
 int main(int argc, char *argv[]){
 	FILE* fd;
-	float pack_voltage;	// 2S pack voltage on JST XH 2S balance connector
-	float jack_voltage;	// could be dc power supply or another battery
+	float v_pack;	// 2S pack voltage on JST XH 2S balance connector
+	float v_jack;	// could be dc power supply or another battery
 	float cell_voltage;	// cell voltage from either 2S or external pack
 	int toggle = 0;
 	int printing = 0;
-	int num_cells, chg_leds, charging;
-	int c;
+	int num_cells = 0;
+	int chg_leds = 0;
+	int charging = 0;
+	int pack_connected = 0;
+	int c, i;
+	float stddev;
+	d_filter_t filterB, filterJ; // battery and jack filters
 
 	// parse arguments to check for kill mode
 	opterr = 0;
@@ -98,6 +109,20 @@ int main(int argc, char *argv[]){
 	// enable adc
 	initialize_mmap_adc();
 	initialize_mmap_gpio();
+
+	// start filters
+	v_pack = get_battery_voltage();
+	filterB = create_moving_average(FITLER_SAMPLES);
+	prefill_filter_outputs(&filterB, v_pack);
+	prefill_filter_inputs(&filterB, v_pack);
+	v_jack = get_dc_jack_voltage();
+	filterJ = create_moving_average(FITLER_SAMPLES);
+	prefill_filter_outputs(&filterJ, v_jack);
+	prefill_filter_inputs(&filterJ, v_jack);
+
+	// vector for standard deviation check
+	vector_t vec = create_vector(FITLER_SAMPLES);
+		
 	
 	// first decide if the user has called this from a terminal
 	// or as a startup process
@@ -111,71 +136,99 @@ int main(int argc, char *argv[]){
 	while(running){
 		charging = 0;
 		// read in the voltage of the 2S pack and DC jack
-		pack_voltage = get_battery_voltage();
-		jack_voltage = get_dc_jack_voltage();
+		v_pack = march_filter(&filterB, get_battery_voltage());
+		v_jack = march_filter(&filterJ, get_dc_jack_voltage());
 
-		if(pack_voltage==-1 || jack_voltage==-1){
+		if(v_pack==-1 || v_jack==-1){
 			printf("can't read ADC voltages\n");
 			return -1;
 		}
 		
-		// check if a pack is on the 2S balance connector and if it's charging
-		if(pack_voltage>(2*VOLTAGE_DISCONNECT)){
-			cell_voltage = pack_voltage/2;
-			if(jack_voltage>10.0 && cell_voltage<VOLTAGE_CHG_DETECT){
-				charging = 1;
+		// find standard deviation of battery signal to determine
+		// if a 2S pack is connected or not
+		if(v_pack>(2*CELL_DIS)){
+			for(i=0; i<FITLER_SAMPLES; i++){
+				vec.data[i]=filterB.in_buf.data[i];
+			}
+			stddev=standard_deviation(vec);
+			//printf("stddev: %f\n", stddev);
+		}
+
+		// check if 2s pack if connected
+		if(v_pack>(2*CELL_DIS) && stddev<STD_DEV_TOLERANCE){
+			pack_connected = 1;
+			cell_voltage = v_pack/2;
+			num_cells = 2;
+		}
+		else{
+			pack_connected = 0;
+		}
+
+		// check charging condition
+		if(pack_connected && v_jack>10.0 && cell_voltage<V_CHG_DETECT){
+			charging = 1;
+		}
+		else{
+			charging = 0;
+		}
+			
+		// no 2S pack on the White 3-pin connector, check for dc jack batteries
+		if(!pack_connected){
+			// check 4S condition
+			if(v_jack>CELL_DIS*4 && v_jack<CELL_MAX*4){
+				num_cells = 4;
+				cell_voltage = v_jack/4;
+			}
+			// check for 3S condition
+			else if(v_jack>CELL_DIS*3 && v_jack<CELL_MAX*3){
+				num_cells = 3;
+				cell_voltage = v_jack/3;
+			}
+			// check for 2S condition
+			else if(v_jack>CELL_DIS*2 && v_jack<CELL_MAX*2){ 
+				num_cells = 2;
+				cell_voltage = v_jack/2;
+			}
+			// no pack connected
+			else {
+				cell_voltage = 0;
+				num_cells = 0;
 			}
 		}
 		
-		// no 2S pack on the White 3-pin connector, check for dc jack
-		else{
-			if (jack_voltage>CELL_MAX*4){
-				printf("Voltage too High, use 2S-4S pack\n");
-				cell_voltage = 0;
-			}
-			else if(jack_voltage>CELL_MAX*3){ // check for 4S condition
-				cell_voltage = jack_voltage/4;
-			}
-			else if(jack_voltage>CELL_MAX*2){ // check for 3S condition
-				num_cells = 3;
-			}
-			else if(jack_voltage>CELL_MAX*1){ // check for 2S condition
-				num_cells = 2;
-			}
-			else {
-				cell_voltage = 0;
-			}
+		// done sensing, start outputting
+		if(printing){
+			printf("\r %0.2fV   %0.2fV     %d     %0.2fV   ", \
+									v_pack, v_jack, num_cells, cell_voltage);
+			fflush(stdout);
 		}
-	
+
 		// if charging, blink in a charging pattern
 		if(charging){
 			chg_leds += 1;
 			if(chg_leds>4) chg_leds=0;
 			illuminate_leds(chg_leds);
-			goto END;
 		}
-		
-		// now illuminate LEDs properly while discharging
-		if(cell_voltage<VOLTAGE_DISCONNECT) illuminate_leds(0);
-		else if(cell_voltage>VOLTAGE_FULL) 	illuminate_leds(4);
-		else if(cell_voltage>VOLTAGE_75) 	illuminate_leds(3);
-		else if(cell_voltage>VOLTAGE_50) 	illuminate_leds(2);
-		else if(cell_voltage>VOLTAGE_25) 	illuminate_leds(1);
+		// illuminate LEDs properly if not charging
+		else if(num_cells==0) illuminate_leds(0);
+		// turn off LEDs if obviously 12v power supply
+		else if(v_jack>11.5 && v_jack<12.5)	illuminate_leds(0);
+		// normal battery discharging
+		else if(cell_voltage<CELL_DIS)	illuminate_leds(0);
+		else if(cell_voltage>CELL_FULL) illuminate_leds(4);
+		else if(cell_voltage>CELL_75) 	illuminate_leds(3);
+		else if(cell_voltage>CELL_50) 	illuminate_leds(2);
+		else if(cell_voltage>CELL_25) 	illuminate_leds(1);
+		// battery is extremely low, blink all 4
 		else{
-			// if we've gotten here, battery is extremely low, blink all 4
 			if(toggle) toggle=0;
 			else toggle=4;
 			illuminate_leds(toggle);
 		}
 		
-		if(printing){
-			printf("\r %0.2fV   %0.2fV     %d     %0.2fV   ", \
-				pack_voltage, jack_voltage, num_cells, cell_voltage);
-			fflush(stdout);
-		}
-END:		
-		//check periodically
-		usleep(500000);
+
+		// sleepy time
+		usleep(LOOP_SLEEP_US);
 	}
 
 	// exit
@@ -284,6 +337,7 @@ void illuminate_leds(int i){
 		break;
 	default:
 		printf("can only illuminate between 0 and 4 leds\n");
+		printf("attempting %d\n", i);
 		break;
 	}
 	return;

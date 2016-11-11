@@ -519,9 +519,17 @@ d_filter_t create_moving_average(int samples){
 	float* den = (float*)calloc(samples, sizeof(float));
 
 	int i;
-	for(i=0;i<samples;i++)   num[i] = 1.0 / (float)samples;
-	
-	filter = create_filter(samples, 0, num, den);
+	for(i=0;i<samples;i++){
+		num[i] = 1.0 / samples;
+		den[i] = 0.0;
+	}
+
+	den[0] = 1.0;
+	filter = create_filter(samples-1, 0, num, den);
+
+	free(num);
+	free(den);
+
 	return filter;
 }
 

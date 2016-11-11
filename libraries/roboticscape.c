@@ -854,7 +854,7 @@ int set_encoder_pos(int ch, int val){
 * this accounts for the voltage divider ont he cape
 *******************************************************************************/
 float get_battery_voltage(){
-	float v = (get_adc_volt(LIPO_ADC_CH)*V_DIV_RATIO)-LIPO_OFFSET; 
+	float v = (get_adc_volt(LIPO_ADC_CH)*V_DIV_RATIO)+LIPO_OFFSET; 
 	if(v<0.3) v = 0.0;
 	return v;
 }
@@ -866,7 +866,7 @@ float get_battery_voltage(){
 * this accounts for the voltage divider ont he cape
 *******************************************************************************/
 float get_dc_jack_voltage(){
-	float v = (get_adc_volt(DC_JACK_ADC_CH)*V_DIV_RATIO)-DC_JACK_OFFSET; 
+	float v = (get_adc_volt(DC_JACK_ADC_CH)*V_DIV_RATIO)+DC_JACK_OFFSET; 
 	if(v<0.3) v = 0.0;
 	return v;
 }
