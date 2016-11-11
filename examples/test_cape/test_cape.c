@@ -10,15 +10,16 @@
 #include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
-fail_test();
-pass_test();
+void fail_test();
+void pass_test();
 
-int passes, fails;
+int num_passes, num_fails;
 
 // main() has a brief setup and starts one background thread.
 // then it enters one big while loop for testing multiple capes.
 int main(){
 	int ret, i, chg_pass;
+	float v;
 
 	// use defaults for now, except also enable magnetometer.
 	imu_data_t data; 
@@ -45,7 +46,18 @@ int main(){
 	while(get_state()!=EXITING){
 
 		// make sure 12V DC supply is disconnected
-		printf("Waiting for new cape and DC power supply\n");
+		printf("Waiting to remove power supply\n");
+		while(get_dc_jack_voltage()>1.0){
+			if(get_state()==EXITING) goto END;
+			usleep(10000);
+		}
+		set_led(RED,OFF);
+		set_led(GREEN,OFF);
+		printf("DC power removed\n");
+
+
+		// make sure 12V DC supply is connected
+		printf("\n\n\nWaiting for new cape and DC power supply\n");
 		while(get_dc_jack_voltage()<10.0){
 			if(get_state()==EXITING) goto END;
 			usleep(10000);
@@ -59,30 +71,30 @@ int main(){
 		ret = initialize_imu(&data, conf);
 		power_off_imu();
 		if(ret<0){
-			printf("FAILED	MPU9250 IMU\n");
+			printf("failed:	mpu9250 imu\n");
 			fail_test();
 			continue; // go to beginning to test next cape
 		}
-		printf("PASSED	MPU9250 IMU\n");
+		printf("passed:	mpu9250 imu\n");
 
 
 		// test barometer
 		ret = initialize_barometer(BMP_OVERSAMPLE_16,BMP_FILTER_OFF);
 		power_off_barometer();
 		if(ret<0){
-			printf("FAILED	BMP280 BAROMETER\n");
+			printf("failed:	bmp280 barometer\n");
 			fail_test();
 			continue; // go to beginning to test next cape
 		}
-		printf("PASSED	BMP280 BAROMETER\n");
+		printf("passed:	bmp280 barometer\n");
 
 
 		// check charger by checking every half second for 2.5 seconds 
 		// for the right voltage on the batt line
 		chg_pass = 0;
 		for(i=0; i<5; i++){
-			float volt = get_dc_jack_voltage();
-			if(volt<8.7 && volt>6.0){
+			v = get_battery_voltage();
+			if(v<8.4 && v>7.4){
 				chg_pass = 1;
 				break;
 			} 
@@ -91,14 +103,16 @@ int main(){
 		}
 		
 		if(!chg_pass){
-			printf("FAILED	CHARGER TEST\n");
+			printf("failed:	charger\n");
 			fail_test();
 			continue;
 		}
+		printf("passed: charger\n");
 
-		
-		// END OF TESTING THIS CAPE, PASSED!!!
+
+		// ALL DONE!!!
 		pass_test();
+
 	} // end while(get_state()!= EXITING)
 
 		
