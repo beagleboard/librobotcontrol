@@ -233,20 +233,155 @@ void* serial_parser(void *ptr){
 	char buf[DSM_PACKET_SIZE]; // large serial buffer to catch doubled up packets
 	int i, ret, available;
 	int new_values[MAX_DSM_CHANNELS]; // hold new values before committing
+	int detection_packets_left; // use first 4 packets just for detection
+	unsigned char ch_id;
+	int16_t value;
+	int is_complete;
+	unsigned char max_channel_id_1024 = 0; // max channel assuming 1024 decoding
+	unsigned char max_channel_id_2048 = 0; // max channel assuming 2048 decoding
+	char channels_detected_1024[MAX_DSM_CHANNELS];
+	char channels_detected_2048[MAX_DSM_CHANNELS];
+	memset(channels_detected_1024,0,MAX_DSM_CHANNELS);
+	memset(channels_detected_2048,0,MAX_DSM_CHANNELS);
+
 	
+
+
+	/***************************************************************************
+	* First packets that come in are read just to detect resolution and channels
+	* start assuming 1024 bit resolution, if any of the first 4 packets appear
+	* to break 1024 mode then swap to 2048
+	***************************************************************************/
+DETECTION_START:
 	flush_uart(DSM_UART_BUS); // flush first
-
-	// running will become 0 when stop_dsm_service() is called
-	// mostly likely that will be called by cleanup_cape()
-	while(running && get_state()!=EXITING){
-
+	detection_packets_left = 4;
+	while(detection_packets_left>0 && running && get_state()!=EXITING){
+		usleep(5000);
 		available = uart_bytes_available(DSM_UART_BUS);
 
 		// nothing yet, go back to sleep
-		if(available == 0) goto end;
+		if(available == 0) continue;
 		// halfway through packet, sleep for 1ms
 		if(available <  DSM_PACKET_SIZE){
-			usleep(10000);
+			usleep(1000);
+			available = uart_bytes_available(DSM_UART_BUS);
+		}
+		// read or flush depending on bytes available		
+		if(available == DSM_PACKET_SIZE){
+			ret = uart_read_bytes(DSM_UART_BUS, DSM_PACKET_SIZE, buf);
+			if(ret!=DSM_PACKET_SIZE){
+				#ifdef DEBUG
+					printf("WARNING: read the wrong number of bytes: %d\n", ret);
+				#endif
+				flush_uart(DSM_UART_BUS); // flush
+				continue;
+			}
+		}
+		else{
+			// got out of sync or read nonsense, flush and try again
+			flush_uart(DSM_UART_BUS); // flush
+			continue;
+		}
+
+		// first check each channel id assuming 1024/22ms mode
+		// where the channel id lives in 0b01111000 mask
+		// if one doesn't make sense, must be using 2048/11ms mode
+		#ifdef DEBUG
+			printf("1024-mode: ");
+		#endif
+		for(i=1;i<8;i++){
+			// last few words in buffer are often all 1's, ignore those
+			if(buf[2*i]!=0xFF && buf[(2*i)+1]!=0xFF){
+				// grab channel id from first byte assuming 1024 mode
+				ch_id = (buf[i*2]&0b01111100)>>2; 
+				if(ch_id>max_channel_id_1024){
+					max_channel_id_1024 = ch_id;
+				} 
+				if(ch_id<MAX_DSM_CHANNELS){
+					channels_detected_1024[ch_id] = 1;
+				} 
+				#ifdef DEBUG
+					printf("%d ", ch_id);
+				#endif
+			}
+		}
+		#ifdef DEBUG
+			printf("   2048-mode: ");
+		#endif
+		for(i=1;i<8;i++){
+			// last few words in buffer are often all 1's, ignore those
+			if(buf[2*i]!=0xFF && buf[(2*i)+1]!=0xFF){
+				// now grab assuming 2048 mode
+				ch_id = (buf[i*2]&0b01111000)>>3; 
+				if(ch_id>max_channel_id_2048) max_channel_id_2048 = ch_id;
+				if(ch_id<MAX_DSM_CHANNELS) channels_detected_2048[ch_id] = 1;
+				#ifdef DEBUG
+					printf("%d ", ch_id);
+				#endif
+			}
+		}
+		#ifdef DEBUG
+			printf("\n");
+		#endif
+		detection_packets_left --;
+	}
+
+	// do an exit check here since there is a jump above this code
+	if(!running || get_state()==EXITING) return 0;
+
+	/***************************************************************************
+	* now determine which mode from detection data
+	***************************************************************************/
+	if(max_channel_id_1024 >= MAX_DSM_CHANNELS){
+		// probbaly 2048 if 1024 was invalid
+		resolution = 2048;
+
+		// still do some checks
+		if(max_channel_id_2048 >= MAX_DSM_CHANNELS){
+			printf("WARNING: too many DSM channels detected, trying again\n");
+			goto DETECTION_START;
+		}
+		else num_channels = max_channel_id_2048+1;
+		// now make sure every channel was actually detected up to max
+		// for(i=0;i<num_channels;i++){
+		// 	if(channels_detected_2048[i]==0){
+		// 		printf("WARNING: Missing DSM channel, trying again\n");
+		// 		goto DETECTION_START;
+		// 	}
+		// }
+	}
+	// if not 2048, must be 1024 but do some checks anyway
+	else{
+		resolution = 1024;
+
+		// still do some checks
+		if(max_channel_id_1024 >= MAX_DSM_CHANNELS){
+			printf("WARNING: too many DSM channels detected, trying again\n");
+			goto DETECTION_START;
+		}
+		else num_channels = max_channel_id_1024+1;
+		// // now make sure every channel was actually detected up to max
+		// for(i=0;i<num_channels;i++){
+		// 	if(channels_detected_1024[i]==0){
+		// 		printf("WARNING: Missing DSM channel, trying again\n");
+		// 		goto DETECTION_START;
+		// 	}
+		// }
+	}
+
+	/***************************************************************************
+	* normal operation loop
+	***************************************************************************/
+START_NORMAL_LOOP:
+	while(running && get_state()!=EXITING){
+		usleep(5000);
+		available = uart_bytes_available(DSM_UART_BUS);
+
+		// nothing yet, go back to sleep
+		if(available == 0) continue;
+		// halfway through packet, sleep for 1ms
+		if(available <  DSM_PACKET_SIZE){
+			usleep(1000);
 			available = uart_bytes_available(DSM_UART_BUS);
 		}
 
@@ -261,14 +396,15 @@ void* serial_parser(void *ptr){
 				#ifdef DEBUG
 					printf("WARNING: read the wrong number of bytes: %d\n", ret);
 				#endif
+				is_dsm_active_flag=0;
 				flush_uart(DSM_UART_BUS); // flush
-				goto end;
+				continue;
 			}
 		}
 		else{
 			// got out of sync, flush and try again
 			flush_uart(DSM_UART_BUS); // flush
-			goto end;
+			continue;
 		}
 
 		// raw debug mode spits out all ones and zeros
@@ -281,55 +417,8 @@ void* serial_parser(void *ptr){
 		printf("\n");
 		#endif
 
-		if(ret<0){ //error
-			printf("ERROR reading uart %d\n", DSM_UART_BUS);
-			is_dsm_active_flag=0;
-			goto end;
-		}
-		else if(ret==0){//timeout
-			#ifdef DEBUG_RAW
-			printf("read timeout\n");
-			#endif
-			is_dsm_active_flag=0; // indicate connection is no longer active
-			goto end;
-		}
-		else if (ret>0 && ret<DSM_PACKET_SIZE){ // partial packet
-			goto end;
-		}
 		
-		// okay, must have a full packet now
-	
-		// Next we must check if the packets are 10-bit 1024/22ms mode
-		// or 11bit 2048/11ms mode. read through and decide which one, then read
-		int mode = 22; // start assuming 10-bit 1024 mode, 22ms
-		unsigned char ch_id;
-		int16_t value;
-		
-		// first check each channel id assuming 1024/22ms mode
-		// where the channel id lives in 0b01111000 mask
-		// if one doesn't make sense, must be using 2048/11ms mode
-		for(i=1;i<=7;i++){
-			// last few words in buffer are often all 1's, ignore those
-			if(buf[2*i]!=0xFF && buf[(2*i)+1]!=0xFF){
-				// grab channel id from first byte
-				ch_id = (buf[i*2]&0b01111100)>>2;
-				// maximum 9 channels, if the channel id exceeds that,
-				// we must be reading it wrong, swap to 11ms mode
-				if((ch_id+1)>MAX_DSM_CHANNELS){
-					#ifdef DEBUG
-					printf("2048/11ms ");
-					#endif
-					
-					mode = 11;
-					goto read_packet;
-				}
-			}
-		}
-		#ifdef DEBUG
-			printf("1024/22ms ");
-		#endif
-
-read_packet:			
+		// okay, must have a full packet now	
 		// packet is 16 bytes, 8 words long
 		// first word doesn't have channel data, so iterate through last 7 words
 		for(i=1;i<=7;i++){
@@ -338,26 +427,23 @@ read_packet:
 			if(buf[2*i]!=0xFF || buf[(2*i)+1]!=0xFF){
 				// grab channel id from first byte
 				// and value from both bytes
-				if(mode == 22){
-					dsm_frame_rate = 22;
+				if(resolution == 1024){
 					ch_id = (buf[i*2]&0b01111100)>>2; 
 					// grab value from least 11 bytes
 					value = ((buf[i*2]&0b00000011)<<8) + buf[(2*i)+1];
 					value += 989; // shift range so 1500 is neutral
 				}
-				else if(mode == 11){
-					dsm_frame_rate = 11;
+				else if(resolution == 2048){
 					ch_id = (buf[i*2]&0b01111000)>>3; 
 					// grab value from least 11 bytes
 					value = ((buf[i*2]&0b00000111)<<8) + buf[(2*i)+1];
-					
 					// extra bit of precision means scale is off by factor of 
 					// two, also add 989 to center channels around 1500
 					value = (value/2) + 989; 
 				}
 				else{
-					printf("ERROR: dsm mode incorrect\n");
-					goto end;
+					printf("ERROR: dsm resolution incorrect\n");
+					return NULL;
 				}
 				
 				#ifdef DEBUG
@@ -368,24 +454,16 @@ read_packet:
 					#ifdef DEBUG
 					printf("error: bad channel id\n");
 					#endif
-					
-					#ifndef DEBUG
-					goto end;
-					#endif
+					goto START_NORMAL_LOOP;
 				}
-				// throttle is first channel always
-				// ch_id is 0 indexed
-				// and rc_channels is 0 indexed
+				// record new value
 				new_values[ch_id] = value;
-				if((ch_id+1)>num_channels){
-					num_channels = ch_id+1;
-				}
 			}
 		}
 
 		// check if a complete set of channel data has been received
 		// otherwise wait for another packet with more data
-		int is_complete=1;
+		is_complete = 1;
 		for(i=0;i<num_channels;i++){
 			if (new_values[i]==0){
 				is_complete=0;
@@ -401,11 +479,10 @@ read_packet:
 			#endif
 			new_dsm_flag=1;
 			is_dsm_active_flag=1;
-			resolution = mode;
 			last_time = micros_since_epoch();
 			for(i=0;i<num_channels;i++){
 				rc_channels[i]=new_values[i];
-				new_values[i]=0;
+				new_values[i]=0;// put local values array back to 0
 			}
 			// run the dsm ready function.
 			// this is null unless user changed it
@@ -415,8 +492,6 @@ read_packet:
 		#ifdef DEBUG
 		printf("\n");
 		#endif
-end: 
-		usleep(5000);
 	}
 	return NULL;
 }

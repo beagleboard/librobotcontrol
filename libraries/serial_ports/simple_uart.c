@@ -133,11 +133,13 @@ int initialize_uart(int bus, int baudrate, float timeout_s){
 	}
 	
 	// set up tc config
-	//memset(&config,0,sizeof(config));
-	// config.c_iflag=0;
-    // config.c_oflag=0;
-	// config.c_lflag = 0;
-	// config.c_cflag = 0;
+	memset(&config,0,sizeof(config));
+	config.c_iflag=0;
+    config.c_oflag=0;
+	config.c_lflag = 0;
+	config.c_cflag = 0;
+	//turning off these settings really does nothing since we just set
+	// all the flags to 0, but they are here for reference and completel
 	config.c_lflag &= ~ICANON;	// turn off canonical read
 	config.c_cflag &= ~PARENB;  // no parity
 	config.c_cflag &= ~CSTOPB;  // disable 2 stop bits (use just 1)

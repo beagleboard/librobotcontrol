@@ -17,6 +17,8 @@
 #include "../../libraries/roboticscape.h"
 
 int main(){
+	int i;
+
 	if(initialize_cape()){
 		printf("ERROR: failed to initialize cape\n");
 		return -1;
@@ -37,13 +39,19 @@ int main(){
 	printf("will be displayed\n");
 	printf("\n");
 	
-	int i;
+
+	printf("Waiting for first packet\n");
+	while(is_new_dsm_data()==0){
+		if(get_state()==EXITING) return 0;
+		usleep(50000);
+	}
+
 	while(get_state()!=EXITING){
 		if(is_new_dsm_data()){	
 			printf("\r");// keep printing on same line
 			int channels = get_num_dsm_channels();
 			// print framerate
-			printf("%d-bit ", get_dsm_frame_resolution());
+			printf("%d/", get_dsm_frame_resolution());
 			// print num channels in use
 			printf("%d-ch ", channels);
 			//print all channels
