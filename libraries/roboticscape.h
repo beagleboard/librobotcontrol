@@ -704,11 +704,11 @@ int set_sea_level_pressure_pa(float pa);
 /*******************************************************************************
 * GPS
 *
-*
+* work in progress
 *
 *******************************************************************************/
-int initialize_gps(int baud);
-int stop_gps_service();
+// int initialize_gps(int baud);
+// int stop_gps_service();
 
 
 /*******************************************************************************
@@ -833,7 +833,7 @@ int uart_send_bytes(int bus, int bytes, char* data);
 int uart_send_byte(int bus, char data);
 int uart_read_bytes(int bus, int bytes, char* buf);
 int uart_read_line(int bus, int max_bytes, char* buf);
-
+int uart_bytes_available(int bus);
 
 /*******************************************************************************
 * CPU Frequency Control

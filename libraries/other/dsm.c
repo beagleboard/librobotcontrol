@@ -13,8 +13,8 @@
 
 
 // uncomment debug defines to print raw data for debugging
-//#define DEBUG
-#define DEBUG_RAW
+#define DEBUG
+//#define DEBUG_RAW
 
 #define MAX_DSM_CHANNELS 9
 #define PAUSE 115	//microseconds
@@ -231,18 +231,47 @@ int ms_since_last_dsm_packet(){
 *******************************************************************************/
 void* serial_parser(void *ptr){
 	char buf[DSM_PACKET_SIZE]; // large serial buffer to catch doubled up packets
-	int i, ret;
+	int i, ret, available;
 	int new_values[MAX_DSM_CHANNELS]; // hold new values before committing
 	
+	flush_uart(DSM_UART_BUS); // flush first
+
 	// running will become 0 when stop_dsm_service() is called
 	// mostly likely that will be called by cleanup_cape()
 	while(running && get_state()!=EXITING){
 
-		// read the buffer and decide what to do
-		memset(&buf, 0, sizeof(buf)); // clear buffer
-		flush_uart(DSM_UART_BUS); // flush first
-		ret = uart_read_bytes(DSM_UART_BUS, DSM_PACKET_SIZE, buf);
-		
+		available = uart_bytes_available(DSM_UART_BUS);
+
+		// nothing yet, go back to sleep
+		if(available == 0) goto end;
+		// halfway through packet, sleep for 1ms
+		if(available <  DSM_PACKET_SIZE){
+			usleep(10000);
+			available = uart_bytes_available(DSM_UART_BUS);
+		}
+
+		#ifdef DEBUG
+			printf("bytes available: %d\n", available);
+		#endif
+
+		// read or flush depending on bytes available		
+		if(available == DSM_PACKET_SIZE){
+			ret = uart_read_bytes(DSM_UART_BUS, DSM_PACKET_SIZE, buf);
+			if(ret!=DSM_PACKET_SIZE){
+				#ifdef DEBUG
+					printf("WARNING: read the wrong number of bytes: %d\n", ret);
+				#endif
+				flush_uart(DSM_UART_BUS); // flush
+				goto end;
+			}
+		}
+		else{
+			// got out of sync, flush and try again
+			flush_uart(DSM_UART_BUS); // flush
+			goto end;
+		}
+
+		// raw debug mode spits out all ones and zeros
 		#ifdef DEBUG_RAW
 		printf("ret=%d : ", ret);
 		for(i=0; i<ret; i++){
@@ -386,8 +415,8 @@ read_packet:
 		#ifdef DEBUG
 		printf("\n");
 		#endif
-end: ;
-
+end: 
+		usleep(5000);
 	}
 	return NULL;
 }

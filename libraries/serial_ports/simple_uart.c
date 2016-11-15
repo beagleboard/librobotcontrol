@@ -469,3 +469,22 @@ int uart_read_line(int bus, int max_bytes, char* buf){
 }
 
 
+int uart_bytes_available(int bus){
+	int out;
+	// sanity checks
+	if(bus<MIN_BUS || bus>MAX_BUS){
+		printf("ERROR: uart bus must be between %d & %d\n", MIN_BUS, MAX_BUS);
+		return -1;
+	}
+	if(initialized[bus]==0){
+		printf("ERROR: uart%d must be initialized first\n", bus);
+		return -1;
+	}
+
+	if(ioctl(fd[bus], FIONREAD, &out)<0){
+		printf("ERROR: can't use ioctl on UART bus %d\n", bus);
+		return -1;
+	}
+
+	return out;
+}
