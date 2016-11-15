@@ -707,8 +707,8 @@ int set_sea_level_pressure_pa(float pa);
 * work in progress
 *
 *******************************************************************************/
-// int initialize_gps(int baud);
-// int stop_gps_service();
+int initialize_gps(int baud);
+int stop_gps_service();
 
 
 /*******************************************************************************
