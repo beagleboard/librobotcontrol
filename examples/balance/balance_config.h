@@ -34,7 +34,7 @@
 
 
 // // inner loop controller 100hz new
-// #define 	D1_GAIN					0.9	
+// #define 	D1_GAIN					0.9
 // #define 	D1_ORDER				2
 // #define 	D1_NUM					{-4.945, 8.862, -3.967}
 // #define 	D1_DEN					{ 1.000, -1.481, 0.4812}
@@ -83,9 +83,9 @@
 #define PRINTF_HZ				50
 
 // other
-#define TIP_ANGLE 				0.75
-#define START_ANGLE 			0.3
-#define START_DELAY 			0.5
+#define TIP_ANGLE				0.75
+#define START_ANGLE				0.3
+#define START_DELAY				0.5
 #define PICKUP_DETECTION_TIME	0.65
 #define ENABLE_POSITION_HOLD	1
 #define SOFT_START_SEC			0.7
