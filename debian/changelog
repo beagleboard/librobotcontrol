@@ -1,6 +1,13 @@
-roboticscape (0.1.4) unstable; urgency=low
+roboticscape (0.2.0) unstable; urgency=low
 
-  * add button debounce
+    * Pinmux functions for BB Blue
+    * gpio and pwm exposed in roboticscape.h
+    * DSM radio fixed and robustified
+    * debug target for libroboticscape.so
+    * BB Wireless device tree
+    * project template in /usr/share/roboticscape
+    * calibration files moved to /var/lib/roboticscape
+    * startup log moved to /var/log/roboticscape
 
  -- James Strawson <james@strawsondesign.com>  Wed, 23 Oct 2016 21:11:00 +0000
 

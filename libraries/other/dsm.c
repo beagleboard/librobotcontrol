@@ -11,10 +11,6 @@
 #include "../roboticscape-defs.h"
 #include "../mmap/mmap_gpio_adc.h"
 
-
-// uncomment debug defines to print raw data for debugging
-//#define DEBUG_RAW
-
 #define MAX_DSM_CHANNELS 9
 #define PAUSE 115	//microseconds
 #define DEFAULT_MIN 1142
@@ -229,7 +225,7 @@ int ms_since_last_dsm_packet(){
 * new data is not committed until a full set of channel data is received.
 *******************************************************************************/
 void* serial_parser(void *ptr){
-	char buf[DSM_PACKET_SIZE]; // large serial buffer to catch doubled up packets
+	char buf[DSM_PACKET_SIZE];
 	int i, ret, available;
 	int new_values[MAX_DSM_CHANNELS]; // hold new values before committing
 	int detection_packets_left; // use first 4 packets just for detection
@@ -290,7 +286,7 @@ DETECTION_START:
 		#endif
 		for(i=1;i<8;i++){
 			// last few words in buffer are often all 1's, ignore those
-			if(buf[2*i]!=0xFF && buf[(2*i)+1]!=0xFF){
+			if((buf[2*i]!=0xFF) || (buf[(2*i)+1]!=0xFF)){
 				// grab channel id from first byte assuming 1024 mode
 				ch_id = (buf[i*2]&0b01111100)>>2; 
 				if(ch_id>max_channel_id_1024){
@@ -304,24 +300,41 @@ DETECTION_START:
 				#endif
 			}
 		}
+
 		#ifdef DEBUG
 			printf("   2048-mode: ");
 		#endif
+		
 		for(i=1;i<8;i++){
 			// last few words in buffer are often all 1's, ignore those
-			if(buf[2*i]!=0xFF && buf[(2*i)+1]!=0xFF){
+			if((buf[2*i]!=0xFF) || (buf[(2*i)+1]!=0xFF)){
 				// now grab assuming 2048 mode
 				ch_id = (buf[i*2]&0b01111000)>>3; 
-				if(ch_id>max_channel_id_2048) max_channel_id_2048 = ch_id;
-				if(ch_id<MAX_DSM_CHANNELS) channels_detected_2048[ch_id] = 1;
+				if(ch_id>max_channel_id_2048){
+					 max_channel_id_2048 = ch_id;
+				}
+				if(ch_id<MAX_DSM_CHANNELS){
+					channels_detected_2048[ch_id] = 1;
+				}
 				#ifdef DEBUG
 					printf("%d ", ch_id);
 				#endif
 			}
 		}
+
+		// raw debug mode spits out all ones and zeros
 		#ifdef DEBUG
-			printf("\n");
+		printf("ret=%d : ", ret);
+		for(i=0; i<(DSM_PACKET_SIZE/2); i++){
+			printf(byte_to_binary(buf[2*i]));
+			printf(" ");
+			printf(byte_to_binary(buf[(2*i)+1]));
+			printf("   ");
+		}
+		printf("\n");
 		#endif
+
+
 		detection_packets_left --;
 	}
 
@@ -342,12 +355,12 @@ DETECTION_START:
 		}
 		else num_channels = max_channel_id_2048+1;
 		// now make sure every channel was actually detected up to max
-		// for(i=0;i<num_channels;i++){
-		// 	if(channels_detected_2048[i]==0){
-		// 		printf("WARNING: Missing DSM channel, trying again\n");
-		// 		goto DETECTION_START;
-		// 	}
-		// }
+		for(i=0;i<num_channels;i++){
+			if(channels_detected_2048[i]==0){
+				printf("WARNING: Missing DSM channel, trying again\n");
+				goto DETECTION_START;
+			}
+		}
 	}
 	// if not 2048, must be 1024 but do some checks anyway
 	else{
@@ -359,13 +372,13 @@ DETECTION_START:
 			goto DETECTION_START;
 		}
 		else num_channels = max_channel_id_1024+1;
-		// // now make sure every channel was actually detected up to max
-		// for(i=0;i<num_channels;i++){
-		// 	if(channels_detected_1024[i]==0){
-		// 		printf("WARNING: Missing DSM channel, trying again\n");
-		// 		goto DETECTION_START;
-		// 	}
-		// }
+		// now make sure every channel was actually detected up to max
+		for(i=0;i<num_channels;i++){
+			if(channels_detected_1024[i]==0){
+				printf("WARNING: Missing DSM channel, trying again\n");
+				goto DETECTION_START;
+			}
+		}
 	}
 
 	/***************************************************************************
@@ -407,11 +420,13 @@ START_NORMAL_LOOP:
 		}
 
 		// raw debug mode spits out all ones and zeros
-		#ifdef DEBUG_RAW
+		#ifdef DEBUG
 		printf("ret=%d : ", ret);
-		for(i=0; i<ret; i++){
-			printf(byte_to_binary(buf[i]));
+		for(i=0; i<(DSM_PACKET_SIZE/2); i++){
+			printf(byte_to_binary(buf[2*i]));
 			printf(" ");
+			printf(byte_to_binary(buf[(2*i)+1]));
+			printf("   ");
 		}
 		printf("\n");
 		#endif
@@ -421,7 +436,7 @@ START_NORMAL_LOOP:
 		// packet is 16 bytes, 8 words long
 		// first word doesn't have channel data, so iterate through last 7 words
 		for(i=1;i<=7;i++){
-			// in  8 and 9 ch radios, unused words are 0xFF
+			// unused words are 0xFF
 			// skip if one of them
 			if(buf[2*i]!=0xFF || buf[(2*i)+1]!=0xFF){
 				// grab channel id from first byte
@@ -504,7 +519,7 @@ START_NORMAL_LOOP:
 int stop_dsm_service(){
 	int ret = 0;
 
-	//if(running){
+	if(running){
 		running = 0; // this tells serial_parser_thread loop to stop
 		// allow up to 0.3 seconds for thread cleanup
 		timespec thread_timeout;
@@ -517,13 +532,12 @@ int stop_dsm_service(){
 			printf("WARNING: dsm serial_parser_thread exit timeout\n");
 			ret = -1;
 		}
-		#ifdef DEBUG_RAW
+		#ifdef DEBUG
 		printf("DSM thread exited successfully\n");
 		#endif
-
-	//}
-	
-	running = 0;
+		
+		running = 0;
+	}
 	return ret;
 }
 

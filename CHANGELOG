@@ -1,4 +1,15 @@
 
+0.2.0
+- Pinmux functions for BB Blue
+- gpio and pwm exposed in roboticscape.h
+- DSM radio fixed and robustified
+- debug target for libroboticscape.so
+- BB Wireless device tree
+- project template in /usr/share/roboticscape
+- calibration files moved to /var/lib/roboticscape
+- startup log moved to /var/log/roboticscape
+
+
 0.1.5
 - add userspace pinmux configuration for some headers
 

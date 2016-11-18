@@ -40,7 +40,8 @@ int main(){
 	printf("\n");
 	
 
-	printf("Waiting for first packet\n");
+	printf("Waiting for first packet");
+	fflush(stdout);
 	while(is_new_dsm_data()==0){
 		if(get_state()==EXITING) return 0;
 		usleep(50000);
