@@ -8,6 +8,7 @@ roboticscape (0.2.0) unstable; urgency=low
     * project template in /usr/share/roboticscape
     * calibration files moved to /var/lib/roboticscape
     * startup log moved to /var/log/roboticscape
+    * PRU bins compile with pru-software-support-package
 
- -- James Strawson <james@strawsondesign.com>  Wed, 23 Oct 2016 21:11:00 +0000
+ -- James Strawson <james@strawsondesign.com>  Fri, 18 Nov 2016 02:56:00 +0000
 

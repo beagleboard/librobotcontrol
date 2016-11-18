@@ -33,7 +33,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-				  
+
 #include <stdint.h>
 #include <pru_cfg.h>
 #include <pru_ctrl.h>
@@ -46,7 +46,7 @@ extern void start(void);
 
 void main(void)
 {
-    /* Clear SYSCFG[STANDBY_INIT] to enable OCP master port */
+	/* Clear SYSCFG[STANDBY_INIT] to enable OCP master port */
 	CT_CFG.SYSCFG_bit.STANDBY_INIT = 0;
 	
 	// Access PRU Shared RAM using Constant Table                    */

@@ -24,16 +24,18 @@ PRU_CGT=/usr/share/ti/cgt-pru
 LNKPRU=/usr/bin/lnkpru
 CLPRU=/usr/bin/clpru
 
-# use the location of pru libraries as included with the BBB images if they exist
-# otherwise use the pru-software-support-package location
+# if the pru-software-support-package is installed to /opt/ use that
+# otherwise look in /usr/lib/ti/ which is where the BBB images puts it
 ifneq ("$(wildcard /opt/source/pru-software-support-package/lib/rpmsg_lib.lib)","")
 LIBS=--library=/opt/source/pru-software-support-package/lib/rpmsg_lib.lib
 INCLUDE=--include_path=/opt/source/pru-software-support-package/include \
---include_path=/opt/source/pru-software-support-package/include/am335x
+--include_path=/opt/source/pru-software-support-package/include/am335x \
+--include_path=$(PRU_CGT)/include
 else
 LIBS=--library=/usr/lib/ti/pru-software-support-package/lib/rpmsg_lib.lib
 INCLUDE=--include_path=/usr/lib/ti/pru-software-support-package/include \
---include_path=/usr/lib/ti/pru-software-support-package/include/am335x
+--include_path=/usr/lib/ti/pru-software-support-package/include/am335x \
+--include_path=$(PRU_CGT)/include
 endif
 
 

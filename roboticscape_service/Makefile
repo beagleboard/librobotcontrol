@@ -16,6 +16,7 @@ install: $(all)
 	@$(MAKE) -C robot_startup_routine -s install
 	@$(INSTALLDIR) $(DESTDIR)/lib/systemd/system
 	@$(INSTALLNONEXEC) $(SERVICE).service $(DESTDIR)/lib/systemd/system/
+	@$(INSTALLDIR) $(DESTDIR)/etc/modules-load.d/
 	@$(INSTALLNONEXEC) roboticscape_modules.conf $(DESTDIR)/etc/modules-load.d/
 	@echo "roboticscape Service Install Complete"
 	

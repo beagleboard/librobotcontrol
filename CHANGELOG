@@ -8,6 +8,7 @@
 - project template in /usr/share/roboticscape
 - calibration files moved to /var/lib/roboticscape
 - startup log moved to /var/log/roboticscape
+- PRU bins compile with pru-software-support-package
 
 
 0.1.5
