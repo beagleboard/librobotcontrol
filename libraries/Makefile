@@ -22,15 +22,23 @@ INSTALLNOEXEC := install -m 644
 # linking Objects
 $(TARGET): $(OBJECTS)
 	@$(LINKER) $(LFLAGS) -o $(TARGET) $(OBJECTS)
+	@echo " "
+	@echo "Linked $(TARGET)"
+	@echo " "
 	
 $(OBJECTS): %.o : %.c
-	@$(TOUCH) $(CC) $(CFLAGS) $(DEFS) -c $< -o $(@)
+	@$(TOUCH) $(CC) $(CFLAGS) $(DEBUGFLAG) $(DEFS) -c $< -o $(@)
 	@echo "Compiled: "$<
-
 
 all:
 	$(TARGET)
-	@echo "$(TARGET) Make Complete"
+
+
+debug:
+	$(MAKE) $(MAKEFILE) DEBUGFLAG="-g -D DEBUG"
+	@echo " "
+	@echo "$(TARGET) Make Debug Complete"
+	@echo " "
 
 install:
 	$(MAKE)
@@ -44,14 +52,18 @@ install:
 	$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/lib
 	@# ldconfig to update library index
 	ldconfig
+	@echo " "
 	@echo "$(TARGET) Install Complete"
+	@echo " "
 	
 
 clean:
 	@$(RM) */*.o
 	@$(RM) *.o
 	@$(RM) *.so
+	@echo " "
 	@echo "$(TARGET) Clean Complete"
+	@echo " "
 
 
 uninstall:
@@ -59,7 +71,9 @@ uninstall:
 	$(RM) $(DESTDIR)$(prefix)/include/roboticscape.h
 	$(RM) $(DESTDIR)$(prefix)/include/roboticscape-defs.h
 	$(RM) $(DESTDIR)$(prefix)/include/roboticscape-usefulincludes.h
+	@echo " "
 	@echo "$(TARGET) Uninstall Complete"
+	@echo " "
 
 	
 

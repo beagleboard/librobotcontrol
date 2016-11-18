@@ -13,9 +13,6 @@
 #include "dmp_firmware.h"
 #include "dmpKey.h"
 
-// uncomment #define DEBUG for helpful debug messages
-// #define DEBUG
-
 // there should be 28 or 35 bytes in the FIFO if the magnetometer is disabled
 // or enabled.
 #define FIFO_LEN_NO_MAG 28

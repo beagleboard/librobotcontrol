@@ -5,8 +5,6 @@
 * however it contains the majority of the core components.
 *******************************************************************************/
 
-//#define DEBUG
-
 #include "roboticscape-usefulincludes.h"
 #include "roboticscape.h"
 #include "roboticscape-defs.h"

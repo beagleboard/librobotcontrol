@@ -13,7 +13,6 @@
 
 
 // uncomment debug defines to print raw data for debugging
-#define DEBUG
 //#define DEBUG_RAW
 
 #define MAX_DSM_CHANNELS 9

@@ -6,7 +6,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-//#define DEBUG
+
 #define MAXBUF 64
 #define DEFAULT_FREQ 20000 // 40khz pwm freq
 

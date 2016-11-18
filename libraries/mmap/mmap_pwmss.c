@@ -27,7 +27,6 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-//#define DEBUG
 
 #include "mmap_pwmss.h"
 #include "tipwmss.h"

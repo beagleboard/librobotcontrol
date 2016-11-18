@@ -12,9 +12,6 @@
 #include "../roboticscape-defs.h"
 #include "../nmealib/nmea/nmea.h"
 
-// uncomment debug defines to print raw data for debugging
-#define DEBUG
-
 
 #define GPS_UART_BUS 		2
 #define GPS_UART_TIMEOUT	1.0
