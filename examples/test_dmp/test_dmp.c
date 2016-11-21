@@ -80,25 +80,25 @@ int print_data(){
 	}
 	if(show_tb && enable_mag){
 		// print fused TaitBryan Angles
-		printf(" %5.2f %5.2f %5.2f |",		data.fused_TaitBryan[TB_PITCH_X],\
-											data.fused_TaitBryan[TB_ROLL_Y], \
-											data.fused_TaitBryan[TB_YAW_Z]);
+		printf("%6.1f %6.1f %6.1f |",	data.fused_TaitBryan[TB_PITCH_X]*RAD_TO_DEG,\
+										data.fused_TaitBryan[TB_ROLL_Y]*RAD_TO_DEG,\
+										data.fused_TaitBryan[TB_YAW_Z]*RAD_TO_DEG);
 	}
 	else if(show_tb){
 		// print TaitBryan angles
-		printf(" %5.2f %5.2f %5.2f |",		data.dmp_TaitBryan[TB_PITCH_X],\
-											data.dmp_TaitBryan[TB_ROLL_Y], \
-											data.dmp_TaitBryan[TB_YAW_Z]);
+		printf("%6.1f %6.1f %6.1f |",	data.dmp_TaitBryan[TB_PITCH_X]*RAD_TO_DEG,\
+										data.dmp_TaitBryan[TB_ROLL_Y]*RAD_TO_DEG,\
+										data.dmp_TaitBryan[TB_YAW_Z]*RAD_TO_DEG);
 	}
 	if(show_accel){
-		printf(" %5.2f %5.2f %5.2f |",		data.accel[0],\
-											data.accel[1],\
-											data.accel[2]);
+		printf(" %5.2f %5.2f %5.2f |",	data.accel[0],\
+										data.accel[1],\
+										data.accel[2]);
 	}
 	if(show_gyro){
-		printf(" %5.1f %5.1f %5.1f |",		data.gyro[0],\
-											data.gyro[1],\
-											data.gyro[2]);
+		printf(" %5.1f %5.1f %5.1f |",	data.gyro[0],\
+										data.gyro[1],\
+										data.gyro[2]);
 	}
 													
 	fflush(stdout);
@@ -119,10 +119,10 @@ void print_header(){
 	}
 	if(enable_mag){
 		if(show_quat) printf("   Fused Quaternion  |");
-		if(show_tb) printf("FusedTaitBryan(rad)|");
+		if(show_tb) printf(" FusedTaitBryan(deg) |");
 	} else{
 		if(show_quat) printf("    DMP Quaternion   |");
-		if(show_tb) printf("DMP TaitBryan (rad)|");
+		if(show_tb) printf(" DMP TaitBryan (deg) |");
 	}
 	if(show_accel) printf("   Accel XYZ (g)   |");
 	if(show_gyro) printf("  Gyro XYZ (deg/s) |");
