@@ -1,3 +1,7 @@
+0.2.1
+- add options for degrees, radians, and raw to test_imu
+- print tait bryan angles in test_dmp in untis of degrees
+- check kernel and debain version in install.sh
 
 0.2.0
 - Pinmux functions for BB Blue

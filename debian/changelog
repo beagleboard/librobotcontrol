@@ -1,14 +1,9 @@
-roboticscape (0.2.0) unstable; urgency=low
+roboticscape (0.2.1) unstable; urgency=low
 
-    * Pinmux functions for BB Blue
-    * gpio and pwm exposed in roboticscape.h
-    * DSM radio fixed and robustified
-    * debug target for libroboticscape.so
-    * BB Wireless device tree
-    * project template in /usr/share/roboticscape
-    * calibration files moved to /var/lib/roboticscape
-    * startup log moved to /var/log/roboticscape
-    * PRU bins compile with pru-software-support-package
+    * add options for degrees, radians, and raw to test_imu
+    * print tait bryan angles in test_dmp in untis of degrees
+    * check kernel and debain version in install.sh
 
- -- James Strawson <james@strawsondesign.com>  Fri, 18 Nov 2016 02:56:00 +0000
+ -- James Strawson <james@strawsondesign.com>  Sun, 20 Nov 2016 21:11:00 +0000
+
 
