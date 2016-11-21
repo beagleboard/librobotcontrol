@@ -33,7 +33,7 @@ int main(int argc, char *argv[]){
 
 	// parse arguments
 	opterr = 0;
-	while ((c = getopt(argc, argv, "m:d:fbs:h")) != -1){
+	while ((c = getopt(argc, argv, "rdh")) != -1){
 		switch (c){
 		case 'r':
 			if(mode!=RAD) print_usage();
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]){
 	}
 	
 	// print a header
-	printf("\n");
+	printf("\ntry 'test_imu -h' to see other options\n\n");
 	switch(mode){
 	case RAD:
 		printf("   Accel XYZ(m/s^2)  |");
@@ -81,8 +81,8 @@ int main(int argc, char *argv[]){
 		printf("   Gyro XYZ (deg/s)  |");
 		break;
 	case RAW:
-		printf("   Accel XYZ(raw adc)  |");
-		printf("   Gyro XYZ (raw adc)  |");
+		printf("  Accel XYZ(raw adc) |");
+		printf("  Gyro XYZ (raw adc) |");
 		break;
 	default:
 		printf("ERROR: invalid mode\n");
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]){
 			printf("read accel data failed\n");
 		}
 		if(mode==RAW){
-			printf("%7d %7d %7d |",			data.raw_accel[0],\
+			printf("%6d %6d %6d |",			data.raw_accel[0],\
 											data.raw_accel[1],\
 											data.raw_accel[2]);
 		}
@@ -117,17 +117,17 @@ int main(int argc, char *argv[]){
 		}
 		switch(mode){
 		case RAD:
+			printf("%6.1f %6.1f %6.1f |",	data.gyro[0]*DEG_TO_RAD,\
+											data.gyro[1]*DEG_TO_RAD,\
+											data.gyro[2]*DEG_TO_RAD);
+			break;
+		case DEG:
 			printf("%6.1f %6.1f %6.1f |",	data.gyro[0],\
 											data.gyro[1],\
 											data.gyro[2]);
 			break;
-		case DEG:
-			printf("%6.1f %6.1f %6.1f |",	data.gyro[0]*RAD_TO_DEG,\
-											data.gyro[1]*RAD_TO_DEG,\
-											data.gyro[2]*RAD_TO_DEG);
-			break;
 		case RAW:
-			printf("%7d %7d %7d |",			data.raw_gyro[0],\
+			printf("%6d %6d %6d |",			data.raw_gyro[0],\
 											data.raw_gyro[1],\
 											data.raw_gyro[2]);
 			break;
