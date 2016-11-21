@@ -38,6 +38,7 @@ clean:
 	@$(RM) debian/roboticscape
 	@$(RM) debian/roboticscape.postrm.debhelper
 	@$(RM) debian/roboticscape.substvars
+	@$(RM) debian/files
 	@echo "All Directories Cleaned"
 
 
