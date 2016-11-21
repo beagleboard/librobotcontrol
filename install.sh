@@ -21,6 +21,11 @@ echo "Detected $DOGTAG"
 echo " "
 echo " "
 
+# kernel version check
+MINDEBIAN=8.6
+MINKERNEL="4.4.32"
+function version_lt() { test "$(echo "$@" | tr " " "\n" | sort -rV | head -n 1)" != "$1"; }
+
 ################################################################################
 # Sanity Checks
 ################################################################################
@@ -39,19 +44,33 @@ if ! grep -q "8." /etc/debian_version ; then
 	exit 1
 fi
 
-#check that the remoteproc driver is there
+# check that the remoteproc driver is there
 if modprobe -n remoteproc | grep -q "not found" ; then
 	echo "ERROR: remoteproc module not found"
 	echo "Use a standard TI kernel with remoteproc instead."
 	exit 1
 fi
 
+# debian version check
+if version_lt $DEBIAN $MINDEBIAN; then
+	echo "WARNING: Debian version $MINDEBIAN or newer is required"
+	exit 1
+fi
+
+# kernel version check
+if version_lt $KERNEL $MINKERNEL; then
+	echo "WARNING: Kernel $MINKERNEL or newer is required for full functionality"
+	echo "Motor 1, PINMUX, and PRU functions will not work as-is"
+	echo "You may still continue the installation"
+	echo " "
+fi
+
 # make sure the user really wants to install
 echo "This script will install all Robotics Cape supporting software"
 read -r -p "Continue? [y/n] " response
 case $response in
-    [yY]) echo " " ;;
-    *) echo "cancelled"; exit;;
+	[yY]) echo " " ;;
+	*) echo "cancelled"; exit;;
 esac
 echo " "
 
@@ -98,12 +117,12 @@ echo "Select 'existing' to keep current configuration."
 
 echo "type 1-4 then enter"
 select bfn in "blink" "balance" "none" "existing"; do
-    case $bfn in
+	case $bfn in
 		blink ) PROG="blink"; break;;
-        balance ) PROG="balance"; break;;
+		balance ) PROG="balance"; break;;
 		none ) PROG="bare_minimum"; break;;
 		existing ) PROG="existing"; break;;
-    esac
+	esac
 done
 
 # now make a link to the right program
