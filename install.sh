@@ -84,6 +84,7 @@ find . -exec touch {} \;
 bash debian/preinst
 make clean
 make install
+ldconfig
 
 ###############################################################################
 # Normally the package manager would call postinst here, but we don't want

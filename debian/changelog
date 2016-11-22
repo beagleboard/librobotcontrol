@@ -1,9 +1,7 @@
-roboticscape (0.2.1) unstable; urgency=low
+roboticscape (0.2.2) unstable; urgency=low
 
-    * add options for degrees, radians, and raw to test_imu
-    * print tait bryan angles in test_dmp in untis of degrees
-    * check kernel and debain version in install.sh
+    * move ldconfig out of makefile
 
- -- James Strawson <james@strawsondesign.com>  Sun, 20 Nov 2016 21:11:00 +0000
+ -- James Strawson <james@strawsondesign.com>  Tue, 22 Nov 2016 21:11:00 +0000
 
 

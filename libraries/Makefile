@@ -50,8 +50,6 @@ install:
 	@# library .so
 	$(INSTALLDIR) $(DESTDIR)$(prefix)/lib
 	$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/lib
-	@# ldconfig to update library index
-	ldconfig
 	@echo " "
 	@echo "$(TARGET) Install Complete"
 	@echo " "
