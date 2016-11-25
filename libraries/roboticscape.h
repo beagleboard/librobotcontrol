@@ -48,9 +48,9 @@ typedef struct timeval timeval;
 * All example programs use these functions. See the bare_minimum example 
 * for a skeleton outline.
 *******************************************************************************/
-int initialize_cape(); 	// call at the beginning of main()
-int cleanup_cape();		// call at the end of main()
-int kill_robot();		// not usually necessary, use kill_robot example instead
+int initialize_roboticscape();	// call at the beginning of main()
+int cleanup_roboticscape();		// call at the end of main()
+int kill_robot();	// not usually necessary, use kill_robot example instead
 
 
 /*******************************************************************************
@@ -58,7 +58,7 @@ int kill_robot();		// not usually necessary, use kill_robot example instead
 *
 * The user is encouraged to manage the initialization,running, and closing of 
 * their threads with the globally accessible program flow state. This state
-* can be set and accessed with get_state() and set_state() declared here.
+* can be set and accessed with rc_get_state() and rc_set_state() declared here.
 * Calling initialize_cape() will set the state to UNINITIALIZED. When the
 * user's own initialization sequence is complete they should set the flow
 * state to RUNNING to indicate to other threads that the program should now
@@ -70,16 +70,16 @@ int kill_robot();		// not usually necessary, use kill_robot example instead
 * All example programs use these functions. See the bare_minimum example 
 * for a skeleton outline.
 *******************************************************************************/
-typedef enum state_t {
+typedef enum rc_state_t {
 	UNINITIALIZED,
 	RUNNING,
 	PAUSED,
 	EXITING
-} state_t;
+} rc_state_t;
 
-state_t get_state();
-int set_state(state_t new_state);
-int print_state();
+rc_state_t rc_get_state();
+int rc_set_state(rc_state_t new_state);
+int rc_print_state();
 
 
 /*******************************************************************************
@@ -92,22 +92,22 @@ int print_state();
 * they are not tied to any other robotics cape library functions and can be 
 * used for whatever the user desires.
 *
-* @ typedef enum led_t
+* @ typedef enum rc_led_t
 * 
 * Two LEDs are available and defined as an enumerated type: RED or GREEN. 
 *
-* @ int set_led(led_t led, int state)
+* @ int rc_set_led(rc_led_t led, int state)
 * 
 * If state is 0 the LED will be turned off. If int state is non-zero then the 
 * LED will be turned on. Returns 0 on success, -1 on failure.
 *
-* @ int get_led_state(led_t led)
+* @ int rc_get_led_state(rc_led_t led)
 *
 * returns 1 if the LED is on or 0 if it is off.
 * This function is typically used in multithreded applications where multiple
 * threads may wish to use the same LED.
 *
-* @ int blink_led(led_t led, float hz, float period)
+* @ int rc_blink_led(rc_led_t led, float hz, float period)
 * 
 * Flash an LED at a set frequency for a finite period of time.
 * This is a blocking call and only returns after flashing.
@@ -116,13 +116,13 @@ int print_state();
 *******************************************************************************/
 #define ON 	1
 #define OFF	0
-typedef enum led_t {
+typedef enum rc_led_t {
 	GREEN,
 	RED
-} led_t;
-int set_led(led_t led, int state);
-int get_led_state(led_t led);
-int blink_led(led_t led, float hz, float period);
+} rc_led_t;
+int rc_set_led(rc_led_t led, int state);
+int rc_get_led(rc_led_t led);
+int rc_blink_led(rc_led_t led, float hz, float period);
 
 
 /*******************************************************************************
@@ -132,7 +132,7 @@ int blink_led(led_t led, float hz, float period);
 * they are not used by any background library functions and the user can assign
 * them to any function they wish. However, the user is encouraged to use the
 * pause button to toggle the program flow state between PAUSED and RUNNING
-* using the previously described set_state(state_t new_state) function.
+* using the previously described rc_set_state(state_t new_state) function.
 *
 * @ typedef enum button_state_t
 * 
@@ -160,16 +160,16 @@ int blink_led(led_t led, float hz, float period);
 *
 * See the blink example program for sample use case.
 ******************************************************************************/
-typedef enum button_state_t {
+typedef enum rc_button_state_t {
 	RELEASED,
 	PRESSED
-} button_state_t;
+} rc_button_state_t;
 int set_pause_pressed_func(int (*func)(void));
 int set_pause_released_func(int (*func)(void));
 int set_mode_pressed_func(int (*func)(void));
 int set_mode_released_func(int (*func)(void));
-button_state_t get_pause_button();
-button_state_t get_mode_button();
+rc_button_state_t get_pause_button();
+rc_button_state_t get_mode_button();
 
 
 /******************************************************************************

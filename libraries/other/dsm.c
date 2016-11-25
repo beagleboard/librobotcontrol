@@ -250,7 +250,7 @@ void* serial_parser(void *ptr){
 DETECTION_START:
 	flush_uart(DSM_UART_BUS); // flush first
 	detection_packets_left = 4;
-	while(detection_packets_left>0 && running && get_state()!=EXITING){
+	while(detection_packets_left>0 && running && rc_get_state()!=EXITING){
 		usleep(5000);
 		available = uart_bytes_available(DSM_UART_BUS);
 
@@ -339,7 +339,7 @@ DETECTION_START:
 	}
 
 	// do an exit check here since there is a jump above this code
-	if(!running || get_state()==EXITING) return 0;
+	if(!running || rc_get_state()==EXITING) return 0;
 
 	/***************************************************************************
 	* now determine which mode from detection data
@@ -385,7 +385,7 @@ DETECTION_START:
 	* normal operation loop
 	***************************************************************************/
 START_NORMAL_LOOP:
-	while(running && get_state()!=EXITING){
+	while(running && rc_get_state()!=EXITING){
 		usleep(5000);
 		available = uart_bytes_available(DSM_UART_BUS);
 
@@ -719,7 +719,7 @@ void *calibration_listen_func(void *params){
 	printf("waiting for dsm connection");
 	get_dsm_ch_raw(1); // flush the data ready flag with a read
 	while(!is_new_dsm_data()){
-		if(get_state()==EXITING || listening==0){
+		if(rc_get_state()==EXITING || listening==0){
 			return 0;
 		}
 		usleep(5000); 
@@ -733,7 +733,7 @@ void *calibration_listen_func(void *params){
 	}
 	
 	// record limits until user presses enter
-	while(listening && get_state()!=EXITING){
+	while(listening && rc_get_state()!=EXITING){
 		printf("\r");
 		if (is_new_dsm_data()){
 			for(j=0;j<MAX_DSM_CHANNELS;j++){

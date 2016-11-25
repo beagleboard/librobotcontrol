@@ -84,7 +84,7 @@ void* gps_listener(void *ptr){
 	// running will become 0 when stop_gps_service() is called
 	// or cleanup_cape() will set state to exiting
 	running = 1;
-	while(running && get_state()!=EXITING){
+	while(running && rc_get_state()!=EXITING){
 		memset(&buf, 0, sizeof(buf)); // clear buffer
 		// read the buffer and decide what to do
 		//ret = uart_read_line(GPS_UART_BUS, GPS_BUFFER_SIZE, buf);

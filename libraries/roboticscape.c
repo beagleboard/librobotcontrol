@@ -20,7 +20,7 @@
 /*******************************************************************************
 * Global Variables
 *******************************************************************************/
-enum state_t state = UNINITIALIZED;
+enum rc_state_t rc_state = UNINITIALIZED;
 int pause_btn_state, mode_btn_state;
 int mdir1a, mdir2b; // variable gpio pin assignments
 
@@ -55,11 +55,11 @@ pthread_t mode_released_thread;
 
 
 /*******************************************************************************
-* int initialize_cape()
+* int initialize_roboticscape()
 * sets up necessary hardware and software
 * should be the first thing your program calls
 *******************************************************************************/
-int initialize_cape(){
+int initialize_roboticscape(){
 	FILE *fd; 
 
 	// check if another project was using resources
@@ -188,19 +188,19 @@ int initialize_cape(){
 	usleep(10000);
 	
 	// all done
-	set_state(PAUSED);
+	rc_set_state(PAUSED);
 
 	return 0;
 }
 
 /*******************************************************************************
-*	int cleanup_cape()
+*	int cleanup_roboticscape()
 *	shuts down library and hardware functions cleanly
 *	you should call this before your main() function returns
 *******************************************************************************/
-int cleanup_cape(){
+int cleanup_roboticscape(){
 	// just in case the user forgot, set state to exiting
-	set_state(EXITING);
+	rc_set_state(EXITING);
 	
 	// announce we are starting cleanup process
 	printf("\nExiting Cleanly\n");
@@ -238,8 +238,8 @@ int cleanup_cape(){
 	#ifdef DEBUG
 	printf("turning off GPIOs & PWM\n");
 	#endif
-	set_led(GREEN,LOW);
-	set_led(RED,LOW);	
+	rc_set_led(GREEN,LOW);
+	rc_set_led(RED,LOW);	
 	disable_motors();
 	manual_deselect_spi_slave(1);	
 	manual_deselect_spi_slave(2);	
@@ -270,34 +270,34 @@ int cleanup_cape(){
 
 
 /*******************************************************************************
-* @ state_t get_state()
+* @ rc_state_t rc_get_state()
 *
 * returns the high-level robot state variable
 * use this for managing how your threads start and stop
 *******************************************************************************/
-state_t get_state(){
-	return state;
+rc_state_t rc_get_state(){
+	return rc_state;
 }
 
 
 /*******************************************************************************
-* @ int set_state(state_t new_state)
+* @ int rc_set_state(rc_state_t new_state)
 *
 * sets the high-level robot state variable
 * use this for managing how your threads start and stop
 *******************************************************************************/
-int set_state(state_t new_state){
-	state = new_state;
+int rc_set_state(rc_state_t new_state){
+	rc_state = new_state;
 	return 0;
 }
 
 /*******************************************************************************
-* @ int print_state()
+* @ int rc_print_state()
 * 
-* Prints the textual name of the state to the screen.
+* Prints the textual name of the state to the current state to the screen.
 *******************************************************************************/
-int print_state(){
-	switch(state){
+int rc_print_state(){
+	switch(rc_state){
 	case UNINITIALIZED:
 		printf("UNINITIALIZED");
 		break;
@@ -319,13 +319,13 @@ int print_state(){
 
 
 /*******************************************************************************
-* @ int set_led(led_t led, int state)
+* @ int rc_set_led(rc_led_t led, int state)
 * 
 * turn on or off the green or red LED on robotics cape
 * if state is 0, turn led off, otherwise on.
 * we suggest using the names HIGH or LOW
 *******************************************************************************/
-int set_led(led_t led, int state){
+int rc_set_led(rc_led_t led, int state){
 	int val;
 	if(state) val = HIGH;
 	else val = LOW;
@@ -345,12 +345,12 @@ int set_led(led_t led, int state){
 }
 
 /*******************************************************************************
-* int get_led_state(led_t led)
+* int rc_get_led(rc_led_t led)
 * 
 * returns the state of the green or red LED on robotics cape
 * state is LOW(0), or HIGH(1)
 *******************************************************************************/
-int get_led_state(led_t led){
+int rc_get_led(rc_led_t led){
 	int ret= -1;
 	switch(led){
 	case GREEN:
@@ -368,12 +368,12 @@ int get_led_state(led_t led){
 }
 
 /*******************************************************************************
-* blink_led()
+* rc_blink_led(rc_led_t led, float hz, float period)
 *	
 * Flash an LED at a set frequency for a finite period of time.
 * This is a blocking call and only returns after flashing.
 *******************************************************************************/
-int blink_led(led_t led, float hz, float period){
+int rc_blink_led(rc_led_t led, float hz, float period){
 	const int delay_us = 1000000.0/(2.0*hz); 
 	const int blinks = period*2.0*hz;
 	int i;
@@ -381,13 +381,13 @@ int blink_led(led_t led, float hz, float period){
 	
 	for(i=0;i<blinks;i++){
 		toggle = !toggle;
-		if(get_state()==EXITING) break;
-		set_led(led,toggle);
+		if(rc_get_state()==EXITING) break;
+		rc_set_led(led,toggle);
 		// wait for next blink
 		usleep(delay_us);
 	}
 	
-	set_led(led, 0); // make sure it is left off
+	rc_set_led(led, 0); // make sure it is left off
 	return 0;
 }
 
@@ -441,7 +441,7 @@ void* pause_pressed_handler(void* ptr){
 	fdset[0].fd = gpio_fd;
 	fdset[0].events = POLLPRI; // high-priority interrupt
 	// keep running until the program closes
-	while(get_state() != EXITING) {
+	while(rc_get_state() != EXITING) {
 		// system hangs here until FIFO interrupt
 		poll(fdset, 1, POLL_TIMEOUT);        
 		if (fdset[0].revents & POLLPRI) {
@@ -479,7 +479,7 @@ void* pause_released_handler(void* ptr){
 	fdset[0].fd = gpio_fd;
 	fdset[0].events = POLLPRI; // high-priority interrupt
 	// keep running until the program closes
-	while(get_state() != EXITING) {
+	while(rc_get_state() != EXITING) {
 		// system hangs here until FIFO interrupt
 		poll(fdset, 1, POLL_TIMEOUT);        
 		if (fdset[0].revents & POLLPRI) {
@@ -516,7 +516,7 @@ void* mode_pressed_handler(void* ptr){
 	fdset[0].fd = gpio_fd;
 	fdset[0].events = POLLPRI; // high-priority interrupt
 	// keep running until the program closes
-	while(get_state() != EXITING) {
+	while(rc_get_state() != EXITING) {
 		// system hangs here until FIFO interrupt
 		poll(fdset, 1, POLL_TIMEOUT);        
 		if (fdset[0].revents & POLLPRI) {
@@ -553,7 +553,7 @@ void* mode_released_handler(void* ptr){
 	fdset[0].fd = gpio_fd;
 	fdset[0].events = POLLPRI; // high-priority interrupt
 	// keep running until the program closes
-	while(get_state() != EXITING) {
+	while(rc_get_state() != EXITING) {
 		// system hangs here until FIFO interrupt
 		poll(fdset, 1, POLL_TIMEOUT);        
 		if (fdset[0].revents & POLLPRI) {
@@ -600,9 +600,9 @@ int set_mode_released_func(int (*func)(void)){
 }
 
 /*******************************************************************************
-*	button_state_t get_pause_button()
+* rc_button_state_t get_pause_button()
 *******************************************************************************/
-button_state_t get_pause_button(){
+rc_button_state_t get_pause_button(){
 	if(mmap_gpio_read(PAUSE_BTN)==HIGH){
 		return RELEASED;
 	}
@@ -612,9 +612,9 @@ button_state_t get_pause_button(){
 }
 
 /********************************************************************************
-*	button_state_t get_mode_button()
+* rc_button_state_t get_mode_button()
 *******************************************************************************/
-button_state_t get_mode_button(){
+rc_button_state_t get_mode_button(){
 	if(mmap_gpio_read(MODE_BTN)==HIGH){
 		return RELEASED;
 	}
@@ -929,14 +929,14 @@ int disable_servo_power_rail(){
 * shutdown_signal_handler(int signo)
 *
 * catch Ctrl-C signal and change system state to EXITING
-* all threads should watch for get_state()==EXITING and shut down cleanly
+* all threads should watch for rc_get_state()==EXITING and shut down cleanly
 *******************************************************************************/
 void shutdown_signal_handler(int signo){
 	if (signo == SIGINT){
-		set_state(EXITING);
+		rc_set_state(EXITING);
 		printf("\nreceived SIGINT Ctrl-C\n");
  	}else if (signo == SIGTERM){
-		set_state(EXITING);
+		rc_set_state(EXITING);
 		printf("\nreceived SIGTERM\n");
  	}
 }

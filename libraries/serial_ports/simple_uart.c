@@ -360,7 +360,7 @@ int uart_read_bytes(int bus, int bytes, char* buf){
 	// exit the read loop once enough bytes have been read
 	// or the global flow state becomes EXITING. This prevents programs
 	// getting stuck here and not exiting properly
-	while((bytes_left>0)&&get_state()!=EXITING){
+	while((bytes_left>0)&&rc_get_state()!=EXITING){
 		FD_ZERO(&set); /* clear the set */
 		FD_SET(fd[bus], &set); /* add our file descriptor to the set */
 		ret = select(fd[bus] + 1, &set, NULL, NULL, &timeout);
@@ -430,7 +430,7 @@ int uart_read_line(int bus, int max_bytes, char* buf){
 	// exit the read loop once enough bytes have been read
 	// or the global flow state becomes EXITING. This prevents programs
 	// getting stuck here and not exiting properly
-	while(bytes_read<max_bytes && get_state()!=EXITING){
+	while(bytes_read<max_bytes && rc_get_state()!=EXITING){
 		FD_ZERO(&set); /* clear the set */
 		FD_SET(fd[bus], &set); /* add our file descriptor to the set */
 		ret = select(fd[bus] + 1, &set, NULL, NULL, &timeout);

@@ -1445,11 +1445,11 @@ void* imu_interrupt_handler(void* ptr){
 	fdset[0].events = POLLPRI;
 	// keep running until the program closes
 	mpu_reset_fifo();
-	while(get_state()!=EXITING && shutdown_interrupt_thread!=1) {
+	while(rc_get_state()!=EXITING && shutdown_interrupt_thread!=1) {
 		// system hangs here until IMU FIFO interrupt
 		poll(fdset, 1, IMU_POLL_TIMEOUT); 
 
-		if(get_state()==EXITING || shutdown_interrupt_thread==1){
+		if(rc_get_state()==EXITING || shutdown_interrupt_thread==1){
 			break;
 		}
 		else if (fdset[0].revents & POLLPRI) {
@@ -2519,7 +2519,7 @@ int calibrate_mag_routine(){
 	i = 0;
 		
 	// sample data
-	while(i<samples && get_state()!=EXITING){
+	while(i<samples && rc_get_state()!=EXITING){
 		if(read_mag_data(&imu_data)<0){
 			printf("ERROR: failed to read magnetometer\n");
 			break;

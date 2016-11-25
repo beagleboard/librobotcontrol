@@ -246,7 +246,7 @@ int continue_or_quit(){
   	int ret;
 	if(c==3){
 		printf("recieved Ctrl-C\n");
-		set_state(EXITING);
+		rc_set_state(EXITING);
 		ret = -1;
 	}
 	else if(c=='\r' || c=='\n'){
