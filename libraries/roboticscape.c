@@ -14,8 +14,8 @@
 #include "other/robotics_pru.h"
 
 
-#define CAPE_NAME 	"RoboticsCape"
-#define MAX_BUF 	512
+#define CAPE_NAME	"RoboticsCape"
+#define MAX_BUF		512
 
 /*******************************************************************************
 * Global Variables
@@ -73,8 +73,7 @@ int initialize_roboticscape(){
 	#ifdef DEBUG
 	printf("Initializing exit signal handler\n");
 	#endif
-	signal(SIGINT, shutdown_signal_handler);	
-	signal(SIGTERM, shutdown_signal_handler);	
+	enable_rc_sig_handler();
 
 
 	// do any board-specific config
@@ -1062,4 +1061,29 @@ int kill_robot(){
 	return -1;
 }
 
+/*******************************************************************************
+* @ void disable_rc_sig_handler(
+*
+* Disables the built-in signal handler. Use only if you want to implement your
+* own signal handler. Make sure your handler sets rc_state to EXITING or calls
+* cleanup_cape on shutdown to ensure roboticscape library threads close
+* cleanly.
+*******************************************************************************/
+void disable_rc_sig_handler(){
+	signal(SIGINT, SIG_DFL);
+	signal(SIGKILL, SIG_DFL);
+	return;
+}
+
+/*******************************************************************************
+* @ void enable_rc_sig_handler(
+*
+* enables the built-in signal handler if it was disabled before. The built-in 
+* signal handler is enabled in initialize_roboticscape()
+*******************************************************************************/
+void enable_rc_sig_handler(){
+	signal(SIGINT, shutdown_signal_handler);
+	signal(SIGTERM, shutdown_signal_handler);
+	return;
+}
 

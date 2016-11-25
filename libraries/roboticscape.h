@@ -47,10 +47,24 @@ typedef struct timeval timeval;
 *
 * All example programs use these functions. See the bare_minimum example 
 * for a skeleton outline.
+*
+* @ void disable_rc_sig_handler(
+*
+* Disables the built-in signal handler. Use only if you want to implement your
+* own signal handler. Make sure your handler sets rc_state to EXITING or calls
+* cleanup_cape on shutdown to ensure roboticscape library threads close
+* cleanly.
+*
+* @ void enable_rc_sig_handler(
+*
+* enables the built-in signal handler if it was disabled before. The built-in 
+* signal handler is enabled in initialize_roboticscape()
 *******************************************************************************/
 int initialize_roboticscape();	// call at the beginning of main()
 int cleanup_roboticscape();		// call at the end of main()
 int kill_robot();	// not usually necessary, use kill_robot example instead
+void disable_rc_sig_handler();
+void enable_rc_sig_handler();
 
 
 /*******************************************************************************
