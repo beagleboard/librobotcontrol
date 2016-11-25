@@ -19,7 +19,7 @@
 int main(){
 	int i;
 
-	if(initialize_cape()){
+	if(initialize_roboticscape()){
 		printf("ERROR: failed to initialize cape\n");
 		return -1;
 	}
@@ -43,11 +43,11 @@ int main(){
 	printf("Waiting for first packet");
 	fflush(stdout);
 	while(is_new_dsm_data()==0){
-		if(get_state()==EXITING) return 0;
+		if(rc_get_state()==EXITING) return 0;
 		usleep(50000);
 	}
 
-	while(get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){
 		if(is_new_dsm_data()){	
 			printf("\r");// keep printing on same line
 			int channels = get_num_dsm_channels();
@@ -69,6 +69,6 @@ int main(){
 		fflush(stdout);
 		usleep(25000);
 	}
-	cleanup_cape();
+	cleanup_roboticscape();
 	return 0;
 }

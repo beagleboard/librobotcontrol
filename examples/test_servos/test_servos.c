@@ -176,7 +176,7 @@ int main(int argc, char *argv[]){
 	
 	// okay, off we go!
 	printf("Initializing Cape\n");
-	if(initialize_cape()){
+	if(initialize_roboticscape()){
 		printf("ERROR: failed to initialize_cape\n");
 		return -1;
 	}
@@ -221,13 +221,13 @@ int main(int argc, char *argv[]){
 		break;
 		
 	default:
-		set_state(EXITING); //should never actually get here
+		rc_set_state(EXITING); //should never actually get here
 		break;
 	}
 	
 	
 	// Main loop runs at frequency_hz
-	while(get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){
 		switch(mode){
 			
 		case SERVO:
@@ -265,19 +265,19 @@ int main(int argc, char *argv[]){
 			break;
 			
 		default:
-			set_state(EXITING); //should never actually get here
+			rc_set_state(EXITING); //should never actually get here
 			break;
 		}
 		
 		// blink green led
-		set_led(GREEN, toggle);
+		rc_set_led(GREEN, toggle);
 		toggle = !toggle;
 		
 		// sleep roughly enough to maintain frequency_hz
 		usleep(1000000/frequency_hz);
 	}
 	
-	cleanup_cape();
+	cleanup_roboticscape();
     return 0;
 }
 	

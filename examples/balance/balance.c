@@ -99,13 +99,13 @@ imu_data_t imu_data;
 int main(){
 	set_cpu_frequency(FREQ_1000MHZ);
 
-	if(initialize_cape()<0){
+	if(initialize_roboticscape()<0){
 		printf("ERROR: failed to initialize cape\n");
 		return -1;
 	}
-	set_led(RED,1);
-	set_led(GREEN,0);
-	set_state(UNINITIALIZED);
+	rc_set_led(RED,1);
+	rc_set_led(GREEN,0);
+	rc_set_state(UNINITIALIZED);
 
 
 	// make sure setpoint starts at normal values
@@ -115,7 +115,7 @@ int main(){
 	// set up D1 Theta controller
 	float D1_num[] = D1_NUM;
 	float D1_den[] = D1_DEN;
-	D1 = create_filter(D1_ORDER, DT, D1_num, D1_den);
+	D1 = create_filter_from_arrays(D1_ORDER, DT, D1_num, D1_den);
 	D1.gain = D1_GAIN;
 	enable_saturation(&D1, -1.0, 1.0);
 	enable_soft_start(&D1, SOFT_START_SEC);
@@ -123,7 +123,7 @@ int main(){
 	// set up D2 Phi controller
 	float D2_num[] = D2_NUM;
 	float D2_den[] = D2_DEN;
-	D2 = create_filter(D2_ORDER, DT, D2_num, D2_den);
+	D2 = create_filter_from_arrays(D2_ORDER, DT, D2_num, D2_den);
 	D2.gain = D2_GAIN;
 	enable_saturation(&D2, -THETA_REF_MAX, THETA_REF_MAX);
 
@@ -139,7 +139,7 @@ int main(){
 	pthread_t  battery_thread;
 	pthread_create(&battery_thread, NULL, battery_checker, (void*) NULL);
 	// wait for the battery thread to make the first read
-	while(cstate.vBatt==0 && get_state()!=EXITING) usleep(1000);
+	while(cstate.vBatt==0 && rc_get_state()!=EXITING) usleep(1000);
 	
 	// start printf_thread if running from a terminal
 	// if it was started as a background process then don't bother
@@ -156,7 +156,7 @@ int main(){
 	// start imu
 	if(initialize_imu_dmp(&imu_data, imu_config)){
 		printf("ERROR: can't talk to IMU, all hope is lost\n");
-		blink_led(RED, 5, 5);
+		rc_blink_led(RED, 5, 5);
 		return -1;
 	}
 	
@@ -171,16 +171,16 @@ int main(){
 	// start in the RUNNING state, pressing the puase button will swap to 
 	// the PUASED state then back again.
 	printf("\nHold your MIP upright to begin balancing\n");
-	set_state(RUNNING);
+	rc_set_state(RUNNING);
 	
 	// chill until something exits the program
-	while(get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){
 		usleep(10000);
 	}
 	
 	// cleanup
 	power_off_imu();
-	cleanup_cape();
+	cleanup_roboticscape();
 	set_cpu_frequency(FREQ_ONDEMAND);
 	return 0;
 }
@@ -200,16 +200,16 @@ void* setpoint_manager(void* ptr){
 	usleep(1000000);
 	usleep(1000000);
 	usleep(500000);
-	set_state(RUNNING);
-	set_led(RED,0);
-	set_led(GREEN,1);
+	rc_set_state(RUNNING);
+	rc_set_led(RED,0);
+	rc_set_led(GREEN,1);
 	
-	while(get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){
 		// sleep at beginning of loop so we can use the 'continue' statement
 		usleep(1000000/SETPOINT_MANAGER_HZ); 
 		
 		// nothing to do if paused, go back to beginning of loop
-		if(get_state() != RUNNING) continue;
+		if(rc_get_state() != RUNNING) continue;
 
 		// if we got here the state is RUNNING, but controller is not
 		// necessarily armed. If DISARMED, wait for the user to pick MIP up
@@ -297,12 +297,12 @@ int balance_controller(){
 	/*************************************************************
 	* check for various exit conditions AFTER state estimate
 	***************************************************************/
-	if(get_state() == EXITING){
+	if(rc_get_state() == EXITING){
 		disable_motors();
 		return 0;
 	}
 	// if controller is still ARMED while state is PAUSED, disarm it
-	if(get_state()!=RUNNING && setpoint.arm_state==ARMED){
+	if(rc_get_state()!=RUNNING && setpoint.arm_state==ARMED){
 		disarm_controller();
 		return 0;
 	}
@@ -428,7 +428,7 @@ int wait_for_starting_condition(){
 	int wait_us = 1000000/check_hz; 
 
 	// exit if state becomes paused or exiting
-	while(get_state()==RUNNING){
+	while(rc_get_state()==RUNNING){
 		// if within range, start counting
 		if(fabs(cstate.theta) < START_ANGLE){
 			checks++;
@@ -450,7 +450,7 @@ int wait_for_starting_condition(){
 *******************************************************************************/
 void* battery_checker(void* ptr){
 	float new_v;
-	while(get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){
 		new_v = get_battery_voltage();
 		// if the value doesn't make sense, use nominal voltage
 		if (new_v>9.0 || new_v<5.0) new_v = V_NOMINAL;
@@ -467,11 +467,11 @@ void* battery_checker(void* ptr){
 * this only gets started if executing from terminal
 *******************************************************************************/
 void* printf_loop(void* ptr){
-	state_t last_state, new_state; // keep track of last state 
-	while(get_state()!=EXITING){
-		new_state = get_state();
+	rc_state_t last_rc_state, new_rc_state; // keep track of last state 
+	while(rc_get_state()!=EXITING){
+		new_rc_state = rc_get_state();
 		// check if this is the first time since being paused
-		if(new_state==RUNNING && last_state!=RUNNING){
+		if(new_rc_state==RUNNING && last_rc_state!=RUNNING){
 			printf("\nRUNNING: Hold upright to balance.\n");
 			printf("    θ    |");
 			printf("  θ_ref  |");
@@ -484,13 +484,13 @@ void* printf_loop(void* ptr){
 			printf("arm_state|");
 			printf("\n");
 		}
-		else if(new_state==PAUSED && last_state!=PAUSED){
+		else if(new_rc_state==PAUSED && last_rc_state!=PAUSED){
 			printf("\nPAUSED: press pause again to start.\n");
 		}
-		last_state = new_state;
+		last_rc_state = new_rc_state;
 		
 		// decide what to print or exit
-		if(new_state == RUNNING){	
+		if(new_rc_state == RUNNING){	
 			printf("\r");
 			printf("%7.2f  |", cstate.theta);
 			printf("%7.2f  |", setpoint.theta);
@@ -520,21 +520,21 @@ int on_pause_press(){
 	const int samples = 100;	// check for release 100 times in this period
 	const int us_wait = 2000000; // 2 seconds
 	
-	switch(get_state()){
+	switch(rc_get_state()){
 	// pause if running
 	case EXITING:
 		return 0;
 	case RUNNING:
-		set_state(PAUSED);
+		rc_set_state(PAUSED);
 		disarm_controller();
-		set_led(RED,1);
-		set_led(GREEN,0);
+		rc_set_led(RED,1);
+		rc_set_led(GREEN,0);
 		break;
 	case PAUSED:
-		set_state(RUNNING);
+		rc_set_state(RUNNING);
 		disarm_controller();
-		set_led(GREEN,1);
-		set_led(RED,0);
+		rc_set_led(GREEN,1);
+		rc_set_led(RED,0);
 		break;
 	default:
 		break;
@@ -550,8 +550,8 @@ int on_pause_press(){
 	}
 	printf("long press detected, shutting down\n");
 	//user held the button down long enough, blink and exit cleanly
-	blink_led(RED,5,2);
-	set_state(EXITING);
+	rc_blink_led(RED,5,2);
+	rc_set_state(EXITING);
 	return 0;
 }
 
@@ -570,6 +570,6 @@ int on_mode_release(){
 		printf("using drive_mode = NOVICE\n");
 	}
 	
-	blink_led(GREEN,5,1);
+	rc_blink_led(GREEN,5,1);
 	return 0;
 }

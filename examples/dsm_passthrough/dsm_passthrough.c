@@ -85,7 +85,7 @@ int main(int argc, char *argv[]){
 		return -1;
 	}
 	
-	if(initialize_cape()){
+	if(initialize_roboticscape()){
 		printf("ERROR: failed to initialize_cape\n");
 		return -1;
 	}
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]){
 	fflush(stdout);
 	
 	set_new_dsm_data_func(&send_pulses);
-	while(get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){
 		ms = ms_since_last_dsm_packet();
 		if(ms>500){	
 			printf("\rMilliseconds since last packet: %d         ", ms);
@@ -123,6 +123,6 @@ int main(int argc, char *argv[]){
 		usleep(20000);
 	}
 	printf("\n");
-	cleanup_cape();
+	cleanup_roboticscape();
 	return 0;
 }

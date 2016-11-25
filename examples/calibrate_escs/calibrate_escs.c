@@ -23,7 +23,7 @@ float width; // global variable for normalized pulse width to send
 
 // background thread to send pulses at 50hz to ESCs
 void *send_pulses(void *params){
-	while(get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){
 		send_esc_pulse_normalized_all(width);
 		usleep(20000);
 	}
@@ -31,7 +31,7 @@ void *send_pulses(void *params){
 }
 
 int main(){
-	initialize_cape();
+	initialize_roboticscape();
 	
 	printf("\nDISCONNECT PROPELLERS FROM MOTORS\n");
 	printf("DISCONNECT POWER FROM ESCS\n");
@@ -48,7 +48,7 @@ int main(){
 	printf("\n");
 	printf("Now reapply power to the ESCs.\n");
 	printf("Press enter again after the ESCs finish chirping\n");
-	set_led(GREEN,1);
+	rc_set_led(GREEN,1);
 	if(continue_or_quit()<1){
 		printf("aborting calibrate_escs\n");
 		goto END;
@@ -68,9 +68,9 @@ int main(){
 	// cleanup and close
 	printf("\nCalibration complete, check with test_servos\n");
 END:
-	set_state(EXITING); // this tells the send_pulses thread to stop
+	rc_set_state(EXITING); // this tells the send_pulses thread to stop
 	pthread_join(send_pulse_thread, NULL); // wait for it to stop
 	
-	cleanup_cape();
+	cleanup_roboticscape();
 	return 0;
 }

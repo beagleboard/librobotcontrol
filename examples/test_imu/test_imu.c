@@ -55,7 +55,7 @@ int main(int argc, char *argv[]){
 		}
 	}
 
-	if(initialize_cape()){
+	if(initialize_roboticscape()){
 		printf("ERROR: failed to initialize_cape\n");
 		return -1;
 	}
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]){
 	printf("\n");
 	
 	//now just wait, print_data will run
-	while (get_state() != EXITING) {
+	while (rc_get_state() != EXITING) {
 		printf("\r");
 		
 		// print accel
@@ -155,7 +155,7 @@ int main(int argc, char *argv[]){
 	}
 
 	power_off_imu();
-	cleanup_cape();
+	cleanup_roboticscape();
 	return 0;
 }
 

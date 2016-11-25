@@ -10,22 +10,22 @@
 
 int main(){
 	// always initialize cape library first
-	initialize_cape();
+	initialize_roboticscape();
 	printf("\nHello BeagleBone\n");
-	set_state(RUNNING);
+	rc_set_state(RUNNING);
 	// Keep Running until state changes to EXITING
-	while(get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){
 		// handle other states
-		if(get_state()==RUNNING){
+		if(rc_get_state()==RUNNING){
 			// do things
 		}
-		else if(get_state()==PAUSED){
+		else if(rc_get_state()==PAUSED){
 			// do other things
 		}
 		// always sleep at some point
 		usleep(100000);
 	}
 	
-	cleanup_cape(); // exit cleanly
+	cleanup_roboticscape(); // exit cleanly
 	return 0;
 }

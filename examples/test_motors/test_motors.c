@@ -100,15 +100,15 @@ int main(int argc, char *argv[]){
 	}
 	
 	// sanity check cape library initialized
-	if(initialize_cape()){
+	if(initialize_roboticscape()){
 		printf("failed to initialize cape\n");
 		return -1;
 	}
 
 	// bring H-bridges of of standby
 	enable_motors(); 
-	set_led(GREEN,ON);
-	set_led(RED,ON);
+	rc_set_led(GREEN,ON);
+	rc_set_led(RED,ON);
 	
 	// decide what to do
 	switch(m_mode){
@@ -147,7 +147,7 @@ int main(int argc, char *argv[]){
 	}
 	
 	// wait untill the user exits
-	while(get_state() != EXITING){
+	while(rc_get_state() != EXITING){
 		if(m_mode==SWEEP){
 			duty = -duty; // toggle back and forth to sweep motors side to side
 			if(all){
@@ -170,7 +170,7 @@ int main(int argc, char *argv[]){
 	printf("All Motors Off\n\n");
 	
 	// final cleanup
-	cleanup_cape();
+	cleanup_roboticscape();
 	return 0;
 }
 

@@ -11,7 +11,7 @@
 * will flash the red LED and exit cleanly.
 *
 * This should be used as a reference for how to handle buttons and how to
-* control program flow cleanly utilizing get_state() and set_state().
+* control program flow cleanly utilizing rc_get_state() and rc_set_state().
 *******************************************************************************/
 
 #include "../../libraries/roboticscape-usefulincludes.h"
@@ -31,12 +31,12 @@ int toggle; // toggles between 0&1 for led blink
 int on_pause_press(){
 	printf("user pressed Pause\n");
 	// toggle between PAUSED and RUNNING 
-	switch(get_state()){
+	switch(rc_get_state()){
 	case PAUSED:
-		set_state(RUNNING); // toggle running/paused
+		rc_set_state(RUNNING); // toggle running/paused
 		break;
 	case RUNNING:
-		set_state(PAUSED);	// toggle running/paused
+		rc_set_state(PAUSED);	// toggle running/paused
 		break;
 	case EXITING: // be careful to exit if program is already shutting down!!!
 		return 0; 
@@ -55,9 +55,9 @@ int on_pause_press(){
 		i+=1000;
 	}
 	printf("long press detected, shutting down\n");
-	blink_led(RED, 15, 0.5); // blink 5hz for 1 second
+	rc_blink_led(RED, 15, 0.5); // blink 5hz for 1 second
 	//user held the button down long enough, blink and exit cleanly
-	set_state(EXITING);
+	rc_set_state(EXITING);
 	return 0;
 }
 
@@ -72,7 +72,7 @@ int on_mode_release(){
 
 // main function usually sits in one while loop blinking LEDs depending
 int main(){
-	if(initialize_cape()){
+	if(initialize_roboticscape()){
 		printf("failed to initialize cape\n");
 		return -1;
 	}
@@ -86,21 +86,21 @@ int main(){
 	
 	// start in slow mode
 	mode = 0;
-	set_state(RUNNING);
+	rc_set_state(RUNNING);
 	
 	// Run the main loop untill state is EXITING which is set by hitting ctrl-c
 	// or holding down the pause button for more than the quit timeout period
-	while(get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){
 		// if the state is RUNNING (instead of PAUSED) then blink!
-		if(get_state()==RUNNING){
+		if(rc_get_state()==RUNNING){
 			if(toggle){
-				set_led(GREEN,OFF);
-				set_led(RED,ON);
+				rc_set_led(GREEN,OFF);
+				rc_set_led(RED,ON);
 				toggle = 0;
 			}
 			else{
-				set_led(GREEN,ON);
-				set_led(RED,OFF);
+				rc_set_led(GREEN,ON);
+				rc_set_led(RED,OFF);
 				toggle=1;
 			}
 		}
@@ -109,6 +109,6 @@ int main(){
 	}
 	
 	// now that the while loop has exited, clean up neatly and exit compeltely.
-	cleanup_cape();
+	cleanup_roboticscape();
 	return 0;
 }

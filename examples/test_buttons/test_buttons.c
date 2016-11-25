@@ -11,35 +11,35 @@
 
 // pause button pressed interrupt function
 int on_pause_pressed(){
-	set_led(GREEN, ON);
+	rc_set_led(GREEN, ON);
 	printf("Pause Pressed\n");
 	return 0;
 }
 
 // pause button released interrupt function
 int on_pause_released(){
-	set_led(GREEN, OFF);
+	rc_set_led(GREEN, OFF);
 	printf("Pause Released\n");
 	return 0;
 }
 
 // mode button pressed interrupt function
 int on_mode_pressed(){
-	set_led(RED, ON);
+	rc_set_led(RED, ON);
 	printf("Mode Pressed\n");
 	return 0;
 }
 
 // mode button released interrupt function
 int on_mode_released(){
-	set_led(RED,OFF);
+	rc_set_led(RED,OFF);
 	printf("Mode Released\n");
 	return 0;
 }
 
 // main just assigns interrupt functions and waits to exit
 int main(){
-	if(initialize_cape()){
+	if(initialize_roboticscape()){
 		printf("failed to initialize cape\n");
 		return -1;
 	}
@@ -53,10 +53,10 @@ int main(){
 	printf("Press buttons to see response\n");
 	
 	//toggle leds till the program state changes
-	while(get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){
 		usleep(10000);
 	}
 	
-	cleanup_cape();
+	cleanup_roboticscape();
 	return 0;
 }

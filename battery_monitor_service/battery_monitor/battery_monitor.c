@@ -20,12 +20,13 @@
 #define CELL_50			3.60 // minimum V to consider battery 50%
 #define CELL_25			3.25 // minimum V to consider battery 25%
 #define CELL_DIS		2.70 // Threshold for detecting disconnected battery
-#define V_CHG_DETECT  	4.15 // above this assume finished charging
+#define V_CHG_DETECT	4.15 // above this assume finished charging
 
 // filter
-#define LOOP_SLEEP_US 		300000 	// 2hz sample
-#define FITLER_SAMPLES 		6		// average over 6 samples, 3 seconds
-#define STD_DEV_TOLERANCE 	0.04 	// above 0.1 definitely charging
+#define LOOP_HZ				3
+#define LOOP_SLEEP_US	1000000/LOOP_HZ
+#define FITLER_SAMPLES		6		// average over 6 samples, 3 seconds
+#define STD_DEV_TOLERANCE	0.04 	// above 0.1 definitely charging
 
 // functions
 void illuminate_leds(int i);
@@ -112,11 +113,11 @@ int main(int argc, char *argv[]){
 
 	// start filters
 	v_pack = get_battery_voltage();
-	filterB = create_moving_average(FITLER_SAMPLES);
+	filterB = create_moving_average(FITLER_SAMPLES, 1000000.0/LOOP_HZ);
 	prefill_filter_outputs(&filterB, v_pack);
 	prefill_filter_inputs(&filterB, v_pack);
 	v_jack = get_dc_jack_voltage();
-	filterJ = create_moving_average(FITLER_SAMPLES);
+	filterJ = create_moving_average(FITLER_SAMPLES, 1000000.0/LOOP_HZ);
 	prefill_filter_outputs(&filterJ, v_jack);
 	prefill_filter_inputs(&filterJ, v_jack);
 

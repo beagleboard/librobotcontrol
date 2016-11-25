@@ -23,11 +23,11 @@ int main(){
 	int ret; 			// return value
 	
 	// Initialization
-	initialize_cape();
+	initialize_roboticscape();
 	printf("Testing SPI \n\n");
 	if(initialize_spi(SS_MODE_AUTO, SPI_MODE, SPI_SPEED, SLAVE)){
 		printf("Failed to initialize_spi1\n");
-		cleanup_cape();
+		cleanup_roboticscape();
 		return -1;
 	}
 
@@ -63,6 +63,6 @@ int main(){
 
 cleanup:
 	close_spi(SLAVE);
-	cleanup_cape();
+	cleanup_roboticscape();
 	return 0;
 }

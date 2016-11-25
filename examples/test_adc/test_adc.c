@@ -11,7 +11,7 @@
 int main(){
 	int i;
 		
-	initialize_cape();
+	initialize_roboticscape();
 	
 	printf(" adc_0 |");
 	printf(" adc_1 |");
@@ -23,7 +23,7 @@ int main(){
 	printf("\n");
 	
 
-	while(get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){
 		printf("\r");
 		//print all channels
 		for(i=0;i<4;i++){
@@ -34,6 +34,6 @@ int main(){
 		fflush(stdout);
 		usleep(100000);
 	}
-	cleanup_cape();
+	cleanup_roboticscape();
 	return 0;
 }

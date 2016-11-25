@@ -43,7 +43,7 @@ int main(){
 
 	// Keep Running until program state changes to EXITING
 	u=1;
-	while(get_state() != EXITING){
+	while(rc_get_state() != EXITING){
 		// march all filters one step forward with u as the common input.
 		// new outputs saved as lp,hp,and i. complement is lp+hp
 		lp = march_filter(&low_pass, u);

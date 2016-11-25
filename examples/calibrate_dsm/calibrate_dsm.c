@@ -16,7 +16,7 @@
 #include "../../libraries/roboticscape.h"
 
 int main(){
-	if(initialize_cape()<0){
+	if(initialize_roboticscape()<0){
 		printf("ERROR: failed to initialize_cape\n");
 	}
 	
@@ -25,7 +25,7 @@ int main(){
 	printf("\n");
 	printf("Press ENTER to continue or anything else to quit\n");
 	if(continue_or_quit()<1){
-		cleanup_cape();
+		cleanup_roboticscape();
 		return -1;
 	}
 	
@@ -33,6 +33,6 @@ int main(){
 	calibrate_dsm_routine();
 	
 	// cleanup and close, calibration file already saved by the routine
-	cleanup_cape();
+	cleanup_roboticscape();
 	return 0;
 }

@@ -59,7 +59,7 @@ int main(int argc, char *argv[]){
 	}
 	
 	// Initialization
-	if(initialize_cape() < 0){
+	if(initialize_roboticscape() < 0){
 		printf("failed to initialize cape\n");
 		return -1;
 	}
@@ -70,11 +70,11 @@ int main(int argc, char *argv[]){
 	}
 
 	// printf print until user exists
-	while(get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){
 		usleep(500000);
 	}
 
 	stop_gps_service();
-	cleanup_cape();
+	cleanup_roboticscape();
 	return 0;
 }

@@ -47,8 +47,8 @@ int main(){
 
 	// initialize_cape, this should never fail unless software is not set up
 	// in which case a useful error message should be printed out.
-	if(initialize_cape()<0){
-		printf("initialize_cape() failed, this is a software issue,\n");
+	if(initialize_roboticscape()<0){
+		printf("initialize_roboticscape() failed, this is a software issue,\n");
 		printf("not a hardware issue. Try running install.sh and restart\n");
 		return -1;
 	}
@@ -77,10 +77,10 @@ int main(){
 	/***************************************************************************
 	* Begin main while loop
 	***************************************************************************/
-	while(get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){
 		line = 0; // reset current printing line to top of terminal
-		set_led(RED,OFF);
-		set_led(GREEN,OFF);
+		rc_set_led(RED,OFF);
+		rc_set_led(GREEN,OFF);
 		
 		// clear screen and print pass/fail header
 		clear_screen();
@@ -270,14 +270,14 @@ CHECK_DC_DISCONNECT:
 		if(ret<0) goto END;
 		// now loop back to test next cape
 
-	} // end while(get_state()!= EXITING)
+	} // end while(rc_get_state()!= EXITING)
 
 		
 	// if we got here there was a critical error or user hit ctrl+c
 END:
 	pthread_join(blinking_thread, NULL);
 	disable_servo_power_rail();
-	cleanup_cape();
+	cleanup_roboticscape();
 	clear_screen();
 	return 0;
 }
@@ -325,28 +325,28 @@ void fail_test(){
 
 // pause button pressed interrupt function
 int on_pause_pressed(){
-	set_led(RED, ON);
+	rc_set_led(RED, ON);
 	fflush(stdout);
 	return 0;
 }
 
 // pause button released interrupt function
 int on_pause_released(){
-	set_led(RED, OFF);
+	rc_set_led(RED, OFF);
 	fflush(stdout);
 	return 0;
 }
 
 // mode button pressed interrupt function
 int on_mode_pressed(){
-	set_led(GREEN, ON);
+	rc_set_led(GREEN, ON);
 	fflush(stdout);
 	return 0;
 }
 
 // mode button released interrupt function
 int on_mode_released(){
-	set_led(GREEN,OFF);
+	rc_set_led(GREEN,OFF);
 	fflush(stdout);
 	return 0;
 }
@@ -354,7 +354,7 @@ int on_mode_released(){
 void* blinking_function(void* ptr){
 	int toggle = 1;
 
-	while(get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){
 		if(toggle){
 			enable_servo_power_rail();
 			toggle = 0;

@@ -26,7 +26,7 @@ int main(){
 	d_filter_t lowpass;
 
 	// set up cape and barometer
-	if(initialize_cape()){
+	if(initialize_roboticscape()){
 		printf("ERROR: failed to initialize_cape\n");
 		return -1;
 	}
@@ -50,7 +50,7 @@ int main(){
 	printf("\n");
 	
 	//now just wait, print_data will run
-	while (get_state()!=EXITING) {
+	while (rc_get_state()!=EXITING) {
 		usleep(1000000/BMP_CHECK_HZ);
 		
 		// perform the i2c reads to the sensor, this takes a bit of time
@@ -78,7 +78,7 @@ int main(){
 	}
 
 	power_off_barometer();
-	cleanup_cape();
+	cleanup_roboticscape();
 	return 0;
 }
 

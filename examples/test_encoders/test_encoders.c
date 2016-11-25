@@ -12,7 +12,7 @@
 int main(){
 	int i;
 
-	if(initialize_cape()<0){
+	if(initialize_roboticscape()<0){
 		printf("ERROR: failed to initialize cape");
 	}
 
@@ -23,7 +23,7 @@ int main(){
 	printf("   E4   |");
 	printf(" \n");
 
-	while(get_state() != EXITING){
+	while(rc_get_state() != EXITING){
 		printf("\r");
 		for(i=1;i<=4;i++){
 			printf("%6d  |", get_encoder_pos(i));
@@ -32,7 +32,7 @@ int main(){
 		usleep(50000);
 	}
 	
-	cleanup_cape();
+	cleanup_roboticscape();
 	return 0;
 }
 

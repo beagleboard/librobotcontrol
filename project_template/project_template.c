@@ -20,11 +20,11 @@ int on_pause_released();
 * This template main function contains these critical components
 * - call to initialize_cape
 * - main while loop that checks for EXITING condition
-* - cleanup_cape() at the end
+* - cleanup_roboticscape() at the end
 *******************************************************************************/
 int main(){
 	// always initialize cape library first
-	initialize_cape();
+	initialize_roboticscape();
 
 	// do your own initialization here
 	printf("\nHello BeagleBone\n");
@@ -32,27 +32,27 @@ int main(){
 	set_pause_released_func(&on_pause_released);
 
 	// done initializing so set state to RUNNING
-	set_state(RUNNING); 
+	rc_set_state(RUNNING); 
 
 	// Keep looping until state changes to EXITING
-	while(get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){
 		// handle other states
-		if(get_state()==RUNNING){
+		if(rc_get_state()==RUNNING){
 			// do things
-			set_led(GREEN, ON);
-			set_led(RED, OFF);
+			rc_set_led(GREEN, ON);
+			rc_set_led(RED, OFF);
 		}
-		else if(get_state()==PAUSED){
+		else if(rc_get_state()==PAUSED){
 			// do other things
-			set_led(GREEN, OFF);
-			set_led(RED, ON);
+			rc_set_led(GREEN, OFF);
+			rc_set_led(RED, ON);
 		}
 		// always sleep at some point
 		usleep(100000);
 	}
 	
 	// exit cleanly
-	cleanup_cape(); 
+	cleanup_roboticscape(); 
 	return 0;
 }
 
@@ -64,8 +64,8 @@ int main(){
 *******************************************************************************/
 int on_pause_released(){
 	// toggle betewen paused and running modes
-	if(get_state()==RUNNING)   		set_state(PAUSED);
-	else if(get_state()==PAUSED)	set_state(RUNNING);
+	if(rc_get_state()==RUNNING)   		rc_set_state(PAUSED);
+	else if(rc_get_state()==PAUSED)	rc_set_state(RUNNING);
 	return 0;
 }
 
@@ -86,6 +86,6 @@ int on_pause_pressed(){
 		if(get_pause_button() == RELEASED) return 0;
 	}
 	printf("long press detected, shutting down\n");
-	set_state(EXITING);
+	rc_set_state(EXITING);
 	return 0;
 }

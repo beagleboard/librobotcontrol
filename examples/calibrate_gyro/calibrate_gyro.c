@@ -11,7 +11,7 @@
 #include "../../libraries/roboticscape.h"
 
 int main(){
-	if(initialize_cape()<0){
+	if(initialize_roboticscape()<0){
 		printf("Failed to initialize cape, exiting\n");
 		return -1;
 	}
@@ -20,7 +20,7 @@ int main(){
 	printf("keep your beaglebone very still for this procedure.\n");
 	printf("Press ENTER to continue or anything else to quit\n");
 	if(continue_or_quit()<1){
-		cleanup_cape();
+		cleanup_roboticscape();
 		return -1;
 	}
 	
@@ -33,6 +33,6 @@ int main(){
 	printf("\ngyro calibration file written\n");
 	printf("run test_imu to check performance\n");
 		
-	cleanup_cape();
+	cleanup_roboticscape();
 	return 0;
 }

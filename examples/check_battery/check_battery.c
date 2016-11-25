@@ -15,12 +15,12 @@ int main(){
 	float cell_voltage;	// cell voltage
 	float jack_voltage;	// could be dc power supply or another battery
 
-	if(initialize_cape()){
-		printf("ERROR: failed to initialize_cape()\n");
+	if(initialize_roboticscape()){
+		printf("ERROR: failed to initialize_roboticscape()\n");
 		return -1;
 	}
 	
-	while(get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){
 		// read in the voltage of the 2S pack and DC jack
 		pack_voltage = get_battery_voltage();
 		jack_voltage = get_dc_jack_voltage();

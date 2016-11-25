@@ -198,7 +198,7 @@ imu_orientation_t orientation_prompt(){
 * int main(int argc, char *argv[])
 *
 * main() serves to parse user options, initialize the imu and interrupt handler,
-* and wait for the get_state()==EXITING condition before exiting cleanly.
+* and wait for the rc_get_state()==EXITING condition before exiting cleanly.
 * The imu_interrupt function print_data() is what actually prints new imu data
 * to the screen after being set with set_imu_interrupt_func().
 *******************************************************************************/
@@ -291,7 +291,7 @@ int main(int argc, char *argv[]){
 	}
 	
 	// start by initializing cape as always
-	if(initialize_cape()){
+	if(initialize_roboticscape()){
 		printf("ERROR: failed to initialize_cape\n");
 		return -1;
 	}
@@ -307,13 +307,13 @@ int main(int argc, char *argv[]){
 	set_imu_interrupt_func(&print_data);
 	
 	//now just wait, print_data() will be called by the interrupt
-	while (get_state()!=EXITING) {
+	while (rc_get_state()!=EXITING) {
 		usleep(10000);
 	}
 	
 	// shut things down
 	power_off_imu();
-	cleanup_cape();
+	cleanup_roboticscape();
 	return 0;
 }
 

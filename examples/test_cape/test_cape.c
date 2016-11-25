@@ -28,8 +28,8 @@ int main(){
 
 	// initialize_cape, this should never fail unless software is not set up
 	// in which case a useful error message should be printed out.
-	if(initialize_cape()<0){
-		printf("initialize_cape() failed, this is a software issue,\n");
+	if(initialize_roboticscape()<0){
+		printf("initialize_roboticscape() failed, this is a software issue,\n");
 		printf("not a hardware issue. Try running install.sh and restart\n");
 		return -1;
 	}
@@ -37,33 +37,33 @@ int main(){
 	printf("Welcome to the Simplified Robotics Cape tester!\n\n");
 	
 
-	set_led(RED,OFF);
-	set_led(GREEN,OFF);
+	rc_set_led(RED,OFF);
+	rc_set_led(GREEN,OFF);
 
 	/***************************************************************************
 	* Begin main while loop
 	***************************************************************************/
-	while(get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){
 
 		// make sure 12V DC supply is disconnected
 		printf("Waiting to remove power supply\n");
 		while(get_dc_jack_voltage()>1.0){
-			if(get_state()==EXITING) goto END;
+			if(rc_get_state()==EXITING) goto END;
 			usleep(10000);
 		}
-		set_led(RED,OFF);
-		set_led(GREEN,OFF);
+		rc_set_led(RED,OFF);
+		rc_set_led(GREEN,OFF);
 		printf("DC power removed\n");
 
 
 		// make sure 12V DC supply is connected
 		printf("\n\n\nWaiting for new cape and DC power supply\n");
 		while(get_dc_jack_voltage()<10.0){
-			if(get_state()==EXITING) goto END;
+			if(rc_get_state()==EXITING) goto END;
 			usleep(10000);
 		}
-		set_led(RED,OFF);
-		set_led(GREEN,OFF);
+		rc_set_led(RED,OFF);
+		rc_set_led(GREEN,OFF);
 		printf("DC power connected\n");
 
 
@@ -98,7 +98,7 @@ int main(){
 				chg_pass = 1;
 				break;
 			} 
-			if(get_state()==EXITING) goto END;
+			if(rc_get_state()==EXITING) goto END;
 			usleep(500000);
 		}
 		
@@ -113,21 +113,21 @@ int main(){
 		// ALL DONE!!!
 		pass_test();
 
-	} // end while(get_state()!= EXITING)
+	} // end while(rc_get_state()!= EXITING)
 
 		
 	// if we got here there was a critical error or user hit ctrl+c
 END:
 	
-	cleanup_cape();
+	cleanup_roboticscape();
 	return 0;
 }
 
 
 
 void fail_test(){
-	set_led(RED,ON);
-	set_led(GREEN,OFF);
+	rc_set_led(RED,ON);
+	rc_set_led(GREEN,OFF);
 	num_fails++;
 	printf("COMPLETE TEST FAILED\n");
 	printf("passes: %d  fails: %d\n\n", num_passes, num_fails);
@@ -135,8 +135,8 @@ void fail_test(){
 }
 
 void pass_test(){
-	set_led(RED,OFF);
-	set_led(GREEN,ON);
+	rc_set_led(RED,OFF);
+	rc_set_led(GREEN,ON);
 	num_passes++;
 	printf("COMPLETE TEST PASSED\n");
 	printf("passes: %d  fails: %d\n\n", num_passes, num_fails);
