@@ -1222,6 +1222,7 @@ typedef struct d_filter_t{
 } d_filter_t;
 
 d_filter_t create_filter(int order, float dt, float* num, float* den);
+d_filter_t create_filter_from_arrays(int order, float dt, float* num, float* den);
 int destroy_filter(d_filter_t* filter);
 d_filter_t create_empty_filter(int order);
 float march_filter(d_filter_t* filter, float new_input);

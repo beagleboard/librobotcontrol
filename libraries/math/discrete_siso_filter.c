@@ -13,20 +13,41 @@
 #include <stdlib.h>
 
 /*******************************************************************************
-* d_filter_t create_filter(int order, float dt, float* num, float* den)
+* d_filter_t create_filter(vector_t num, vector_t den, float dt)
 *
 * Allocate memory for a filter of specified order & fill with transfer
 * function constants. Use enable_saturation immediately after this if you want
-* to enable automatic saturation.
+* to enable automatic saturation. Memory allocated by the num and den vectors
+* is maintained so there is no need to destroy the vectors after passing to 
+* create_fitler. 
+*
+* returns an empty uninitialized filter if something went wrong. Otherwise
+* it returns a ready-to-use filter.
 *******************************************************************************/
-d_filter_t create_filter(int order, float dt, float* num, float* den){
+d_filter_t create_filter(vector_t num, vector_t den, float dt){
 	d_filter_t filter;
-	
-	if(order<1){
-		printf("ERROR: order must be >=1\n");
+
+	if(dt <= 0.0){
+		printf("ERROR: dt must be >0\n");
+		return filter
+	}
+	if(num.initialized == 0){
+		printf("ERROR: numerator vector not initialized\n");
 		return filter;
 	}
-	filter.order = order;
+	if(den.initialized == 0){
+		printf("ERROR: numerator vector not initialized\n");
+		return filter;
+	}
+	if(num.len > den.len){
+		printf("ERROR: num and den represent an improper transfer function\n");
+		return filter;
+	}
+	if(den.data[0]==0.0){
+		printf("ERROR: first coefficient in denominator is 0\n")
+	}
+
+	filter.order = den.len-1;
 	filter.gain = 1;
 	filter.newest_input = 0;
 	filter.newest_output = 0;
@@ -36,14 +57,42 @@ d_filter_t create_filter(int order, float dt, float* num, float* den){
 	filter.saturation_flag = 0;
 	filter.soft_start_en = 0;
 	filter.soft_start_steps = 0;
-	filter.numerator   = create_vector_from_array(order+1, num);
-	filter.denominator = create_vector_from_array(order+1, den);
+	filter.numerator   = num;
+	filter.denominator = den;
 	filter.in_buf 	   = create_ring_buf(order+1);
 	filter.out_buf     = create_ring_buf(order+1);
 	filter.initialized = 1;
 	filter.step = 0;
 	return filter;
 }
+
+
+/*******************************************************************************
+* d_filter_t create_filter_from_arrays(int order, float dt, float* num, float* den)
+*
+* like create_filter(), but constructs the vectors itself. Numerator and
+* denominator arrays must be the same length like a semi-proper transfer
+* function. Proper transfer functions with relative degree >=1 can still be
+* used but the numerator must be filled with leading zeros. This function
+* will throw a segmentation fault if your arrays are not both of length
+* order+1. It is safer to use the standard create_filter and construct the
+* vectors yourself.
+*******************************************************************************/
+d_filter_t create_filter_from_arrays(int order, float dt, float* num, float* den){
+	d_filter_t filter;
+
+	if(order<1){
+		printf("ERROR: order must be >1\n");
+		return filter
+	}
+
+	vector_t num_vec = create_vector_from_array(order+1, num);
+	vector_t den_vec = create_vector_from_array(order+1, den);
+
+	return create_filter(num_vec, den_vec, dt);
+}
+
+
 
 /*******************************************************************************
 * int destroy_filter(d_filter_t* filter)
@@ -104,6 +153,9 @@ d_filter_t create_empty_filter(int order){
 *******************************************************************************/
 float march_filter(d_filter_t* filter, float new_input){
 	int i = 0;
+	float new_output = 0;
+	float input_i, output_i;
+	int relative_degree;
 	
 	if(filter->initialized != 1){
 		printf("ERROR: filter not initialized yet\n");
@@ -113,20 +165,25 @@ float march_filter(d_filter_t* filter, float new_input){
 	insert_new_ring_buf_value(&filter->in_buf, new_input);
 	filter->newest_input = new_input;
 
-	// evaluate the difference equation
-	float new_output = 0;
-	float input_i, output_i;
-	for(i=0; i<=(filter->order); i++){
-		input_i = get_ring_buf_value(&filter->in_buf,i);
-		new_output += filter->gain * filter->numerator.data[i] * input_i;
+	relative_degree = filter->numerator.len - filter->denominator.len;
+	if(relative_degree<0){
+		printf("ERROR: can't march filter: improper transfer function\n");
+		return -1;
 	}
-	for(i=1; i<=(filter->order); i++){
-		output_i = get_ring_buf_value(&filter->out_buf,i-1);
-		new_output -= filter->denominator.data[i] * output_i; 
+
+	// evaluate the difference equation
+	for(i=0; i<(num.len); i++){
+		input_i = get_ring_buf_value(&filter->in_buf, i+relative_degree);
+		new_output += filter->numerator.data[i] * input_i;
+	}
+	for(i=0; i<(filter->order); i++){
+		output_i = get_ring_buf_value(&filter->out_buf, i);
+		new_output -= filter->denominator.data[i+1] * output_i; 
 	}
 	
 	// scale in case denominator doesn't have a leading 1
-	new_output = new_output/filter->denominator.data[0];
+	// also multiply by overall gain
+	new_output = filter->gain * new_output / filter->denominator.data[0];
 	
 	// soft start limits
 	if(filter->soft_start_en && filter->step < filter->soft_start_steps){
@@ -355,9 +412,7 @@ d_filter_t multiply_filters(d_filter_t f1, d_filter_t f2){
 		printf("ERROR: filter timestep dt must match when multiplying.\n");
 		return out;
 	}
-	// order of new system is sum of old orders
-	int new_order = f1.order + f2.order;
-	
+
 	// multiply out the transfer function coefficients
 	vector_t newnum = poly_conv(f1.numerator,f2.numerator);
 	if(newnum.initialized != 1){
@@ -369,11 +424,9 @@ d_filter_t multiply_filters(d_filter_t f1, d_filter_t f2){
 		printf("ERROR:failed to multiply denominator polynomials\n");
 		return out;
 	}
-	
-	out = create_filter(new_order, f1.dt, &newnum.data[0], &newden.data[0]);
+
+	out = create_filter(newnum, newden f1.dt);
 	out.gain = f1.gain * f2.gain;
-	destroy_vector(&newden);
-	destroy_vector(&newnum);
 	return out;
 }
 
@@ -396,6 +449,11 @@ d_filter_t C2DTustin(vector_t num, vector_t den, float dt, float w){
 		printf("ERROR: vector not initialized yet\n");
 		return out;
 	}
+	if(dt<0.0){
+		printf("ERROR: dt must be positive\n");
+		return out;
+	}
+
 	float f = 2*(1 - cos(w*dt)) / (w*dt*sin(w*dt));
 	float c = 2/(f*dt);
 	int   m = num.len - 1;			// highest order of num
@@ -412,7 +470,7 @@ d_filter_t C2DTustin(vector_t num, vector_t den, float dt, float w){
 	vector_t temp, v1, v2;
 	
 	// from zeroth up to and including mth
-	for(i=0;i<=m;i++){				
+	for(i=0;i<=m;i++){
 		v1 = poly_power(p1,m-i);
 		v2 = poly_power(p2,n-m+i);
 		temp = poly_conv(v1,v2);
@@ -439,9 +497,7 @@ d_filter_t C2DTustin(vector_t num, vector_t den, float dt, float w){
 		numZ.data[i] = numZ.data[i]/A0;
 		denZ.data[i] = denZ.data[i]/A0;
 	}
-	out = create_filter(n,dt,numZ.data,denZ.data);
-	destroy_vector(&numZ);
-	destroy_vector(&denZ);
+	out = create_filter(numZ, denZ, dt);
 	destroy_vector(&p1);
 	destroy_vector(&p2);
 	return out;
@@ -456,9 +512,12 @@ d_filter_t C2DTustin(vector_t num, vector_t den, float dt, float w){
 *******************************************************************************/
 d_filter_t create_first_order_lowpass(float dt, float time_constant){
 	float lp_const = dt/time_constant;
-	float numerator[]   = {lp_const, 0};
-	float denominator[] = {1, lp_const-1};
-	return create_filter(1,dt,numerator,denominator);
+	vector_t num = create_vector(1);
+	vector_t den = create_vector(2);
+	num.data[0] = lp_const;
+	den.data[0] = 1.0;
+	den.data[1] = lp_const-1.0;
+	return create_filter(num,den,dt);
 }
 
 /*******************************************************************************
@@ -470,9 +529,15 @@ d_filter_t create_first_order_lowpass(float dt, float time_constant){
 *******************************************************************************/
 d_filter_t create_first_order_highpass(float dt, float time_constant){
 	float hp_const = dt/time_constant;
-	float numerator[] = {1-hp_const, hp_const-1};
-	float denominator[] = {1,hp_const-1};
-	return create_filter(1,dt,numerator,denominator);
+
+	vector_t num = create_vector(2);
+	vector_t den = create_vector(2);
+	num.data[0] = 1.0-hp_const;
+	num.data[1] = hp_const-1.0;
+	den.data[0] = 1.0;
+	den.data[1] = hp_const-1.0;
+
+	return create_filter(num, den, dt);
 }
 
 /*******************************************************************************
@@ -503,34 +568,29 @@ d_filter_t create_butterworth_highpass(int order, float dt, float wc){
 
 
 /*******************************************************************************
-* d_filter_t create_moving_average(int samples)
+* d_filter_t create_moving_average(int samples, dt)
 *
 * Makes a FIR moving average filter that averages over 'samples' which must be
 * greater than or equal to 2 otherwise no averaging would be performed.
 *******************************************************************************/
-d_filter_t create_moving_average(int samples){
+d_filter_t create_moving_average(int samples, dt){
 	d_filter_t filter;
 	if(samples<2){
 		printf("ERROR: moving average samples must be >= 2\n");
 		return filter;
 	}
 
-	float* num = (float*)calloc(samples, sizeof(float));
-	float* den = (float*)calloc(samples, sizeof(float));
+	vector_t num = create_vector(samples);
+	vector_t den = create_vector(samples);
 
 	int i;
 	for(i=0;i<samples;i++){
-		num[i] = 1.0 / samples;
-		den[i] = 0.0;
+		num.data[i] = 1.0 / samples;
+		den.data[i] = 0.0;
 	}
+	den.data[0] = 1.0;
 
-	den[0] = 1.0;
-	filter = create_filter(samples-1, 0, num, den);
-
-	free(num);
-	free(den);
-
-	return filter;
+	return create_filter(num, den, dt);
 }
 
 /*******************************************************************************
@@ -540,9 +600,13 @@ d_filter_t create_moving_average(int samples){
 * function for a first order time integral.
 *******************************************************************************/
 d_filter_t create_integrator(float dt){
-	float numerator[]   = {0, dt};
-	float denominator[] = {1, -1};
-	return create_filter(1,dt,numerator,denominator);
+	vector_t num = create_vector(1);
+	vector_t den = create_vector(2);
+	num.data[0] = dt;
+	den.data[0] = 1.0;
+	den.data[1] = -1.0;
+
+	return create_filter(num, den, dt);
 }
 
 /*******************************************************************************
@@ -552,9 +616,14 @@ d_filter_t create_integrator(float dt){
 * function for a first order time integral.
 *******************************************************************************/
 d_filter_t create_double_integrator(float dt){
-	float numerator[]   = {0, 0, dt*dt};
-	float denominator[] = {1, -2, 1};
-	return create_filter(2,dt,numerator,denominator);
+	vector_t num = create_vector(1);
+	vector_t den = create_vector(3);
+	num.data[0] = dt*dt;
+	den.data[0] = 1.0;
+	den.data[1] = -2.0;
+	den.data[2] = 1.0;
+
+	return create_filter(num, den, dt);
 }
 
 /*******************************************************************************
@@ -568,28 +637,38 @@ d_filter_t create_double_integrator(float dt){
 * results in less rolloff, but Tf must be greater than dt/2 for stability.
 *******************************************************************************/
 d_filter_t create_pid(float kp, float ki, float kd, float Tf, float dt){
+	dfilter_t filter;
+
+	if(dt<0.0){
+		printf("ERROR: dt must be >0\n");
+		return filter;
+	}
 	if(Tf <= dt/2){
 		printf("WARNING: Tf must be > dt/2 for stability\n");
-		Tf=dt; // set to reasonable value
+		filter;
 	}
-	// if ki==0, return a PD filter with rolloff
+
+	// if ki==0, return a 1st order PD filter with rolloff
 	if(ki==0){
-		float numerator[] = {(kp*Tf+kd)/Tf, 
-							-(((ki*dt-kp)*(dt-Tf))+kd)/Tf};
-		float denominator[] = 	{1, 
-								-(Tf-dt)/Tf};
-		return create_filter(1,dt,numerator,denominator);
+		vector_t num = create_vector(2);
+		vector_t den = create_vector(2);
+		num.data[0] = (kp*Tf+kd)/Tf;
+		num.data[1] = -(((ki*dt-kp)*(dt-Tf))+kd)/Tf;
+		den.data[0] = 1.0;
+		den.data[1] = -(Tf-dt)/Tf;
+		return create_filter(num, den, dt);
 	}
-	//otherwise PID with roll off
-	else{
-		float numerator[] = {(kp*Tf+kd)/Tf, 
-							(ki*dt*Tf + kp*(dt-Tf) - kp*Tf - 2.0*kd)/Tf,
-							(((ki*dt-kp)*(dt-Tf))+kd)/Tf};
-		float denominator[] = 	{1, 
-								(dt-(2.0*Tf))/Tf, 
-								(Tf-dt)/Tf};
-		return create_filter(2,dt,numerator,denominator);
-	}
+
+	//otherwise 2nd order PID with roll off
+	vector_t num = create_vector(3);
+	vector_t den = create_vector(3);
+	num.data[0] = (kp*Tf+kd)/Tf;
+	num.data[1] = (ki*dt*Tf + kp*(dt-Tf) - kp*Tf - 2.0*kd)/Tf;
+	num.data[2] = (((ki*dt-kp)*(dt-Tf))+kd)/Tf;
+	den.data[1] = 1.0;
+	den.data[1] = (dt-(2.0*Tf))/Tf;
+	den.data[2] = (Tf-dt)/Tf;
+	return create_filter(num, den, dt);
 }
 
 
