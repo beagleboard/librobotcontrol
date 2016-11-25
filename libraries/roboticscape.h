@@ -1118,7 +1118,7 @@ float get_ring_buf_value(ring_buf_t* buf, int position);
 * You may read values directly from your own instance of the d_filter_t struct.
 * To modify the contents of the filter please use the functions provided here.
 *
-* @ d_filter_t create_filter(int order,float dt,float num[],float den[])
+* @ d_filter_t create_filter(vector_t num, vector_t den, float dt)
 *
 * Allocate memory for a filter of specified order & fill with transfer
 * function constants. Use enable_saturation immediately after this if you want
@@ -1221,7 +1221,7 @@ typedef struct d_filter_t{
 	int initialized;		// 
 } d_filter_t;
 
-d_filter_t create_filter(int order, float dt, float* num, float* den);
+d_filter_t create_filter(vector_t num, vector_t den, float dt);
 d_filter_t create_filter_from_arrays(int order, float dt, float* num, float* den);
 int destroy_filter(d_filter_t* filter);
 d_filter_t create_empty_filter(int order);
@@ -1243,7 +1243,7 @@ d_filter_t create_first_order_lowpass(float dt, float time_constant);
 d_filter_t create_first_order_highpass(float dt, float time_constant);
 d_filter_t create_butterworth_lowpass(int order, float dt, float wc);
 d_filter_t create_butterworth_highpass(int order, float dt, float wc);
-d_filter_t create_moving_average(int samples);
+d_filter_t create_moving_average(int samples, int dt);
 d_filter_t create_integrator(float dt);
 d_filter_t create_double_integrator(float dt);
 d_filter_t create_pid(float kp, float ki, float kd, float Tf, float dt);

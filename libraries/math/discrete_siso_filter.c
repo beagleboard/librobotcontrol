@@ -29,7 +29,7 @@ d_filter_t create_filter(vector_t num, vector_t den, float dt){
 
 	if(dt <= 0.0){
 		printf("ERROR: dt must be >0\n");
-		return filter
+		return filter;
 	}
 	if(num.initialized == 0){
 		printf("ERROR: numerator vector not initialized\n");
@@ -44,7 +44,7 @@ d_filter_t create_filter(vector_t num, vector_t den, float dt){
 		return filter;
 	}
 	if(den.data[0]==0.0){
-		printf("ERROR: first coefficient in denominator is 0\n")
+		printf("ERROR: first coefficient in denominator is 0\n");
 	}
 
 	filter.order = den.len-1;
@@ -59,8 +59,8 @@ d_filter_t create_filter(vector_t num, vector_t den, float dt){
 	filter.soft_start_steps = 0;
 	filter.numerator   = num;
 	filter.denominator = den;
-	filter.in_buf 	   = create_ring_buf(order+1);
-	filter.out_buf     = create_ring_buf(order+1);
+	filter.in_buf 	   = create_ring_buf(den.len);
+	filter.out_buf     = create_ring_buf(den.len);
 	filter.initialized = 1;
 	filter.step = 0;
 	return filter;
@@ -83,7 +83,7 @@ d_filter_t create_filter_from_arrays(int order, float dt, float* num, float* den
 
 	if(order<1){
 		printf("ERROR: order must be >1\n");
-		return filter
+		return filter;
 	}
 
 	vector_t num_vec = create_vector_from_array(order+1, num);
@@ -172,7 +172,7 @@ float march_filter(d_filter_t* filter, float new_input){
 	}
 
 	// evaluate the difference equation
-	for(i=0; i<(num.len); i++){
+	for(i=0; i<(filter->numerator.len); i++){
 		input_i = get_ring_buf_value(&filter->in_buf, i+relative_degree);
 		new_output += filter->numerator.data[i] * input_i;
 	}
@@ -425,7 +425,7 @@ d_filter_t multiply_filters(d_filter_t f1, d_filter_t f2){
 		return out;
 	}
 
-	out = create_filter(newnum, newden f1.dt);
+	out = create_filter(newnum, newden, f1.dt);
 	out.gain = f1.gain * f2.gain;
 	return out;
 }
@@ -568,12 +568,12 @@ d_filter_t create_butterworth_highpass(int order, float dt, float wc){
 
 
 /*******************************************************************************
-* d_filter_t create_moving_average(int samples, dt)
+* d_filter_t create_moving_average(int samples, int dt)
 *
 * Makes a FIR moving average filter that averages over 'samples' which must be
 * greater than or equal to 2 otherwise no averaging would be performed.
 *******************************************************************************/
-d_filter_t create_moving_average(int samples, dt){
+d_filter_t create_moving_average(int samples, int dt){
 	d_filter_t filter;
 	if(samples<2){
 		printf("ERROR: moving average samples must be >= 2\n");
@@ -637,7 +637,7 @@ d_filter_t create_double_integrator(float dt){
 * results in less rolloff, but Tf must be greater than dt/2 for stability.
 *******************************************************************************/
 d_filter_t create_pid(float kp, float ki, float kd, float Tf, float dt){
-	dfilter_t filter;
+	d_filter_t filter;
 
 	if(dt<0.0){
 		printf("ERROR: dt must be >0\n");
@@ -645,7 +645,7 @@ d_filter_t create_pid(float kp, float ki, float kd, float Tf, float dt){
 	}
 	if(Tf <= dt/2){
 		printf("WARNING: Tf must be > dt/2 for stability\n");
-		filter;
+		return filter;
 	}
 
 	// if ki==0, return a 1st order PD filter with rolloff
