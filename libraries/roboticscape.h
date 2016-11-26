@@ -974,9 +974,10 @@ int suppress_stderr(int (*func)(void));
 int continue_or_quit();
 
 /*******************************************************************************
-* Vector and Quaternion Math
+* Quaternion Math
 *
-* These are useful for dealing with IMU orientation data and general vector math
+* These are useful for dealing with IMU orientation data
+* see linear algebra section for more advanced and scalable vector functions
 *******************************************************************************/
 // defines for index location within TaitBryan and quaternion arrays
 #define TB_PITCH_X	0
@@ -997,10 +998,51 @@ void quaternionMultiply(float a[4], float b[4], float out[4]);
 float vector3vector_dot_product(float a[3], float b[3]);
 void vector3CrossProduct(float a[3], float b[3], float d[3]);
 
+
 /*******************************************************************************
-* Linear Algebra
+* Vectors
 *
+* the Vector type here is used throughout the linear algebra and discrete filter
+* functions. It uses dynamic memory allocation so be sure to create and destroy
+* vectors as necessary to prevent memory leaks.
+*******************************************************************************/
+typedef struct vector_t{
+	int len;
+	float* data;
+	int initialized;
+} vector_t;
+
+// Basic Vector creation, and access
+vector_t create_vector(int n);
+void destroy_vector(vector_t* v);
+vector_t empty_vector();
+vector_t duplicate_vector(vector_t v);
+vector_t create_random_vector(int len);
+vector_t create_vector_of_ones(int len);
+vector_t create_vector_from_array(int len, float* array);
+int set_vector_entry(vector_t* v, int pos, float val);
+float get_vector_entry(vector_t v, int pos);
+void print_vector(vector_t v);
+void print_vector_sci_notation(vector_t v);
+// Basic operations
+int vector_times_scalar(vector_t* v, float s);
+float vector_norm(vector_t v);
+float standard_deviation(vector_t v);
+float vector_mean(vector_t v);
+// polynomial manipulation 
+vector_t poly_conv(vector_t v1, vector_t v2);
+vector_t poly_power(vector_t v, int N);
+vector_t poly_add(vector_t a, vector_t b);
+vector_t poly_diff(vector_t a, int d);
+float poly_div(vector_t num, vector_t den, vector_t* remainder);
+vector_t poly_butter(int N, float wc);
+
+
+/*******************************************************************************
+* Matrix
 *
+* Like vectors, the matrix_t type is dynamically allocated so create and destroy
+* matrices as needed to prevent memory leaks.
 *******************************************************************************/
 typedef struct matrix_t{
 	int rows;
@@ -1009,16 +1051,10 @@ typedef struct matrix_t{
 	int initialized;
 } matrix_t;
 
-typedef struct vector_t{
-	int len;
-	float* data;
-	int initialized;
-} vector_t;
-
 // Basic Matrix creation, modification, and access
 matrix_t create_matrix(int rows, int cols);
 void destroy_matrix(matrix_t* A);
-matrix_t create_empty_matrix();
+matrix_t empty_matrix();
 matrix_t duplicate_matrix(matrix_t A);
 matrix_t create_square_matrix(int n);
 matrix_t create_random_matrix(int rows, int cols);
@@ -1030,40 +1066,26 @@ float get_matrix_entry(matrix_t A, int row, int col);
 void print_matrix(matrix_t A);
 void print_matrix_sci_notation(matrix_t A);
 
-// Basic Vector creation, modification, and access
-vector_t create_vector(int n);
-void destroy_vector(vector_t* v);
-vector_t create_empty_vector();
-vector_t duplicate_vector(vector_t v);
-vector_t create_random_vector(int len);
-vector_t create_vector_of_ones(int len);
-vector_t create_vector_from_array(int len, float* array);
-int set_vector_entry(vector_t* v, int pos, float val);
-float get_vector_entry(vector_t v, int pos);
-void print_vector(vector_t v);
-void print_vector_sci_notation(vector_t v);
-
 // Multiplication, Addition, and other transforms
-matrix_t multiply_matrices(matrix_t A, matrix_t Bm);
+matrix_t multiply_matrices(matrix_t A, matrix_t B);
 int matrix_times_scalar(matrix_t* A, float s);
-int vector_times_scalar(vector_t* v, float s);
-vector_t matrix_times_col_vec(matrix_t A, vector_t v);
-vector_t row_vec_times_matrix(vector_t v, matrix_t A);
 matrix_t add_matrices(matrix_t A, matrix_t B);
 int transpose_matrix(matrix_t* A);
 
+
+/*******************************************************************************
+* Linear Algebra
+*
+*
+*******************************************************************************/
 // vector operations
-float vector_norm(vector_t v);
 vector_t vector_projection(vector_t v, vector_t e);
 matrix_t vector_outer_product(vector_t v1, vector_t v2);
 float vector_dot_product(vector_t v1, vector_t v2);
 vector_t cross_product_3d(vector_t v1, vector_t v2);
-vector_t poly_conv(vector_t v1, vector_t v2);
-vector_t poly_power(vector_t v, int N);
-vector_t poly_butter(int N, float wc);
-float standard_deviation(vector_t v);
-float vector_mean(vector_t v);
-
+// basic matrix/vector multiplication
+vector_t matrix_times_col_vec(matrix_t A, vector_t v);
+vector_t row_vec_times_matrix(vector_t v, matrix_t A);
 // Advanced matrix operations
 float matrix_determinant(matrix_t A);
 int LUP_decomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P);
@@ -1303,8 +1325,8 @@ void print_bb_model();
 * initialize_cape
 *******************************************************************************/
 // Cape and Blue
-#define GPS_HEADER_PIN_3  		2	// P9_22, normally GPS UART2 RX
-#define GPS_HEADER_PIN_4  		3	// P9_21, normally GPS UART2 TX
+#define GPS_HEADER_PIN_3		2	// P9_22, normally GPS UART2 RX
+#define GPS_HEADER_PIN_4		3	// P9_21, normally GPS UART2 TX
 #define UART1_HEADER_PIN_3		14	// P9_26, normally UART1 RX
 #define UART1_HEADER_PIN_4		15	// P9_24, normally UART1 TX
 #define SPI_HEADER_PIN_3		112	// P9_30, normally SPI1 MOSI		
@@ -1316,14 +1338,14 @@ void print_bb_model();
 #define CAPE_SPI_PIN_6_SS2		49	// P9_23, normally GPIO mode
 
 // Blue Only
-#define BLUE_SPI_PIN_6_SS1		29  // gpio 0_29  pin H18
+#define BLUE_SPI_PIN_6_SS1		29	// gpio 0_29  pin H18
 #define BLUE_SPI_PIN_6_SS2		7	// gpio 0_7  pin C18		
-#define BLUE_GP0_PIN_3 			57  // gpio 1_25 pin U16
-#define BLUE_GP0_PIN_4 			49  // gpio 1_17 pin P9.23
-#define BLUE_GP0_PIN_5 			116 // gpio 3_20 pin D13
-#define BLUE_GP0_PIN_6 			113 // gpio 3_17 pin P9_28
-#define BLUE_GP1_PIN_3 			98  // gpio 3_2  pin J15
-#define BLUE_GP1_PIN_4 			97  // gpio 3_1  pin H17
+#define BLUE_GP0_PIN_3			57	// gpio 1_25 pin U16
+#define BLUE_GP0_PIN_4			49	// gpio 1_17 pin P9.23
+#define BLUE_GP0_PIN_5			116	// gpio 3_20 pin D13
+#define BLUE_GP0_PIN_6			113	// gpio 3_17 pin P9_28
+#define BLUE_GP1_PIN_3			98	// gpio 3_2  pin J15
+#define BLUE_GP1_PIN_4			97	// gpio 3_1  pin H17
 
 
 typedef enum pinmux_mode_t{

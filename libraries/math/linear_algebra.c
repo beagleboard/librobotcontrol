@@ -2,6 +2,7 @@
 * linear_algebra.c
 *
 * James Strawson & Matt Atlas 2016
+* Numerical Renaissance codebase used as reference for many algorithms
 *******************************************************************************/
 
 #include "../roboticscape.h"
@@ -12,651 +13,7 @@
 
 #define PI (float)M_PI
 
-/*******************************************************************************
-* matrix_t create_matrix(int rows, int cols)
-*
-* 
-*******************************************************************************/
-matrix_t create_matrix(int rows, int cols){
-	int i;
-	matrix_t A;
-	if(rows<1 || cols<1){
-		printf("error creating matrix, row or col must be >=1");
-		return A;
-	}
-	A.rows = rows;
-	A.cols = cols;
-	// allocate contiguous memory
-	A.data = (float**)malloc(rows*sizeof(float*));
-	void* ptr = calloc(rows*cols, sizeof(float));
-	A.data[0] = (float*)ptr;
-	// manually fill in the pointer to each row
-	for (i=1; i<rows; i++){
-		A.data[i] = (float*)(ptr + i*cols*sizeof(float));
-	}	
-	
-	A.initialized = 1;
-	return A;
-}
 
-/*******************************************************************************
-* void destroy_matrix(matrix_t* A)
-*
-* 
-*******************************************************************************/
-void destroy_matrix(matrix_t* A){
-	if(A->initialized==1 && A->rows>0 && A->cols>0){
-		free(A->data[0]);
-		free(A->data);
-	}
-	A->data = 0;
-	A->rows = 0;
-	A->cols = 0;
-	A->initialized = 0;
-	return;
-}
-
-/*******************************************************************************
-* matrix_t create_empty_matrix()
-*
-* 
-*******************************************************************************/
-matrix_t create_empty_matrix(){
-	matrix_t out;
-	memset(&out,0,sizeof(matrix_t));
-	return out;
-}
-
-/*******************************************************************************
-* matrix_t duplicate_matrix(matrix_t A)
-*
-* copy information of one matrix to a new memory location 
-*******************************************************************************/
-matrix_t duplicate_matrix(matrix_t A){
-	int i,j;
-	matrix_t out;
-	if(!A.initialized){
-		printf("ERROR: matrix not initialized yet\n");
-		return out;
-	}
-	out = create_matrix(A.rows,A.cols);
-	for(i=0;i<A.rows;i++){
-        for(j=0;j<A.cols;j++){
-			out.data[i][j] = A.data[i][j];
-		}
-	}
-	return out;
-}
-
-
-/*******************************************************************************
-* matrix_t create_square_matrix(int n)
-*
-* 
-*******************************************************************************/
-matrix_t create_square_matrix(int n){
-	matrix_t A = create_matrix(n,n);
-	return A;
-}
-
-/*******************************************************************************
-* matrix_t create_random_matrix(int rows, int cols)
-*
-* 
-*******************************************************************************/
-matrix_t create_random_matrix(int rows, int cols){
-	int i,j;
-	matrix_t A;
-	if(rows<1 || cols<1){
-		printf("error creating matrix, row or col must be >=1");
-		return A;
-	}
-	A = create_matrix(rows, cols);
-	for(i=0;i<rows;i++){
-		for(j=0;j<cols;j++){
-			A.data[i][j]=get_random_float();
-		}
-	}
-	return A;
-}
-
-/*******************************************************************************
-* matrix_t create_identity_matrix(int dim)
-*
-* 
-*******************************************************************************/
-matrix_t create_identity_matrix(int dim){
-	int i;
-	matrix_t A;
-	if(dim<1){
-		printf("error creating matrix, dim must be >=1");
-		return A;
-	}
-	A = create_square_matrix(dim);
-	for(i=0;i<dim;i++){
-		A.data[i][i]=1;
-	}
-	return A;
-}
-
-/*******************************************************************************
-* matrix_t create_diagonal_matrix(vector_t v)
-*
-* 
-*******************************************************************************/
-matrix_t create_diagonal_matrix(vector_t v){
-	int i;
-	matrix_t A;
-	if(!v.initialized){
-		printf("error creating matrix, vector_t v not initialized");
-		return A;
-	}
-	A = create_square_matrix(v.len);
-	for(i=0;i<v.len;i++){
-		A.data[i][i]=v.data[i];
-	}
-	return A;
-}
-
-/*******************************************************************************
-* matrix_t create_matrix_of_ones(int dim)
-*
-* 
-*******************************************************************************/
-matrix_t create_matrix_of_ones(int dim){
-	int i,j;
-	matrix_t A;
-	if(dim<1){
-		printf("error creating matrix, dim must be >=1");
-		return A;
-	}
-	A = create_square_matrix(dim);
-	for(i=0;i<dim;i++){
-		for(j=0;j<dim;j++){
-			A.data[i][j]=1;
-		}
-	}
-	return A;
-}
-
-/*******************************************************************************
-* int set_matrix_entry(matrix_t* A, int row, int col, float val)
-*
-* 
-*******************************************************************************/
-int set_matrix_entry(matrix_t* A, int row, int col, float val){
-	if(A==NULL){
-		printf("ERROR: matrix is null pointer\n");
-		return -1;
-	}
-	if(!A->initialized){
-		printf("ERROR: A not initialized yet\n");
-		return -1;
-	}
-	if(row<0 || row>=A->rows){
-		printf("ERROR: row out of bounds\n");
-		return -1;
-	}
-	if(col<0 || col>=A->cols){
-		printf("ERROR: col out of bounds\n");
-		return -1;
-	}
-	A->data[row][col] = val;
-	return 0;
-}
-
-/*******************************************************************************
-* float get_matrix_entry(matrix_t A, int row, int col)
-*
-* 
-*******************************************************************************/
-float get_matrix_entry(matrix_t A, int row, int col){
-	if(!A.initialized){
-		printf("ERROR: A not initialized yet\n");
-		return -1;
-	}
-	if(row<0 || row>=A.rows){
-		printf("ERROR: row out of bounds\n");
-		return -1;
-	}
-	if(col<0 || col>=A.cols){
-		printf("ERROR: col out of bounds\n");
-		return -1;
-	}
-	return  A.data[row][col];
-}
-
-/*******************************************************************************
-* void print_matrix(matrix_t A)
-*
-* 
-*******************************************************************************/
-void print_matrix(matrix_t A){
-	int i,j;
-	if(A.initialized!=1){
-		printf("ERROR: matrix not initialized yet\n");
-		return;
-	}
-	if(A.rows<1 || A.cols<1){
-		printf("ERROR: rows and cols must be >=1\n");
-		return;
-	}
-	for(i=0;i<A.rows;i++){
-		for(j=0;j<A.cols;j++){
-			printf("%7.3f  ",A.data[i][j]);
-		}	
-		printf("\n");
-		fflush(stdout);
-	}
-	return;
-}	
-
-/*******************************************************************************
-* void print_matrix_sci_notation(matrix_t A)
-*
-* 
-*******************************************************************************/
-void print_matrix_sci_notation(matrix_t A){
-	int i,j;
-	if(!A.initialized){
-		printf("ERROR: matrix not initialized yet\n");
-		return;
-	}
-	for(i=0;i<A.rows;i++){
-		for(j=0;j<A.cols;j++){
-			printf("%11.4e  ",A.data[i][j]);
-		}	
-		printf("\n");
-	}
-	return;
-}	
-
-
-/*******************************************************************************
-* vector_t create_vector(int n)
-*
-* 
-*******************************************************************************/
-vector_t create_vector(int n){
-	vector_t v;
-	if(n<1){
-		printf("error creating vector, n must be >=1");
-		return v;
-	}
-	v.len = n;
-	v.data = (float*)calloc(n, sizeof(float));
-	v.initialized = 1;
-	return v;
-}
-
-/*******************************************************************************
-* void destroy_vector(vector_t* v)
-*
-* 
-*******************************************************************************/
-void destroy_vector(vector_t* v){
-	if(v->initialized==1){
-		free(v->data);
-	}
-	v->len = 0;
-	v->initialized = 0;
-	return;
-}
-
-/*******************************************************************************
-* vector_t create_empty_vector()
-*
-* 
-*******************************************************************************/
-vector_t create_empty_vector(){
-	vector_t out;
-	memset(&out, 0, sizeof(vector_t));
-	return out;
-}
-
-
-/*******************************************************************************
-* vector_t duplicate_vector(vector_t v)
-*
-* 
-*******************************************************************************/
-vector_t duplicate_vector(vector_t v){
-	int i;
-	vector_t out = create_empty_vector();
-	if(!v.initialized){
-		printf("ERROR: vector not initialized yet\n");
-		return out;
-	}
-	out = create_vector(v.len);
-	for(i=0;i<v.len;i++){
-		out.data[i] = v.data[i];
-	}
-	return out;
-}
-
-/*******************************************************************************
-* vector_t create_random_vector(int len)
-*
-* 
-*******************************************************************************/
-vector_t create_random_vector(int len){
-	int i;
-	vector_t v = create_empty_vector();
-	if(len<1){
-		printf("error creating vector, len must be >=1");
-		return v;
-	}
-	v = create_vector(len);
-	for(i=0;i<len;i++){
-		v.data[i]=get_random_float();
-	}
-	return v;
-}
-
-/*******************************************************************************
-* vector_t create_vector_of_ones(int len)
-*
-* 
-*******************************************************************************/
-vector_t create_vector_of_ones(int len){
-	int i;
-	vector_t v = create_empty_vector();
-	if(len<1){
-		printf("error creating vector, len must be >=1");
-		return v;
-	}
-	v = create_vector(len);
-	for(i=0;i<len;i++){
-		v.data[i]=1;
-	}
-	return v;
-}
-
-/*******************************************************************************
-* vector_t create_vector_from_array(int len, float* array)
-*
-* 
-*******************************************************************************/
-vector_t create_vector_from_array(int len, float* array){
-	vector_t v = create_empty_vector();
-	if(len<1){
-		printf("ERROR: len must be greater than 0\n");
-		return v;
-	}
-	v = create_vector(len);
-	int i;
-	for(i=0;i<len;i++){
-		v.data[i] = array[i];
-	}
-	return v;
-}
-
-/*******************************************************************************
-* int set_vector_entry(vector_t* v, int pos, float val)
-*
-* 
-*******************************************************************************/
-int set_vector_entry(vector_t* v, int pos, float val){
-	if(v==NULL){
-		printf("ERROR: v is null pointer\n");
-		return -1;
-	}
-	if(!v->initialized){
-		printf("ERROR: v not initialized yet\n");
-		return -1;
-	}
-	if(pos<0 || pos>=v->len){
-		printf("ERROR: pos out of bounds\n");
-		return -1;
-	}
-	v->data[pos] = val;
-	return 0;
-}
-
-/*******************************************************************************
-* float get_vector_entry(vector_t v, int pos)
-*
-* 
-*******************************************************************************/
-float get_vector_entry(vector_t v, int pos){
-	if(!v.initialized){
-		printf("ERROR: v not initialized yet\n");
-		return -1;
-	}
-	if(pos<0 || pos>=v.len){
-		printf("ERROR: pos out of bounds\n");
-		return -1;
-	}
-	return v.data[pos];
-}
-
-/*******************************************************************************
-* void print_vector(vector_t v)
-*
-* 
-*******************************************************************************/
-void print_vector(vector_t v){
-	int i;
-	if(!v.initialized){
-		printf("ERROR: vector not initialized yet\n");
-		return;
-	}
-	for(i=0;i<v.len;i++){
-		printf("%7.3f  ",v.data[i]);
-	}
-	printf("\n");
-	return;
-}	
-
-/*******************************************************************************
-* void print_vector_sci_notation(vector_t v)
-*
-* 
-*******************************************************************************/
-void print_vector_sci_notation(vector_t v){
-	int i;
-	if(!v.initialized){
-		printf("ERROR: vector not initialized yet\n");
-		return;
-	}
-	for(i=0;i<v.len;i++){
-		printf("%.4e  ",v.data[i]);
-	}
-	printf("\n");
-	return;
-}	
-
-/*******************************************************************************
-* int multiply_matrices(matrix_t A, matrix_t B, matrix_t* out)
-*
-* 
-*******************************************************************************/
-matrix_t multiply_matrices(matrix_t A, matrix_t B){
-	int i,j,k;
-	float sum = 0;
-	matrix_t out = create_empty_matrix();
-	if(!A.initialized||!B.initialized){
-		printf("ERROR: matrix not initialized yet\n");
-		return out;
-	}
-	if (A.cols != B.rows){
-		printf("ERROR: Invalid matrix sizes");
-		return out;
-	}
-	out = create_matrix(A.rows, B.cols);	
-	for(i=0;i<(A.rows);i++){
-		for(j=0;j<(B.cols);j++){	
-			for(k=0;k<(A.cols);k++){
-				// do the matrix multiplication
-				sum = sum + A.data[i][k]*B.data[k][j];
-			}
-			// save mult sum to new location
-			out.data[i][j] = sum;
-			sum = 0; 	// re-initialize sum for next loop
-		}
-	}
-	return out;
-}
-
-/*******************************************************************************
-* int matrix_times_scalar(matrix_t* A, float s)
-*
-* 
-*******************************************************************************/
-int matrix_times_scalar(matrix_t* A, float s){
-	int i,j;
-	if(!A->initialized){
-		printf("ERROR: matrix not initialized yet\n");
-		return -1;
-	}
-	for(i=0;i<(A->rows);i++){
-		for(j=0;j<(A->cols);j++){	
-			A->data[i][j] = s*A->data[i][j];
-		}
-	}
-	return 0;
-}
-
-/*******************************************************************************
-* int vector_times_scalar(vector_t* v, float s)
-*
-* 
-*******************************************************************************/
-int vector_times_scalar(vector_t* v, float s){
-	int i;
-	if(!v->initialized){
-		printf("ERROR: vector not initialized yet\n");
-		return -1;
-	}
-	for(i=0;i<(v->len);i++){	
-		v->data[i] = s*v->data[i];
-	}
-	return 0;
-}
-
-/*******************************************************************************
-* vector_t matrix_times_col_vec(matrix_t A, vector_t v)
-*
-* 
-*******************************************************************************/
-vector_t matrix_times_col_vec(matrix_t A, vector_t v){
-	int i,j;
-	vector_t out = create_empty_vector();
-	if(!A.initialized || !v.initialized){
-		printf("ERROR: matrix or vector not initialized yet\n");
-		return out;
-	}
-	if(A.cols != v.len){
-		printf("ERROR: dimensions do not match\n");
-		return out;
-	}
-	out = create_vector(A.rows);
-	
-	for(i=0;i<A.rows;i++){
-		for(j=0;j<A.cols;j++){	
-			out.data[i] += v.data[j]*A.data[i][j];
-		}
-	}
-	return out;
-}
-
-/*******************************************************************************
-* vector_t row_vec_times_matrix(vector_t v, matrix_t A)
-*
-* 
-*******************************************************************************/
-vector_t row_vec_times_matrix(vector_t v, matrix_t A){
-	int i,j;
-	vector_t out = create_empty_vector();
-	if(!A.initialized || !v.initialized){
-		printf("ERROR: matrix or vector not initialized yet\n");
-		return out;
-	}
-	if(A.rows != v.len){
-		printf("ERROR: dimensions do not match\n");
-		return out;
-	}
-	
-	out = create_vector(A.cols);
-	for(i=0;i<A.cols;i++){
-		for(j=0;j<A.rows;j++){	
-			out.data[i] += v.data[j]*A.data[j][i];
-		}
-	}
-	return out;
-}
-
-
-
-/*******************************************************************************
-* matrix_t add_matrices(matrix_t A, matrix_t B)
-*
-* 
-*******************************************************************************/
-matrix_t add_matrices(matrix_t A, matrix_t B){
-	int i,j;
-	matrix_t out = create_empty_matrix();
-	if(!A.initialized||!B.initialized){
-		printf("ERROR: matrix not initialized yet\n");
-		return out;
-	}
-	if ((A.rows != B.rows)||(A.cols != B.cols)){
-		printf("Invalid matrix sizes");
-		return out;
-	}
-	out = create_matrix(A.rows, A.cols);
-	for(i=0;i<(A.rows);i++){
-		for(j=0;j<(A.cols);j++){	
-			out.data[i][j] = A.data[i][j] + B.data[i][j];
-		}
-	}
-	return out;
-}
-
-/*******************************************************************************
-* int transpose_matrix(matrix_t* A)
-*
-* 
-*******************************************************************************/
-int transpose_matrix(matrix_t* A){
-	int i,j;
-	if(!A->initialized){
-		printf("ERROR: matrix not initialized yet\n");
-		return -1;
-	}
-	// swap rows and cols
-	matrix_t temp = create_matrix(A->cols, A->rows);
-	for(i=0;i<(A->rows);i++){
-		for(j=0;j<(A->cols);j++){	
-			temp.data[i][j] = A->data[j][i];
-		}
-	}
-	// unallocate the original matrix A and set its data pointer to point
-	// to the newly allocated memory
-	destroy_matrix(A);
-	*A=temp;
-	return  0;
-}
-
-
-/*******************************************************************************
-* float vector_norm(vector_t v)
-*
-* Returns the L2-Norm of a vector. This is also commonly known as the vector
-* magnitude or length.
-*******************************************************************************/
-float vector_norm(vector_t v){
-	float out = 0;
-	int i;
-	if(!v.initialized){
-		printf("ERROR: vector not initialized yet\n");
-		return -1;
-	}
-	for(i=0;i<v.len;i++){
-		out = out + v.data[i]*v.data[i];
-	}
-	return sqrt(out);
-}
 
 /*******************************************************************************
 * vector_t vector_projection(vector_t v, vector_t e)
@@ -666,7 +23,7 @@ float vector_norm(vector_t v){
 vector_t vector_projection(vector_t v, vector_t e){
 	int i;
 	float factor;
-	vector_t out = create_empty_vector();
+	vector_t out = empty_vector();
 	
 	if(!v.initialized || !e.initialized){
 		printf("ERROR: vectors not initialized yet\n");
@@ -695,7 +52,7 @@ matrix_t vector_outer_product(vector_t v1, vector_t v2){
 	int i, j;
 	int m = v1.len;
 	int n = v2.len;
-	matrix_t out = create_empty_matrix();
+	matrix_t out = empty_matrix();
 	if(!v1.initialized || !v2.initialized){
 		printf("ERROR: vectors not initialized yet\n");
 		return out;
@@ -737,7 +94,7 @@ float vector_dot_product(vector_t v1, vector_t v2){
 * 
 *******************************************************************************/
 vector_t cross_product_3d(vector_t v1, vector_t v2){
-	vector_t out = create_empty_vector();
+	vector_t out = empty_vector();
 	if(!v1.initialized || !v2.initialized){
 		printf("ERROR: vector not initialized yet\n");
 		return out;
@@ -755,163 +112,57 @@ vector_t cross_product_3d(vector_t v1, vector_t v2){
 }
 
 /*******************************************************************************
-* vector_t poly_conv(vector_t v1, vector_t v2)
+* vector_t matrix_times_col_vec(matrix_t A, vector_t v)
 *
 * 
 *******************************************************************************/
-vector_t poly_conv(vector_t v1, vector_t v2){
-	vector_t out = create_empty_vector();
-	int m,n,i,j,k;
-	if(!v1.initialized || !v2.initialized){
-		printf("ERROR: vector not initialized yet\n");
+vector_t matrix_times_col_vec(matrix_t A, vector_t v){
+	int i,j;
+	vector_t out = empty_vector();
+	if(!A.initialized || !v.initialized){
+		printf("ERROR: matrix or vector not initialized yet\n");
 		return out;
 	}
-	m = v1.len;
-	n = v2.len;
-	k = m+n-1;
-	out = create_vector(k);
+	if(A.cols != v.len){
+		printf("ERROR: dimensions do not match\n");
+		return out;
+	}
+	out = create_vector(A.rows);
 	
-	for(i=0;i<m;i++){
-		for(j=0;j<n;j++){
-			out.data[i+j] += v1.data[i] * v2.data[j];
+	for(i=0;i<A.rows;i++){
+		for(j=0;j<A.cols;j++){	
+			out.data[i] += v.data[j]*A.data[i][j];
 		}
-	}
-	return out;	
-}
-
-/*******************************************************************************
-* vector_t poly_power(vector_t v, int N)
-*
-* 
-*******************************************************************************/
-vector_t poly_power(vector_t v, int N){
-	vector_t out = create_empty_vector();
-	int i;
-	if(!v.initialized){
-		printf("ERROR: vector not initialized yet\n");
-		return out;
-	}
-	if(N < 0){
-		printf("ERROR: no negative exponents\n");
-		return out;
-	}
-	if(N == 0){
-		out = create_vector(1);
-		out.data[0] = 1;
-		return out;
-	}	
-	out = duplicate_vector(v);
-	if(N == 1){
-		return out;
-	}
-	vector_t temp;
-	for(i=2;i<=N;i++){
-		temp = poly_conv(out, v);
-		out  = duplicate_vector(temp);
-		destroy_vector(&temp);
 	}
 	return out;
 }
 
 /*******************************************************************************
-* vector_t poly_butter(int N, float wc)
-*
-* Return vector of coefficients for continuous-time Butterworth polynomial
-*  or order N and cutoff wc (rad/s)
-*******************************************************************************/
-vector_t poly_butter(int N, float wc){
-	int i;
-	vector_t filter = create_empty_vector();
-	vector_t P2, P3, temp;
-	if(N < 1){
-		printf("ERROR: order must be > 1\n");
-		return filter;
-	}
-	if(N > 10){
-		printf("ERROR: order must be <= 10 to prevent overflow\n");
-		return filter;
-	}
-	filter = create_vector(1);
-	filter.data[0] = 1;
-	P2 = create_vector(2);
-	P3 = create_vector(3);
-	if(N%2 == 0){
-		for(i=1;i<=N/2;i++){
-			P3.data[0] = 1/(wc*wc);
-			P3.data[1] = -2*cos((2*i + N - 1)*PI/(2*N))/wc;
-			P3.data[2] = 1;
-			temp = duplicate_vector(filter);
-			filter = poly_conv(temp,P3);
-			destroy_vector(&temp);
-		}
-	}
-	if(N%2 == 1){	
-		P2.data[0] = 1/wc;
-		P2.data[1] = 1;
-		temp = duplicate_vector(filter);
-		filter = poly_conv(temp,P2);
-		destroy_vector(&temp);
-		for(i=1;i<=(N-1)/2;i++){
-			P3.data[0] = 1/(wc*wc);
-			P3.data[1] = -2*cos((2*i + N - 1)*PI/(2*N))/wc;
-			P3.data[2] = 1;
-			temp = duplicate_vector(filter);
-			filter = poly_conv(temp,P3);
-			destroy_vector(&temp);
-		}
-	}
-	destroy_vector(&P2);
-	destroy_vector(&P3);
-	return filter;
-}
-
-/*******************************************************************************
-* float standard_deviation(vector_t v)
+* vector_t row_vec_times_matrix(vector_t v, matrix_t A)
 *
 * 
 *******************************************************************************/
-float standard_deviation(vector_t v){
-	int i;
-	float mean, mean_sqr;
-	if(v.initialized != 1){
-		printf("ERROR: vector not initialied\n");
-		return -1;
+vector_t row_vec_times_matrix(vector_t v, matrix_t A){
+	int i,j;
+	vector_t out = empty_vector();
+	if(!A.initialized || !v.initialized){
+		printf("ERROR: matrix or vector not initialized yet\n");
+		return out;
 	}
-	if(v.len == 1) return 0;
-
-	// calculate mean
-	mean = 0;
-	for(i=0;i<v.len;i++){
-		mean += v.data[i];
+	if(A.rows != v.len){
+		printf("ERROR: dimensions do not match\n");
+		return out;
 	}
-	mean = mean / v.len;
-	// calculate mean square
-	mean_sqr = 0;
-	for(i=0;i<v.len;i++){
-		mean_sqr += (v.data[i]-mean)*(v.data[i]-mean);
+	
+	out = create_vector(A.cols);
+	for(i=0;i<A.cols;i++){
+		for(j=0;j<A.rows;j++){	
+			out.data[i] += v.data[j]*A.data[j][i];
+		}
 	}
-	return sqrt(mean_sqr/v.len);
+	return out;
 }
 
-/*******************************************************************************
-* float vector_mean(vector_t v)
-*
-* 
-*******************************************************************************/
-float vector_mean(vector_t v){
-	int i;
-	float sum = 0;
-
-	if(v.initialized != 1){
-		printf("ERROR: vector not initialied\n");
-		return -1;
-	}
-	// calculate mean
-	for(i=0;i<v.len;i++){
-		sum += v.data[i];
-	}
-	return sum/ v.len;
-}
 
 /*******************************************************************************
 * float matrix_determinant(matrix_t A)
@@ -1093,7 +344,7 @@ int QR_decomposition(matrix_t A, matrix_t* Q, matrix_t* R){
 matrix_t invert_matrix(matrix_t A){
 	int i,j,k,m;
 	matrix_t L,U,P,D,temp;
-	matrix_t out = create_empty_matrix();
+	matrix_t out = empty_matrix();
 	if(!A.initialized){
 		printf("ERROR: matrix not initialized yet\n");
 		return out;
@@ -1144,7 +395,7 @@ matrix_t invert_matrix(matrix_t A){
 matrix_t householder_matrix(vector_t v){
 	int i, j;
 	float tau;
-	matrix_t out = create_empty_matrix();
+	matrix_t out = empty_matrix();
 	if(!v.initialized){
 		printf("ERROR: vector not initialized yet\n");
 		return out;
@@ -1171,7 +422,7 @@ matrix_t householder_matrix(vector_t v){
 vector_t lin_system_solve(matrix_t A, vector_t b){
 	float fMaxElem, fAcc;
 	int nDim,i,j,k,m;
-	vector_t xout = create_empty_vector();
+	vector_t xout = empty_vector();
 	if(!A.initialized || !b.initialized){
 		printf("ERROR: matrix or vector not initialized yet\n");
 		return xout;
@@ -1243,7 +494,7 @@ vector_t lin_system_solve(matrix_t A, vector_t b){
 *  then solve for x with gaussian elimination
 *******************************************************************************/
 vector_t lin_system_solve_qr(matrix_t A, vector_t b){
-	vector_t xout = create_empty_vector();
+	vector_t xout = empty_vector();
 	vector_t temp;
 	matrix_t Q,R;
 	int i,k;
