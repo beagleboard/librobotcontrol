@@ -9,6 +9,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h> // for memset
+#include <float.h> // for FLT_MAX
 
 #define PI (float)M_PI
 
@@ -236,22 +237,83 @@ int vector_times_scalar(vector_t* v, float s){
 
 
 /*******************************************************************************
-* float vector_norm(vector_t v)
+* float vector_norm(vector_t v, float p)
 *
-* Returns the L2-Norm of a vector. This is also commonly known as the vector
-* magnitude or length.
+* Just like the matlab norm(v,p) function, returns the vector norm defined by
+* sum(abs(v)^p)^(1/p), where p is any positive real value.
+* for infinity and -infinity norms see vector_max and vector_min
 *******************************************************************************/
-float vector_norm(vector_t v){
-	float out = 0;
+float vector_norm(vector_t v, float p){
+	float norm = 0;
 	int i;
+
 	if(!v.initialized){
 		printf("ERROR: vector not initialized yet\n");
 		return -1;
 	}
-	for(i=0;i<v.len;i++){
-		out = out + v.data[i]*v.data[i];
+	if(p<=0.0){
+		printf("ERROR: p must be a positive real value\n");
+		return -1;
 	}
-	return sqrt(out);
+
+	// sum each term
+	for(i=0;i<v.len;i++) norm+=pow(fabs(v.data[i]),p);
+	
+	norm = pow(norm,(1.0/p));
+	return norm;
+}
+
+/*******************************************************************************
+* int vector_max(vector_t v)
+*
+* returns the index of the maximum value in v. 
+* This is the equalivalent to the infinity norm.
+*******************************************************************************/
+int vector_max(vector_t v){
+	int i, index;
+	float tmp = -FLT_MAX;
+
+	if(!v.initialized){
+		printf("ERROR: vector not initialized yet\n");
+		return -1;
+	}
+
+	index = 0;
+	for(i=0; i<v.len; i++){
+		if(v.data[i]>tmp){
+			index=i;
+			tmp=v.data[i];
+		}
+	}
+
+	return index;
+}
+
+
+/*******************************************************************************
+* int vector_min(vector_t v)
+*
+* returns the index of the maximum value in v.
+* This is the equalivalent to the infinity norm.
+*******************************************************************************/
+int vector_min(vector_t v){
+	int i, index;
+	float tmp = FLT_MAX;
+
+	if(!v.initialized){
+		printf("ERROR: vector not initialized yet\n");
+		return -1;
+	}
+
+	index = 0;
+	for(i=0; i<v.len; i++){
+		if(v.data[i]<tmp){
+			index=i;
+			tmp=v.data[i];
+		}
+	}
+
+	return index;
 }
 
 /*******************************************************************************
@@ -407,7 +469,7 @@ vector_t poly_add(vector_t a, vector_t b){
 int poly_add_in_place(vector_t* a, vector_t b){
 	int i, diff;
 
-	if(!a.initialized){
+	if(!a->initialized){
 		printf("ERROR: vector a not initialized yet\n");
 		return -1;
 	}
@@ -426,7 +488,7 @@ int poly_add_in_place(vector_t* a, vector_t b){
 		for(i=0; i<tmp.len; i++){
 			a->data[i+diff] = tmp.data[i];
 		}
-		destroy_vector(tmp);
+		destroy_vector(&tmp);
 	}
 
 	// finally do the simply add
@@ -444,7 +506,7 @@ int poly_add_in_place(vector_t* a, vector_t b){
 int poly_subtract_in_place(vector_t* a, vector_t b){
 	int i, diff;
 
-	if(!a.initialized){
+	if(!a->initialized){
 		printf("ERROR: vector a not initialized yet\n");
 		return -1;
 	}
@@ -463,7 +525,7 @@ int poly_subtract_in_place(vector_t* a, vector_t b){
 		for(i=0; i<tmp.len; i++){
 			a->data[i+diff] = tmp.data[i];
 		}
-		destroy_vector(tmp);
+		destroy_vector(&tmp);
 	}
 
 	// finally do the simply subtract
@@ -516,8 +578,8 @@ vector_t poly_diff(vector_t a, int d){
 * vector passed by pointer.
 *******************************************************************************/
 vector_t poly_div(vector_t num, vector_t den, vector_t* remainder){
-	vector_t divisor, tmp;
-	int i, j diff;
+	vector_t divisor;
+	int i, j, diff;
 
 	if(!num.initialized){
 		printf("ERROR: numerator not initialized yet\n");
@@ -543,7 +605,7 @@ vector_t poly_div(vector_t num, vector_t den, vector_t* remainder){
 	// calculate each entry in divisor, if num and den are same length 
 	// this will happen only once with i=0
 	for(i=0;i<=diff;i++){
-		divisor.data[i] = remainder.data[i]/den.data[i];
+		divisor.data[i] = remainder->data[i]/den.data[i];
 		// now subtract that multiple of denominator from remainder
 		for(j=i+1; j<den.len; i++){
 			remainder->data[j] -= divisor.data[i]*den.data[j];
@@ -607,35 +669,6 @@ vector_t poly_butter(int N, float wc){
 }
 
 
-/*******************************************************************************
-* int diopohantine(vector_t a, vector_t b, vector_t c, \
-					vector_t* x, vector_t* y, vector_t* r, vector_t* s)
-*
-* Solve the polynomial Diophantine eqn a*x+b*y=c via the Extended Euclidean 
-* algorithm for coprime {a,b}. The solution {x,y} returned is the solution with 
-* the lowest order for y
-* the general solution is given by {x+r*t,y+s*t} for any polynomial t.
-* Refer to Numerical Renaissance for background and uses
-*******************************************************************************/
-int diopohantine(vector_t a, vector_t b, vector_t c, \
-					vector_t* x, vector_t* y, vector_t* r, vector_t* s){
-
-	// sanity checks
-	if(!a.initialized){
-		printf("ERROR: a not initialized yet\n");
-		return empty_vector();
-	}
-	if(!b.initialized){
-		printf("ERROR: b not initialized yet\n");
-		return empty_vector();
-	}
-	if(!c.initialized){
-		printf("ERROR: c not initialized yet\n");
-		return empty_vector();
-	}
-
-
-}
 
 
 

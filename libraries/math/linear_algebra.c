@@ -298,7 +298,7 @@ int QR_decomposition(matrix_t A, matrix_t* Q, matrix_t* R){
 		}
 		if(Rt.data[i][i] > 0)	s = -1;			// check the sign
 		else					s = 1;
-		xtemp.data[0] += s*vector_norm(xtemp);	// add norm to 1st element
+		xtemp.data[0] += s*vector_norm(xtemp, 2);	// add norm to 1st element
 		
 		Qi = create_square_matrix(m);			// initialize Qi
 		F  = create_square_matrix(m-i);			// initialize shrinking householder_matrix
@@ -627,3 +627,38 @@ int fit_ellipsoid(matrix_t points, vector_t* center, vector_t* lengths){
 	destroy_vector(&b);
 	return 0;
 }
+
+
+
+/*******************************************************************************
+* int diopohantine(vector_t a, vector_t b, vector_t c, \
+					vector_t* x, vector_t* y, vector_t* r, vector_t* s)
+*
+* Solve the polynomial Diophantine eqn a*x+b*y=c via the Extended Euclidean 
+* algorithm for coprime {a,b}. The solution {x,y} returned is the solution with 
+* the lowest order for y
+* the general solution is given by {x+r*t,y+s*t} for any polynomial t.
+* Refer to Numerical Renaissance for background and uses
+*******************************************************************************/
+/*
+int diopohantine(vector_t a, vector_t b, vector_t c, \
+					vector_t* x, vector_t* y, vector_t* r, vector_t* s){
+
+	// sanity checks
+	if(!a.initialized){
+		printf("ERROR: a not initialized yet\n");
+		return empty_vector();
+	}
+	if(!b.initialized){
+		printf("ERROR: b not initialized yet\n");
+		return empty_vector();
+	}
+	if(!c.initialized){
+		printf("ERROR: c not initialized yet\n");
+		return empty_vector();
+	}
+
+
+	
+
+}*/

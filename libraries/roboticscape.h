@@ -1026,15 +1026,19 @@ void print_vector(vector_t v);
 void print_vector_sci_notation(vector_t v);
 // Basic operations
 int vector_times_scalar(vector_t* v, float s);
-float vector_norm(vector_t v);
+float vector_norm(vector_t v, float p);
+int vector_max(vector_t v);
+int vector_min(vector_t v);
 float standard_deviation(vector_t v);
 float vector_mean(vector_t v);
 // polynomial manipulation 
 vector_t poly_conv(vector_t v1, vector_t v2);
 vector_t poly_power(vector_t v, int N);
 vector_t poly_add(vector_t a, vector_t b);
+int poly_add_in_place(vector_t* a, vector_t b);
+int poly_subtract_in_place(vector_t* a, vector_t b);
 vector_t poly_diff(vector_t a, int d);
-float poly_div(vector_t num, vector_t den, vector_t* remainder);
+vector_t poly_div(vector_t num, vector_t den, vector_t* remainder);
 vector_t poly_butter(int N, float wc);
 
 
