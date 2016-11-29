@@ -13,7 +13,7 @@
 #include <stdlib.h>
 
 /*******************************************************************************
-* d_filter_t create_filter(vector_t num, vector_t den, float dt)
+* d_filter_t create_filter(vector_t num, vector_t den, double dt)
 *
 * Allocate memory for a filter of specified order & fill with transfer
 * function constants. Use enable_saturation immediately after this if you want
@@ -24,7 +24,7 @@
 * returns an empty uninitialized filter if something went wrong. Otherwise
 * it returns a ready-to-use filter.
 *******************************************************************************/
-d_filter_t create_filter(vector_t num, vector_t den, float dt){
+d_filter_t create_filter(vector_t num, vector_t den, double dt){
 	d_filter_t filter;
 
 	if(dt <= 0.0){
@@ -68,7 +68,7 @@ d_filter_t create_filter(vector_t num, vector_t den, float dt){
 
 
 /*******************************************************************************
-* d_filter_t create_filter_from_arrays(int order, float dt, float* num, float* den)
+* d_filter_t create_filter_from_arrays(int order, double dt, double* num, double* den)
 *
 * like create_filter(), but constructs the vectors itself. Numerator and
 * denominator arrays must be the same length like a semi-proper transfer
@@ -78,7 +78,7 @@ d_filter_t create_filter(vector_t num, vector_t den, float dt){
 * order+1. It is safer to use the standard create_filter and construct the
 * vectors yourself.
 *******************************************************************************/
-d_filter_t create_filter_from_arrays(int order, float dt, float* num, float* den){
+d_filter_t create_filter_from_arrays(int order, double dt, double* num, double* den){
 	d_filter_t filter;
 
 	if(order<1){
@@ -143,7 +143,7 @@ d_filter_t create_empty_filter(int order){
 }
 
 /*******************************************************************************
-* float march_filter(d_filter_t* filter, float new_input)
+* double march_filter(d_filter_t* filter, double new_input)
 *
 * March the filter forward in time one step with new input data.
 * Returns new output which could also be accessed with filter.current_output
@@ -151,10 +151,10 @@ d_filter_t create_empty_filter(int order){
 * min and max values given to enable_saturation. The enable_saturation entry
 * in the filter struct will also be set to 1 if saturation occurred. 
 *******************************************************************************/
-float march_filter(d_filter_t* filter, float new_input){
+double march_filter(d_filter_t* filter, double new_input){
 	int i = 0;
-	float new_output = 0;
-	float input_i, output_i;
+	double new_output = 0;
+	double input_i, output_i;
 	int relative_degree;
 	
 	if(filter->initialized != 1){
@@ -187,8 +187,8 @@ float march_filter(d_filter_t* filter, float new_input){
 	
 	// soft start limits
 	if(filter->soft_start_en && filter->step < filter->soft_start_steps){
-		float a=filter->saturation_max*(filter->step/filter->soft_start_steps);
-		float b=filter->saturation_min*(filter->step/filter->soft_start_steps);
+		double a=filter->saturation_max*(filter->step/filter->soft_start_steps);
+		double b=filter->saturation_min*(filter->step/filter->soft_start_steps);
 		if(new_output > a) new_output = a;
 		if(new_output < b) new_output = b;
 	}
@@ -231,13 +231,13 @@ int reset_filter(d_filter_t* filter){
 }
 
 /*******************************************************************************
-* int enable_saturation(d_filter_t* filter, float sat_min, float sat_max)
+* int enable_saturation(d_filter_t* filter, double sat_min, double sat_max)
 *
 * If saturation is enabled for a specified filter, the filter will automatically
 * bound the output between min and max. You may ignore this function if you wish
 * the filter to run unbounded.
 *******************************************************************************/
-int enable_saturation(d_filter_t* filter, float min, float max){
+int enable_saturation(d_filter_t* filter, double min, double max){
 	if(filter->initialized != 1){
 		printf("ERROR: filter not initialized yet\n");
 		return -1;
@@ -253,13 +253,13 @@ int enable_saturation(d_filter_t* filter, float min, float max){
 }
 
 /*******************************************************************************
-* int enable_soft_start(d_filter_t* filter, float seconds)
+* int enable_soft_start(d_filter_t* filter, double seconds)
 *
 * Enables soft start function where the output limit is gradually increased 
 * for the given number of seconds up to the normal saturation value. Saturation
 * must already be enabled for this to work.
 *******************************************************************************/
-int enable_soft_start(d_filter_t* filter, float seconds){
+int enable_soft_start(d_filter_t* filter, double seconds){
 	if(filter->initialized != 1){
 		printf("ERROR: filter not initialized yet\n");
 		return -1;
@@ -290,50 +290,50 @@ int did_filter_saturate(d_filter_t* filter){
 
 
 /*******************************************************************************
-* float previous_filter_input(d_filter_t* filter, int steps)
+* double previous_filter_input(d_filter_t* filter, int steps)
 *
 * Returns the input 'steps' back in time. Steps = 0 returns most recent input.
 *******************************************************************************/
-float previous_filter_input(d_filter_t* filter, int steps){
+double previous_filter_input(d_filter_t* filter, int steps){
 	return get_ring_buf_value(&filter->in_buf, steps);
 }
 
 /*******************************************************************************
-* float previous_filter_output(d_filter_t* filter, int steps)
+* double previous_filter_output(d_filter_t* filter, int steps)
 *
 * Returns the output 'steps' back in time. Steps = 0 returns most recent output.
 *******************************************************************************/
-float previous_filter_output(d_filter_t* filter, int steps){
+double previous_filter_output(d_filter_t* filter, int steps){
 	return get_ring_buf_value(&filter->out_buf, steps);
 }
 
 /*******************************************************************************
-* float newest_filter_output(d_filter_t* filter)
+* double newest_filter_output(d_filter_t* filter)
 *
 * Returns the most recent output from the filter. Alternatively the user could
 * access the value from their d_filter_t_t struct with filter.newest_output
 *******************************************************************************/
-float newest_filter_output(d_filter_t* filter){
+double newest_filter_output(d_filter_t* filter){
 	return filter->newest_output;
 }
 
 /*******************************************************************************
-* float newest_filter_input(d_filter_t* filter)
+* double newest_filter_input(d_filter_t* filter)
 *
 * Returns the most recent input to the filter. Alternatively the user could
 * access the value from their d_filter_t_t struct with filter.newest_input
 *******************************************************************************/
-float newest_filter_input(d_filter_t* filter){
+double newest_filter_input(d_filter_t* filter){
 	return filter->newest_input;
 }
 
 /*******************************************************************************
-* prefill_filter_inputs(d_filter_t* filter, float in)
+* prefill_filter_inputs(d_filter_t* filter, double in)
 *
 * fills all previous inputs to the filter as if they had been equal to 'in'
 * used when initializing filters to non-zero values
 *******************************************************************************/
-int prefill_filter_inputs(d_filter_t* filter, float in){
+int prefill_filter_inputs(d_filter_t* filter, double in){
 	int i;
 	if(filter->initialized != 1){
 		printf("ERROR: filter not initialized yet\n");
@@ -347,12 +347,12 @@ int prefill_filter_inputs(d_filter_t* filter, float in){
 }
 
 /*******************************************************************************
-* prefill_filter_outputs(d_filter_t* filter, float out)
+* prefill_filter_outputs(d_filter_t* filter, double out)
 *
 * fills all previous inputs to the filter as if they had been equal to 'in'
 * used when initializing filters to non-zero values
 *******************************************************************************/
-int prefill_filter_outputs(d_filter_t* filter, float out){
+int prefill_filter_outputs(d_filter_t* filter, double out){
 	int i;
 	if(filter->initialized != 1){
 		printf("ERROR: filter not initialized yet\n");
@@ -431,7 +431,7 @@ d_filter_t multiply_filters(d_filter_t f1, d_filter_t f2){
 }
 
 /*******************************************************************************
-* d_filter_t C2DTustin(vector_t num, vector_t den, float dt, float w)
+* d_filter_t C2DTustin(vector_t num, vector_t den, double dt, double w)
 * 
 * Creates a discrete time filter with similar dynamics to a provided continuous
 * time transfer function using tustin's approximation with prewarping. 
@@ -439,10 +439,10 @@ d_filter_t multiply_filters(d_filter_t f1, d_filter_t f2){
 * arguments:
 * vector_t num: 	continuous time numerator coefficients
 * vector_t den: 	continuous time denominator coefficients
-* float dt:			desired timestep of discrete filter
-* float w:			prewarping frequency in rad/s
+* double dt:			desired timestep of discrete filter
+* double w:			prewarping frequency in rad/s
 *******************************************************************************/
-d_filter_t C2DTustin(vector_t num, vector_t den, float dt, float w){
+d_filter_t C2DTustin(vector_t num, vector_t den, double dt, double w){
 	int i,j;
 	d_filter_t out;
 	if(!num.initialized || !den.initialized){
@@ -454,11 +454,11 @@ d_filter_t C2DTustin(vector_t num, vector_t den, float dt, float w){
 		return out;
 	}
 
-	float f = 2*(1 - cos(w*dt)) / (w*dt*sin(w*dt));
-	float c = 2/(f*dt);
+	double f = 2*(1 - cos(w*dt)) / (w*dt*sin(w*dt));
+	double c = 2/(f*dt);
 	int   m = num.len - 1;			// highest order of num
 	int   n = den.len - 1;			// highest order of den
-	float A0;
+	double A0;
 	vector_t numZ = create_vector(n+1);	// make vectors with den order +1
 	vector_t denZ = create_vector(n+1);
 	vector_t p1  = create_vector(2);	// (z - 1)
@@ -504,14 +504,14 @@ d_filter_t C2DTustin(vector_t num, vector_t den, float dt, float w){
 }
 
 /*******************************************************************************
-* d_filter_t create_first_order_lowpass(float dt, float time_constant)
+* d_filter_t create_first_order_lowpass(double dt, double time_constant)
 *
 * Returns a configured and ready to use d_filter_t_t struct with a first order
 * low pass transfer function. dt is in units of seconds and time_constant is 
 * the number of seconds it takes to rise to 63.4% of a steady-state input.
 *******************************************************************************/
-d_filter_t create_first_order_lowpass(float dt, float time_constant){
-	float lp_const = dt/time_constant;
+d_filter_t create_first_order_lowpass(double dt, double time_constant){
+	double lp_const = dt/time_constant;
 	vector_t num = create_vector(1);
 	vector_t den = create_vector(2);
 	num.data[0] = lp_const;
@@ -521,14 +521,14 @@ d_filter_t create_first_order_lowpass(float dt, float time_constant){
 }
 
 /*******************************************************************************
-* d_filter_t create_first_order_highpass(float dt, float time_constant)
+* d_filter_t create_first_order_highpass(double dt, double time_constant)
 *
 * Returns a configured and ready to use d_filter_t_t struct with a first order
 * high pass transfer function. dt is in units of seconds and time_constant is 
 * the number of seconds it takes to decay by 63.4% of a steady-state input.
 *******************************************************************************/
-d_filter_t create_first_order_highpass(float dt, float time_constant){
-	float hp_const = dt/time_constant;
+d_filter_t create_first_order_highpass(double dt, double time_constant){
+	double hp_const = dt/time_constant;
 
 	vector_t num = create_vector(2);
 	vector_t den = create_vector(2);
@@ -541,12 +541,12 @@ d_filter_t create_first_order_highpass(float dt, float time_constant){
 }
 
 /*******************************************************************************
-* d_filter_t create_butterworth_lowpass(int order, float dt, float wc)
+* d_filter_t create_butterworth_lowpass(int order, double dt, double wc)
 *
 * Returns a configured and ready to use d_filter_t_t struct with the transfer
 * function for Butterworth low pass filter of order N and cutoff wc.
 *******************************************************************************/
-d_filter_t create_butterworth_lowpass(int order, float dt, float wc){
+d_filter_t create_butterworth_lowpass(int order, double dt, double wc){
 	vector_t A = poly_butter(order,wc);
 	vector_t B = create_vector(1);
 	B.data[0] = 1;
@@ -554,12 +554,12 @@ d_filter_t create_butterworth_lowpass(int order, float dt, float wc){
 }
 
 /*******************************************************************************
-* d_filter_t create_butterworth_highpass(int order, float dt, float wc)
+* d_filter_t create_butterworth_highpass(int order, double dt, double wc)
 *
 * Returns a configured and ready to use d_filter_t_t struct with the transfer
 * function for Butterworth low pass filter of order N and cutoff wc.
 *******************************************************************************/
-d_filter_t create_butterworth_highpass(int order, float dt, float wc){
+d_filter_t create_butterworth_highpass(int order, double dt, double wc){
 	vector_t A = poly_butter(order,wc);
 	vector_t B = create_vector(order + 1);
 	B.data[0] = 1;
@@ -594,12 +594,12 @@ d_filter_t create_moving_average(int samples, int dt){
 }
 
 /*******************************************************************************
-* d_filter_t create_integrator(float dt)
+* d_filter_t create_integrator(double dt)
 *
 * Returns a configured and ready to use d_filter_t_t struct with the transfer
 * function for a first order time integral.
 *******************************************************************************/
-d_filter_t create_integrator(float dt){
+d_filter_t create_integrator(double dt){
 	vector_t num = create_vector(1);
 	vector_t den = create_vector(2);
 	num.data[0] = dt;
@@ -610,12 +610,12 @@ d_filter_t create_integrator(float dt){
 }
 
 /*******************************************************************************
-* d_filter_t create_double_integrator(float dt)
+* d_filter_t create_double_integrator(double dt)
 *
 * Returns a configured and ready to use d_filter_t_t struct with the transfer
 * function for a first order time integral.
 *******************************************************************************/
-d_filter_t create_double_integrator(float dt){
+d_filter_t create_double_integrator(double dt){
 	vector_t num = create_vector(1);
 	vector_t den = create_vector(3);
 	num.data[0] = dt*dt;
@@ -627,7 +627,7 @@ d_filter_t create_double_integrator(float dt){
 }
 
 /*******************************************************************************
-* d_filter_t create_pid(float kp, float ki, float kd, float Tf, float dt)
+* d_filter_t create_pid(double kp, double ki, double kd, double Tf, double dt)
 *
 * discrete-time implementation of a parallel PID controller with rolloff.
 * This is equivalent to the Matlab function: C = pid(Kp,Ki,Kd,Tf,Ts)
@@ -636,7 +636,7 @@ d_filter_t create_double_integrator(float dt){
 * so this filter has high frequency rolloff with time constant Tf. Smaller Tf
 * results in less rolloff, but Tf must be greater than dt/2 for stability.
 *******************************************************************************/
-d_filter_t create_pid(float kp, float ki, float kd, float Tf, float dt){
+d_filter_t create_pid(double kp, double ki, double kd, double Tf, double dt){
 	d_filter_t filter;
 
 	if(dt<0.0){

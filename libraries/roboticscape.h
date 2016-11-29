@@ -962,6 +962,7 @@ int print_cpu_frequency();
 *******************************************************************************/
 int null_func();
 float get_random_float();
+double get_random_double();
 int saturate_float(float* val, float min, float max);
 char *byte_to_binary(unsigned char x);
 timespec timespec_diff(timespec A, timespec B);
@@ -1008,7 +1009,7 @@ void vector3CrossProduct(float a[3], float b[3], float d[3]);
 *******************************************************************************/
 typedef struct vector_t{
 	int len;
-	float* data;
+	double* data;
 	int initialized;
 } vector_t;
 
@@ -1019,18 +1020,18 @@ vector_t empty_vector();
 vector_t duplicate_vector(vector_t v);
 vector_t create_random_vector(int len);
 vector_t create_vector_of_ones(int len);
-vector_t create_vector_from_array(int len, float* array);
-int set_vector_entry(vector_t* v, int pos, float val);
-float get_vector_entry(vector_t v, int pos);
+vector_t create_vector_from_array(int len, double* array);
+int set_vector_entry(vector_t* v, int pos, double val);
+double get_vector_entry(vector_t v, int pos);
 void print_vector(vector_t v);
 void print_vector_sci_notation(vector_t v);
 // Basic operations
-int vector_times_scalar(vector_t* v, float s);
-float vector_norm(vector_t v, float p);
+int vector_times_scalar(vector_t* v, double s);
+double vector_norm(vector_t v, double p);
 int vector_max(vector_t v);
 int vector_min(vector_t v);
-float standard_deviation(vector_t v);
-float vector_mean(vector_t v);
+double standard_deviation(vector_t v);
+double vector_mean(vector_t v);
 // polynomial manipulation 
 vector_t poly_conv(vector_t v1, vector_t v2);
 vector_t poly_power(vector_t v, int N);
@@ -1039,7 +1040,7 @@ int poly_add_in_place(vector_t* a, vector_t b);
 int poly_subtract_in_place(vector_t* a, vector_t b);
 vector_t poly_diff(vector_t a, int d);
 vector_t poly_div(vector_t num, vector_t den, vector_t* remainder);
-vector_t poly_butter(int N, float wc);
+vector_t poly_butter(int N, double wc);
 
 
 /*******************************************************************************
@@ -1051,7 +1052,7 @@ vector_t poly_butter(int N, float wc);
 typedef struct matrix_t{
 	int rows;
 	int cols;
-	float** data;
+	double** data;
 	int initialized;
 } matrix_t;
 
@@ -1065,14 +1066,14 @@ matrix_t create_random_matrix(int rows, int cols);
 matrix_t create_identity_matrix(int dim);
 matrix_t create_diagonal_matrix(vector_t v);
 matrix_t create_matrix_of_ones(int dim);
-int set_matrix_entry(matrix_t* A, int row, int col, float val);
-float get_matrix_entry(matrix_t A, int row, int col);
+int set_matrix_entry(matrix_t* A, int row, int col, double val);
+double get_matrix_entry(matrix_t A, int row, int col);
 void print_matrix(matrix_t A);
 void print_matrix_sci_notation(matrix_t A);
 
 // Multiplication, Addition, and other transforms
 matrix_t multiply_matrices(matrix_t A, matrix_t B);
-int matrix_times_scalar(matrix_t* A, float s);
+int matrix_times_scalar(matrix_t* A, double s);
 matrix_t add_matrices(matrix_t A, matrix_t B);
 int transpose_matrix(matrix_t* A);
 
@@ -1085,13 +1086,13 @@ int transpose_matrix(matrix_t* A);
 // vector operations
 vector_t vector_projection(vector_t v, vector_t e);
 matrix_t vector_outer_product(vector_t v1, vector_t v2);
-float vector_dot_product(vector_t v1, vector_t v2);
+double vector_dot_product(vector_t v1, vector_t v2);
 vector_t cross_product_3d(vector_t v1, vector_t v2);
 // basic matrix/vector multiplication
 vector_t matrix_times_col_vec(matrix_t A, vector_t v);
 vector_t row_vec_times_matrix(vector_t v, matrix_t A);
 // Advanced matrix operations
-float matrix_determinant(matrix_t A);
+double matrix_determinant(matrix_t A);
 int LUP_decomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P);
 int QR_decomposition(matrix_t A, matrix_t* Q, matrix_t* R);
 matrix_t invert_matrix(matrix_t A);
@@ -1117,21 +1118,20 @@ int fit_ellipsoid(matrix_t points, vector_t* center, vector_t* lengths);
 *
 * sets all values in the buffer to 0 and sets the buffer position back to 0
 *
-* @ int insert_new_ring_buf_value(ring_buf* buf, float val)
+* @ int insert_new_ring_buf_value(ring_buf* buf, double val)
 * 
-* Puts a new float into the ring buffer. If the buffer was full then the oldest
+* Puts a new double into the ring buffer. If the buffer was full then the oldest
 * value in the buffer is automatically removed.
 *
-* @ float get_ring_buf_value(ring_buf* buf, int position)
+* @ double get_ring_buf_value(ring_buf* buf, int position)
 *
-* returns the float which is 'position' steps behind the last value placed in
+* returns the double which is 'position' steps behind the last value placed in
 * the buffer. If 'position' is given as 0 then the most recent value is
 * returned. 'Position' obviously can't be larger than buffer_size minus 1
 *******************************************************************************/
 
 typedef struct ring_buf_t{
-	//float data[RING_BUF_SIZE];
-	float* data;
+	double* data;
 	int size;
 	int index;
 	int initialized;
@@ -1140,8 +1140,8 @@ typedef struct ring_buf_t{
 ring_buf_t create_ring_buf(int size);
 int reset_ring_buf(ring_buf_t* buf);
 int destroy_ring_buf(ring_buf_t* buf);
-int insert_new_ring_buf_value(ring_buf_t* buf, float val);
-float get_ring_buf_value(ring_buf_t* buf, int position);
+int insert_new_ring_buf_value(ring_buf_t* buf, double val);
+double get_ring_buf_value(ring_buf_t* buf, int position);
 
 
 /*******************************************************************************
@@ -1158,13 +1158,13 @@ float get_ring_buf_value(ring_buf_t* buf, int position);
 * You may read values directly from your own instance of the d_filter_t struct.
 * To modify the contents of the filter please use the functions provided here.
 *
-* @ d_filter_t create_filter(vector_t num, vector_t den, float dt)
+* @ d_filter_t create_filter(vector_t num, vector_t den, double dt)
 *
 * Allocate memory for a filter of specified order & fill with transfer
 * function constants. Use enable_saturation immediately after this if you want
 * to enable automatic saturation.
 *
-* @ float march_filter(d_filter_t* filter, float new_input)
+* @ double march_filter(d_filter_t* filter, double new_input)
 *
 * March the filter forward in time one step with new input data.
 * Returns new output which could also be accessed with filter.current_output
@@ -1176,7 +1176,7 @@ float get_ring_buf_value(ring_buf_t* buf, int position);
 *
 * resets all inputs and outputs to 0
 *
-* @ int enable_saturation(d_filter_t* filter, float sat_min, float sat_max)
+* @ int enable_saturation(d_filter_t* filter, double sat_min, double sat_max)
 *
 * If saturation is enabled for a specified filter, the filter will automatically
 * bound the output between min and max. You may ignore this function if you wish
@@ -1186,42 +1186,42 @@ float get_ring_buf_value(ring_buf_t* buf, int position);
 *
 * Returns 1 if the filter saturated the last time step. Returns 0 otherwise.
 *
-* @ float previous_filter_input(d_filter_t* filter, int steps)
+* @ double previous_filter_input(d_filter_t* filter, int steps)
 *
 * Returns the input 'steps' back in time. Steps = 0 returns most recent input.
 *
-* @ float previous_filter_output(d_filter_t* filter, int steps)
+* @ double previous_filter_output(d_filter_t* filter, int steps)
 *
 * Returns the output 'steps' back in time. Steps = 0 returns most recent output.
 *
-* @ float newest_filter_output(d_filter_t* filter)
+* @ double newest_filter_output(d_filter_t* filter)
 *
 * Returns the most recent output from the filter. Alternatively the user could
 * access the value from their d_filter_t_t struct with filter.newest_output
 *
-* @ float newest_filter_input(d_filter_t* filter)
+* @ double newest_filter_input(d_filter_t* filter)
 *
 * Returns the most recent input to the filter. Alternatively the user could
 * access the value from their d_filter_t_t struct with filter.newest_input
 *
-* @ d_filter_t create_first_order_low_pass(float dt, float time_constant)
+* @ d_filter_t create_first_order_low_pass(double dt, double time_constant)
 *
 * Returns a configured and ready to use d_filter_t_t struct with a first order
 * low pass transfer function. dt is in units of seconds and time_constant is 
 * the number of seconds it takes to rise to 63.4% of a steady-state input.
 *
-* @ d_filter_t create_first_order_high_pass(float dt, float time_constant)
+* @ d_filter_t create_first_order_high_pass(double dt, double time_constant)
 *
 * Returns a configured and ready to use d_filter_t_t struct with a first order
 * high pass transfer function. dt is in units of seconds and time_constant is 
 * the number of seconds it takes to decay by 63.4% of a steady-state input.
 *
-* @ d_filter_t create_integrator(float dt)
+* @ d_filter_t create_integrator(double dt)
 *
 * Returns a configured and ready to use d_filter_t_t struct with the transfer
 * function for a first order time integral.
 *
-* @ d_filter_t create_pid(float kp, float ki, float kd, float Tf, float dt)
+* @ d_filter_t create_pid(double kp, double ki, double kd, double Tf, double dt)
 *
 * discrete-time implementation of a parallel PID controller with rolloff.
 * This is equivalent to the Matlab function: C = pid(Kp,Ki,Kd,Tf,Ts)
@@ -1238,55 +1238,55 @@ float get_ring_buf_value(ring_buf_t* buf, int position);
 typedef struct d_filter_t{
 	// transfer function properties
 	int order;				// transfer function order
-	float dt;				// timestep in seconds
-	float gain; 			// gain usually 1
+	double dt;				// timestep in seconds
+	double gain; 			// gain usually 1
 	vector_t numerator;		// numerator coefficients 
 	vector_t denominator;	// denominator coefficients 
 	// saturation settings
 	int saturation_en;		// set to 1 by enable_saturation()
-	float saturation_min;
-	float saturation_max;
+	double saturation_min;
+	double saturation_max;
 	int saturation_flag;	// 1 if saturated on the last step
 	// soft start settings
 	int soft_start_en;		// set to 1 by enbale_soft_start()
-	float soft_start_steps;	// steps before full output allowed
+	double soft_start_steps;	// steps before full output allowed
 	// dynamically allocated ring buffers
 	ring_buf_t in_buf;
 	ring_buf_t out_buf;
 	// newest input and output for quick reference
-	float newest_input;
-	float newest_output;
+	double newest_input;
+	double newest_output;
 	// other
 	uint64_t step;			// steps since last reset
 	int initialized;		// 
 } d_filter_t;
 
-d_filter_t create_filter(vector_t num, vector_t den, float dt);
-d_filter_t create_filter_from_arrays(int order, float dt, float* num, float* den);
+d_filter_t create_filter(vector_t num, vector_t den, double dt);
+d_filter_t create_filter_from_arrays(int order, double dt, double* num, double* den);
 int destroy_filter(d_filter_t* filter);
 d_filter_t create_empty_filter(int order);
-float march_filter(d_filter_t* filter, float new_input);
+double march_filter(d_filter_t* filter, double new_input);
 int reset_filter(d_filter_t* filter);
-int enable_saturation(d_filter_t* filter, float min, float max);
+int enable_saturation(d_filter_t* filter, double min, double max);
 int did_filter_saturate(d_filter_t* filter);
-int enable_soft_start(d_filter_t* filter, float seconds);
-float previous_filter_input(d_filter_t* filter, int steps);
-float previous_filter_output(d_filter_t* filter, int steps);
-float newest_filter_output(d_filter_t* filter);
-float newest_filter_input(d_filter_t* filter);
-int prefill_filter_inputs(d_filter_t* filter, float in);
-int prefill_filter_outputs(d_filter_t* filter, float out);
+int enable_soft_start(d_filter_t* filter, double seconds);
+double previous_filter_input(d_filter_t* filter, int steps);
+double previous_filter_output(d_filter_t* filter, int steps);
+double newest_filter_output(d_filter_t* filter);
+double newest_filter_input(d_filter_t* filter);
+int prefill_filter_inputs(d_filter_t* filter, double in);
+int prefill_filter_outputs(d_filter_t* filter, double out);
 int print_filter_details(d_filter_t* filter);
 d_filter_t multiply_filters(d_filter_t f1, d_filter_t f2);
-d_filter_t C2DTustin(vector_t num, vector_t den, float dt, float w);
-d_filter_t create_first_order_lowpass(float dt, float time_constant);
-d_filter_t create_first_order_highpass(float dt, float time_constant);
-d_filter_t create_butterworth_lowpass(int order, float dt, float wc);
-d_filter_t create_butterworth_highpass(int order, float dt, float wc);
+d_filter_t C2DTustin(vector_t num, vector_t den, double dt, double w);
+d_filter_t create_first_order_lowpass(double dt, double time_constant);
+d_filter_t create_first_order_highpass(double dt, double time_constant);
+d_filter_t create_butterworth_lowpass(int order, double dt, double wc);
+d_filter_t create_butterworth_highpass(int order, double dt, double wc);
 d_filter_t create_moving_average(int samples, int dt);
-d_filter_t create_integrator(float dt);
-d_filter_t create_double_integrator(float dt);
-d_filter_t create_pid(float kp, float ki, float kd, float Tf, float dt);
+d_filter_t create_integrator(double dt);
+d_filter_t create_double_integrator(double dt);
+d_filter_t create_pid(double kp, double ki, double kd, double Tf, double dt);
 
 
 /*******************************************************************************
@@ -1413,7 +1413,6 @@ int mmap_set_pwm_duty(int subsystem, char ch, float duty);
 
 
 
-	
 #endif //ROBOTICS_CAPE
 
 

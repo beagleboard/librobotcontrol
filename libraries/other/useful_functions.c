@@ -18,15 +18,31 @@ int null_func(){
 	return 0;
 }
 
+
 /*******************************************************************************
 * float get_random_float()
 *
 * returns a random floating point number between -1 and 1
 *******************************************************************************/
 float get_random_float(){
+	// get random 32-bit int, mask out all but the mantissa (right 23 bits)
+	// with the & operator, then set the leftmost exponent bit to scale it
 	unsigned int a = (rand()&0x007fffff) | 0x40000000;
-    return (*((float*)&a) - 3.0f);
+	return (*((float*)&a) - 3.0f);
 }
+
+/*******************************************************************************
+* float get_random_double()
+*
+* returns a random double-precision floating point number between -1 and 1
+*******************************************************************************/
+double get_random_double(){
+	// get random 64-bit int, mask out all but the mantissa (right 52 bits)
+	// with the & operator, then set the leftmost exponent bit to scale it
+	uint64_t a = ((((uint64_t)rand()<<32)|rand()) & 0x000fffffffffffff) | 0x4000000000000000;
+	return (*((double*)&a) - 3.0f);
+}
+
 
 /*******************************************************************************
 * @ saturate_float(float* val, float min, float max)

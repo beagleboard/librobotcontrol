@@ -27,7 +27,7 @@ ring_buf_t create_ring_buf(int size){
 		printf("ERROR: ring_buf_size must be greater than or equal to 2\n");
 		return buf;
 	}
-	buf.data = (float*)calloc(size,sizeof(float));
+	buf.data = (double*)calloc(size,sizeof(double));
 	if(buf.data == NULL){
 		printf("ERROR: failed to allocate memory for ring buffer\n");
 		return buf;
@@ -61,18 +61,18 @@ int reset_ring_buf(ring_buf_t* buf){
 		printf("ERROR: trying to reset an uninitialized ring buffer\n");
 		return -1;
 	}
-	memset(buf->data, 0, buf->size*sizeof(float));
+	memset(buf->data, 0, buf->size*sizeof(double));
 	buf->index = 0;
 	return 0;
 }
 
 /*******************************************************************************
-* int insert_new_ring_buf_value(ring_buf_t* buf, float val)
+* int insert_new_ring_buf_value(ring_buf_t* buf, double val)
 * 
-* Puts a new float into the ring buffer. If the buffer was full then the oldest
+* Puts a new double into the ring buffer. If the buffer was full then the oldest
 * value in the buffer is automatically removed.
 *******************************************************************************/
-int insert_new_ring_buf_value(ring_buf_t* buf, float val){
+int insert_new_ring_buf_value(ring_buf_t* buf, double val){
 	if(buf->initialized !=1){
 		printf("ERROR: trying add value to uninitialized ring buffer\n");
 		return -1;
@@ -87,13 +87,13 @@ int insert_new_ring_buf_value(ring_buf_t* buf, float val){
 }
 
 /*******************************************************************************
-* float get_ring_buf_value(ring_buf_t* buf, int position)
+* double get_ring_buf_value(ring_buf_t* buf, int position)
 *
-* returns the float which is 'position' steps behind the last value placed in
+* returns the double which is 'position' steps behind the last value placed in
 * the buffer. If 'position' is given as 0 then the most recent value is
 * returned. 'Position' obviously can't be larger than buffer_size minus 1
 *******************************************************************************/
-float get_ring_buf_value(ring_buf_t* buf, int position){
+double get_ring_buf_value(ring_buf_t* buf, int position){
 	// sanity range check
 	if((position<0) || (position>buf->size-1)){
 		printf("ERROR: pos must be between 0 & %d\n", buf->size-1);

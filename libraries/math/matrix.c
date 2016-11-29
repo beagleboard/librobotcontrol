@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h> // for memset
 
-#define PI (float)M_PI
+#define PI (double)M_PI
 
 /*******************************************************************************
 * matrix_t create_matrix(int rows, int cols)
@@ -28,12 +28,12 @@ matrix_t create_matrix(int rows, int cols){
 	A.rows = rows;
 	A.cols = cols;
 	// allocate contiguous memory
-	A.data = (float**)malloc(rows*sizeof(float*));
-	void* ptr = calloc(rows*cols, sizeof(float));
-	A.data[0] = (float*)ptr;
+	A.data = (double**)malloc(rows*sizeof(double*));
+	void* ptr = calloc(rows*cols, sizeof(double));
+	A.data[0] = (double*)ptr;
 	// manually fill in the pointer to each row
 	for (i=1; i<rows; i++){
-		A.data[i] = (float*)(ptr + i*cols*sizeof(float));
+		A.data[i] = (double*)(ptr + i*cols*sizeof(double));
 	}	
 	
 	A.initialized = 1;
@@ -116,7 +116,7 @@ matrix_t create_random_matrix(int rows, int cols){
 	A = create_matrix(rows, cols);
 	for(i=0;i<rows;i++){
 		for(j=0;j<cols;j++){
-			A.data[i][j]=get_random_float();
+			A.data[i][j]=get_random_double();
 		}
 	}
 	return A;
@@ -182,11 +182,11 @@ matrix_t create_matrix_of_ones(int dim){
 }
 
 /*******************************************************************************
-* int set_matrix_entry(matrix_t* A, int row, int col, float val)
+* int set_matrix_entry(matrix_t* A, int row, int col, double val)
 *
 * 
 *******************************************************************************/
-int set_matrix_entry(matrix_t* A, int row, int col, float val){
+int set_matrix_entry(matrix_t* A, int row, int col, double val){
 	if(A==NULL){
 		printf("ERROR: matrix is null pointer\n");
 		return -1;
@@ -208,11 +208,11 @@ int set_matrix_entry(matrix_t* A, int row, int col, float val){
 }
 
 /*******************************************************************************
-* float get_matrix_entry(matrix_t A, int row, int col)
+* double get_matrix_entry(matrix_t A, int row, int col)
 *
 * 
 *******************************************************************************/
-float get_matrix_entry(matrix_t A, int row, int col){
+double get_matrix_entry(matrix_t A, int row, int col){
 	if(!A.initialized){
 		printf("ERROR: A not initialized yet\n");
 		return -1;
@@ -280,7 +280,7 @@ void print_matrix_sci_notation(matrix_t A){
 *******************************************************************************/
 matrix_t multiply_matrices(matrix_t A, matrix_t B){
 	int i,j,k;
-	float sum = 0;
+	double sum = 0;
 	matrix_t out = empty_matrix();
 	if(!A.initialized||!B.initialized){
 		printf("ERROR: matrix not initialized yet\n");
@@ -306,11 +306,11 @@ matrix_t multiply_matrices(matrix_t A, matrix_t B){
 }
 
 /*******************************************************************************
-* int matrix_times_scalar(matrix_t* A, float s)
+* int matrix_times_scalar(matrix_t* A, double s)
 *
 * 
 *******************************************************************************/
-int matrix_times_scalar(matrix_t* A, float s){
+int matrix_times_scalar(matrix_t* A, double s){
 	int i,j;
 	if(!A->initialized){
 		printf("ERROR: matrix not initialized yet\n");

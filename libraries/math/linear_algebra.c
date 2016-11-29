@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h> // for memset
 
-#define PI (float)M_PI
+#define PI (double)M_PI
 
 
 
@@ -22,7 +22,7 @@
 *******************************************************************************/
 vector_t vector_projection(vector_t v, vector_t e){
 	int i;
-	float factor;
+	double factor;
 	vector_t out = empty_vector();
 	
 	if(!v.initialized || !e.initialized){
@@ -67,12 +67,12 @@ matrix_t vector_outer_product(vector_t v1, vector_t v2){
 }
 
 /*******************************************************************************
-* float vector_dot_product(vector_t v1, vector_t v2)
+* double vector_dot_product(vector_t v1, vector_t v2)
 *
 * 
 *******************************************************************************/
-float vector_dot_product(vector_t v1, vector_t v2){
-	float out;
+double vector_dot_product(vector_t v1, vector_t v2){
+	double out;
 	int i;
 	if(!v1.initialized || !v2.initialized){
 		printf("ERROR: vector not initialized yet\n");
@@ -165,13 +165,13 @@ vector_t row_vec_times_matrix(vector_t v, matrix_t A){
 
 
 /*******************************************************************************
-* float matrix_determinant(matrix_t A)
+* double matrix_determinant(matrix_t A)
 *
 * 
 *******************************************************************************/
-float matrix_determinant(matrix_t A){
+double matrix_determinant(matrix_t A){
 	int i,j,k;
-	float ratio, det;
+	double ratio, det;
 	if(!A.initialized){
 		printf("ERROR: matrix not initialized yet\n");
 		return -1;
@@ -205,7 +205,7 @@ float matrix_determinant(matrix_t A){
 *******************************************************************************/
 int LUP_decomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P){
 	int i, j, k, m, index;
-	float s1, s2, temp;
+	double s1, s2, temp;
 	m = A.cols;
 	destroy_matrix(L);
 	destroy_matrix(U);
@@ -394,7 +394,7 @@ matrix_t invert_matrix(matrix_t A){
 *******************************************************************************/
 matrix_t householder_matrix(vector_t v){
 	int i, j;
-	float tau;
+	double tau;
 	matrix_t out = empty_matrix();
 	if(!v.initialized){
 		printf("ERROR: vector not initialized yet\n");
@@ -420,7 +420,7 @@ matrix_t householder_matrix(vector_t v){
 * Thank you to  Henry Guennadi Levkin for open sourcing this routine.
 *******************************************************************************/
 vector_t lin_system_solve(matrix_t A, vector_t b){
-	float fMaxElem, fAcc;
+	double fMaxElem, fAcc;
 	int nDim,i,j,k,m;
 	vector_t xout = empty_vector();
 	if(!A.initialized || !b.initialized){

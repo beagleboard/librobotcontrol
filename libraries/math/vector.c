@@ -9,9 +9,9 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h> // for memset
-#include <float.h> // for FLT_MAX
+#include <float.h> // for DBL_MAX
 
-#define PI (float)M_PI
+#define PI (double)M_PI
 
 /*******************************************************************************
 * vector_t create_vector(int n)
@@ -25,7 +25,7 @@ vector_t create_vector(int n){
 		return empty_vector();
 	}
 	v.len = n;
-	v.data = (float*)calloc(n, sizeof(float));
+	v.data = (double*)calloc(n, sizeof(double));
 	v.initialized = 1;
 	return v;
 }
@@ -95,7 +95,7 @@ vector_t create_random_vector(int len){
 
 	v = create_vector(len);
 	for(i=0;i<len;i++){
-		v.data[i]=get_random_float();
+		v.data[i]=get_random_double();
 	}
 	return v;
 }
@@ -122,11 +122,11 @@ vector_t create_vector_of_ones(int len){
 }
 
 /*******************************************************************************
-* vector_t create_vector_from_array(int len, float* array)
+* vector_t create_vector_from_array(int len, double* array)
 *
 * 
 *******************************************************************************/
-vector_t create_vector_from_array(int len, float* array){
+vector_t create_vector_from_array(int len, double* array){
 	vector_t v;
 	if(len<1){
 		printf("ERROR: len must be greater than 0\n");
@@ -141,11 +141,11 @@ vector_t create_vector_from_array(int len, float* array){
 }
 
 /*******************************************************************************
-* int set_vector_entry(vector_t* v, int pos, float val)
+* int set_vector_entry(vector_t* v, int pos, double val)
 *
 * 
 *******************************************************************************/
-int set_vector_entry(vector_t* v, int pos, float val){
+int set_vector_entry(vector_t* v, int pos, double val){
 	if(v==NULL){
 		printf("ERROR: v is null pointer\n");
 		return -1;
@@ -163,11 +163,11 @@ int set_vector_entry(vector_t* v, int pos, float val){
 }
 
 /*******************************************************************************
-* float get_vector_entry(vector_t v, int pos)
+* double get_vector_entry(vector_t v, int pos)
 *
 * 
 *******************************************************************************/
-float get_vector_entry(vector_t v, int pos){
+double get_vector_entry(vector_t v, int pos){
 	if(!v.initialized){
 		printf("ERROR: v not initialized yet\n");
 		return -1;
@@ -217,11 +217,11 @@ void print_vector_sci_notation(vector_t v){
 
 
 /*******************************************************************************
-* int vector_times_scalar(vector_t* v, float s)
+* int vector_times_scalar(vector_t* v, double s)
 *
 * 
 *******************************************************************************/
-int vector_times_scalar(vector_t* v, float s){
+int vector_times_scalar(vector_t* v, double s){
 	int i;
 	if(!v->initialized){
 		printf("ERROR: vector not initialized yet\n");
@@ -237,14 +237,14 @@ int vector_times_scalar(vector_t* v, float s){
 
 
 /*******************************************************************************
-* float vector_norm(vector_t v, float p)
+* double vector_norm(vector_t v, double p)
 *
 * Just like the matlab norm(v,p) function, returns the vector norm defined by
 * sum(abs(v)^p)^(1/p), where p is any positive real value.
 * for infinity and -infinity norms see vector_max and vector_min
 *******************************************************************************/
-float vector_norm(vector_t v, float p){
-	float norm = 0;
+double vector_norm(vector_t v, double p){
+	double norm = 0;
 	int i;
 
 	if(!v.initialized){
@@ -271,7 +271,7 @@ float vector_norm(vector_t v, float p){
 *******************************************************************************/
 int vector_max(vector_t v){
 	int i, index;
-	float tmp = -FLT_MAX;
+	double tmp = -DBL_MAX;
 
 	if(!v.initialized){
 		printf("ERROR: vector not initialized yet\n");
@@ -298,7 +298,7 @@ int vector_max(vector_t v){
 *******************************************************************************/
 int vector_min(vector_t v){
 	int i, index;
-	float tmp = FLT_MAX;
+	double tmp = DBL_MAX;
 
 	if(!v.initialized){
 		printf("ERROR: vector not initialized yet\n");
@@ -317,13 +317,13 @@ int vector_min(vector_t v){
 }
 
 /*******************************************************************************
-* float standard_deviation(vector_t v)
+* double standard_deviation(vector_t v)
 *
 * 
 *******************************************************************************/
-float standard_deviation(vector_t v){
+double standard_deviation(vector_t v){
 	int i;
-	float mean, mean_sqr;
+	double mean, mean_sqr;
 	if(v.initialized != 1){
 		printf("ERROR: vector not initialied\n");
 		return -1;
@@ -345,13 +345,13 @@ float standard_deviation(vector_t v){
 }
 
 /*******************************************************************************
-* float vector_mean(vector_t v)
+* double vector_mean(vector_t v)
 *
 * 
 *******************************************************************************/
-float vector_mean(vector_t v){
+double vector_mean(vector_t v){
 	int i;
-	float sum = 0;
+	double sum = 0;
 
 	if(v.initialized != 1){
 		printf("ERROR: vector not initialied\n");
@@ -617,12 +617,12 @@ vector_t poly_div(vector_t num, vector_t den, vector_t* remainder){
 
 
 /*******************************************************************************
-* vector_t poly_butter(int N, float wc)
+* vector_t poly_butter(int N, double wc)
 *
 * Return vector of coefficients for continuous-time Butterworth polynomial
 * of order N and cutoff wc (rad/s)
 *******************************************************************************/
-vector_t poly_butter(int N, float wc){
+vector_t poly_butter(int N, double wc){
 	int i;
 	vector_t filter = empty_vector();
 	vector_t P2, P3, temp;

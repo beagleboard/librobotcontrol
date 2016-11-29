@@ -75,7 +75,7 @@ int read_dmp_fifo();
 int data_fusion();
 int load_gyro_offets();
 int load_mag_calibration();
-int write_mag_cal_to_disk(float offsets[3], float scale[3]);
+int write_mag_cal_to_disk(double offsets[3], float scale[3]);
 void* imu_interrupt_handler(void* ptr);
 int (*imu_interrupt_func)(); // pointer to user-defined function
 int check_quaternion_validity(unsigned char* raw, int i);
@@ -2357,12 +2357,12 @@ uint64_t micros_since_last_interrupt(){
 }
 
 /*******************************************************************************
-* int write_mag_cal_to_disk(float offsets[3], float scale[3])
+* int write_mag_cal_to_disk(double offsets[3], float scale[3])
 *
 * Reads steady state gyro offsets from the disk and puts them in the IMU's 
 * gyro offset register. If no calibration file exists then make a new one.
 *******************************************************************************/
-int write_mag_cal_to_disk(float offsets[3], float scale[3]){
+int write_mag_cal_to_disk(double offsets[3], float scale[3]){
 	FILE *cal;
 	char file_path[100];
 	int ret;
@@ -2564,30 +2564,30 @@ int calibrate_mag_routine(){
 	
 	// make empty vectors for ellipsoid fitting to populate
 	vector_t center,lengths;
- 	if(fit_ellipsoid(A,&center,&lengths)<0){
- 		printf("failed to fit ellipsoid to magnetometer data\n");
- 		destroy_matrix(&A);
- 		return -1;
- 	}
- 	destroy_matrix(&A); // empty memory, we are done with A
- 	
- 	// do some sanity checks to make sure data is reasonable
- 	if(fabs(center.data[0])>200 || fabs(center.data[1])>200 || \
- 											fabs(center.data[2])>200){
- 		printf("ERROR: center of fitted ellipsoid out of bounds\n");
- 		destroy_vector(&center);
- 		destroy_vector(&lengths);
- 		return -1;
- 	}
- 	if(lengths.data[0]>200 || lengths.data[0]<5 || \
- 	   lengths.data[1]>200 || lengths.data[1]<5 || \
- 	   lengths.data[2]>200 || lengths.data[2]<5){
- 		printf("ERROR: length of fitted ellipsoid out of bounds\n");
- 		destroy_vector(&center);
- 		destroy_vector(&lengths);
- 		return -1;
- 	}
- 	
+	if(fit_ellipsoid(A,&center,&lengths)<0){
+		printf("failed to fit ellipsoid to magnetometer data\n");
+		destroy_matrix(&A);
+		return -1;
+	}
+	destroy_matrix(&A); // empty memory, we are done with A
+	
+	// do some sanity checks to make sure data is reasonable
+	if(fabs(center.data[0])>200 || fabs(center.data[1])>200 || \
+											fabs(center.data[2])>200){
+		printf("ERROR: center of fitted ellipsoid out of bounds\n");
+		destroy_vector(&center);
+		destroy_vector(&lengths);
+		return -1;
+	}
+	if( lengths.data[0]>200 || lengths.data[0]<5 || \
+		lengths.data[1]>200 || lengths.data[1]<5 || \
+		lengths.data[2]>200 || lengths.data[2]<5){
+		printf("ERROR: length of fitted ellipsoid out of bounds\n");
+		destroy_vector(&center);
+		destroy_vector(&lengths);
+		return -1;
+	}
+	
 	// all seems well, calculate scaling factors to map ellipse lengths to
 	// a sphere of radius 70uT, this scale will later be multiplied by the
 	// factory corrected data
@@ -2602,7 +2602,7 @@ int calibrate_mag_routine(){
 	printf("Scales  X: %7.3f Y: %7.3f Z: %7.3f\n", 	new_scale[0],\
 													new_scale[1],\
 													new_scale[2]);
-	
+
 	// write to disk
 	if(write_mag_cal_to_disk(center.data,new_scale)<0){
 		return -1;
