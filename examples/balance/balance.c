@@ -113,16 +113,16 @@ int main(){
 	setpoint.drive_mode = NOVICE;
 	
 	// set up D1 Theta controller
-	float D1_num[] = D1_NUM;
-	float D1_den[] = D1_DEN;
+	double D1_num[] = D1_NUM;
+	double D1_den[] = D1_DEN;
 	D1 = create_filter_from_arrays(D1_ORDER, DT, D1_num, D1_den);
 	D1.gain = D1_GAIN;
 	enable_saturation(&D1, -1.0, 1.0);
 	enable_soft_start(&D1, SOFT_START_SEC);
 	
 	// set up D2 Phi controller
-	float D2_num[] = D2_NUM;
-	float D2_den[] = D2_DEN;
+	double D2_num[] = D2_NUM;
+	double D2_den[] = D2_DEN;
 	D2 = create_filter_from_arrays(D2_ORDER, DT, D2_num, D2_den);
 	D2.gain = D2_GAIN;
 	enable_saturation(&D2, -THETA_REF_MAX, THETA_REF_MAX);

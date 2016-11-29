@@ -122,11 +122,11 @@ vector_t create_vector_of_ones(int len){
 }
 
 /*******************************************************************************
-* vector_t create_vector_from_array(int len, double* array)
+* vector_t create_vector_from_array(double* array, int len)
 *
 * 
 *******************************************************************************/
-vector_t create_vector_from_array(int len, double* array){
+vector_t create_vector_from_array(double* array, int len){
 	vector_t v;
 	if(len<1){
 		printf("ERROR: len must be greater than 0\n");
@@ -607,7 +607,7 @@ vector_t poly_div(vector_t num, vector_t den, vector_t* remainder){
 	for(i=0;i<=diff;i++){
 		divisor.data[i] = remainder->data[i]/den.data[i];
 		// now subtract that multiple of denominator from remainder
-		for(j=i+1; j<den.len; i++){
+		for(j=i; j<den.len; j++){
 			remainder->data[j] -= divisor.data[i]*den.data[j];
 		}
 	}

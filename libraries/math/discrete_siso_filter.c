@@ -86,8 +86,8 @@ d_filter_t create_filter_from_arrays(int order, double dt, double* num, double* 
 		return filter;
 	}
 
-	vector_t num_vec = create_vector_from_array(order+1, num);
-	vector_t den_vec = create_vector_from_array(order+1, den);
+	vector_t num_vec = create_vector_from_array(num, order+1);
+	vector_t den_vec = create_vector_from_array(den, order+1);
 
 	return create_filter(num_vec, den_vec, dt);
 }

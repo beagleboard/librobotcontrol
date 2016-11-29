@@ -1020,7 +1020,7 @@ vector_t empty_vector();
 vector_t duplicate_vector(vector_t v);
 vector_t create_random_vector(int len);
 vector_t create_vector_of_ones(int len);
-vector_t create_vector_from_array(int len, double* array);
+vector_t create_vector_from_array(double* array, int len);
 int set_vector_entry(vector_t* v, int pos, double val);
 double get_vector_entry(vector_t v, int pos);
 void print_vector(vector_t v);
