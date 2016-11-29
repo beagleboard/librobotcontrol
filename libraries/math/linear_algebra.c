@@ -659,6 +659,38 @@ int diopohantine(vector_t a, vector_t b, vector_t c, \
 	}
 
 
-	
+	n=max(2,abs(length(a)-length(b))+1); 
+rm=a; 
+r=b; 
 
-}*/
+for i=1:n+2
+	r=r(find(r,1):end);
+ 	[quo,rem]=PolyDiv(rm,r);  // Reduce (rm,r) to their GCD via Euclid's
+  	q(i,n+1-length(quo):n)=quo;
+ 	rm=r; 
+	r=rem;      % algorithm, saving the quotients quo.
+	if norm(r,inf)<1e-13, 
+		g=rm, 
+		break, 
+		end, 
+	end
+	r=-PolyDiv(b,g); 
+	s=PolyDiv(a,g); 
+	y=PolyDiv(c,g);
+	x=0;  
+	for j=i-1:-1:1                            % Using q as computed above, compute {x,y}
+  		t=x; 
+  		x=y; 
+  		y=PolyAdd(t,-PolyConv(q(j,:),y));   % via the Extended Euclidean algorithm
+	end, 
+	y=y(find(y,1):end); 
+	[div,rem]=PolyDiv(y,s), 
+	t=-div   % Find the solution {x,y} that
+	x=PolyAdd(x,PolyConv(r,t)); 
+	x=x(find(abs(x)>1e-8,1):end); % minimizes the order of y; this
+	y=PolyAdd(y,PolyConv(s,t)); 
+	y=y(find(abs(y)>1e-8,1):end); % is the most useful in practice
+end % function Diophantine
+
+
+} */
