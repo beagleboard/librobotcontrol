@@ -68,6 +68,29 @@ int saturate_float(float* val, float min, float max){
 	return 0;
 }
 
+/*******************************************************************************
+* @ saturate_double(double* val, double min, double max)
+*
+* Modifies val to be bounded between between min and max. Returns 1 if 
+* saturation occurred, 0 if val was already in bound, and -1 if min was falsely
+* larger than max.
+*******************************************************************************/
+int saturate_double(double* val, double min, double max){
+	// sanity checks
+	if (min>max){
+		printf("ERROR: in saturate_double, min must be less than max\n");
+		return -1;
+	}
+	// bound val
+	if(*val>max){
+		*val = max;
+		return 1;
+	}else if(*val<min){	
+		*val = min;
+		return 1;
+	}
+	return 0;
+}
 
 /*******************************************************************************
 * @ char *byte_to_binary(char x)

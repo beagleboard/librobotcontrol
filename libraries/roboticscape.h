@@ -964,6 +964,7 @@ int null_func();
 float get_random_float();
 double get_random_double();
 int saturate_float(float* val, float min, float max);
+int saturate_double(double* val, double min, double max);
 char *byte_to_binary(unsigned char x);
 timespec timespec_diff(timespec A, timespec B);
 void timespec_add(timespec* start, float seconds);
