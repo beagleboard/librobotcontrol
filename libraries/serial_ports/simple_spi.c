@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h> // for memset
+#include <string.h>	// for memset
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -23,8 +23,8 @@
 #define SPI_BITS_PER_WORD 	8
 #define SPI_BUF_SIZE		2		
 
-int fd[2]; // file descriptor for SPI1_PATH device cs0, cs1
-int initialized[2]; // set to 1 after successful initialization 
+int fd[2];			// file descriptor for SPI1_PATH device cs0, cs1
+int initialized[2];	// set to 1 after successful initialization 
 int gpio_ss[2];		// holds gpio pins for slave select lines
 
 struct spi_ioc_transfer xfer[2]; // ioctl transfer structs for tx & rx
@@ -39,19 +39,16 @@ char rx_buf[SPI_BUF_SIZE];
 int initialize_spi(ss_mode_t ss_mode, int spi_mode, int speed_hz, int slave){
 	int bits = SPI_BITS_PER_WORD;
 	int mode_proper;
-	
 	// sanity checks
 	if(speed_hz>SPI_MAX_SPEED || speed_hz<SPI_MIN_SPEED){
 		printf("ERROR: SPI speed_hz must be between %d & %d\n", SPI_MIN_SPEED,\
 																SPI_MAX_SPEED);
 		return -1;
 	}
-
 	if(get_bb_model()!=BB_BLUE && slave==2 && ss_mode==SS_MODE_AUTO){
 		printf("ERROR: Can't use SS_MODE_AUTO on slave 2 with Cape\n");
 		return -1;
 	}
-	
 	// switch 4 standard SPI modes 0-3. return error otherwise
 	switch(spi_mode){
 		case 0: mode_proper = SPI_MODE_0; break;
@@ -63,29 +60,26 @@ int initialize_spi(ss_mode_t ss_mode, int spi_mode, int speed_hz, int slave){
 			printf("check your device datasheet to see which to use\n");
 			return -1;
 	}
-	
-
 	// get file descriptor for spi1 device
 	switch(slave){
 	case 1: 
 		fd[0] = open(SPI10_PATH, O_RDWR);
-	    if(fd[0] < 0) {
-	        printf("ERROR: %s missing\n", SPI10_PATH); 
-	        return -1; 
-	    }
-	    break;
-	case 2: 
+		if(fd[0] < 0) {
+			printf("ERROR: %s missing\n", SPI10_PATH); 
+		return -1; 
+		}
+		break;
+	case 2:
 		fd[1] = open(SPI11_PATH, O_RDWR);
-	    if(fd[1] < 0) {
-	        printf("ERROR: %s missing\n", SPI11_PATH); 
-	        return -1; 
-	    }
-	    break;
+		if(fd[1] < 0) {
+			printf("ERROR: %s missing\n", SPI11_PATH); 
+		return -1; 
+		}
+		break;
 	default:
 		printf("ERROR: SPI slave must be 1 or 2\n");
 		return -1;
 	}
-	
 	// set settings
 	if(ioctl(fd[slave-1], SPI_IOC_WR_MODE, &mode_proper)<0){
 		printf("can't set spi mode");
@@ -108,48 +102,45 @@ int initialize_spi(ss_mode_t ss_mode, int spi_mode, int speed_hz, int slave){
 		close(fd[slave-1]);
 		return -1;
 	} if(ioctl(fd[slave-1], SPI_IOC_RD_MAX_SPEED_HZ, &speed_hz)<0){
-		 printf("can't get max speed hz");
-		 close(fd[slave-1]);
-		 return -1;
+		printf("can't get max speed hz");
+		close(fd[slave-1]);
+		return -1;
 	}
 
 	// store settings
-    xfer[0].cs_change = 1;
-    xfer[0].delay_usecs = 0;
-    xfer[0].speed_hz = speed_hz;
-    xfer[0].bits_per_word = SPI_BITS_PER_WORD;
-    xfer[1].cs_change = 1;
-    xfer[1].delay_usecs = 0;
-    xfer[1].speed_hz = speed_hz;
-    xfer[1].bits_per_word = SPI_BITS_PER_WORD;
-	
+	xfer[0].cs_change = 1;
+	xfer[0].delay_usecs = 0;
+	xfer[0].speed_hz = speed_hz;
+	xfer[0].bits_per_word = SPI_BITS_PER_WORD;
+	xfer[1].cs_change = 1;
+	xfer[1].delay_usecs = 0;
+	xfer[1].speed_hz = speed_hz;
+	xfer[1].bits_per_word = SPI_BITS_PER_WORD;
 
-    // set up slave select pins
-    if(get_bb_model()==BB_BLUE){
-    	gpio_ss[0] = BLUE_SPI_PIN_6_SS1;
-    	gpio_ss[1] = BLUE_SPI_PIN_6_SS2;
-    }
-    else{
-    	gpio_ss[0] = CAPE_SPI_PIN_6_SS1;
-    	gpio_ss[1] = CAPE_SPI_PIN_6_SS2;
-    }
-
-    if(ss_mode==SS_MODE_AUTO){
-    	if(set_pinmux_mode(gpio_ss[slave-1], PINMUX_SPI)){
-    		printf("ERROR: failed to set slave select pin to SPI mode\n");
-    		return -1;
-    	}
-    }
-    else{
-    	set_pinmux_mode(gpio_ss[slave-1], PINMUX_GPIO);
-    	if(gpio_export(gpio_ss[slave-1])){
-    		printf("ERROR: failed to export gpio %d for manual slave select\n",\
-    														 gpio_ss[slave-1]);
-    		return -1;
-    	}
-    	manual_deselect_spi_slave(slave);
-    }
-
+	// set up slave select pins
+	if(get_bb_model()==BB_BLUE){
+		gpio_ss[0] = BLUE_SPI_PIN_6_SS1;
+		gpio_ss[1] = BLUE_SPI_PIN_6_SS2;
+	}
+	else{
+		gpio_ss[0] = CAPE_SPI_PIN_6_SS1;
+		gpio_ss[1] = CAPE_SPI_PIN_6_SS2;
+	}
+	if(ss_mode==SS_MODE_AUTO){
+		if(set_pinmux_mode(gpio_ss[slave-1], PINMUX_SPI)){
+			printf("ERROR: failed to set slave select pin to SPI mode\n");
+			return -1;
+		}
+	}
+	else{
+		set_pinmux_mode(gpio_ss[slave-1], PINMUX_GPIO);
+		if(gpio_export(gpio_ss[slave-1])){
+			printf("ERROR: failed to export gpio %d for manual slave select\n",\
+															 gpio_ss[slave-1]);
+			return -1;
+		}
+		manual_deselect_spi_slave(slave);
+	}
 	// all done
 	initialized[slave-1] = 1;
 	return 0;
@@ -178,7 +169,6 @@ int get_spi_fd(int slave){
 		}
 		else return fd[1];
 	}
-	
 	printf("ERROR: SPI Slave must be 1 or 2\n");
 	return -1;
 }
@@ -201,7 +191,6 @@ int close_spi(int slave){
 		initialized[1] = 0;
 		return 0;
 	}
-	
 	printf("ERROR: SPI Slave must be 1 or 2\n");
 	return -1;
 }
@@ -227,7 +216,7 @@ int manual_select_spi_slave(int slave){
 			return -1;
 	}
 	return 0;
-}	
+}
 
 /*******************************************************************************
 * @ int manual_deselect_spi_slave(int slave)
@@ -248,7 +237,7 @@ int manual_deselect_spi_slave(int slave){
 			return -1;
 	}
 	return 0;
-}	
+}
 
 /*******************************************************************************
 * int spi_send_bytes(char* data, int bytes, int slave)
@@ -256,6 +245,7 @@ int manual_deselect_spi_slave(int slave){
 * Like uart_send_bytes, this lets you send any byte sequence you like.
 *******************************************************************************/
 int spi_send_bytes(char* data, int bytes, int slave){
+	int ret;
 	// sanity checks
 	if(slave!=1 && slave!=2){
 		printf("ERROR: SPI slave must be 1 or 2\n");
@@ -269,14 +259,10 @@ int spi_send_bytes(char* data, int bytes, int slave){
 		printf("ERROR: spi_send_bytes, bytes to send must be >=1\n");
 		return -1;
 	}
-
-	int ret;
-
 	// fill in ioctl xfer struct. speed and bits were already set in initialize
 	xfer[0].rx_buf = 0;
 	xfer[0].tx_buf = (unsigned long) data;
 	xfer[0].len = bytes;
-	
 	// send
 	ret = ioctl(fd[slave-1], SPI_IOC_MESSAGE(1), xfer);
 	if(ret<0){
@@ -292,6 +278,7 @@ int spi_send_bytes(char* data, int bytes, int slave){
 * Like uart_read_bytes, this lets you read a byte sequence without sending.
 *******************************************************************************/
 int spi_read_bytes(char* data, int bytes, int slave){
+	int ret;
 	// sanity checks
 	if(slave!=1 && slave!=2){
 		printf("ERROR: SPI slave must be 1 or 2\n");
@@ -305,14 +292,10 @@ int spi_read_bytes(char* data, int bytes, int slave){
 		printf("ERROR: spi_read_bytes, bytes to read must be >=1\n");
 		return -1;
 	}
-
-	int ret;
-
 	// fill in ioctl xfer struct. speed and bits were already set in initialize
 	xfer[0].rx_buf = (unsigned long) data;;
 	xfer[0].tx_buf = 0;
 	xfer[0].len = bytes;
-	
 	// receive
 	ret=ioctl(fd[slave-1], SPI_IOC_MESSAGE(1), xfer);
 	if(ret<0){
@@ -330,6 +313,7 @@ int spi_read_bytes(char* data, int bytes, int slave){
 * the number of bytes received or -1 on error.
 *******************************************************************************/
 int spi_transfer(char* tx_data, int tx_bytes, char* rx_data, int slave){
+	int ret;
 	// sanity checks
 	if(slave!=1 && slave!=2){
 		printf("ERROR: SPI slave must be 1 or 2\n");
@@ -342,20 +326,15 @@ int spi_transfer(char* tx_data, int tx_bytes, char* rx_data, int slave){
 	if(tx_bytes<1){
 		printf("ERROR: spi1_transfer, bytes must be >=1\n");
 	}
-	
-	int ret;
-
 	// fill in send struct 
 	xfer[0].tx_buf = (unsigned long) tx_data; 
 	xfer[0].rx_buf = (unsigned long) rx_data;
 	xfer[0].len = tx_bytes;
-
 	ret=ioctl(fd[slave-1], SPI_IOC_MESSAGE(1), xfer);
 	if(ret<0){
 		printf("SPI_IOC_MESSAGE_FAILED\n");
 		return -1;
 	}
-
 	return ret;
 }
 
@@ -376,17 +355,14 @@ int spi_write_reg_byte(char reg_addr, char data, int slave){
 	if(initialized[slave-1]==0){
 		printf("ERROR: SPI slave %d not yet initialized\n", slave);
 		return -1;
-	} 
-	
+	}
 	//wipe TX buffer and fill in register address and data
 	memset(tx_buf, 0, sizeof tx_buf);
 	tx_buf[0] = reg_addr | 0x80; /// set MSBit = 1 to indicate it's a write
 	tx_buf[1] = data;
-  
 	// fill in ioctl zfer struct. speed and bits were already set in initialize
 	xfer[0].tx_buf = (unsigned long) tx_buf;
 	xfer[0].len = 2;
-	
 	// send
 	if(ioctl(fd[slave-1], SPI_IOC_MESSAGE(1), xfer)<0){
 		printf("ERROR: SPI_IOC_MESSAGE_FAILED\n");
@@ -411,18 +387,15 @@ char spi_read_reg_byte(char reg_addr, int slave){
 	if(initialized[slave-1]==0){
 		printf("ERROR: SPI slave %d not yet initialized\n", slave);
 		return -1;
-	} 
-	
+	}
 	// wipe buffers
 	memset(tx_buf, 0, sizeof tx_buf);
 	memset(rx_buf, 0, sizeof rx_buf);
-	
 	// fill in xfer struct 
 	tx_buf[0] = reg_addr & 0x7f; // MSBit = 0 to indicate it's a read
 	xfer[0].tx_buf = (unsigned long) tx_buf; 
 	xfer[0].rx_buf = (unsigned long) rx_buf;
 	xfer[0].len = 1;
-
 	if(ioctl(fd[slave-1], SPI_IOC_MESSAGE(1), xfer)<0){
 		printf("SPI_IOC_MESSAGE_FAILED\n");
 		return -1;
@@ -438,6 +411,7 @@ char spi_read_reg_byte(char reg_addr, int slave){
 * ICs. 
 *******************************************************************************/
 int spi_read_reg_bytes(char reg_addr, char* data, int bytes, int slave){
+	int ret;
 	// sanity checks
 	if(slave!=1 && slave!=2){
 		printf("ERROR: SPI slave must be 1 or 2\n");
@@ -450,13 +424,9 @@ int spi_read_reg_bytes(char reg_addr, char* data, int bytes, int slave){
 	if(bytes<1){
 		printf("ERROR: spi1_read_reg_bytes, bytes must be >=1\n");
 	}
-
-	int ret;
-
 	// wipe buffers
 	memset(tx_buf, 0, sizeof tx_buf);
 	memset(data, 0, bytes);
-	
 	// fill in send struct 
 	tx_buf[0] = reg_addr & 0x7f; // MSBit = 0 to indicate it's a read
 	xfer[0].tx_buf = (unsigned long) tx_buf; 
@@ -466,13 +436,11 @@ int spi_read_reg_bytes(char reg_addr, char* data, int bytes, int slave){
 	xfer[1].tx_buf = 0;
 	xfer[1].rx_buf = (unsigned long) data;
 	xfer[1].len = bytes;
-
 	ret=ioctl(fd[slave-1], SPI_IOC_MESSAGE(2), xfer);
 	if (ret<0){
 		printf("SPI_IOC_MESSAGE_FAILED\n");
 		return -1;
 	}
-
 	return 0;
 }
 
