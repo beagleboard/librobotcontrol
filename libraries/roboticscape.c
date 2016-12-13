@@ -400,7 +400,7 @@ int initialize_button_handlers(){
 	
 	struct sched_param params;
 	pthread_attr_t attr;
-	params.sched_priority = sched_get_priority_max(SCHED_FIFO)/2;
+	params.sched_priority = sched_get_priority_max(SCHED_FIFO)-5;
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
    

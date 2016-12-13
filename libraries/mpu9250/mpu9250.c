@@ -34,6 +34,7 @@ int bypass_en;
 int dmp_en;
 int packet_len;
 pthread_t imu_interrupt_thread;
+struct sched_param params;
 int (*imu_interrupt_func)();
 int interrupt_func_set;
 float mag_factory_adjust[3];
@@ -875,13 +876,20 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 	interrupt_func_set = 1;
 	shutdown_interrupt_thread = 0;
 	set_imu_interrupt_func(&null_func);
-	struct sched_param params;
-	params.sched_priority = config.dmp_interrupt_priority;
-	pthread_setschedparam(imu_interrupt_thread, SCHED_FIFO, &params);
 	pthread_create(&imu_interrupt_thread, NULL, \
 					imu_interrupt_handler, (void*) NULL);
-					
-	
+
+	params.sched_priority = config.dmp_interrupt_priority;
+	pthread_setschedparam(imu_interrupt_thread, SCHED_FIFO, &params);
+
+	usleep(1000);
+
+	#ifdef DEBUG
+	int policy;
+	struct sched_param params_tmp;
+	pthread_getschedparam(imu_interrupt_thread, &policy, &params_tmp);
+	printf("new policy: %d, fifo: %d, prio: %d\n", policy, SCHED_FIFO, params_tmp.sched_priority);
+	#endif
 	
 	return 0;
 }
