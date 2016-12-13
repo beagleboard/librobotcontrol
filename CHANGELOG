@@ -1,36 +1,49 @@
+
+0.3.0
+    * add noninteractive mode to deb package installer
+    * add rc_ prefix to state and led functions
+    * fix IMU DMP priority
+    * filter improvements
+    * linear algebra now all double-precision
+    * ass test_vectors example
+    * functions to enable/disable signal handler
+    * create_filter functions for vectors and arrays
+    * add poly_div, poly_add
+    * add get_random_double
+
 0.2.2
-- move ldconfig out of makefile
+    * move ldconfig out of makefile
 
 0.2.1
-- add options for degrees, radians, and raw to test_imu
-- print tait bryan angles in test_dmp in untis of degrees
-- check kernel and debain version in install.sh
+    * add options for degrees, radians, and raw to test_imu
+    * print tait bryan angles in test_dmp in untis of degrees
+    * check kernel and debain version in install.sh
 
 0.2.0
-- Pinmux functions for BB Blue
-- gpio and pwm exposed in roboticscape.h
-- DSM radio fixed and robustified
-- debug target for libroboticscape.so
-- BB Wireless device tree
-- project template in /usr/share/roboticscape
-- calibration files moved to /var/lib/roboticscape
-- startup log moved to /var/log/roboticscape
-- PRU bins compile with pru-software-support-package
+    * Pinmux functions for BB Blue
+    * gpio and pwm exposed in roboticscape.h
+    * DSM radio fixed and robustified
+    * debug target for libroboticscape.so
+    * BB Wireless device tree
+    * project template in /usr/share/roboticscape
+    * calibration files moved to /var/lib/roboticscape
+    * startup log moved to /var/log/roboticscape
+    * PRU bins compile with pru-software-support-package
 
 
 0.1.5
-- add userspace pinmux configuration for some headers
+    * add userspace pinmux configuration for some headers
 
 0.1.4
-- implement debounce for buttons
+    * implement debounce for buttons
 
 0.1.3
-- fix debconf question on install
-- move project template to /etc/robot_template
-- preserve /etc/roboticscape on reinstall to keep startup link
+    * fix debconf question on install
+    * move project template to /etc/robot_template
+    * preserve /etc/roboticscape on reinstall to keep startup link
 
 0.1.2
-- new device tree to enable PRU support on Black
+    * new device tree to enable PRU support on Black
 
 0.1.0
-- installs on Blue as well and Black
+    * installs on Blue as well and Black
