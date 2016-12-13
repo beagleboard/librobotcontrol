@@ -5,10 +5,12 @@
 set -e
 . /usr/share/debconf/confmodule
  
-# Fetching configuration from debconf
-# for answer to startup program
-db_get roboticscape/question1
-PROG=$RET
+if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
+	# Fetching configuration from debconf
+	# for answer to startup program
+	db_get roboticscape/question1
+	PROG=$RET
+fi
 
 echo "user selected $PROG"
 
@@ -17,39 +19,41 @@ if [ ! -d "/etc/roboticscape" ]; then
   mkdir /etc/roboticscape
 fi
 
-if [ "$PROG" = "blink" ]; then
-	ln -s -f /usr/bin/blink /etc/roboticscape/link_to_startup_program
-elif  [ "$PROG" = "balance" ]; then
-	ln -s -f /usr/bin/balance /etc/roboticscape/link_to_startup_program
-elif  [ "$PROG" = "none" ]; then
-	ln -s -f /usr/bin/bare_minimum /etc/roboticscape/link_to_startup_program
-else
-	echo "invalid answer to question"
-	exit 1
+if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
+	if [ "$PROG" = "blink" ]; then
+		ln -s -f /usr/bin/blink /etc/roboticscape/link_to_startup_program
+	elif  [ "$PROG" = "balance" ]; then
+		ln -s -f /usr/bin/balance /etc/roboticscape/link_to_startup_program
+	elif  [ "$PROG" = "none" ]; then
+		ln -s -f /usr/bin/bare_minimum /etc/roboticscape/link_to_startup_program
+	else
+		echo "invalid answer to question"
+		exit 1
+	fi
+
+
+	# enable services
+	echo "systemctl daemon-reload"
+	systemctl daemon-reload
+	echo "Enabling battery_monitor Service"
+	systemctl enable battery_monitor
+	echo "Starting battery_monitor Service"
+	systemctl start battery_monitor
+	echo "Enabling roboticscape Service"
+	systemctl enable roboticscape
+
+	echo "Configuring Device Tree"
+	configure_robotics_dt.sh
+	echo "Done Configuring Device Tree"
+
+
+
+	echo " "
+	echo " "
+	echo " "
+	echo "Robotics Cape package installation complete."
+	echo "Please reboot now."
+	echo " "
 fi
-
-
-# enable services
-echo "systemctl daemon-reload"
-systemctl daemon-reload
-echo "Enabling battery_monitor Service"
-systemctl enable battery_monitor
-echo "Starting battery_monitor Service"
-systemctl start battery_monitor
-echo "Enabling roboticscape Service"
-systemctl enable roboticscape
-
-echo "Configuring Device Tree"
-configure_robotics_dt.sh
-echo "Done Configuring Device Tree"
-
-
-
-echo " "
-echo " "
-echo " "
-echo "Robotics Cape package installation complete."
-echo "Please reboot now."
-echo " "
 
 exit 0
