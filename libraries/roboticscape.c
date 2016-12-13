@@ -68,6 +68,9 @@ int initialize_roboticscape(){
 		printf("checking for existing PID_FILE\n");
 	#endif
 	kill_robot();
+
+	// all done
+	rc_set_state(UNINITIALIZED);
 	
 	// Start Signal Handler
 	#ifdef DEBUG
@@ -185,9 +188,6 @@ int initialize_roboticscape(){
 
 	// wait to let threads start up
 	usleep(10000);
-	
-	// all done
-	rc_set_state(PAUSED);
 
 	return 0;
 }
