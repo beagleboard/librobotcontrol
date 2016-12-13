@@ -58,7 +58,7 @@ void print_usage(){
 	printf(" -u {width_us}  Send pulse width in microseconds (us)\n");
 	printf(" -s {limit}     Sweep servo back/forth between +- limit\n");
 	printf("                Limit can be between 0 & 1.5\n");
-	printf(" -r             Use DSM2 radio input to set ESC speed\n");
+	printf(" -r             Use DSM radio input to set ESC speed\n");
 	printf(" -h             Print this help messege \n\n");
 	printf("sample use to center servo channel 1:\n");
 	printf("   test_servos -v -c 1 -p 0.0\n\n");
@@ -152,6 +152,7 @@ int main(int argc, char *argv[]){
 			break;
 			
 		case 'r':  // radio mode
+			if(mode!=DISABLED) print_usage();
 			if(initialize_dsm()){
 				// if init returns -1 if there was a problem
 				// most likely no calibration file found
@@ -244,10 +245,10 @@ int main(int argc, char *argv[]){
 	}
 
 	if(mode==RADIO){
-		printf("Waiting for first packet");
+		printf("Waiting for first DSM packet");
 		fflush(stdout);
 		while(is_new_dsm_data()==0){
-			if(get_state()==EXITING) return 0;
+			if(rc_get_state()==EXITING) return 0;
 			usleep(50000);
 		}
 	}
@@ -332,6 +333,6 @@ int main(int argc, char *argv[]){
 	}
 	
 	cleanup_roboticscape();
-    return 0;
+	return 0;
 }
-	
+
