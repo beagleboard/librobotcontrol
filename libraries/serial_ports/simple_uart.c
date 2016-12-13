@@ -150,7 +150,6 @@ int initialize_uart(int bus, int baudrate, float timeout_s){
 	
 	// convert float timeout in seconds to int timeout in tenths of a second
 	int tenths = (timeout_s*10);
-	printf("tenths: %d\n", tenths);
 
     //config.c_cc[VTIME]=0;
 	// if VTIME>0 & VMIN>0, read() will return when either the requested number
