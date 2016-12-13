@@ -165,7 +165,7 @@ double march_filter(d_filter_t* filter, double new_input){
 	insert_new_ring_buf_value(&filter->in_buf, new_input);
 	filter->newest_input = new_input;
 
-	relative_degree = filter->numerator.len - filter->denominator.len;
+	relative_degree = filter->denominator.len - filter->numerator.len;
 	if(relative_degree<0){
 		printf("ERROR: can't march filter: improper transfer function\n");
 		return -1;
