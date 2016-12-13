@@ -43,21 +43,21 @@ int configure_gpio_pins(){
 	if(get_bb_model()==BB_BLUE){
 		mdir1a = MDIR1A_BLUE;
 		mdir2b = MDIR2B_BLUE;
-		ret |= setup_output_pin(BLUE_SPI_PIN_6_SS1, HIGH);
-		ret |= setup_output_pin(BLUE_SPI_PIN_6_SS2, HIGH);
-		ret |= setup_input_pin(BLUE_GP0_PIN_3);
-		ret |= setup_input_pin(BLUE_GP0_PIN_4);
-		ret |= setup_input_pin(BLUE_GP0_PIN_5);
-		ret |= setup_input_pin(BLUE_GP0_PIN_6);
-		ret |= setup_input_pin(BLUE_GP1_PIN_3);
-		ret |= setup_input_pin(BLUE_GP1_PIN_4);
+		// ret |= setup_output_pin(BLUE_SPI_PIN_6_SS1, HIGH);
+		// ret |= setup_output_pin(BLUE_SPI_PIN_6_SS2, HIGH);
+		// ret |= setup_input_pin(BLUE_GP0_PIN_3);
+		// ret |= setup_input_pin(BLUE_GP0_PIN_4);
+		// ret |= setup_input_pin(BLUE_GP0_PIN_5);
+		// ret |= setup_input_pin(BLUE_GP0_PIN_6);
+		// ret |= setup_input_pin(BLUE_GP1_PIN_3);
+		// ret |= setup_input_pin(BLUE_GP1_PIN_4);
 	}
 	// Cape-Only stuff
 	else{
 		mdir1a = MDIR1A;
 		mdir2b = MDIR2B;
-		ret |= setup_output_pin(CAPE_SPI_PIN_6_SS1, HIGH);
-		ret |= setup_output_pin(CAPE_SPI_PIN_6_SS2, HIGH);
+		// ret |= setup_output_pin(CAPE_SPI_PIN_6_SS1, HIGH);
+		// ret |= setup_output_pin(CAPE_SPI_PIN_6_SS2, HIGH);
 	}
 
 	// Shared Pins
@@ -93,13 +93,13 @@ int configure_gpio_pins(){
 	ret |= setup_input_pin(IMU_INTERRUPT_PIN);
 
 	// UART1, GPS, and SPI pins
-	ret |= setup_input_pin(GPS_HEADER_PIN_3); 
-	ret |= setup_input_pin(GPS_HEADER_PIN_4);
-	ret |= setup_input_pin(UART1_HEADER_PIN_3); 
-	ret |= setup_input_pin(UART1_HEADER_PIN_4);
-	ret |= setup_input_pin(SPI_HEADER_PIN_3);
-	ret |= setup_input_pin(SPI_HEADER_PIN_4);
-	ret |= setup_input_pin(SPI_HEADER_PIN_5);
+	// ret |= setup_input_pin(GPS_HEADER_PIN_3); 
+	// ret |= setup_input_pin(GPS_HEADER_PIN_4);
+	// ret |= setup_input_pin(UART1_HEADER_PIN_3); 
+	// ret |= setup_input_pin(UART1_HEADER_PIN_4);
+	// ret |= setup_input_pin(SPI_HEADER_PIN_3);
+	// ret |= setup_input_pin(SPI_HEADER_PIN_4);
+	// ret |= setup_input_pin(SPI_HEADER_PIN_5);
 
 
 	if(ret){
