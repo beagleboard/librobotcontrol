@@ -40,7 +40,8 @@ typedef enum test_mode_t{
 	SERVO,
 	ESC,
 	MICROSECONDS,
-	SWEEP
+	SWEEP,
+	RADIO
 }test_mode_t;
 
 // printed if some invalid argument was given
@@ -57,6 +58,7 @@ void print_usage(){
 	printf(" -u {width_us}  Send pulse width in microseconds (us)\n");
 	printf(" -s {limit}     Sweep servo back/forth between +- limit\n");
 	printf("                Limit can be between 0 & 1.5\n");
+	printf(" -r             Use DSM2 radio input to set ESC speed\n");
 	printf(" -h             Print this help messege \n\n");
 	printf("sample use to center servo channel 1:\n");
 	printf("   test_servos -v -c 1 -p 0.0\n\n");
@@ -71,10 +73,11 @@ int main(int argc, char *argv[]){
 	int power_en = 0; // change to 1 if user wishes to enable power rail
 	int frequency_hz = 50; // default 50hz frequency to send pulses
 	int toggle = 0;
+	int i;
 
 	// parse arguments
 	opterr = 0;
-	while ((c = getopt(argc, argv, "c:f:vp:e:u:s:h")) != -1){
+	while ((c = getopt(argc, argv, "c:f:vrp:e:u:s:h")) != -1){
 		switch (c){
 		case 'c': // servo/esc channel option
 			ch = atoi(optarg);
@@ -148,6 +151,17 @@ int main(int argc, char *argv[]){
 			}
 			break;
 			
+		case 'r':  // radio mode
+			if(initialize_dsm()){
+				// if init returns -1 if there was a problem
+				// most likely no calibration file found
+				printf("run calibrate_dsm first\n");
+				return -1;
+			} else {
+				mode = RADIO;
+			}
+			break;
+
 		case 'h':  // help mode
 			print_usage();
 			return 0;
@@ -159,8 +173,8 @@ int main(int argc, char *argv[]){
 			return -1;
 			break;
 		}
-    }
-	
+	}
+
 	// if the user didn't give enough arguments, exit
 	if(mode==DISABLED){
 		printf("\nNot enough input arguments\n");
@@ -188,7 +202,7 @@ int main(int argc, char *argv[]){
 	
 	// if driving an ESC, send throttle of 0 first
 	// otherwise it will go into calibration mode
-	if(mode==ESC){
+	if(mode==ESC || mode==RADIO){
 		if(all) send_esc_pulse_normalized_all(0);
 		else send_esc_pulse_normalized(ch,0);
 		usleep(50/1000000);
@@ -219,12 +233,24 @@ int main(int argc, char *argv[]){
 		printf("Sweeping servos back/forth between +-%f\n", sweep_limit);
 		printf("Pulse Frequency: %d\n", frequency_hz);
 		break;
-		
+	case RADIO:
+		printf("Listening for radio frequencies\n");
+		printf("Pulse Frequency: %d\n", frequency_hz);
+		break;
+
 	default:
 		rc_set_state(EXITING); //should never actually get here
 		break;
 	}
-	
+
+	if(mode==RADIO){
+		printf("Waiting for first packet");
+		fflush(stdout);
+		while(is_new_dsm_data()==0){
+			if(get_state()==EXITING) return 0;
+			usleep(50000);
+		}
+	}
 	
 	// Main loop runs at frequency_hz
 	while(rc_get_state()!=EXITING){
@@ -239,6 +265,34 @@ int main(int argc, char *argv[]){
 			if(all) send_esc_pulse_normalized_all(esc_throttle);
 			else send_esc_pulse_normalized(ch, esc_throttle);
 			break;
+
+		case RADIO:
+			if(is_new_dsm_data()) {
+				printf("\r");// keep printing on same line
+				int channels = get_num_dsm_channels();
+				// print framerate
+				printf("%d/", get_dsm_frame_resolution());
+				// print num channels in use
+				printf("%d-ch ", channels);
+				//print all channels
+				for(i=0;i<channels;i++) {
+					printf("%d:% 0.2f ", i+1, get_dsm_ch_normalized(i+1));
+				}
+				fflush(stdout);
+				esc_throttle = (get_dsm_ch_normalized(1) + 1.0) / 2.0;
+			} else {
+				printf("\rSeconds since last DSM packet: ");
+				printf("%0.2f ", ms_since_last_dsm_packet()/1000.0);
+				printf("                             ");
+				if(ms_since_last_dsm_packet() > 2000.0) {
+					esc_throttle = 0;
+				}
+			}
+			fflush(stdout);
+			if(all) send_esc_pulse_normalized_all(esc_throttle);
+			else send_esc_pulse_normalized(ch, esc_throttle);
+			break;
+
 			
 		case MICROSECONDS:
 			if(all) send_servo_pulse_us_all(width_us);
