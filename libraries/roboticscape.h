@@ -580,7 +580,7 @@ typedef struct imu_config_t {
 	int dmp_sample_rate;
 	imu_orientation_t orientation; //orientation matrix
 	// higher mix_factor means less weight the compass has on fused_TaitBryan
-	float compass_time_constant; 	// time constant for filtering fused yaw
+	double compass_time_constant; 	// time constant for filtering fused yaw
 	int dmp_interrupt_priority; // scheduler priority for handler
 	int show_warnings;	// set to 1 to enable showing of i2c_bus warnings
 
@@ -588,30 +588,30 @@ typedef struct imu_config_t {
 
 typedef struct imu_data_t {
 	// last read sensor values in real units
-	float accel[3]; // units of m/s^2
-	float gyro[3];	// units of degrees/s
-	float mag[3];	// units of uT
-	float temp;		// units of degrees Celsius
+	double accel[3];	// units of m/s^2
+	double gyro[3];		// units of degrees/s
+	double mag[3];		// units of uT
+	double temp;		// units of degrees Celsius
 	
 	// 16 bit raw adc readings from each sensor
 	int16_t raw_gyro[3];	
 	int16_t raw_accel[3];
 	
 	// FSR-derived conversion ratios from raw to real units
-	float accel_to_ms2; // to m/s^2
-	float gyro_to_degs; // to degrees/s
+	double accel_to_ms2;	// to m/s^2
+	double gyro_to_degs;	// to degrees/s
 	
 	// everything below this line is available in DMP mode only
 	// quaternion and TaitBryan angles from DMP based on ONLY Accel/Gyro
-	float dmp_quat[4]; 	// normalized quaternion
-	float dmp_TaitBryan[3];	// radians pitch/roll/yaw X/Y/Z
+	double dmp_quat[4];		// normalized quaternion
+	double dmp_TaitBryan[3];	// radians pitch/roll/yaw X/Y/Z
 	
 	// If magnetometer is enabled in DMP mode, the following quaternion and 
 	// TaitBryan angles will be available which add magnetometer data to filter
-	float fused_quat[4]; 	// normalized quaternion
-	float fused_TaitBryan[3]; 	// radians pitch/roll/yaw X/Y/Z
-	float compass_heading;	// heading filtered with gyro and accel data
-	float compass_heading_raw;	// heading in radians based purely on magnetometer
+	double fused_quat[4];		// normalized quaternion
+	double fused_TaitBryan[3];	// radians pitch/roll/yaw X/Y/Z
+	double compass_heading;		// heading filtered with gyro and accel data
+	double compass_heading_raw;	// heading in radians from magnetometer
 } imu_data_t;
  
 // General functions
@@ -975,30 +975,6 @@ int suppress_stdout(int (*func)(void));
 int suppress_stderr(int (*func)(void));
 int continue_or_quit();
 
-/*******************************************************************************
-* Quaternion Math
-*
-* These are useful for dealing with IMU orientation data
-* see linear algebra section for more advanced and scalable vector functions
-*******************************************************************************/
-// defines for index location within TaitBryan and quaternion arrays
-#define TB_PITCH_X	0
-#define TB_ROLL_Y	1
-#define TB_YAW_Z	2
-#define QUAT_W		0
-#define QUAT_X		1
-#define QUAT_Y		2
-#define QUAT_Z		3
-
-float quaternionNorm(float q[4]);
-void normalizeQuaternion(float q[4]);
-void quaternionToTaitBryan(float q[4], float v[3]);
-void TaitBryanToQuaternion(float v[3], float q[4]);
-void tilt_compensate(float in[4], float tilt[4], float out[4]);
-void quaternionConjugate(float in[4], float out[4]);
-void quaternionMultiply(float a[4], float b[4], float out[4]);
-float vector3vector_dot_product(float a[3], float b[3]);
-void vector3CrossProduct(float a[3], float b[3], float d[3]);
 
 
 /*******************************************************************************
@@ -1008,6 +984,7 @@ void vector3CrossProduct(float a[3], float b[3], float d[3]);
 * functions. It uses dynamic memory allocation so be sure to create and destroy
 * vectors as necessary to prevent memory leaks.
 *******************************************************************************/
+// vector type
 typedef struct vector_t{
 	int len;
 	double* data;
@@ -1033,15 +1010,9 @@ int vector_max(vector_t v);
 int vector_min(vector_t v);
 double standard_deviation(vector_t v);
 double vector_mean(vector_t v);
-// polynomial manipulation 
-vector_t poly_conv(vector_t v1, vector_t v2);
-vector_t poly_power(vector_t v, int N);
-vector_t poly_add(vector_t a, vector_t b);
-int poly_add_in_place(vector_t* a, vector_t b);
-int poly_subtract_in_place(vector_t* a, vector_t b);
-vector_t poly_diff(vector_t a, int d);
-vector_t poly_div(vector_t num, vector_t den, vector_t* remainder);
-vector_t poly_butter(int N, double wc);
+vector_t vector_projection(vector_t v, vector_t e);
+double vector_dot_product(vector_t v1, vector_t v2);
+vector_t vector_cross_product(vector_t v1, vector_t v2);
 
 
 /*******************************************************************************
@@ -1071,6 +1042,7 @@ int set_matrix_entry(matrix_t* A, int row, int col, double val);
 double get_matrix_entry(matrix_t A, int row, int col);
 void print_matrix(matrix_t A);
 void print_matrix_sci_notation(matrix_t A);
+matrix_t vector_outer_product(vector_t v1, vector_t v2);
 
 // Multiplication, Addition, and other transforms
 matrix_t multiply_matrices(matrix_t A, matrix_t B);
@@ -1084,11 +1056,6 @@ int transpose_matrix(matrix_t* A);
 *
 *
 *******************************************************************************/
-// vector operations
-vector_t vector_projection(vector_t v, vector_t e);
-matrix_t vector_outer_product(vector_t v1, vector_t v2);
-double vector_dot_product(vector_t v1, vector_t v2);
-vector_t cross_product_3d(vector_t v1, vector_t v2);
 // basic matrix/vector multiplication
 vector_t matrix_times_col_vec(matrix_t A, vector_t v);
 vector_t row_vec_times_matrix(vector_t v, matrix_t A);
@@ -1103,6 +1070,52 @@ matrix_t householder_matrix(vector_t v);
 vector_t lin_system_solve(matrix_t A, vector_t b);
 vector_t lin_system_solve_qr(matrix_t A, vector_t b);
 int fit_ellipsoid(matrix_t points, vector_t* center, vector_t* lengths);
+
+/*******************************************************************************
+* polynomial Manipulation
+*
+* We represent polynomials as a vector of coefficients with the highest power
+* term on the left at vector index 0. The following polynomial manipulation
+* functions are designed to behave like their counterparts in the Numerical
+* Renaissance codebase.
+*******************************************************************************/
+vector_t poly_conv(vector_t v1, vector_t v2);
+vector_t poly_power(vector_t v, int N);
+vector_t poly_add(vector_t a, vector_t b);
+int poly_add_in_place(vector_t* a, vector_t b);
+int poly_subtract_in_place(vector_t* a, vector_t b);
+vector_t poly_diff(vector_t a, int d);
+vector_t poly_div(vector_t num, vector_t den, vector_t* remainder);
+vector_t poly_butter(int N, double wc);
+
+/*******************************************************************************
+* Quaternion Math
+*
+* These are useful for dealing with IMU orientation data
+*******************************************************************************/
+// defines for index location within TaitBryan and quaternion vectors
+#define TB_PITCH_X	0
+#define TB_ROLL_Y	1
+#define TB_YAW_Z	2
+#define QUAT_W		0
+#define QUAT_X		1
+#define QUAT_Y		2
+#define QUAT_Z		3
+
+double quaternion_norm(vector_t q);
+int normalize_quaternion(vector_t* q);
+int normalize_quaternion_array(double q[4]);
+vector_t quaternion_to_tb(vector_t q);
+void quaternion_to_tb_array(double q[4], double tb[3]);
+vector_t tb_to_quaternion(vector_t tb);
+void tb_to_quaternion_array(double tb[3], double q[4]);
+vector_t quaternion_conjugate(vector_t q);
+void quaternion_conjugate_array(double q[4], double conj[4]);
+vector_t quaternion_imaginary_part(vector_t q);
+vector_t quaternion_multiply(vector_t a, vector_t b);
+int quaternion_rotate(vector_t* p, vector_t q);
+int quaternion_rotate_vector(vector_t* p, vector_t q);
+matrix_t quaternion_to_rotation_matrix(vector_t q);
 
 
 /*******************************************************************************

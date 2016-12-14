@@ -15,101 +15,6 @@
 
 
 
-/*******************************************************************************
-* vector_t vector_projection(vector_t v, vector_t e)
-*
-* Projects vector v onto e
-*******************************************************************************/
-vector_t vector_projection(vector_t v, vector_t e){
-	int i;
-	double factor;
-	vector_t out = empty_vector();
-	
-	if(!v.initialized || !e.initialized){
-		printf("ERROR: vectors not initialized yet\n");
-		return out;
-	}
-	if(v.len != e.len){
-		printf("ERROR: vectors not of same dimension\n");
-		return out;
-	}
-	out = create_vector(v.len);
-	factor = vector_dot_product(v,e)/vector_dot_product(e,e);
-	for(i=0;i<v.len;i++){
-		out.data[i] = factor * e.data[i];
-	}
-	return out;
-}
-
-
-/*******************************************************************************
-* matrix_t vector_outer_product(vector_t v1, vector_t v2)
-* 
-* Computes v1 times v2 where v1 is a column vector and v2 is a row vector.
-* Output is a matrix with same rows as v1 and same columns as v2.
-*******************************************************************************/
-matrix_t vector_outer_product(vector_t v1, vector_t v2){
-	int i, j;
-	int m = v1.len;
-	int n = v2.len;
-	matrix_t out = empty_matrix();
-	if(!v1.initialized || !v2.initialized){
-		printf("ERROR: vectors not initialized yet\n");
-		return out;
-	}
-	out = create_matrix(m,n);
-	for(i=0;i<m;i++){
-		for(j=0;j<n;j++){
-			out.data[j][i] = v1.data[i]*v2.data[j];
-		}
-	}
-	return out;
-}
-
-/*******************************************************************************
-* double vector_dot_product(vector_t v1, vector_t v2)
-*
-* 
-*******************************************************************************/
-double vector_dot_product(vector_t v1, vector_t v2){
-	double out;
-	int i;
-	if(!v1.initialized || !v2.initialized){
-		printf("ERROR: vector not initialized yet\n");
-		return -1;
-	}
-	if(v1.len != v2.len){
-		printf("ERROR: vector dimensions do not match\n");
-		return -1;
-	}
-	for(i=0; i<v1.len; i++){
-		out = out + (v1.data[i] * v2.data[i]);
-	}
-	return out;
-}
-
-/*******************************************************************************
-* vector_t cross_product_3d(vector_t v1, vector_t v2)
-*
-* 
-*******************************************************************************/
-vector_t cross_product_3d(vector_t v1, vector_t v2){
-	vector_t out = empty_vector();
-	if(!v1.initialized || !v2.initialized){
-		printf("ERROR: vector not initialized yet\n");
-		return out;
-	}
-	if((v1.len != 3) || (v2.len != 3)){
-		printf("ERROR: vectors not of dimension 3\n");
-		return out;
-	}
-	
-	out = create_vector(v1.len);
-	out.data[0] = (v1.data[1]*v2.data[2]) - (v1.data[2]*v2.data[1]);
-	out.data[1] = (v1.data[2]*v2.data[0]) - (v1.data[0]*v2.data[2]);
-	out.data[2] = (v1.data[0]*v2.data[1]) - (v1.data[1]*v2.data[0]);
-	return out;	
-}
 
 /*******************************************************************************
 * vector_t matrix_times_col_vec(matrix_t A, vector_t v)
@@ -128,7 +33,6 @@ vector_t matrix_times_col_vec(matrix_t A, vector_t v){
 		return out;
 	}
 	out = create_vector(A.rows);
-	
 	for(i=0;i<A.rows;i++){
 		for(j=0;j<A.cols;j++){	
 			out.data[i] += v.data[j]*A.data[i][j];

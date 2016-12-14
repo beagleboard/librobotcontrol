@@ -37,13 +37,14 @@ pthread_t imu_interrupt_thread;
 struct sched_param params;
 int (*imu_interrupt_func)();
 int interrupt_func_set;
-float mag_factory_adjust[3];
-float mag_offsets[3];
-float mag_scales[3];
+double mag_factory_adjust[3];
+double mag_offsets[3];
+double mag_scales[3];
 int last_read_successful;
 uint64_t last_interrupt_timestamp_micros;
 imu_data_t* data_ptr;
 int shutdown_interrupt_thread = 0;
+d_filter_t low_pass, high_pass; // for magnetometer Yaw filtering
 
 /*******************************************************************************
 *	config functions for internal use only
@@ -76,7 +77,7 @@ int read_dmp_fifo();
 int data_fusion();
 int load_gyro_offets();
 int load_mag_calibration();
-int write_mag_cal_to_disk(double offsets[3], float scale[3]);
+int write_mag_cal_to_disk(double offsets[3], double scale[3]);
 void* imu_interrupt_handler(void* ptr);
 int (*imu_interrupt_func)(); // pointer to user-defined function
 int check_quaternion_validity(unsigned char* raw, int i);
@@ -289,7 +290,7 @@ int read_mag_data(imu_data_t* data){
 	uint8_t st1;
 	uint8_t raw[7];
 	int16_t adc[3];
-	float factory_cal_data[3];
+	double factory_cal_data[3];
 	
 	if(config.enable_magnetometer==0){
 		printf("ERROR: can't read magnetometer unless it is enabled in \n");
@@ -378,7 +379,7 @@ int read_imu_temp(imu_data_t* data){
 	} 
 	
 	// convert to real units
-	data->temp = ((float)(adc)/TEMP_SENSITIVITY) + 21.0;
+	data->temp = 21.0 + adc/TEMP_SENSITIVITY;
 	return 0;
 }
  
@@ -429,19 +430,19 @@ int set_gyro_fsr(gyro_fsr_t fsr, imu_data_t* data){
 	switch(fsr){
 	case G_FSR_250DPS:
 		c = GYRO_FSR_CFG_250 | FCHOICE_B_DLPF_EN;
-		data->gyro_to_degs = (float)250/(float)32768;
+		data->gyro_to_degs = 250.0/32768.0;
 		break;
 	case G_FSR_500DPS:
 		c = GYRO_FSR_CFG_500 | FCHOICE_B_DLPF_EN;
-		data->gyro_to_degs = (float)500/(float)32768;
+		data->gyro_to_degs = 500.0/32768.0;
 		break;
 	case G_FSR_1000DPS:
 		c = GYRO_FSR_CFG_1000 | FCHOICE_B_DLPF_EN;
-		data->gyro_to_degs = (float)1000/(float)32768;
+		data->gyro_to_degs = 1000.0/32768.0;
 		break;
 	case G_FSR_2000DPS:
 		c = GYRO_FSR_CFG_2000 | FCHOICE_B_DLPF_EN;
-		data->gyro_to_degs = (float)2000/(float)32768;
+		data->gyro_to_degs = 2000.0/32768.0;
 		break;
 	default:
 		printf("invalid gyro fsr\n");
@@ -460,19 +461,19 @@ int set_accel_fsr(accel_fsr_t fsr, imu_data_t* data){
 	switch(fsr){
 	case A_FSR_2G:
 		c = ACCEL_FSR_CFG_2G;
-		data->accel_to_ms2 = 9.807*(float)2/(float)32768;
+		data->accel_to_ms2 = 9.80665*2.0/32768.0;
 		break;
 	case A_FSR_4G:
 		c = ACCEL_FSR_CFG_4G;
-		data->accel_to_ms2 = 9.807*(float)4/(float)32768;
+		data->accel_to_ms2 = 9.80665*4.0/32768.0;
 		break;
 	case A_FSR_8G:
 		c = ACCEL_FSR_CFG_8G;
-		data->accel_to_ms2 = 9.807*(float)8/(float)32768;
+		data->accel_to_ms2 = 9.80665*8.0/32768.0;
 		break;
 	case A_FSR_16G:
 		c = ACCEL_FSR_CFG_16G;
-		data->accel_to_ms2 = 9.807*(float)16/(float)32768;
+		data->accel_to_ms2 = 9.80665*16.0/32768.0;
 		break;
 	default:
 		printf("invalid accel fsr\n");
@@ -598,9 +599,9 @@ int initialize_magnetometer(){
 	}
 
 	// Return sensitivity adjustment values
-	mag_factory_adjust[0]=(float)(raw[0]-128)/256.0f + 1.0f;   
-	mag_factory_adjust[1]=(float)(raw[1]-128)/256.0f + 1.0f;  
-	mag_factory_adjust[2]=(float)(raw[2]-128)/256.0f + 1.0f; 
+	mag_factory_adjust[0] = (raw[0]-128)/256.0 + 1.0;   
+	mag_factory_adjust[1] = (raw[1]-128)/256.0 + 1.0;  
+	mag_factory_adjust[2] = (raw[2]-128)/256.0 + 1.0; 
 	
 	// Power down magnetometer again
 	i2c_write_byte(IMU_BUS, AK8963_CNTL, MAG_POWER_DN); 
@@ -1524,20 +1525,20 @@ int stop_imu_interrupt_func(){
 * errors are detected then this function tries some i2c transfers a second time.
 *******************************************************************************/
 int read_dmp_fifo(){
-    unsigned char raw[MAX_FIFO_BUFFER];
+	unsigned char raw[MAX_FIFO_BUFFER];
 	long quat[4];
 	int16_t mag_adc[3];
-    uint16_t fifo_count;
+	uint16_t fifo_count;
 	int ret, mag_data_available, dmp_data_available;
 	int i = 0; // position of beginning of mag data
 	int j = 0; // position of beginning of dmp data
 	static int first_run = 1; // set to 0 after first call
-	float factory_cal_data[3]; // just temp holder for mag data
-    if (!dmp_en){
+	double factory_cal_data[3]; // just temp holder for mag data
+	if(!dmp_en){
 		printf("only use mpu_read_fifo in dmp mode\n");
-        return -1;
+		return -1;
 	}
-	
+
 	// if the fifo packet_len variable not set up yet, this function must
 	// have been called prematurely
 	if(packet_len!=FIFO_LEN_NO_MAG && packet_len!=FIFO_LEN_MAG){
@@ -1551,16 +1552,16 @@ int read_dmp_fifo(){
 	int is_new_dmp_data = 0;
 
 	// check fifo count register to make sure new data is there
-    if (i2c_read_word(IMU_BUS, FIFO_COUNTH, &fifo_count)<0){
+	if(i2c_read_word(IMU_BUS, FIFO_COUNTH, &fifo_count)<0){
 		if(config.show_warnings){
 			printf("fifo_count i2c error: %s\n",strerror(errno));
 		}
 		return -1;
-	}	
+	}
 	#ifdef DEBUG
 	printf("fifo_count: %d\n", fifo_count);
 	#endif
-	
+
 	/***************************************************************************
 	* now that we see how many values are in the buffer, we have a long list of
 	* checks to determine what should be done
@@ -1575,7 +1576,6 @@ int read_dmp_fifo(){
 		// }
 		return -1;
 	}
-
 
 	// one packet, perfect!
 	if(fifo_count==FIFO_LEN_NO_MAG){
@@ -1658,8 +1658,6 @@ int read_dmp_fifo(){
 	}
 	mpu_reset_fifo();
 	return -1;
-	
-	
 
 	/***************************************************************************
 	* now we get to the reading section. Here we also have logic to determine
@@ -1669,7 +1667,7 @@ int read_dmp_fifo(){
 READ_FIFO:
 	memset(raw,0,MAX_FIFO_BUFFER);
 	// read it in!
-    ret = i2c_read_bytes(IMU_BUS, FIFO_R_W, fifo_count, &raw[0]);
+	ret = i2c_read_bytes(IMU_BUS, FIFO_R_W, fifo_count, &raw[0]);
 	if(ret<0){
 		// if i2c_read returned -1 there was an error, try again
 		ret = i2c_read_bytes(IMU_BUS, FIFO_R_W, fifo_count, &raw[0]);
@@ -1679,9 +1677,8 @@ READ_FIFO:
 			printf("ERROR: failed to read fifo buffer register\n");
 			printf("read %d bytes, expected %d\n", ret, packet_len);
 		}
-        return -1;
+		return -1;
 	}
-
 
 	// if dmp data is available we must figure out if it's before or 
 	// after the magnetometer data. Usually before.
@@ -1700,7 +1697,7 @@ READ_FIFO:
 				printf("fifo_count: %d\n", fifo_count);
 			}
 			mpu_reset_fifo();
-		    return -1;
+			return -1;
 		}
 		// now we can read the quaternion
 		// parse the quaternion data from the buffer
@@ -1713,17 +1710,17 @@ READ_FIFO:
 		quat[3] = ((long)raw[j+12] << 24) | ((long)raw[j+13] << 16) |
 			((long)raw[j+14] << 8) | raw[j+15];
 
-		// load in the quaternion to the data struct if it was good
-		data_ptr->dmp_quat[QUAT_W] = (float)quat[QUAT_W];
-		data_ptr->dmp_quat[QUAT_X] = (float)quat[QUAT_X];
-		data_ptr->dmp_quat[QUAT_Y] = (float)quat[QUAT_Y];
-		data_ptr->dmp_quat[QUAT_Z] = (float)quat[QUAT_Z];
-		// fill in euler angles to the data struct
-		normalizeQuaternion(data_ptr->dmp_quat);
-		quaternionToTaitBryan(data_ptr->dmp_quat, data_ptr->dmp_TaitBryan);
+		// normalize and load in the quaternion to the data struct
+		data_ptr->dmp_quat[QUAT_W] = (double)quat[QUAT_W];
+		data_ptr->dmp_quat[QUAT_X] = (double)quat[QUAT_X];
+		data_ptr->dmp_quat[QUAT_Y] = (double)quat[QUAT_Y];
+		data_ptr->dmp_quat[QUAT_Z] = (double)quat[QUAT_Z];
+		normalize_quaternion_array(data_ptr->dmp_quat);
+
+		// fill in tait-bryan angles to the data struct
+		quaternion_to_tb_array(data_ptr->dmp_quat, data_ptr->dmp_TaitBryan);
 		
 		j+=16; // increase offset by 16 which was the quaternion size
-		
 		
 		// Read Accel values and load into imu_data struct
 		// Turn the MSB and LSB into a signed 16-bit value
@@ -1852,74 +1849,72 @@ int check_quaternion_validity(unsigned char* raw, int i){
 * with the sample rate so the filter rise time remains constant with different
 * sample rates.
 *******************************************************************************/
-d_filter_t low_pass, high_pass; // for magnetometer Yaw filtering
-
 int data_fusion(){
-	float fusedEuler[3], magQuat[4], unfusedQuat[4];
-	static float newMagYaw = 0;
-	static float newDMPYaw = 0;
-	float lastDMPYaw, lastMagYaw, newYaw; 
-	static float dmp_spin_counter = 0;
-	static float mag_spin_counter = 0;
+	vector_t tilt_tb, tilt_q, tilt_conj, mag_vec;
+	static double newMagYaw = 0;
+	static double newDMPYaw = 0;
+	double lastDMPYaw, lastMagYaw, newYaw; 
+	static double dmp_spin_counter = 0;
+	static double mag_spin_counter = 0;
 	static int first_run = 1; // set to 0 after first call to this function
 	
 	
 	// start by filling in the roll/pitch components of the fused euler
 	// angles from the DMP generated angles. Ignore yaw for now, we have to
 	// filter that later. 
-	fusedEuler[TB_PITCH_X] = data_ptr->dmp_TaitBryan[TB_PITCH_X];
-	//fusedEuler[TB_ROLL_Y] = -(data_ptr->dmp_TaitBryan[TB_ROLL_Y]);
-	fusedEuler[TB_ROLL_Y] = (data_ptr->dmp_TaitBryan[TB_ROLL_Y]);
-	fusedEuler[TB_YAW_Z] = 0;
+	tilt_tb = create_vector(3);
+	tilt_tb.data[0] = data_ptr->dmp_TaitBryan[TB_PITCH_X];
+	tilt_tb.data[1] = (data_ptr->dmp_TaitBryan[TB_ROLL_Y]);
+	tilt_tb.data[2] = 0;
 
 	// generate a quaternion rotation of just roll/pitch
-	TaitBryanToQuaternion(fusedEuler, unfusedQuat);
+	tilt_q = tb_to_quaternion(tilt_tb);
 
 	// create a quaternion vector from the current magnetic field vector
 	// in IMU body coordinate frame. Since the DMP quaternion is aligned with
 	// a particular orientation, we must be careful to orient the magnetometer
 	// data to match.
-	magQuat[QUAT_W] = 0;
+	mag_vec = create_vector(3);
 	switch(config.orientation){
 	case ORIENTATION_Z_UP:
-		magQuat[QUAT_X] = data_ptr->mag[TB_PITCH_X];
-		magQuat[QUAT_Y] = data_ptr->mag[TB_ROLL_Y];
-		magQuat[QUAT_Z] = data_ptr->mag[TB_YAW_Z];
+		mag_vec.data[0] = data_ptr->mag[TB_PITCH_X];
+		mag_vec.data[1] = data_ptr->mag[TB_ROLL_Y];
+		mag_vec.data[2] = data_ptr->mag[TB_YAW_Z];
 		break;
 	case ORIENTATION_Z_DOWN:
-		magQuat[QUAT_X] = -data_ptr->mag[TB_PITCH_X];
-		magQuat[QUAT_Y] = data_ptr->mag[TB_ROLL_Y];
-		magQuat[QUAT_Z] = -data_ptr->mag[TB_YAW_Z];
+		mag_vec.data[0] = -data_ptr->mag[TB_PITCH_X];
+		mag_vec.data[1] = data_ptr->mag[TB_ROLL_Y];
+		mag_vec.data[2] = -data_ptr->mag[TB_YAW_Z];
 		break;
 	case ORIENTATION_X_UP:
-		magQuat[QUAT_X] = data_ptr->mag[TB_YAW_Z];
-		magQuat[QUAT_Y] = data_ptr->mag[TB_ROLL_Y];
-		magQuat[QUAT_Z] = data_ptr->mag[TB_PITCH_X];
+		mag_vec.data[0] = data_ptr->mag[TB_YAW_Z];
+		mag_vec.data[1] = data_ptr->mag[TB_ROLL_Y];
+		mag_vec.data[2] = data_ptr->mag[TB_PITCH_X];
 		break;
 	case ORIENTATION_X_DOWN:
-		magQuat[QUAT_X] = -data_ptr->mag[TB_YAW_Z];
-		magQuat[QUAT_Y] = data_ptr->mag[TB_ROLL_Y];
-		magQuat[QUAT_Z] = -data_ptr->mag[TB_PITCH_X];
+		mag_vec.data[0] = -data_ptr->mag[TB_YAW_Z];
+		mag_vec.data[1] = data_ptr->mag[TB_ROLL_Y];
+		mag_vec.data[2] = -data_ptr->mag[TB_PITCH_X];
 		break;
 	case ORIENTATION_Y_UP:
-		magQuat[QUAT_X] = data_ptr->mag[TB_PITCH_X];
-		magQuat[QUAT_Y] = -data_ptr->mag[TB_YAW_Z];
-		magQuat[QUAT_Z] = data_ptr->mag[TB_ROLL_Y];
+		mag_vec.data[0] = data_ptr->mag[TB_PITCH_X];
+		mag_vec.data[1] = -data_ptr->mag[TB_YAW_Z];
+		mag_vec.data[2] = data_ptr->mag[TB_ROLL_Y];
 		break;
 	case ORIENTATION_Y_DOWN:
-		magQuat[QUAT_X] = data_ptr->mag[TB_PITCH_X];
-		magQuat[QUAT_Y] = data_ptr->mag[TB_YAW_Z];
-		magQuat[QUAT_Z] = -data_ptr->mag[TB_ROLL_Y];
+		mag_vec.data[0] = data_ptr->mag[TB_PITCH_X];
+		mag_vec.data[1] = data_ptr->mag[TB_YAW_Z];
+		mag_vec.data[2] = -data_ptr->mag[TB_ROLL_Y];
 		break;
 	case ORIENTATION_X_FORWARD:
-		magQuat[QUAT_X] = data_ptr->mag[TB_ROLL_Y];
-		magQuat[QUAT_Y] = -data_ptr->mag[TB_PITCH_X];
-		magQuat[QUAT_Z] = data_ptr->mag[TB_YAW_Z];
+		mag_vec.data[0] = data_ptr->mag[TB_ROLL_Y];
+		mag_vec.data[1] = -data_ptr->mag[TB_PITCH_X];
+		mag_vec.data[2] = data_ptr->mag[TB_YAW_Z];
 		break;
 	case ORIENTATION_X_BACK:
-		magQuat[QUAT_X] = -data_ptr->mag[TB_ROLL_Y];
-		magQuat[QUAT_Y] = data_ptr->mag[TB_PITCH_X];
-		magQuat[QUAT_Z] = data_ptr->mag[TB_YAW_Z];
+		mag_vec.data[0] = -data_ptr->mag[TB_ROLL_Y];
+		mag_vec.data[1] = data_ptr->mag[TB_PITCH_X];
+		mag_vec.data[2] = data_ptr->mag[TB_YAW_Z];
 		break;
 	default:
 		printf("ERROR: invalid orientation\n");
@@ -1928,12 +1923,17 @@ int data_fusion(){
 
 	// tilt that vector by the roll/pitch of the IMU to align magnetic field
 	// vector such that Z points vertically
-	tilt_compensate(magQuat, unfusedQuat, magQuat);
+	printf("before conjugate\n");
+	destroy_vector(&tilt_conj);
+	tilt_conj = quaternion_conjugate(tilt_tb);
+	printf("before rotate_vector\n");
+	quaternion_rotate_vector(&mag_vec,tilt_conj);
+	printf("after rotate\n");
 
 	// from the aligned magnetic field vector, find a yaw heading
 	// check for validity and make sure the heading is positive
 	lastMagYaw = newMagYaw; // save from last loop
-	newMagYaw = -atan2f(magQuat[QUAT_Y], magQuat[QUAT_X]);
+	newMagYaw = -atan2(mag_vec.data[1], mag_vec.data[0]);
 	if (newMagYaw != newMagYaw) {
 		#ifdef WARNINGS
 		printf("newMagYaw NAN\n");
@@ -1962,7 +1962,7 @@ int data_fusion(){
 		dmp_spin_counter = 0;
 		
 		// generate complementary filters
-		float dt = 1.0/config.dmp_sample_rate;
+		double dt = 1.0/config.dmp_sample_rate;
 		low_pass =create_first_order_lowpass(dt,config.compass_time_constant);
 		high_pass=create_first_order_highpass(dt,config.compass_time_constant);
 		prefill_filter_inputs(&low_pass,newMagYaw);
@@ -1976,19 +1976,29 @@ int data_fusion(){
 	newYaw = march_filter(&low_pass,newMagYaw+(TWO_PI*mag_spin_counter)) \
 			+ march_filter(&high_pass,newDMPYaw+(TWO_PI*dmp_spin_counter));
 			
-	newYaw = fmodf(newYaw,TWO_PI); // remove the effect of the spins
+	newYaw = fmod(newYaw,TWO_PI); // remove the effect of the spins
 	if (newYaw > PI) newYaw -= TWO_PI; // bound between +- PI
 	else if (newYaw < -PI) newYaw += TWO_PI; // bound between +- PI
 
-	// Euler angles expect a yaw between -pi to pi so slide it again and
-	// store in the user-accessible fused euler angle
+	// TB angles expect a yaw between -pi to pi so slide it again and
+	// store in the user-accessible fused tb angle
 	data_ptr->compass_heading = newYaw;
-	data_ptr->fused_TaitBryan[TB_YAW_Z] = newYaw;
-	data_ptr->fused_TaitBryan[TB_PITCH_X] = data_ptr->dmp_TaitBryan[TB_PITCH_X];
-	data_ptr->fused_TaitBryan[TB_ROLL_Y] = data_ptr->dmp_TaitBryan[TB_ROLL_Y];
+	data_ptr->fused_TaitBryan[2] = newYaw;
+	data_ptr->fused_TaitBryan[0] = data_ptr->dmp_TaitBryan[0];
+	data_ptr->fused_TaitBryan[1] = data_ptr->dmp_TaitBryan[1];
 
-	// Also generate a new quaternion from the filtered euler angles
-	TaitBryanToQuaternion(data_ptr->fused_TaitBryan, data_ptr->fused_quat);
+	// Also generate a new quaternion from the filtered tb angles
+	printf("before tb to quat array\n");
+	tb_to_quaternion_array(data_ptr->fused_TaitBryan, data_ptr->fused_quat);
+	printf("after tb to quat array\n");
+
+	// free memory
+	destroy_vector(&tilt_conj);
+	destroy_vector(&tilt_tb);
+	destroy_vector(&tilt_q);
+	destroy_vector(&mag_vec);
+	printf("after destroys\n");
+
 	return 0;
 }
 
@@ -2175,7 +2185,7 @@ COLLECT_DATA:
 	vx = create_vector(samples);
 	vy = create_vector(samples);
 	vz = create_vector(samples);
-	float dev_x, dev_y, dev_z;
+	double dev_x, dev_y, dev_z;
 	gyro_sum[0] = 0;
 	gyro_sum[1] = 0;
 	gyro_sum[2] = 0;
@@ -2191,9 +2201,9 @@ COLLECT_DATA:
 		gyro_sum[0]  += (int32_t) x;
 		gyro_sum[1]  += (int32_t) y;
 		gyro_sum[2]  += (int32_t) z;
-		vx.data[i] = (float)x;
-		vy.data[i] = (float)y;
-		vz.data[i] = (float)z;
+		vx.data[i] = (double)x;
+		vy.data[i] = (double)y;
+		vz.data[i] = (double)z;
 	}
   	dev_x = standard_deviation(vx);
   	dev_y = standard_deviation(vy);
@@ -2365,12 +2375,12 @@ uint64_t micros_since_last_interrupt(){
 }
 
 /*******************************************************************************
-* int write_mag_cal_to_disk(double offsets[3], float scale[3])
+* int write_mag_cal_to_disk(double offsets[3], double scale[3])
 *
 * Reads steady state gyro offsets from the disk and puts them in the IMU's 
 * gyro offset register. If no calibration file exists then make a new one.
 *******************************************************************************/
-int write_mag_cal_to_disk(double offsets[3], float scale[3]){
+int write_mag_cal_to_disk(double offsets[3], double scale[3]){
 	FILE *cal;
 	char file_path[100];
 	int ret;
@@ -2417,7 +2427,7 @@ int write_mag_cal_to_disk(double offsets[3], float scale[3]){
 int load_mag_calibration(){
 	FILE *cal;
 	char file_path[100];
-	float x,y,z,sx,sy,sz;
+	double x,y,z,sx,sy,sz;
 	
 	// construct a new file path string and open for reading
 	strcpy (file_path, CONFIG_DIRECTORY);
@@ -2437,7 +2447,7 @@ int load_mag_calibration(){
 		return -1;
 	}
 	// read in data
-	fscanf(cal,"%f\n%f\n%f\n%f\n%f\n%f\n", &x,&y,&z,&sx,&sy,&sz);
+	fscanf(cal,"%lf\n%lf\n%lf\n%lf\n%lf\n%lf\n", &x,&y,&z,&sx,&sy,&sz);
 		
 	#ifdef DEBUG
 	printf("magcal: %f %f %f %f %f %f\n", x,y,z,sx,sy,sz);
@@ -2458,10 +2468,10 @@ int load_mag_calibration(){
 /*******************************************************************************
 * int calibrate_mag_routine()
 *
-* Initializes the IMU and samples the magnetometer untill sufficient samples
+* Initializes the IMU and samples the magnetometer until sufficient samples
 * have been collected from each octant. From there, fit an ellipse to the data 
 * and save the correct offsets and scales to the disk which will later be
-* applied to correct the uncallibrated magnetometer data to map calibrationed
+* applied to correct the uncalibrated magnetometer data to map calibrated
 * field vectors to a sphere.
 *******************************************************************************/
 int calibrate_mag_routine(){
@@ -2469,7 +2479,7 @@ int calibrate_mag_routine(){
 	const int sample_rate_hz = 15;
 	int i;
 	uint8_t c;
-	float new_scale[3];
+	double new_scale[3];
 	imu_data_t imu_data; // to collect magnetometer data
 	config = get_default_imu_config();
 	config.enable_magnetometer = 1;
