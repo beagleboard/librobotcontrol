@@ -61,8 +61,8 @@ int print_data(){
 	printf(" ");
 	
 	if(show_compass){
-		printf("   %6.2f   |", data.compass_heading_raw);
-		printf("   %6.2f   |", data.compass_heading);
+		printf("   %6.1f   |", data.compass_heading_raw*RAD_TO_DEG);
+		printf("   %6.1f   |", data.compass_heading*RAD_TO_DEG);
 	}
 	if(show_quat && enable_mag){
 		// print fused quaternion

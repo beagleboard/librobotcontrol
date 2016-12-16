@@ -1850,7 +1850,7 @@ int check_quaternion_validity(unsigned char* raw, int i){
 * sample rates.
 *******************************************************************************/
 int data_fusion(){
-	vector_t tilt_tb, tilt_q, tilt_conj, mag_vec;
+	vector_t tilt_tb, tilt_q, mag_vec;
 	static double newMagYaw = 0;
 	static double newDMPYaw = 0;
 	double lastDMPYaw, lastMagYaw, newYaw; 
@@ -1864,7 +1864,7 @@ int data_fusion(){
 	// filter that later. 
 	tilt_tb = create_vector(3);
 	tilt_tb.data[0] = data_ptr->dmp_TaitBryan[TB_PITCH_X];
-	tilt_tb.data[1] = (data_ptr->dmp_TaitBryan[TB_ROLL_Y]);
+	tilt_tb.data[1] = data_ptr->dmp_TaitBryan[TB_ROLL_Y];
 	tilt_tb.data[2] = 0;
 
 	// generate a quaternion rotation of just roll/pitch
@@ -1923,12 +1923,7 @@ int data_fusion(){
 
 	// tilt that vector by the roll/pitch of the IMU to align magnetic field
 	// vector such that Z points vertically
-	printf("before conjugate\n");
-	destroy_vector(&tilt_conj);
-	tilt_conj = quaternion_conjugate(tilt_tb);
-	printf("before rotate_vector\n");
-	quaternion_rotate_vector(&mag_vec,tilt_conj);
-	printf("after rotate\n");
+	quaternion_rotate_vector(&mag_vec,tilt_q);
 
 	// from the aligned magnetic field vector, find a yaw heading
 	// check for validity and make sure the heading is positive
@@ -1988,16 +1983,12 @@ int data_fusion(){
 	data_ptr->fused_TaitBryan[1] = data_ptr->dmp_TaitBryan[1];
 
 	// Also generate a new quaternion from the filtered tb angles
-	printf("before tb to quat array\n");
 	tb_to_quaternion_array(data_ptr->fused_TaitBryan, data_ptr->fused_quat);
-	printf("after tb to quat array\n");
 
 	// free memory
-	destroy_vector(&tilt_conj);
 	destroy_vector(&tilt_tb);
 	destroy_vector(&tilt_q);
 	destroy_vector(&mag_vec);
-	printf("after destroys\n");
 
 	return 0;
 }

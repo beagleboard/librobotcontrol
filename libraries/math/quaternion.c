@@ -83,9 +83,7 @@ vector_t quaternion_to_tb(vector_t q){
 	}
 
 	out = create_vector(3);
-	printf("before tb array\n");
 	quaternion_to_tb_array(q.data,out.data);
-	printf("after tb_array\n");
 	return out;
 }
 
@@ -139,7 +137,7 @@ vector_t tb_to_quaternion(vector_t tb){
 		printf("ERROR: tait-bryan vector must have length 3\n");
 		return empty_vector();
 	}
-
+	out = create_vector(4);
 	tb_to_quaternion_array(tb.data,out.data);
 	return out;
 }
@@ -174,10 +172,16 @@ void tb_to_quaternion_array(double tb[3], double q[4]){
 * where the 3 imaginary parts ijk are multiplied by -1
 *******************************************************************************/
 vector_t quaternion_conjugate(vector_t q){
+	if(!q.initialized){
+		printf("ERROR: quaternion vector not initialized yet\n");
+		return empty_vector();
+	}
+	if(q.len != 4){
+		printf("ERROR: quaternion must be a vector of length 4\n");
+		return empty_vector();
+	}
 	vector_t out;
-	printf("before create vector in quaternion conjugate\n");
 	out = create_vector(4);
-	printf("after create vector in quaternion conjugate\n");
 	out.data[0] =  q.data[0];
 	out.data[1] = -q.data[1];
 	out.data[2] = -q.data[2];
@@ -262,10 +266,7 @@ vector_t quaternion_multiply(vector_t a, vector_t b){
 	tmp.data[3][3] = a.data[0];
 
 	out = matrix_times_col_vec(tmp,b);
-
-	printf("before destroy matrix\n");
 	destroy_matrix(&tmp);
-	
 	return out;
 }
 
@@ -347,12 +348,9 @@ int quaternion_rotate_vector(vector_t* p, vector_t q){
 	pq.data[3]=p->data[2];
 
 	// compute p'=qpq*
-	printf("before conjugate\n");
 	conj = quaternion_conjugate(q);
-	printf("before multiply\n");
 	tmp = quaternion_multiply(pq,conj);
 	result = quaternion_multiply(q,tmp);
-	printf("after multiply\n");
 
 	// populate v with result
 	p->data[0]=result.data[1];
