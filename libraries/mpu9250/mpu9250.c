@@ -2094,6 +2094,7 @@ int calibrate_gyro_routine(){
 	uint8_t c, data[6];
 	int32_t gyro_sum[3] = {0, 0, 0};
 	int16_t offsets[3];
+	int was_last_steady = 1;
 	
 	// make sure the bus is not currently in use by another thread
 	// do not proceed to prevent interfering with that process
@@ -2150,6 +2151,11 @@ int calibrate_gyro_routine(){
 	i2c_write_byte(IMU_BUS, ACCEL_CONFIG, 0x00); 
 
 COLLECT_DATA:
+
+	if(rc_get_state()==EXITING){
+		i2c_release_bus(IMU_BUS);
+		return -1;
+	}
 
 	// Configure FIFO to capture gyro data for bias calculation
 	i2c_write_byte(IMU_BUS, USER_CTRL, 0x40);   // Enable FIFO  
@@ -2212,11 +2218,19 @@ COLLECT_DATA:
 	if(dev_x>GYRO_CAL_THRESH||dev_y>GYRO_CAL_THRESH||dev_z>GYRO_CAL_THRESH){
 		printf("Gyro data too noisy, put me down on a solid surface!\n");
 		printf("trying again\n");
+		was_last_steady = 0;
 		goto COLLECT_DATA;
 	}
-	
+
+	// this skips the first steady reading after a noisy reading
+	// to make sure IMU has settled after being picked up.
+	if(was_last_steady == 0){
+		was_last_steady = 1;
+		goto COLLECT_DATA;
+	}
+
 	// average out the samples
-    offsets[0] = (int16_t) (gyro_sum[0]/(int32_t)samples);
+	offsets[0] = (int16_t) (gyro_sum[0]/(int32_t)samples);
 	offsets[1] = (int16_t) (gyro_sum[1]/(int32_t)samples);
 	offsets[2] = (int16_t) (gyro_sum[2]/(int32_t)samples);
 
@@ -2466,7 +2480,7 @@ int load_mag_calibration(){
 * field vectors to a sphere.
 *******************************************************************************/
 int calibrate_mag_routine(){
-	const int samples = 250;
+	const int samples = 200;
 	const int sample_rate_hz = 15;
 	int i;
 	uint8_t c;
