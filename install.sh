@@ -94,12 +94,15 @@ ldconfig
 # enable services
 echo "systemctl daemon-reload"
 systemctl daemon-reload
-echo "Enabling battery_monitor Service"
-systemctl enable battery_monitor
-echo "Starting battery_monitor Service"
-systemctl start battery_monitor
 echo "Enabling roboticscape Service"
 systemctl enable roboticscape
+# don't enable battery_monitor on BB Green Wireless
+if [ ! "$MODEL" = "TI AM335x BeagleBone Green Wireless"]
+	echo "Enabling battery_monitor Service"
+	systemctl enable battery_monitor
+	echo "Starting battery_monitor Service"
+	systemctl start battery_monitor
+fi
 
 echo "Configuring Device Tree"
 bash /usr/bin/configure_robotics_dt.sh
