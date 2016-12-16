@@ -40,7 +40,7 @@ if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
 
 	# only run the battery monitor if not a green wireless
 	MODEL="$(cat /proc/device-tree/model)"
-	if [ ! "$MODEL" = "TI AM335x BeagleBone Green Wireless"]
+	if [ ! "$MODEL" == "TI AM335x BeagleBone Green Wireless" ]; then
 		echo "Enabling battery_monitor Service"
 		systemctl enable battery_monitor
 		echo "Starting battery_monitor Service"

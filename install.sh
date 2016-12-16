@@ -97,7 +97,7 @@ systemctl daemon-reload
 echo "Enabling roboticscape Service"
 systemctl enable roboticscape
 # don't enable battery_monitor on BB Green Wireless
-if [ ! "$MODEL" = "TI AM335x BeagleBone Green Wireless"]
+if [ ! "$MODEL" == "TI AM335x BeagleBone Green Wireless" ]; then
 	echo "Enabling battery_monitor Service"
 	systemctl enable battery_monitor
 	echo "Starting battery_monitor Service"
