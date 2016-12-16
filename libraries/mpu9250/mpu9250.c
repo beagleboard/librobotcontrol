@@ -2633,5 +2633,35 @@ int calibrate_mag_routine(){
 	return 0;
 }
 
+/*******************************************************************************
+* int is_gyro_calibrated()
+*
+* return 1 is a gyro calibration file exists, otherwise 0
+*******************************************************************************/
+int is_gyro_calibrated(){
+	char file_path[100];
+	strcpy (file_path, CONFIG_DIRECTORY);
+	strcat (file_path, GYRO_CAL_FILE);
+
+	if(access(file_path, F_OK) == 0) return 1;
+	else return 0;
+}
+
+/*******************************************************************************
+* int is_mag_calibrated()
+*
+* return 1 is a magnetometer calibration file exists, otherwise 0
+*******************************************************************************/
+int is_mag_calibrated(){
+	char file_path[100];
+	strcpy (file_path, CONFIG_DIRECTORY);
+	strcat (file_path, MAG_CAL_FILE);
+
+	if(access(file_path, F_OK) == 0) return 1;
+	else return 0;
+}
+
+
+
 
 // Phew, that was a lot of code....

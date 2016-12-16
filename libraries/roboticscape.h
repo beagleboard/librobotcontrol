@@ -619,6 +619,8 @@ imu_config_t get_default_imu_config();
 int set_imu_config_to_defaults(imu_config_t *conf);
 int calibrate_gyro_routine();
 int calibrate_mag_routine();
+int is_gyro_calibrated();
+int is_mag_calibrated();
 int power_off_imu();
 
 // one-shot sampling mode functions
