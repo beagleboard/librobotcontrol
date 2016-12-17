@@ -166,6 +166,8 @@ int initialize_roboticscape(){
 	printf("Initializing: PRU\n");
 	#endif
 	initialize_pru();
+	// zero out 4th encoder, eQEP encoders are already zero'd previously
+	set_encoder_pos(4,0);
 
 	// create new pid file with process id
 	#ifdef DEBUG
