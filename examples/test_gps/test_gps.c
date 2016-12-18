@@ -2,7 +2,7 @@
 * test_gps.c
 *
 * James Strawson 2016
-* 
+* INCOMPLETE!!!! Work in progress!!!
 *******************************************************************************/
 
 #include "../../libraries/roboticscape-usefulincludes.h"

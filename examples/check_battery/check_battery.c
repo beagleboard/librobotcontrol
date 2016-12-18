@@ -11,9 +11,9 @@
 #define VOLTAGE_DISCONNECT	1	 // Threshold for detecting disconnected battery
 
 int main(){
-	float pack_voltage;	// 2S pack voltage on JST XH 2S balance connector
-	float cell_voltage;	// cell voltage
-	float jack_voltage;	// could be dc power supply or another battery
+	double pack_voltage;	// 2S pack voltage on JST XH 2S balance connector
+	double cell_voltage;	// cell voltage
+	double jack_voltage;	// could be dc power supply or another battery
 
 	if(initialize_roboticscape()){
 		printf("ERROR: failed to initialize_roboticscape()\n");

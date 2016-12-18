@@ -1,4 +1,4 @@
-test_cape.c
+test_roboticscape.c
 James Strawson 2016
 
 This is the routine used by the factory for testing capes as they come off the

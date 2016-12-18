@@ -369,12 +369,12 @@ int rc_get_led(rc_led_t led){
 }
 
 /*******************************************************************************
-* rc_blink_led(rc_led_t led, float hz, float period)
+* rc_blink_led(rc_led_t led, double hz, double period)
 *	
 * Flash an LED at a set frequency for a finite period of time.
 * This is a blocking call and only returns after flashing.
 *******************************************************************************/
-int rc_blink_led(rc_led_t led, float hz, float period){
+int rc_blink_led(rc_led_t led, double hz, double period){
 	const int delay_us = 1000000.0/(2.0*hz); 
 	const int blinks = period*2.0*hz;
 	int i;
@@ -647,12 +647,12 @@ int disable_motors(){
 }
 
 /*******************************************************************************
-* int set_motor(int motor, float duty)
+* int set_motor(int motor, double duty)
 * 
 * set a motor direction and power
 * motor is from 1 to 4, duty is from -1.0 to +1.0
 *******************************************************************************/
-int set_motor(int motor, float duty){
+int set_motor(int motor, double duty){
 	uint8_t a,b;
 
 	//check that the duty cycle is within +-1
@@ -703,11 +703,11 @@ int set_motor(int motor, float duty){
 }
 
 /*******************************************************************************
-* int set_motor_all(float duty)
+* int set_motor_all(double duty)
 * 
 * applies the same duty cycle argument to all 4 motors
 *******************************************************************************/
-int set_motor_all(float duty){
+int set_motor_all(double duty){
 	int i;
 	for(i=1;i<=MOTOR_CHANNELS; i++){
 		set_motor(i, duty);
@@ -851,25 +851,25 @@ int set_encoder_pos(int ch, int val){
 
 
 /*******************************************************************************
-* float get_battery_voltage()
+* double get_battery_voltage()
 * 
 * returns the LiPo battery voltage on the robotics cape
 * this accounts for the voltage divider ont he cape
 *******************************************************************************/
-float get_battery_voltage(){
-	float v = (get_adc_volt(LIPO_ADC_CH)*V_DIV_RATIO)+LIPO_OFFSET; 
+double get_battery_voltage(){
+	double v = (get_adc_volt(LIPO_ADC_CH)*V_DIV_RATIO)+LIPO_OFFSET; 
 	if(v<0.3) v = 0.0;
 	return v;
 }
 
 /*******************************************************************************
-* float get_dc_jack_voltage()
+* double get_dc_jack_voltage()
 * 
 * returns the DC power jack voltage on the robotics cape
 * this accounts for the voltage divider ont he cape
 *******************************************************************************/
-float get_dc_jack_voltage(){
-	float v = (get_adc_volt(DC_JACK_ADC_CH)*V_DIV_RATIO)+DC_JACK_OFFSET; 
+double get_dc_jack_voltage(){
+	double v = (get_adc_volt(DC_JACK_ADC_CH)*V_DIV_RATIO)+DC_JACK_OFFSET; 
 	if(v<0.3) v = 0.0;
 	return v;
 }
@@ -888,11 +888,11 @@ int get_adc_raw(int ch){
 }
 
 /*******************************************************************************
-* float get_adc_volt(int ch)
+* double get_adc_volt(int ch)
 * 
 * returns an actual voltage for an adc channel
 *******************************************************************************/
-float get_adc_volt(int ch){
+double get_adc_volt(int ch){
 	if(ch<0 || ch>6){
 		printf("analog pin must be in 0-6\n");
 		return -1;

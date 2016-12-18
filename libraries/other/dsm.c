@@ -125,22 +125,22 @@ int get_dsm_ch_raw(int ch){
 }
 
 /*******************************************************************************
-* float get_dsm_ch_normalized(int ch)
+* double get_dsm_ch_normalized(int ch)
 * 
 * Returns a scaled value from -1 to 1 corresponding to the min and max values
 * recorded during calibration. The user
 * MUST run the clalibrate_dsm example to ensure the normalized values returned
 * by this function are correct.
 *******************************************************************************/
-float get_dsm_ch_normalized(int ch){
+double get_dsm_ch_normalized(int ch){
 	if(ch<1 || ch > MAX_DSM_CHANNELS){
 		printf("please enter a channel between 1 & %d",MAX_DSM_CHANNELS);
 		return -1;
 	}
-	float range = rc_maxes[ch-1]-rc_mins[ch-1];
+	double range = rc_maxes[ch-1]-rc_mins[ch-1];
 	if(range!=0 && rc_channels[ch-1]!=0) {
 		new_dsm_flag = 0;
-		float center = (rc_maxes[ch-1]+rc_mins[ch-1])/2;
+		double center = (rc_maxes[ch-1]+rc_mins[ch-1])/2;
 		return 2*(rc_channels[ch-1]-center)/range;
 	}
 	else{

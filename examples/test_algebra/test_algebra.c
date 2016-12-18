@@ -45,7 +45,7 @@ int main(){
 	print_matrix(R);
 	
 	// get determinant of A
-	float det = matrix_determinant(A);
+	double det = matrix_determinant(A);
 	printf("\nDeterminant of A : %8.4f\n", det);
 	
 	// get an inverse for A

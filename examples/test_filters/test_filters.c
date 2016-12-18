@@ -11,13 +11,13 @@
 #include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
-#define SAMPLE_RATE 	50
-#define TIME_CONSTANT 	2.0
+#define SAMPLE_RATE		50
+#define TIME_CONSTANT	2.0
 
 int main(){
 	d_filter_t low_pass, high_pass, integrator;
-	const float dt = 1.0/(float)SAMPLE_RATE;
-	float lp,hp,i, u = 0;
+	const double dt = 1.0/SAMPLE_RATE;
+	double lp,hp,i, u = 0;
 	int counter = 0;
 
 	printf("\nInitializing Filters\n\n");

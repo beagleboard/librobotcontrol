@@ -32,7 +32,7 @@ void print_usage(){
 }
 
 int main(int argc, char *argv[]){
-	float duty;
+	double duty;
 	int ch, c, in;
 	int all = 1;	// set to 0 if a motor (-m) argument is given 
 	m_mode_t m_mode = DISABLED;

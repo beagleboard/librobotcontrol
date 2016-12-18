@@ -218,11 +218,11 @@ int send_servo_pulse_us_all(int us){
 }
 
 /*******************************************************************************
-* int send_servo_pulse_normalized(int ch, float input)
+* int send_servo_pulse_normalized(int ch, double input)
 * 
 *
 *******************************************************************************/
-int send_servo_pulse_normalized(int ch, float input){
+int send_servo_pulse_normalized(int ch, double input){
 	if(ch<1 || ch>SERVO_CHANNELS){
 		printf("ERROR: Servo Channel must be between 1&%d\n", SERVO_CHANNELS);
 		return -1;
@@ -231,16 +231,16 @@ int send_servo_pulse_normalized(int ch, float input){
 		printf("ERROR: normalized input must be between -1 & 1\n");
 		return -1;
 	}
-	float micros = SERVO_MID_US + (input*(SERVO_NORMAL_RANGE/2));
+	double micros = SERVO_MID_US + (input*(SERVO_NORMAL_RANGE/2));
 	return send_servo_pulse_us(ch, micros);
 }
 
 /*******************************************************************************
-* int send_servo_pulse_normalized_all(float input)
+* int send_servo_pulse_normalized_all(double input)
 * 
 * 
 *******************************************************************************/
-int send_servo_pulse_normalized_all(float input){
+int send_servo_pulse_normalized_all(double input){
 	int i, ret_ch;
 	int ret = 0;
 	for(i=1;i<=SERVO_CHANNELS; i++){
@@ -252,12 +252,12 @@ int send_servo_pulse_normalized_all(float input){
 }
 
 /*******************************************************************************
-* int send_esc_pulse_normalized(int ch, float input)
+* int send_esc_pulse_normalized(int ch, double input)
 * 
 * normalized input of 0-1 corresponds to output pulse from 1000-2000 us
 * input is allowed to go down to -0.1 so ESC can be armed below minimum throttle
 *******************************************************************************/
-int send_esc_pulse_normalized(int ch, float input){
+int send_esc_pulse_normalized(int ch, double input){
 	if(ch < 1 || ch > SERVO_CHANNELS){
 		printf("ERROR: Servo Channel must be between 1&%d\n", SERVO_CHANNELS);
 		return -1;
@@ -266,16 +266,16 @@ int send_esc_pulse_normalized(int ch, float input){
 		printf("ERROR: normalized input must be between 0 & 1\n");
 		return -1;
 	}
-	float micros = 1000.0 + (input*1000.0);
+	double micros = 1000.0 + (input*1000.0);
 	return send_servo_pulse_us(ch, micros);
 }
 
 /*******************************************************************************
-* int send_esc_pulse_normalized_all(float input)
+* int send_esc_pulse_normalized_all(double input)
 * 
 * 
 *******************************************************************************/
-int send_esc_pulse_normalized_all(float input){
+int send_esc_pulse_normalized_all(double input){
 	int i, ret_ch;
 	int ret = 0;
 	for(i=1;i<=SERVO_CHANNELS; i++){
@@ -288,12 +288,12 @@ int send_esc_pulse_normalized_all(float input){
 
 
 /*******************************************************************************
-* int send_oneshot_pulse_normalized(int ch, float input)
+* int send_oneshot_pulse_normalized(int ch, double input)
 * 
 * normalized input of 0-1 corresponds to output pulse from 125-250 us
 * input is allowed to go down to -0.1 so ESC can be armed below minimum throttle
 *******************************************************************************/
-int send_oneshot_pulse_normalized(int ch, float input){
+int send_oneshot_pulse_normalized(int ch, double input){
 	if(ch < 1 || ch > SERVO_CHANNELS){
 		printf("ERROR: Servo Channel must be between 1&%d\n", SERVO_CHANNELS);
 		return -1;
@@ -302,16 +302,16 @@ int send_oneshot_pulse_normalized(int ch, float input){
 		printf("ERROR: normalized input must be between 0 & 1\n");
 		return -1;
 	}
-	float micros = 125.0 + (input*125.0);
+	double micros = 125.0 + (input*125.0);
 	return send_servo_pulse_us(ch, micros);
 }
 
 /*******************************************************************************
-* int send_oneshot_pulse_normalized_all(float input)
+* int send_oneshot_pulse_normalized_all(double input)
 * 
 * 
 *******************************************************************************/
-int send_oneshot_pulse_normalized_all(float input){
+int send_oneshot_pulse_normalized_all(double input){
 	int i, ret_ch;
 	int ret = 0;
 	for(i=1;i<=SERVO_CHANNELS; i++){

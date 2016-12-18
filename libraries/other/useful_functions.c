@@ -92,6 +92,7 @@ int saturate_double(double* val, double min, double max){
 	return 0;
 }
 
+
 /*******************************************************************************
 * @ char *byte_to_binary(char x)
 * 
@@ -145,14 +146,14 @@ timespec timespec_diff(timespec A, timespec B){
 }
 
 /*******************************************************************************
-* @ int timespec_add(timespec* start, float seconds)
+* @ int timespec_add(timespec* start, double seconds)
 * 
 * Adds an amount of time in seconds to a timespec struct. The time added is a
 * floating point value to make respresenting fractions of a second easier.
 * the timespec is passed as a pointer so it can be modified in place.
 * Seconds may be negative. 
 *******************************************************************************/
-void timespec_add(timespec* start, float seconds){
+void timespec_add(timespec* start, double seconds){
 	int s = (int)seconds; // round down by truncation
 	start->tv_sec += s;
 	start->tv_nsec += (seconds-s)*1000000000;

@@ -121,7 +121,7 @@ int rc_print_state();
 * This function is typically used in multithreded applications where multiple
 * threads may wish to use the same LED.
 *
-* @ int rc_blink_led(rc_led_t led, float hz, float period)
+* @ int rc_blink_led(rc_led_t led, double hz, double period)
 * 
 * Flash an LED at a set frequency for a finite period of time.
 * This is a blocking call and only returns after flashing.
@@ -136,7 +136,7 @@ typedef enum rc_led_t {
 } rc_led_t;
 int rc_set_led(rc_led_t led, int state);
 int rc_get_led(rc_led_t led);
-int rc_blink_led(rc_led_t led, float hz, float period);
+int rc_blink_led(rc_led_t led, double hz, double period);
 
 
 /*******************************************************************************
@@ -200,8 +200,8 @@ rc_button_state_t get_mode_button();
 * woken up with enable_motors() before use. The user can optionally put the 
 * motor drivers back into low power state with disable_motors().
 * 
-* @ int set_motor(int motor, float duty)
-* @ int set_motor_all(float duty)
+* @ int set_motor(int motor, double duty)
+* @ int set_motor_all(double duty)
 *
 * These will take in a motor index from 1 to 4 and a duty between -1 & 1
 * corresponding to full power reverse to full power forward.
@@ -223,8 +223,8 @@ rc_button_state_t get_mode_button();
 ******************************************************************************/
 int enable_motors();
 int disable_motors();
-int set_motor(int motor, float duty);
-int set_motor_all(float duty);
+int set_motor(int motor, double duty);
+int set_motor_all(double duty);
 int set_motor_free_spin(int motor);
 int set_motor_free_spin_all();
 int set_motor_brake(int motor);
@@ -262,15 +262,15 @@ int set_encoder_pos(int ch, int value);
 * ANALOG VOLTAGE SIGNALS
 *
 *
-* @ float get_battery_voltage()
-* @ float get_dc_jack_voltage()
+* @ double get_battery_voltage()
+* @ double get_dc_jack_voltage()
 * The Robotics cape includes two voltage dividers for safe measurement of the
 * 2-cell lithium battery voltage and the voltage of any power source connected
 * to the 6-16V DC power jack. These can be read with get_battery_voltage()
 * and get_dc_jack_voltage()
 * 
 * @ int get_adc_raw(int ch)
-* @ float get_adc_volt(int ch)
+* @ double get_adc_volt(int ch)
 * 
 * There is also a 6-pin JST-SH socket on the Cape for connecting up to 4
 * potentiometers or general use analog signals. The pinout of this socket is
@@ -290,10 +290,10 @@ int set_encoder_pos(int ch, int value);
 *
 * See the test_adc example for sample use case.
 ******************************************************************************/
-float get_battery_voltage();
-float get_dc_jack_voltage();
+double get_battery_voltage();
+double get_dc_jack_voltage();
 int   get_adc_raw(int ch);
-float get_adc_volt(int ch);
+double get_adc_volt(int ch);
 
 
 /******************************************************************************
@@ -318,12 +318,12 @@ float get_adc_volt(int ch);
 * example when the robot is in a paused state to save power or prevent noisy
 * servos from buzzing.
 *
-* @ int send_servo_pulse_normalized(int ch, float input)
-* @ int send_servo_pulse_normalized_all(float input)
+* @ int send_servo_pulse_normalized(int ch, double input)
+* @ int send_servo_pulse_normalized_all(double input)
 *
 * The normal operating range of hobby servos is usually +- 60 degrees of 
 * rotation from the neutral position but they often work up to +- 90 degrees.
-* send_servo_pulse_normalized(int ch, float input) will send a single pulse to
+* send_servo_pulse_normalized(int ch, double input) will send a single pulse to
 * the selected channel. the normalized input should be between -1.5 and 1.5
 * corresponding to the following pulse width range and angle.
 *
@@ -337,12 +337,12 @@ float get_adc_volt(int ch);
 * Note that all servos are different and do not necessarily allow the full
 * range of motion past +-1.0. DO NOT STALL SERVOS.
 *
-* @ int send_esc_pulse_normalized(int ch, float input)
-* @ int send_esc_pulse_normalized_all(float input)
+* @ int send_esc_pulse_normalized(int ch, double input)
+* @ int send_esc_pulse_normalized_all(double input)
 *
 * Brushless motor controllers (ESCs) for planes and multirotors are
 * unidirectional and lend themselves better to a normalized range from 0 to 1.
-* send_esc_pulse_normalized(int ch, float input) also sends a single pulse
+* send_esc_pulse_normalized(int ch, double input) also sends a single pulse
 * but the range is set for common ESCs
 *
 * input     width   power  
@@ -370,12 +370,12 @@ int enable_servo_power_rail();
 int disable_servo_power_rail();
 int send_servo_pulse_us(int ch, int us);
 int send_servo_pulse_us_all(int us);
-int send_servo_pulse_normalized(int ch, float input);
-int send_servo_pulse_normalized_all(float input);
-int send_esc_pulse_normalized(int ch, float input);
-int send_esc_pulse_normalized_all(float input);
-int send_oneshot_pulse_normalized(int ch, float input);
-int send_oneshot_pulse_normalized_all(float input);
+int send_servo_pulse_normalized(int ch, double input);
+int send_servo_pulse_normalized_all(double input);
+int send_esc_pulse_normalized(int ch, double input);
+int send_esc_pulse_normalized_all(double input);
+int send_oneshot_pulse_normalized(int ch, double input);
+int send_oneshot_pulse_normalized_all(double input);
 
 
 /******************************************************************************
@@ -442,7 +442,7 @@ int   is_new_dsm_data();
 int   is_dsm_active();
 int   set_new_dsm_data_func(int (*func)(void));
 int   get_dsm_ch_raw(int channel);
-float get_dsm_ch_normalized(int channel);
+double get_dsm_ch_normalized(int channel);
 int   ms_since_last_dsm_packet();
 int   get_dsm_frame_resolution();
 int   get_num_dsm_channels();
@@ -671,23 +671,23 @@ uint64_t micros_since_last_interrupt();
 * bmp_get_pressure_pa(), or bmp_get_altitude_m() functions. 
 * returns 0 on success, otherwise -1.
 *
-* @ float bmp_get_temperature_c()
+* @ double bmp_get_temperature_c()
 * This does not start an I2C transaction but simply returns the temperature in
 * degrees celcius that was read by the last call to the read_barometer() 
 * function.
 *
-* @ float bmp_get_pressure_pa()
+* @ double bmp_get_pressure_pa()
 * This does not start an I2C transaction but simply returns the pressure in
 * pascals that was read by the last call to the read_barometer() function.
 * 
-* @ float bmp_get_altitude_m()
+* @ double bmp_get_altitude_m()
 * This does not start an I2C transaction but simply returns the altitude in 
 * meters based on the pressure received by the last call to the read_barometer()
 * function. Assuming current pressure at sea level is the default 101325 Pa.
 * Use set_sea_level_pressure_pa() if you know the current sea level pressure
 * and desire more accuracy. 
 * 
-* @ int set_sea_level_pressure_pa(float pa)
+* @ int set_sea_level_pressure_pa(double pa)
 * If you know the current sea level pressure for your region and weather, you 
 * can use this to correct the altititude reading. This is not necessary if you
 * only care about differential altitude from a starting point.
@@ -711,10 +711,10 @@ typedef enum bmp_filter_t{
 int initialize_barometer(bmp_oversample_t oversample, bmp_filter_t filter);
 int power_off_barometer();
 int read_barometer();
-float bmp_get_temperature_c();
-float bmp_get_pressure_pa();
-float bmp_get_altitude_m();
-int set_sea_level_pressure_pa(float pa);
+double bmp_get_temperature_c();
+double bmp_get_pressure_pa();
+double bmp_get_altitude_m();
+int set_sea_level_pressure_pa(double pa);
 
 
 /*******************************************************************************
@@ -841,7 +841,7 @@ int spi_transfer(char* tx_data, int tx_bytes, char* rx_data, int slave);
 /*******************************************************************************
 * UART
 *******************************************************************************/
-int initialize_uart(int bus, int speed, float timeout);
+int initialize_uart(int bus, int speed, double timeout);
 int close_uart(int bus);
 int get_uart_fd(int bus);
 int flush_uart(int bus);
@@ -918,7 +918,7 @@ int print_cpu_frequency();
 * Unlike timespec_sub defined in time.h, timespec_diff does not care which came 
 * first, A or B. A positive difference in time is always returned.
 *
-* @ void timespec_add(timespec* start, float seconds);
+* @ void timespec_add(timespec* start, double seconds);
 *
 * Adds a floating point number of seconds to a timespec struct. This saves
 * yet more tedious manipulation of timespec structs.
@@ -969,7 +969,7 @@ int saturate_float(float* val, float min, float max);
 int saturate_double(double* val, double min, double max);
 char *byte_to_binary(unsigned char x);
 timespec timespec_diff(timespec A, timespec B);
-void timespec_add(timespec* start, float seconds);
+void timespec_add(timespec* start, double seconds);
 uint64_t timespec_to_micros(timespec ts);
 uint64_t timeval_to_micros(timeval tv);
 uint64_t micros_since_epoch();
@@ -1420,9 +1420,9 @@ int mmap_gpio_read(int pin);
 *******************************************************************************/
 int simple_init_pwm(int ss, int frequency);
 int simple_uninit_pwm(int ss);
-int simple_set_pwm_duty(int ss, char ch, float duty);
+int simple_set_pwm_duty(int ss, char ch, double duty);
 int simple_set_pwm_duty_ns(int ss, char ch, int duty_ns);
-int mmap_set_pwm_duty(int subsystem, char ch, float duty);
+int mmap_set_pwm_duty(int subsystem, char ch, double duty);
 
 
 

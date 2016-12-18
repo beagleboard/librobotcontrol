@@ -65,8 +65,8 @@ void print_usage(){
 }
 
 int main(int argc, char *argv[]){
-	float servo_pos, sweep_limit, esc_throttle;
-	float direction = 1; // switches between 1 & -1 in sweep mode
+	double servo_pos, sweep_limit, esc_throttle;
+	double direction = 1; // switches between 1 & -1 in sweep mode
 	int ch, c, width_us;
 	int all = 1;	// set to 0 if a channel -c  argument is given 
 	test_mode_t mode = DISABLED; //start mode disabled

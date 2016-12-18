@@ -28,7 +28,7 @@ char *paths[6] = { \
 	"/dev/ttyO5" };
 
 int fd[6]; // file descriptors for all ports
-float bus_timeout_s[6]; // user-requested timeout in seconds for each bus
+double bus_timeout_s[6]; // user-requested timeout in seconds for each bus
 
 /*******************************************************************************
 * int initialize_uart(int bus, int baudrate)
@@ -40,7 +40,7 @@ float bus_timeout_s[6]; // user-requested timeout in seconds for each bus
 *
 * returns -1 for failure or 0 for success
 *******************************************************************************/ 
-int initialize_uart(int bus, int baudrate, float timeout_s){
+int initialize_uart(int bus, int baudrate, double timeout_s){
 
 	struct termios config;
 	speed_t speed; //baudrate
@@ -148,7 +148,7 @@ int initialize_uart(int bus, int baudrate, float timeout_s){
 	config.c_cflag |= CREAD;    // enable reading
     config.c_cflag |= CLOCAL;	// ignore modem status lines
 	
-	// convert float timeout in seconds to int timeout in tenths of a second
+	// convert double timeout in seconds to int timeout in tenths of a second
 	int tenths = (timeout_s*10);
 
     //config.c_cc[VTIME]=0;

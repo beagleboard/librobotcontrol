@@ -26,15 +26,15 @@ typedef struct bmp280_cal_t{
     int16_t  dig_P8;
     int16_t  dig_P9;
 	
-	float sea_level_pa;
+	double sea_level_pa;
 
 }bmp280_cal_t;
 
 
 typedef struct bmp280_data_t{
-	float temp;
-	float alt;
-	float pressure;
+	double temp;
+	double alt;
+	double pressure;
 }bmp280_data_t;
 
 
@@ -280,7 +280,7 @@ int read_barometer(){
 	var4 = (((int64_t)cal.dig_P8) * p) >> 19;
 
 	p = ((p + var3 + var4) >> 8) + (((int64_t)cal.dig_P7) << 4);
-	data.pressure = (float)p/256;
+	data.pressure = (double)p/256;
 	
 
 	data.alt = 44330.0*(1.0 - pow((data.pressure/cal.sea_level_pa), 0.1903));
@@ -290,28 +290,28 @@ int read_barometer(){
 }
 
 /*******************************************************************************
-* float bmp_get_temperature_c()
+* double bmp_get_temperature_c()
 *
 * This does not start an I2C transaction but simply returns the temperature in
 * degrees celcius that was read by the last call to the read_barometer() 
 * function.
 *******************************************************************************/
-float bmp_get_temperature_c(){
+double bmp_get_temperature_c(){
 	return data.temp;
 }
 
 /*******************************************************************************
-* float bmp_get_pressure_pa()
+* double bmp_get_pressure_pa()
 *
 * This does not start an I2C transaction but simply returns the pressure in
 * pascals that was read by the last call to the read_barometer() function.
 *******************************************************************************/
-float bmp_get_pressure_pa(){
+double bmp_get_pressure_pa(){
 	return data.pressure;
 }
 
 /*******************************************************************************
-* float bmp_get_altitude_m()
+* double bmp_get_altitude_m()
 *
 * This does not start an I2C transaction but simply returns the altitude in 
 * meters based on the pressure received by the last call to the read_barometer()
@@ -319,18 +319,18 @@ float bmp_get_pressure_pa(){
 * Use set_sea_level_pressure_pa() if you know the current sea level pressure
 * and desire more accuracy. 
 *******************************************************************************/
-float bmp_get_altitude_m(){
+double bmp_get_altitude_m(){
 	return data.alt;
 }
 
 /*******************************************************************************
-* int set_sea_level_pressure_pa(float pa)
+* int set_sea_level_pressure_pa(double pa)
 *
 * If you know the current sea level pressure for your region and weather, you 
 * can use this to correct the altititude reading. This is not necessary if you
 * only care about differential altitude from a starting point.
 *******************************************************************************/
-int set_sea_level_pressure_pa(float pa){
+int set_sea_level_pressure_pa(double pa){
 	if(pa<80000 || pa >120000){
 		printf("ERROR: Please enter a reasonable sea level pressure\n");
 		printf("between 80,000 & 120,000 pascals.\n");

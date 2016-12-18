@@ -39,11 +39,11 @@ typedef enum arm_state_t{
 typedef struct setpoint_t{
 	arm_state_t arm_state;	// see arm_state_t declaration
 	drive_mode_t drive_mode;// NOVICE or ADVANCED
-	float theta;			// body lean angle (rad)
-	float phi;				// wheel position (rad)
-	float phi_dot;			// rate at which phi reference updates (rad/s)
-	float gamma;			// body turn angle (rad)
-	float gamma_dot;		// rate at which gamma setpoint updates (rad/s)
+	double theta;			// body lean angle (rad)
+	double phi;				// wheel position (rad)
+	double phi_dot;			// rate at which phi reference updates (rad/s)
+	double gamma;			// body turn angle (rad)
+	double gamma_dot;		// rate at which gamma setpoint updates (rad/s)
 }setpoint_t;
 
 /*******************************************************************************
@@ -52,16 +52,16 @@ typedef struct setpoint_t{
 * This is the system state written to by the balance controller.	
 *******************************************************************************/
 typedef struct core_state_t{
-	float wheelAngleR;	// wheel rotation relative to body
-	float wheelAngleL;
-	float theta; 		// body angle radians
-	float phi;			// average wheel angle in global frame
-	float gamma;		// body turn (yaw) angle radians
-	float vBatt; 		// battery voltage 
-	float d1_u;			// output of balance controller D1 to motors
-	float d2_u;			// output of position controller D2 (theta_ref)
-	float d3_u;			// output of steering controller D3 to motors
-	float mot_drive;	// u compensated for battery voltage
+	double wheelAngleR;	// wheel rotation relative to body
+	double wheelAngleL;
+	double theta; 		// body angle radians
+	double phi;			// average wheel angle in global frame
+	double gamma;		// body turn (yaw) angle radians
+	double vBatt; 		// battery voltage 
+	double d1_u;			// output of balance controller D1 to motors
+	double d2_u;			// output of position controller D2 (theta_ref)
+	double d3_u;			// output of steering controller D3 to motors
+	double mot_drive;	// u compensated for battery voltage
 } core_state_t;
 
 /*******************************************************************************
@@ -193,7 +193,7 @@ int main(){
 * controller.
 *******************************************************************************/
 void* setpoint_manager(void* ptr){
-	float drive_stick, turn_stick; // dsm input sticks
+	double drive_stick, turn_stick; // dsm input sticks
 
 	// wait for IMU to settle
 	disarm_controller();
@@ -230,8 +230,8 @@ void* setpoint_manager(void* ptr){
 			drive_stick = get_dsm_ch_normalized(DSM_DRIVE_CH)* DSM_DRIVE_POL;
 			
 			// saturate the inputs to avoid possible erratic behavior
-			saturate_float(&drive_stick,-1,1);
-			saturate_float(&turn_stick,-1,1);
+			saturate_double(&drive_stick,-1,1);
+			saturate_double(&turn_stick,-1,1);
 			
 			// use a small deadzone to prevent slow drifts in position
 			if(fabs(drive_stick)<DSM_DEAD_ZONE) drive_stick = 0.0;
@@ -272,7 +272,7 @@ void* setpoint_manager(void* ptr){
 *******************************************************************************/
 int balance_controller(){
 	static int inner_saturation_counter = 0; 
-	float dutyL, dutyR;
+	double dutyL, dutyR;
 	/******************************************************************
 	* STATE_ESTIMATION
 	* read sensors and compute the state when either ARMED or DISARMED
@@ -449,7 +449,7 @@ int wait_for_starting_condition(){
 * since that is dependent on the battery voltage.
 *******************************************************************************/
 void* battery_checker(void* ptr){
-	float new_v;
+	double new_v;
 	while(rc_get_state()!=EXITING){
 		new_v = get_battery_voltage();
 		// if the value doesn't make sense, use nominal voltage

@@ -19,10 +19,10 @@
 #define ORDER 			2
 #define CUTOFF_FREQ		2	// 2rad/s, about 0.3hz
 #define BMP_CHECK_HZ	25
-#define	DT 				1.0/(float)BMP_CHECK_HZ
+#define	DT 				1.0/BMP_CHECK_HZ
 
 int main(){
-	float temp, pressure, altitude, filtered_alt;
+	double temp, pressure, altitude, filtered_alt;
 	d_filter_t lowpass;
 
 	// set up cape and barometer

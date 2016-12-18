@@ -43,9 +43,9 @@ int running;
 // main() takes only one optional argument: -k (kill)
 int main(int argc, char *argv[]){
 	FILE* fd;
-	float v_pack;	// 2S pack voltage on JST XH 2S balance connector
-	float v_jack;	// could be dc power supply or another battery
-	float cell_voltage;	// cell voltage from either 2S or external pack
+	double v_pack;	// 2S pack voltage on JST XH 2S balance connector
+	double v_jack;	// could be dc power supply or another battery
+	double cell_voltage;	// cell voltage from either 2S or external pack
 	int toggle = 0;
 	int printing = 0;
 	int num_cells = 0;
@@ -53,7 +53,7 @@ int main(int argc, char *argv[]){
 	int charging = 0;
 	int pack_connected = 0;
 	int c, i;
-	float stddev;
+	double stddev;
 	d_filter_t filterB, filterJ; // battery and jack filters
 
 	// parse arguments to check for kill mode

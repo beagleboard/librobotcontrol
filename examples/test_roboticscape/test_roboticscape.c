@@ -19,7 +19,7 @@ int num_passes, num_fails;
 // then it enters one big while loop for testing multiple capes.
 int main(){
 	int ret, i, chg_pass;
-	float v;
+	double v;
 
 	// use defaults for now, except also enable magnetometer.
 	imu_data_t data; 

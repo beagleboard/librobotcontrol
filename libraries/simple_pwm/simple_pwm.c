@@ -160,12 +160,12 @@ int simple_uninit_pwm(int ss){
 }
 
 /*******************************************************************************
-* int simple_set_pwm_duty(int ss, char ch, float duty)
+* int simple_set_pwm_duty(int ss, char ch, double duty)
 *
 * updates the duty cycle through the file system. see mmap_pwmss.h for a faster
 * method.
 *******************************************************************************/
-int simple_set_pwm_duty(int ss, char ch, float duty){
+int simple_set_pwm_duty(int ss, char ch, double duty){
 	// start with sanity checks
 	if(duty>1.0 || duty<0.0){
 		printf("duty must be between 0.0 & 1.0\n");
