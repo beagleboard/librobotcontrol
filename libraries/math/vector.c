@@ -191,7 +191,7 @@ void print_vector(vector_t v){
 		return;
 	}
 	for(i=0;i<v.len;i++){
-		printf("%7.3f  ",v.data[i]);
+		printf("%7.4f  ",v.data[i]);
 	}
 	printf("\n");
 	return;

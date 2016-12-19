@@ -11,9 +11,6 @@
 #include <stdlib.h>
 #include <string.h> // for memset
 
-#define PI (double)M_PI
-
-
 
 
 /*******************************************************************************
@@ -60,7 +57,7 @@ vector_t row_vec_times_matrix(vector_t v, matrix_t A){
 	
 	out = create_vector(A.cols);
 	for(i=0;i<A.cols;i++){
-		for(j=0;j<A.rows;j++){	
+		for(j=0;j<A.rows;j++){
 			out.data[i] += v.data[j]*A.data[j][i];
 		}
 	}
@@ -80,26 +77,31 @@ double matrix_determinant(matrix_t A){
 		printf("ERROR: matrix not initialized yet\n");
 		return -1;
 	}
-	if (A.rows != A.cols){
-		printf("Error: Matrix is not square\n");
+	if(A.rows != A.cols){
+		printf("Error: cannot invert non-square matrix\n");
 		return -1;
 	}
+	// shortcut for 1x1 matrix
+	if(A.rows==1) return A.data[0][0];
+	// shortcut for 2x2 matrix
+	if(A.rows==2) return A.data[0][0]*A.data[1][1] - A.data[0][1]*A.data[1][0];
+
 	matrix_t temp = duplicate_matrix(A);
 	for(i=0;i<A.rows;i++){
-        for(j=0;j<A.rows;j++){
-            if(j>i){
+		for(j=0;j<A.rows;j++){
+			if(j>i){
 				ratio = temp.data[j][i]/temp.data[i][i];
-                for(k=0;k<A.rows;k++){
-                    temp.data[j][k] = temp.data[j][k] - ratio * temp.data[i][k];
-                }
-            }
-        }
-    }
-	det = 1; //storage for determinant
-    for(i=0;i<A.rows;i++) det = det*temp.data[i][i];
+				for(k=0;k<A.rows;k++){
+					temp.data[j][k] = temp.data[j][k] - ratio * temp.data[i][k];
+				}
+			}
+		}
+	}
+	det = 1.0; //storage for determinant
+	for(i=0;i<A.rows;i++) det = det*temp.data[i][i];
 
 	destroy_matrix(&temp);
-    return det;  
+	return det;  
 }
 
 /*******************************************************************************
@@ -111,10 +113,7 @@ int LUP_decomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P){
 	int i, j, k, m, index;
 	double s1, s2, temp;
 	m = A.cols;
-	destroy_matrix(L);
-	destroy_matrix(U);
-	destroy_matrix(P);
-	matrix_t Lt, Ut, Pt;
+	matrix_t Adup, Lt, Ut, Pt;
 	if(!A.initialized){
 		printf("ERROR: matrix not initialized yet\n");
 		return -1;
@@ -123,6 +122,7 @@ int LUP_decomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P){
 		printf("ERROR: matrix is not square\n");
 		return -1;
 	}
+	Adup = duplicate_matrix(A);
 	Lt = create_identity_matrix(m);
 	Ut = create_square_matrix(m);
 	Pt = create_identity_matrix(m);
@@ -136,9 +136,9 @@ int LUP_decomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P){
 		}
 		if(index != i){
 			for(j=0;j<m;j++){
-				temp 				= A.data[index][j];
-				A.data[index][j] 	= A.data[i][j];
-				A.data[i][j]		= temp;
+				temp 				= Adup.data[index][j];
+				Adup.data[index][j]	= Adup.data[i][j];
+				Adup.data[i][j]		= temp;
 				temp				= Pt.data[index][j];
 				Pt.data[index][j]	= Pt.data[i][j];
 				Pt.data[i][j]		= temp;	
@@ -156,14 +156,18 @@ int LUP_decomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P){
 				s2 += Ut.data[k][j] * Lt.data[i][k];
 			}
 			
-			if(j>=i)	Ut.data[i][j] = A.data[i][j] - s1;
+			if(j>=i)	Ut.data[i][j] = Adup.data[i][j] - s1;
 			
-			if(i>=j)	Lt.data[i][j] = (A.data[i][j] - s2)/Ut.data[j][j];	
+			if(i>=j)	Lt.data[i][j] = (Adup.data[i][j] - s2)/Ut.data[j][j];
 		}
 	}
+	destroy_matrix(L);
+	destroy_matrix(U);
+	destroy_matrix(P);
 	*L = Lt;
 	*U = Ut;
 	*P = Pt;
+	destroy_matrix(&Adup);
 	return 0;
 }
 
@@ -240,12 +244,12 @@ int QR_decomposition(matrix_t A, matrix_t* Q, matrix_t* R){
 }
 
 /*******************************************************************************
-* matrix_t invert_matrix(matrix_t A)
+* matrix_t matrix_inverse(matrix_t A)
 *
 * Invert Matrix function based on LUP decomposition and then forward and
 * backward substitution.
 *******************************************************************************/
-matrix_t invert_matrix(matrix_t A){
+matrix_t matrix_inverse(matrix_t A){
 	int i,j,k,m;
 	matrix_t L,U,P,D,temp;
 	matrix_t out = empty_matrix();
@@ -257,7 +261,7 @@ matrix_t invert_matrix(matrix_t A){
 		printf("ERROR: matrix is not square\n");
 		return out;
 	}
-	if(matrix_determinant(A) == 0){
+	if(fabs(matrix_determinant(A)) < 1.0e-6){
 		printf("ERROR: matrix is singular, not invertible\n");
 		return out;
 	}
@@ -274,7 +278,7 @@ matrix_t invert_matrix(matrix_t A){
 		}
 		for(i=m-1;i>=0;i--){				// backwards.. last to first
 			temp.data[i][j] = D.data[i][j];
-			for(k=i+1;k<m;k++){	
+			for(k=i+1;k<m;k++){
 				temp.data[i][j] -= U.data[i][k] * temp.data[k][j];
 			}
 			temp.data[i][j] = temp.data[i][j] / U.data[i][i];
@@ -569,9 +573,9 @@ r=b;
 
 for i=1:n+2
 	r=r(find(r,1):end);
- 	[quo,rem]=PolyDiv(rm,r);  // Reduce (rm,r) to their GCD via Euclid's
-  	q(i,n+1-length(quo):n)=quo;
- 	rm=r; 
+	[quo,rem]=PolyDiv(rm,r);  // Reduce (rm,r) to their GCD via Euclid's
+	q(i,n+1-length(quo):n)=quo;
+	rm=r; 
 	r=rem;      % algorithm, saving the quotients quo.
 	if norm(r,inf)<1e-13, 
 		g=rm, 
@@ -583,9 +587,9 @@ for i=1:n+2
 	y=PolyDiv(c,g);
 	x=0;  
 	for j=i-1:-1:1                            % Using q as computed above, compute {x,y}
-  		t=x; 
-  		x=y; 
-  		y=PolyAdd(t,-PolyConv(q(j,:),y));   % via the Extended Euclidean algorithm
+		t=x; 
+		x=y; 
+		y=PolyAdd(t,-PolyConv(q(j,:),y));   % via the Extended Euclidean algorithm
 	end, 
 	y=y(find(y,1):end); 
 	[div,rem]=PolyDiv(y,s), 

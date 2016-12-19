@@ -10,23 +10,40 @@
 #include "../../libraries/roboticscape-usefulincludes.h"
 #include "../../libraries/roboticscape.h"
 
-#define DIM 5
-	
+#define DIM 3
+
 int main(){
 	printf("Let's test some linear algebra functions....\n\n");
-	
+
 	// create a random nxn matrix for later use
-	matrix_t A = create_random_matrix(DIM,DIM);
 	printf("New Random Matrix A:\n");
+	matrix_t A = create_random_matrix(DIM,DIM);
 	print_matrix(A);
-	
+
 	// also create random vector
-	vector_t b = create_random_vector(DIM);
 	printf("\nNew Random Vector b:\n");
+	vector_t b = create_random_vector(DIM);
 	print_vector(b);
-	
+
+	// get determinant of A
+	double det = matrix_determinant(A);
+	printf("\nDeterminant of A : %8.4f\n", det);
+
+	// get an inverse for A
+	printf("\nAinverse:\n");
+	matrix_t Ainv = matrix_inverse(A);
+	if(A.initialized != 1) return -1;
+	print_matrix(Ainv);
+
+	// multiply A times A inverse
+	printf("\nA * Ainverse:\n");
+	matrix_t AA = multiply_matrices(A,Ainv);
+	if(AA.initialized!=1) return -1;
+	print_matrix(AA);
+
 	// do an LUP decomposition on A
 	matrix_t L,U,P;
+	printf("\nLUP decomposition of A\n");
 	LUP_decomposition(A,&L,&U,&P);
 	printf("\nL:\n");
 	print_matrix(L);
@@ -34,48 +51,34 @@ int main(){
 	print_matrix(U);
 	printf("P:\n");
 	print_matrix(P);
-	
+
 	// do a QR decomposition on A
 	matrix_t Q,R;
-	QR_decomposition(A,&Q,&R);
 	printf("\nQR Decomposition of A\n");
+	QR_decomposition(A,&Q,&R);
 	printf("Q:\n");
 	print_matrix(Q);
 	printf("R:\n");
 	print_matrix(R);
-	
-	// get determinant of A
-	double det = matrix_determinant(A);
-	printf("\nDeterminant of A : %8.4f\n", det);
-	
-	// get an inverse for A
-	matrix_t Ainv = invert_matrix(A);
-	if(A.initialized != 1) return -1;
-	printf("\nAinverse\n");
-	print_matrix(Ainv);
-	
-	// multiply A times A inverse
-	matrix_t AA = multiply_matrices(A,Ainv);
-	if(AA.initialized!=1) return -1;
-	printf("\nA * Ainverse:\n");
-	print_matrix(AA);
-	
+
 	// solve a square linear system
-	vector_t x = lin_system_solve(A, b);
 	printf("\nGaussian Elimination solution x to the equation Ax=b:\n");
+	printf("equivalent to A\\b in MATLAB\n");
+	vector_t x = lin_system_solve(A, b);
 	print_vector(x);
-	
+
 	// now do again but with qr decomposition method
-	vector_t xqr = lin_system_solve_qr(A, b);
 	printf("\nQR solution x to the equation Ax=b:\n");
+	printf("equivalent to A\\b in MATLAB\n");
+	vector_t xqr = lin_system_solve_qr(A, b);
 	print_vector(xqr);
-	
+
 	// If b are the coefficients of a polynomial, get the coefficients of the
 	// new polynomial b^2
-	vector_t bb = poly_power(b,2);
 	printf("\nCoefficients of polynomial b times itself\n");
+	vector_t bb = poly_power(b,2);
 	print_vector(bb);
-	
+
 	// clean up all the allocated memory. This isn't strictly necessary since
 	// we are already at the end of the program, but good practice to do.
 	destroy_matrix(&A);

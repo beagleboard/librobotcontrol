@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <string.h> // for memset
 
-#define PI (double)M_PI
 
 /*******************************************************************************
 * matrix_t create_matrix(int rows, int cols)
@@ -30,11 +29,10 @@ matrix_t create_matrix(int rows, int cols){
 	// allocate contiguous memory
 	A.data = (double**)malloc(rows*sizeof(double*));
 	void* ptr = calloc(rows*cols, sizeof(double));
-	A.data[0] = (double*)ptr;
 	// manually fill in the pointer to each row
-	for (i=1; i<rows; i++){
+	for (i=0; i<rows; i++){
 		A.data[i] = (double*)(ptr + i*cols*sizeof(double));
-	}	
+	}
 	
 	A.initialized = 1;
 	return A;
@@ -83,7 +81,7 @@ matrix_t duplicate_matrix(matrix_t A){
 	}
 	out = create_matrix(A.rows,A.cols);
 	for(i=0;i<A.rows;i++){
-        for(j=0;j<A.cols;j++){
+		for(j=0;j<A.cols;j++){
 			out.data[i][j] = A.data[i][j];
 		}
 	}
@@ -110,7 +108,7 @@ matrix_t create_random_matrix(int rows, int cols){
 	int i,j;
 	matrix_t A;
 	if(rows<1 || cols<1){
-		printf("error creating matrix, row or col must be >=1");
+		printf("error creating matrix, row & col must be >=1");
 		return A;
 	}
 	A = create_matrix(rows, cols);
@@ -136,7 +134,7 @@ matrix_t create_identity_matrix(int dim){
 	}
 	A = create_square_matrix(dim);
 	for(i=0;i<dim;i++){
-		A.data[i][i]=1;
+		A.data[i][i]=1.0;
 	}
 	return A;
 }
@@ -175,7 +173,7 @@ matrix_t create_matrix_of_ones(int dim){
 	A = create_square_matrix(dim);
 	for(i=0;i<dim;i++){
 		for(j=0;j<dim;j++){
-			A.data[i][j]=1;
+			A.data[i][j]=1.0;
 		}
 	}
 	return A;
@@ -245,13 +243,13 @@ void print_matrix(matrix_t A){
 	}
 	for(i=0;i<A.rows;i++){
 		for(j=0;j<A.cols;j++){
-			printf("%7.3f  ",A.data[i][j]);
+			printf("%7.4f  ",A.data[i][j]);
 		}	
 		printf("\n");
 		fflush(stdout);
 	}
 	return;
-}	
+}
 
 /*******************************************************************************
 * void print_matrix_sci_notation(matrix_t A)
@@ -274,32 +272,28 @@ void print_matrix_sci_notation(matrix_t A){
 }
 
 /*******************************************************************************
-* int multiply_matrices(matrix_t A, matrix_t B, matrix_t* out)
+* matrix_t multiply_matrices(matrix_t A, matrix_t B)
 *
 * 
 *******************************************************************************/
 matrix_t multiply_matrices(matrix_t A, matrix_t B){
 	int i,j,k;
-	double sum = 0;
-	matrix_t out = empty_matrix();
+	matrix_t out;
 	if(!A.initialized||!B.initialized){
 		printf("ERROR: matrix not initialized yet\n");
-		return out;
+		return empty_matrix();
 	}
 	if (A.cols != B.rows){
 		printf("ERROR: Invalid matrix sizes");
-		return out;
+		return empty_matrix();
 	}
-	out = create_matrix(A.rows, B.cols);	
+	out = create_matrix(A.rows, B.cols);
 	for(i=0;i<(A.rows);i++){
-		for(j=0;j<(B.cols);j++){	
+		for(j=0;j<(B.cols);j++){
 			for(k=0;k<(A.cols);k++){
 				// do the matrix multiplication
-				sum = sum + A.data[i][k]*B.data[k][j];
+				out.data[i][j] += A.data[i][k]*B.data[k][j];
 			}
-			// save mult sum to new location
-			out.data[i][j] = sum;
-			sum = 0; 	// re-initialize sum for next loop
 		}
 	}
 	return out;
@@ -331,18 +325,18 @@ int matrix_times_scalar(matrix_t* A, double s){
 *******************************************************************************/
 matrix_t add_matrices(matrix_t A, matrix_t B){
 	int i,j;
-	matrix_t out = empty_matrix();
+	matrix_t out;
 	if(!A.initialized||!B.initialized){
 		printf("ERROR: matrix not initialized yet\n");
-		return out;
+		return empty_matrix();
 	}
 	if ((A.rows != B.rows)||(A.cols != B.cols)){
-		printf("Invalid matrix sizes");
-		return out;
+		printf("ERROR: trying to add matrices with mismatched dimensions\n");
+		return empty_matrix();
 	}
 	out = create_matrix(A.rows, A.cols);
 	for(i=0;i<(A.rows);i++){
-		for(j=0;j<(A.cols);j++){	
+		for(j=0;j<(A.cols);j++){
 			out.data[i][j] = A.data[i][j] + B.data[i][j];
 		}
 	}
@@ -360,6 +354,8 @@ int transpose_matrix(matrix_t* A){
 		printf("ERROR: matrix not initialized yet\n");
 		return -1;
 	}
+	// shortcut for 1x1 matrix
+	if(A->rows==1 && A->cols==1) return 0;
 	// swap rows and cols
 	matrix_t temp = create_matrix(A->cols, A->rows);
 	for(i=0;i<(A->rows);i++){

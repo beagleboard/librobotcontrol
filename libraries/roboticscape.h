@@ -1074,7 +1074,7 @@ vector_t row_vec_times_matrix(vector_t v, matrix_t A);
 double matrix_determinant(matrix_t A);
 int LUP_decomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P);
 int QR_decomposition(matrix_t A, matrix_t* Q, matrix_t* R);
-matrix_t invert_matrix(matrix_t A);
+matrix_t matrix_inverse(matrix_t A);
 matrix_t householder_matrix(vector_t v);
 
 // linear system solvers
