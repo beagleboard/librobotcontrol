@@ -31,10 +31,10 @@ int mdir1a, mdir2b; // variable gpio pin assignments
 *******************************************************************************/
 int is_cape_loaded();
 int initialize_button_handlers();
-int (*pause_released_func)();
-int (*pause_pressed_func)();
-int (*mode_released_func)();
-int (*mode_pressed_func)();
+int (*pause_released_func)(void);
+int (*pause_pressed_func)(void);
+int (*mode_released_func)(void);
+int (*mode_pressed_func)(void);
 void shutdown_signal_handler(int signo);
 
 /*******************************************************************************
@@ -211,6 +211,10 @@ int cleanup_roboticscape(){
 	clock_gettime(CLOCK_REALTIME, &thread_timeout);
 	thread_timeout.tv_sec += 3;
 	int thread_err = 0;
+
+	#ifdef DEBUG
+	printf("joining button threads\n");
+	#endif
 	thread_err = pthread_timedjoin_np(pause_pressed_thread, NULL, \
 															&thread_timeout);
 	if(thread_err == ETIMEDOUT){
@@ -399,29 +403,30 @@ int rc_blink_led(rc_led_t led, double hz, double period){
 *	releasing the two buttons.
 *******************************************************************************/
 int initialize_button_handlers(){
-	
-	struct sched_param params;
-	pthread_attr_t attr;
-	params.sched_priority = sched_get_priority_max(SCHED_FIFO)-5;
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-   
+
 	set_pause_pressed_func(&null_func);
 	set_pause_released_func(&null_func);
 	set_mode_pressed_func(&null_func);
 	set_mode_released_func(&null_func);
 	
-	
-	pthread_create(&pause_pressed_thread, &attr,			 \
+	#ifdef DEBUG
+	printf("starting button threads\n");
+	#endif
+	pthread_create(&pause_pressed_thread, NULL,	\
 				pause_pressed_handler, (void*) NULL);
-	pthread_create(&pause_released_thread, &attr,			 \
+	pthread_create(&pause_released_thread, NULL,	\
 				pause_released_handler, (void*) NULL);
-	pthread_create(&mode_pressed_thread, &attr,			 \
+	pthread_create(&mode_pressed_thread, NULL,		\
 					mode_pressed_handler, (void*) NULL);
-	pthread_create(&mode_released_thread, &attr,			 \
+	pthread_create(&mode_released_thread, NULL,	\
 					mode_released_handler, (void*) NULL);
-	
-	// apply medium priority to all threads
+
+	// apply priority to all threads
+	#ifdef DEBUG
+	printf("setting button thread priorities\n");
+	#endif
+	struct sched_param params;
+	params.sched_priority = sched_get_priority_max(SCHED_FIFO)-5;
 	pthread_setschedparam(pause_pressed_thread, SCHED_FIFO, &params);
 	pthread_setschedparam(pause_released_thread, SCHED_FIFO, &params);
 	pthread_setschedparam(mode_pressed_thread, SCHED_FIFO, &params);

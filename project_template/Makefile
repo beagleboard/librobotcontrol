@@ -31,10 +31,16 @@ $(TARGET): $(OBJECTS)
 # compiling command
 $(OBJECTS): %.o : %.c
 	@$(TOUCH) $(CC) $(CFLAGS) -c $< -o $(@)
-
+	@echo "Compiled: "$<
 
 all:
 	$(TARGET)
+
+debug:
+	$(MAKE) $(MAKEFILE) DEBUGFLAG="-g -D DEBUG"
+	@echo " "
+	@echo "$(TARGET) Make Debug Complete"
+	@echo " "
 
 install: 
 	@$(MAKE) --no-print-directory

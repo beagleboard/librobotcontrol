@@ -519,6 +519,15 @@ int   calibrate_dsm_routine();
 * is slower to read, it is disabled by default.
 *
 ******************************************************************************/
+// defines for index location within TaitBryan and quaternion vectors
+#define TB_PITCH_X	0
+#define TB_ROLL_Y	1
+#define TB_YAW_Z	2
+#define QUAT_W		0
+#define QUAT_X		1
+#define QUAT_Y		2
+#define QUAT_Z		3
+
 typedef enum accel_fsr_t {
   A_FSR_2G,
   A_FSR_4G,
@@ -1095,15 +1104,6 @@ vector_t poly_butter(int N, double wc);
 *
 * These are useful for dealing with IMU orientation data
 *******************************************************************************/
-// defines for index location within TaitBryan and quaternion vectors
-#define TB_PITCH_X	0
-#define TB_ROLL_Y	1
-#define TB_YAW_Z	2
-#define QUAT_W		0
-#define QUAT_X		1
-#define QUAT_Y		2
-#define QUAT_Z		3
-
 double quaternion_norm(vector_t q);
 int normalize_quaternion(vector_t* q);
 int normalize_quaternion_array(double q[4]);
