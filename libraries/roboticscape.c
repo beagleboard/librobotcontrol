@@ -135,7 +135,7 @@ int initialize_roboticscape(){
 		printf("opening PID_FILE\n");
 	#endif
 	fd = fopen(PID_FILE, "ab+");
-	if (fd < 0) {
+	if (fd == NULL) {
 		printf("\n error opening PID_FILE for writing\n");
 		return -1;
 	}

@@ -905,24 +905,24 @@ int initialize_imu_dmp(imu_data_t *data, imu_config_t conf){
 *******************************************************************************/
 int mpu_write_mem(unsigned short mem_addr, unsigned short length,\
 												unsigned char *data){
-    unsigned char tmp[2];
+	unsigned char tmp[2];
 
-    if (!data)
-        return -1;
+	if (!data)
+		return -1;
 	
-    tmp[0] = (unsigned char)(mem_addr >> 8);
-    tmp[1] = (unsigned char)(mem_addr & 0xFF);
+	tmp[0] = (unsigned char)(mem_addr >> 8);
+	tmp[1] = (unsigned char)(mem_addr & 0xFF);
 
-    /* Check bank boundaries. */
-    if (tmp[1] + length > MPU6500_BANK_SIZE){
+	/* Check bank boundaries. */
+	if (tmp[1] + length > MPU6500_BANK_SIZE){
 		printf("mpu_write_mem exceeds bank size\n");
-        return -1;
+		return -1;
 	}
-    if (i2c_write_bytes(IMU_BUS,MPU6500_BANK_SEL, 2, tmp))
-        return -1;
-    if (i2c_write_bytes(IMU_BUS,MPU6500_MEM_R_W, length, data))
-        return -1;
-    return 0;
+	if (i2c_write_bytes(IMU_BUS,MPU6500_BANK_SEL, 2, tmp))
+		return -1;
+	if (i2c_write_bytes(IMU_BUS,MPU6500_MEM_R_W, length, data))
+		return -1;
+	return 0;
 }
 
 /*******************************************************************************
@@ -936,24 +936,24 @@ int mpu_write_mem(unsigned short mem_addr, unsigned short length,\
 *******************************************************************************/
 int mpu_read_mem(unsigned short mem_addr, unsigned short length,\
 												unsigned char *data){
-    unsigned char tmp[2];
+	unsigned char tmp[2];
 
-    if (!data)
-        return -1;
+	if (!data)
+		return -1;
 
-    tmp[0] = (unsigned char)(mem_addr >> 8);
-    tmp[1] = (unsigned char)(mem_addr & 0xFF);
+	tmp[0] = (unsigned char)(mem_addr >> 8);
+	tmp[1] = (unsigned char)(mem_addr & 0xFF);
 
-    /* Check bank boundaries. */
-    if (tmp[1] + length > MPU6500_BANK_SIZE){
+	/* Check bank boundaries. */
+	if (tmp[1] + length > MPU6500_BANK_SIZE){
 		printf("mpu_read_mem exceeds bank size\n");
-        return -1;
+		return -1;
 	}
-    if (i2c_write_bytes(IMU_BUS,MPU6500_BANK_SEL, 2, tmp))
-        return -1;
-    if (i2c_read_bytes(IMU_BUS,MPU6500_MEM_R_W, length, data)!=length)
-        return -1;
-    return 0;
+	if (i2c_write_bytes(IMU_BUS,MPU6500_BANK_SEL, 2, tmp))
+		return -1;
+	if (i2c_read_bytes(IMU_BUS,MPU6500_MEM_R_W, length, data)!=length)
+		return -1;
+	return 0;
 }
 
 /*******************************************************************************
@@ -964,40 +964,40 @@ int mpu_read_mem(unsigned short mem_addr, unsigned short length,\
 int dmp_load_motion_driver_firmware(){
 	
 	unsigned short ii;
-    unsigned short this_write;
-    /* Must divide evenly into st.hw->bank_size to avoid bank crossings. */
+	unsigned short this_write;
+	/* Must divide evenly into st.hw->bank_size to avoid bank crossings. */
 
-    unsigned char cur[DMP_LOAD_CHUNK], tmp[2];
+	unsigned char cur[DMP_LOAD_CHUNK], tmp[2];
 
 	// make sure the address is set correctly
 	i2c_set_device_address(IMU_BUS, IMU_ADDR);
 	
 	// loop through 16 bytes at a time and check each write
 	// for corruption
-    for (ii=0; ii<DMP_CODE_SIZE; ii+=this_write) {
-        this_write = min(DMP_LOAD_CHUNK, DMP_CODE_SIZE - ii);
-        if (mpu_write_mem(ii, this_write, (uint8_t*)&dmp_firmware[ii])){
+	for (ii=0; ii<DMP_CODE_SIZE; ii+=this_write) {
+		this_write = min(DMP_LOAD_CHUNK, DMP_CODE_SIZE - ii);
+		if (mpu_write_mem(ii, this_write, (uint8_t*)&dmp_firmware[ii])){
 			printf("dmp firmware write failed\n");
-            return -1;
+			return -1;
 		}
-        if (mpu_read_mem(ii, this_write, cur)){
+		if (mpu_read_mem(ii, this_write, cur)){
 			printf("dmp firmware read failed\n");
-            return -1;
+			return -1;
 		}
-        if (memcmp(dmp_firmware+ii, cur, this_write)){
+		if (memcmp(dmp_firmware+ii, cur, this_write)){
 			printf("dmp firmware write corrupted\n");
-            return -2;
+			return -2;
 		}
-    }
+	}
 
-    /* Set program start address. */
-    tmp[0] = dmp_start_addr >> 8;
-    tmp[1] = dmp_start_addr & 0xFF;
-    if (i2c_write_bytes(IMU_BUS, MPU6500_PRGM_START_H, 2, tmp)){
-        return -1;
+	/* Set program start address. */
+	tmp[0] = dmp_start_addr >> 8;
+	tmp[1] = dmp_start_addr & 0xFF;
+	if (i2c_write_bytes(IMU_BUS, MPU6500_PRGM_START_H, 2, tmp)){
+		return -1;
 	}
 	
-    return 0;
+	return 0;
 }
 
 /*******************************************************************************
@@ -1008,47 +1008,47 @@ int dmp_load_motion_driver_firmware(){
  *  @return     0 if successful.
 *******************************************************************************/
 int dmp_set_orientation(unsigned short orient){
-    unsigned char gyro_regs[3], accel_regs[3];
-    const unsigned char gyro_axes[3] = {DINA4C, DINACD, DINA6C};
-    const unsigned char accel_axes[3] = {DINA0C, DINAC9, DINA2C};
-    const unsigned char gyro_sign[3] = {DINA36, DINA56, DINA76};
-    const unsigned char accel_sign[3] = {DINA26, DINA46, DINA66};
+	unsigned char gyro_regs[3], accel_regs[3];
+	const unsigned char gyro_axes[3] = {DINA4C, DINACD, DINA6C};
+	const unsigned char accel_axes[3] = {DINA0C, DINAC9, DINA2C};
+	const unsigned char gyro_sign[3] = {DINA36, DINA56, DINA76};
+	const unsigned char accel_sign[3] = {DINA26, DINA46, DINA66};
 
-    gyro_regs[0] = gyro_axes[orient & 3];
-    gyro_regs[1] = gyro_axes[(orient >> 3) & 3];
-    gyro_regs[2] = gyro_axes[(orient >> 6) & 3];
-    accel_regs[0] = accel_axes[orient & 3];
-    accel_regs[1] = accel_axes[(orient >> 3) & 3];
-    accel_regs[2] = accel_axes[(orient >> 6) & 3];
+	gyro_regs[0] = gyro_axes[orient & 3];
+	gyro_regs[1] = gyro_axes[(orient >> 3) & 3];
+	gyro_regs[2] = gyro_axes[(orient >> 6) & 3];
+	accel_regs[0] = accel_axes[orient & 3];
+	accel_regs[1] = accel_axes[(orient >> 3) & 3];
+	accel_regs[2] = accel_axes[(orient >> 6) & 3];
 
-    /* Chip-to-body, axes only. */
-    if (mpu_write_mem(FCFG_1, 3, gyro_regs))
-        return -1;
-    if (mpu_write_mem(FCFG_2, 3, accel_regs))
-        return -1;
+	/* Chip-to-body, axes only. */
+	if (mpu_write_mem(FCFG_1, 3, gyro_regs))
+		return -1;
+	if (mpu_write_mem(FCFG_2, 3, accel_regs))
+		return -1;
 
-    memcpy(gyro_regs, gyro_sign, 3);
-    memcpy(accel_regs, accel_sign, 3);
-    if (orient & 4) {
-        gyro_regs[0] |= 1;
-        accel_regs[0] |= 1;
-    }
-    if (orient & 0x20) {
-        gyro_regs[1] |= 1;
-        accel_regs[1] |= 1;
-    }
-    if (orient & 0x100) {
-        gyro_regs[2] |= 1;
-        accel_regs[2] |= 1;
-    }
+	memcpy(gyro_regs, gyro_sign, 3);
+	memcpy(accel_regs, accel_sign, 3);
+	if (orient & 4) {
+		gyro_regs[0] |= 1;
+		accel_regs[0] |= 1;
+	}
+	if (orient & 0x20) {
+		gyro_regs[1] |= 1;
+		accel_regs[1] |= 1;
+	}
+	if (orient & 0x100) {
+		gyro_regs[2] |= 1;
+		accel_regs[2] |= 1;
+	}
 
-    /* Chip-to-body, sign only. */
-    if (mpu_write_mem(FCFG_3, 3, gyro_regs))
-        return -1;
-    if (mpu_write_mem(FCFG_7, 3, accel_regs))
-        return -1;
-    //dmp.orient = orient;
-    return 0;
+	/* Chip-to-body, sign only. */
+	if (mpu_write_mem(FCFG_3, 3, gyro_regs))
+		return -1;
+	if (mpu_write_mem(FCFG_7, 3, accel_regs))
+		return -1;
+	//dmp.orient = orient;
+	return 0;
 }
 
 /*******************************************************************************
@@ -1058,28 +1058,28 @@ int dmp_set_orientation(unsigned short orient){
  *  @return     0 if successful.
 *******************************************************************************/
 int dmp_set_fifo_rate(unsigned short rate){
-    const unsigned char regs_end[12] = {DINAFE, DINAF2, DINAAB,
-        0xc4, DINAAA, DINAF1, DINADF, DINADF, 0xBB, 0xAF, DINADF, DINADF};
-    unsigned short div;
-    unsigned char tmp[8];
+	const unsigned char regs_end[12] = {DINAFE, DINAF2, DINAAB,
+		0xc4, DINAAA, DINAF1, DINADF, DINADF, 0xBB, 0xAF, DINADF, DINADF};
+	unsigned short div;
+	unsigned char tmp[8];
 
-    if (rate > DMP_MAX_RATE){
-        return -1;
+	if (rate > DMP_MAX_RATE){
+		return -1;
 	}
 	
 	// set the DMP scaling factors
 	div = DMP_MAX_RATE / rate - 1;
-    tmp[0] = (unsigned char)((div >> 8) & 0xFF);
-    tmp[1] = (unsigned char)(div & 0xFF);
-    if (mpu_write_mem(D_0_22, 2, tmp)){
-    	printf("ERROR: writing dmp sample rate reg");
-        return -1;
-    }
-    if (mpu_write_mem(CFG_6, 12, (unsigned char*)regs_end)){
-    	printf("ERROR: writing dmp regs_end");
-        return -1;
-    }
-    return 0;
+	tmp[0] = (unsigned char)((div >> 8) & 0xFF);
+	tmp[1] = (unsigned char)(div & 0xFF);
+	if (mpu_write_mem(D_0_22, 2, tmp)){
+		printf("ERROR: writing dmp sample rate reg");
+		return -1;
+	}
+	if (mpu_write_mem(CFG_6, 12, (unsigned char*)regs_end)){
+		printf("ERROR: writing dmp regs_end");
+		return -1;
+	}
+	return 0;
 }
 
 /*******************************************************************************
@@ -1093,16 +1093,16 @@ int dmp_set_fifo_rate(unsigned short rate){
 * INT_PIN_CFG based on requested bypass state
 *******************************************************************************/
 int mpu_set_bypass(uint8_t bypass_on){
-    uint8_t tmp = 0;
+	uint8_t tmp = 0;
 
-    // set up USER_CTRL first
+	// set up USER_CTRL first
 	if(dmp_en)
 		tmp |= FIFO_EN_BIT; // enable fifo for dsp mode
 	if(!bypass_on)
 		tmp |= I2C_MST_EN; // i2c master mode when not in bypass
 	if (i2c_write_byte(IMU_BUS, USER_CTRL, tmp))
-            return -1;
-    usleep(3000);
+			return -1;
+	usleep(3000);
 	
 	// INT_PIN_CFG settings
 	tmp = LATCH_INT_EN | INT_ANYRD_CLEAR | ACTL_ACTIVE_LOW;
@@ -1111,7 +1111,7 @@ int mpu_set_bypass(uint8_t bypass_on){
 	if(bypass_on)
 		tmp |= BYPASS_EN;
 	if (i2c_write_byte(IMU_BUS, INT_PIN_CFG, tmp))
-            return -1;
+			return -1;
 		
 	if(bypass_on)
 		bypass_en = 1;
@@ -1131,66 +1131,66 @@ int mpu_set_bypass(uint8_t bypass_on){
 * a fixed set of features but we keep it as is since it works fine.
 *******************************************************************************/
 int dmp_enable_feature(unsigned short mask){
-    unsigned char tmp[10];
+	unsigned char tmp[10];
 
-    /* Set integration scale factor. */
-    tmp[0] = (unsigned char)((GYRO_SF >> 24) & 0xFF);
-    tmp[1] = (unsigned char)((GYRO_SF >> 16) & 0xFF);
-    tmp[2] = (unsigned char)((GYRO_SF >> 8) & 0xFF);
-    tmp[3] = (unsigned char)(GYRO_SF & 0xFF);
-    mpu_write_mem(D_0_104, 4, tmp);
+	/* Set integration scale factor. */
+	tmp[0] = (unsigned char)((GYRO_SF >> 24) & 0xFF);
+	tmp[1] = (unsigned char)((GYRO_SF >> 16) & 0xFF);
+	tmp[2] = (unsigned char)((GYRO_SF >> 8) & 0xFF);
+	tmp[3] = (unsigned char)(GYRO_SF & 0xFF);
+	mpu_write_mem(D_0_104, 4, tmp);
 
-    /* Send sensor data to the FIFO. */
-    tmp[0] = 0xA3;
-    if (mask & DMP_FEATURE_SEND_RAW_ACCEL) {
-        tmp[1] = 0xC0;
-        tmp[2] = 0xC8;
-        tmp[3] = 0xC2;
-    } else {
-        tmp[1] = 0xA3;
-        tmp[2] = 0xA3;
-        tmp[3] = 0xA3;
-    }
-    if (mask & DMP_FEATURE_SEND_ANY_GYRO) {
-        tmp[4] = 0xC4;
-        tmp[5] = 0xCC;
-        tmp[6] = 0xC6;
-    } else {
-        tmp[4] = 0xA3;
-        tmp[5] = 0xA3;
-        tmp[6] = 0xA3;
-    }
-    tmp[7] = 0xA3;
-    tmp[8] = 0xA3;
-    tmp[9] = 0xA3;
-    mpu_write_mem(CFG_15,10,tmp);
+	/* Send sensor data to the FIFO. */
+	tmp[0] = 0xA3;
+	if (mask & DMP_FEATURE_SEND_RAW_ACCEL) {
+		tmp[1] = 0xC0;
+		tmp[2] = 0xC8;
+		tmp[3] = 0xC2;
+	} else {
+		tmp[1] = 0xA3;
+		tmp[2] = 0xA3;
+		tmp[3] = 0xA3;
+	}
+	if (mask & DMP_FEATURE_SEND_ANY_GYRO) {
+		tmp[4] = 0xC4;
+		tmp[5] = 0xCC;
+		tmp[6] = 0xC6;
+	} else {
+		tmp[4] = 0xA3;
+		tmp[5] = 0xA3;
+		tmp[6] = 0xA3;
+	}
+	tmp[7] = 0xA3;
+	tmp[8] = 0xA3;
+	tmp[9] = 0xA3;
+	mpu_write_mem(CFG_15,10,tmp);
 
-    /* Send gesture data to the FIFO. */
-    if (mask & (DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT))
-        tmp[0] = DINA20;
-    else
-        tmp[0] = 0xD8;
-    mpu_write_mem(CFG_27,1,tmp);
+	/* Send gesture data to the FIFO. */
+	if (mask & (DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT))
+		tmp[0] = DINA20;
+	else
+		tmp[0] = 0xD8;
+	mpu_write_mem(CFG_27,1,tmp);
 
-    if (mask & DMP_FEATURE_GYRO_CAL)
-        dmp_enable_gyro_cal(1);
-    else
-        dmp_enable_gyro_cal(0);
+	if (mask & DMP_FEATURE_GYRO_CAL)
+		dmp_enable_gyro_cal(1);
+	else
+		dmp_enable_gyro_cal(0);
 
-    if (mask & DMP_FEATURE_SEND_ANY_GYRO) {
-        if (mask & DMP_FEATURE_SEND_CAL_GYRO) {
-            tmp[0] = 0xB2;
-            tmp[1] = 0x8B;
-            tmp[2] = 0xB6;
-            tmp[3] = 0x9B;
-        } else {
-            tmp[0] = DINAC0;
-            tmp[1] = DINA80;
-            tmp[2] = DINAC2;
-            tmp[3] = DINA90;
-        }
-        mpu_write_mem(CFG_GYRO_RAW_DATA, 4, tmp);
-    }
+	if (mask & DMP_FEATURE_SEND_ANY_GYRO) {
+		if (mask & DMP_FEATURE_SEND_CAL_GYRO) {
+			tmp[0] = 0xB2;
+			tmp[1] = 0x8B;
+			tmp[2] = 0xB6;
+			tmp[3] = 0x9B;
+		} else {
+			tmp[0] = DINAC0;
+			tmp[1] = DINA80;
+			tmp[2] = DINAC2;
+			tmp[3] = DINA90;
+		}
+		mpu_write_mem(CFG_GYRO_RAW_DATA, 4, tmp);
+	}
 	
 	// disable tap feature
 	tmp[0] = 0xD8;
@@ -1198,33 +1198,33 @@ int dmp_enable_feature(unsigned short mask){
 	
 	// disable orientation feature
 	tmp[0] = 0xD8;
-    mpu_write_mem(CFG_ANDROID_ORIENT_INT, 1, tmp);
+	mpu_write_mem(CFG_ANDROID_ORIENT_INT, 1, tmp);
 
-    if (mask & DMP_FEATURE_LP_QUAT)
-        dmp_enable_lp_quat(1);
-    else
-        dmp_enable_lp_quat(0);
+	if (mask & DMP_FEATURE_LP_QUAT)
+		dmp_enable_lp_quat(1);
+	else
+		dmp_enable_lp_quat(0);
 
-    if (mask & DMP_FEATURE_6X_LP_QUAT)
-        dmp_enable_6x_lp_quat(1);
-    else
-        dmp_enable_6x_lp_quat(0);
+	if (mask & DMP_FEATURE_6X_LP_QUAT)
+		dmp_enable_6x_lp_quat(1);
+	else
+		dmp_enable_6x_lp_quat(0);
 
-    // /* Pedometer is always enabled. */
-    // dmp.feature_mask = mask | DMP_FEATURE_PEDOMETER;
-    mpu_reset_fifo();
+	// /* Pedometer is always enabled. */
+	// dmp.feature_mask = mask | DMP_FEATURE_PEDOMETER;
+	mpu_reset_fifo();
 
-    packet_len = 0;
-    if (mask & DMP_FEATURE_SEND_RAW_ACCEL)
-        packet_len += 6;
-    if (mask & DMP_FEATURE_SEND_ANY_GYRO)
-        packet_len += 6;
-    if (mask & (DMP_FEATURE_LP_QUAT | DMP_FEATURE_6X_LP_QUAT))
-        packet_len += 16;
-    // if (mask & (DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT))
-        // dmp.packet_length += 4;
+	packet_len = 0;
+	if (mask & DMP_FEATURE_SEND_RAW_ACCEL)
+		packet_len += 6;
+	if (mask & DMP_FEATURE_SEND_ANY_GYRO)
+		packet_len += 6;
+	if (mask & (DMP_FEATURE_LP_QUAT | DMP_FEATURE_6X_LP_QUAT))
+		packet_len += 16;
+	// if (mask & (DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT))
+	// dmp.packet_length += 4;
 
-    return 0;
+	return 0;
 }
 
 /*******************************************************************************
@@ -1236,13 +1236,13 @@ int dmp_enable_feature(unsigned short mask){
 * to run our own gyro_calibration routine.
 *******************************************************************************/
 int dmp_enable_gyro_cal(unsigned char enable){
-    if (enable) {
-        unsigned char regs[9] = {0xb8, 0xaa, 0xb3, 0x8d, 0xb4, 0x98, 0x0d, 0x35, 0x5d};
-        return mpu_write_mem(CFG_MOTION_BIAS, 9, regs);
-    } else {
-        unsigned char regs[9] = {0xb8, 0xaa, 0xaa, 0xaa, 0xb0, 0x88, 0xc3, 0xc5, 0xc7};
-        return mpu_write_mem(CFG_MOTION_BIAS, 9, regs);
-    }
+	if (enable) {
+		unsigned char regs[9] = {0xb8, 0xaa, 0xb3, 0x8d, 0xb4, 0x98, 0x0d, 0x35, 0x5d};
+		return mpu_write_mem(CFG_MOTION_BIAS, 9, regs);
+	} else {
+		unsigned char regs[9] = {0xb8, 0xaa, 0xaa, 0xaa, 0xb0, 0x88, 0xc3, 0xc5, 0xc7};
+		return mpu_write_mem(CFG_MOTION_BIAS, 9, regs);
+	}
 }
 
 /*******************************************************************************
@@ -1252,18 +1252,18 @@ int dmp_enable_gyro_cal(unsigned char enable){
 * with accelerometer and gyro filtering.
 *******************************************************************************/
 int dmp_enable_6x_lp_quat(unsigned char enable){
-    unsigned char regs[4];
-    if (enable) {
-        regs[0] = DINA20;
-        regs[1] = DINA28;
-        regs[2] = DINA30;
-        regs[3] = DINA38;
-    } else
-        memset(regs, 0xA3, 4);
+	unsigned char regs[4];
+	if (enable) {
+		regs[0] = DINA20;
+		regs[1] = DINA28;
+		regs[2] = DINA30;
+		regs[3] = DINA38;
+	} else
+		memset(regs, 0xA3, 4);
 
-    mpu_write_mem(CFG_8, 4, regs);
+	mpu_write_mem(CFG_8, 4, regs);
 
-    //return mpu_reset_fifo();
+	//return mpu_reset_fifo();
 	return 0;
 }
 
@@ -1274,19 +1274,19 @@ int dmp_enable_6x_lp_quat(unsigned char enable){
 * here but remains as a vestige of the Invensense DMP code.
 *******************************************************************************/
 int dmp_enable_lp_quat(unsigned char enable){
-    unsigned char regs[4];
-    if (enable) {
-        regs[0] = DINBC0;
-        regs[1] = DINBC2;
-        regs[2] = DINBC4;
-        regs[3] = DINBC6;
-    }
-    else
-        memset(regs, 0x8B, 4);
+	unsigned char regs[4];
+	if (enable) {
+		regs[0] = DINBC0;
+		regs[1] = DINBC2;
+		regs[2] = DINBC4;
+		regs[3] = DINBC6;
+	}
+	else
+		memset(regs, 0x8B, 4);
 
-    mpu_write_mem(CFG_LP_QUAT, 4, regs);
+	mpu_write_mem(CFG_LP_QUAT, 4, regs);
 
-    //return mpu_reset_fifo();
+	//return mpu_reset_fifo();
 	return 0;
 }
 
@@ -1299,16 +1299,16 @@ int dmp_enable_lp_quat(unsigned char enable){
 * initializing (probably no necessary) then again if the fifo gets too full.
 *******************************************************************************/
 int mpu_reset_fifo(void){
-    uint8_t data;
+	uint8_t data;
 
-    // make sure the i2c address is set correctly. 
+	// make sure the i2c address is set correctly. 
 	// this shouldn't take any time at all if already set
 	i2c_set_device_address(IMU_BUS, IMU_ADDR);
 
-    data = 0;
-    if (i2c_write_byte(IMU_BUS, INT_ENABLE, data)) return -1;
-    if (i2c_write_byte(IMU_BUS, FIFO_EN, data)) return -1;
-    //if (i2c_write_byte(IMU_BUS, USER_CTRL, data)) return -1;
+	data = 0;
+	if (i2c_write_byte(IMU_BUS, INT_ENABLE, data)) return -1;
+	if (i2c_write_byte(IMU_BUS, FIFO_EN, data)) return -1;
+	//if (i2c_write_byte(IMU_BUS, USER_CTRL, data)) return -1;
 
 	data = BIT_FIFO_RST | BIT_DMP_RST;
 	if (i2c_write_byte(IMU_BUS, USER_CTRL, data)) return -1;
@@ -1328,7 +1328,7 @@ int mpu_reset_fifo(void){
 	if(dmp_en) i2c_write_byte(IMU_BUS, INT_ENABLE, BIT_DMP_INT_EN);
 	else i2c_write_byte(IMU_BUS, INT_ENABLE, 0);
 
-    return 0;
+	return 0;
 }
 
 /*******************************************************************************
@@ -1339,21 +1339,21 @@ int mpu_reset_fifo(void){
 * only ever configure for continuous sampling.
 *******************************************************************************/
 int dmp_set_interrupt_mode(unsigned char mode){
-    const unsigned char regs_continuous[11] =
-        {0xd8, 0xb1, 0xb9, 0xf3, 0x8b, 0xa3, 0x91, 0xb6, 0x09, 0xb4, 0xd9};
-    const unsigned char regs_gesture[11] =
-        {0xda, 0xb1, 0xb9, 0xf3, 0x8b, 0xa3, 0x91, 0xb6, 0xda, 0xb4, 0xda};
+	const unsigned char regs_continuous[11] =
+		{0xd8, 0xb1, 0xb9, 0xf3, 0x8b, 0xa3, 0x91, 0xb6, 0x09, 0xb4, 0xd9};
+	const unsigned char regs_gesture[11] =
+		{0xda, 0xb1, 0xb9, 0xf3, 0x8b, 0xa3, 0x91, 0xb6, 0xda, 0xb4, 0xda};
 
-    switch (mode) {
-    case DMP_INT_CONTINUOUS:
-        return mpu_write_mem(CFG_FIFO_ON_EVENT, 11,
-            (unsigned char*)regs_continuous);
-    case DMP_INT_GESTURE:
-        return mpu_write_mem(CFG_FIFO_ON_EVENT, 11,
-            (unsigned char*)regs_gesture);
-    default:
-        return -1;
-    }
+	switch (mode) {
+	case DMP_INT_CONTINUOUS:
+		return mpu_write_mem(CFG_FIFO_ON_EVENT, 11,
+			(unsigned char*)regs_continuous);
+	case DMP_INT_GESTURE:
+		return mpu_write_mem(CFG_FIFO_ON_EVENT, 11,
+			(unsigned char*)regs_gesture);
+	default:
+		return -1;
+	}
 }
 
 /*******************************************************************************
@@ -1363,16 +1363,16 @@ int dmp_set_interrupt_mode(unsigned char mode){
 * not necessary but remains here anyway.
 *******************************************************************************/
 int set_int_enable(unsigned char enable){
-    unsigned char tmp;
+	unsigned char tmp;
 
-    if (enable) tmp = BIT_DMP_INT_EN;
-    else tmp = 0x00;
+	if (enable) tmp = BIT_DMP_INT_EN;
+	else tmp = 0x00;
 	
-    if (i2c_write_byte(IMU_BUS, INT_ENABLE, tmp)) return -1;
+	if (i2c_write_byte(IMU_BUS, INT_ENABLE, tmp)) return -1;
 	// disable all other FIFO features leaving just DMP
 	if (i2c_write_byte(IMU_BUS, FIFO_EN, 0)) return -1;
 
-    return 0;
+	return 0;
 }
 
 /*******************************************************************************
@@ -1385,7 +1385,7 @@ int mpu_set_sample_rate(int rate){
 		printf("ERROR: sample rate must be between 4 & 1000\n");
 		return -1;
 	}
-	 /* Keep constant sample rate, FIFO rate controlled by DMP. */
+	/* Keep constant sample rate, FIFO rate controlled by DMP. */
 	uint8_t div = (1000/rate) - 1;
 	#ifdef DEBUG
 	printf("setting divider to %d\n", div);
@@ -1393,7 +1393,7 @@ int mpu_set_sample_rate(int rate){
 	if(i2c_write_byte(IMU_BUS, SMPLRT_DIV, div)){
 		printf("I2C bus write error\n");
 		return -1;
-	}  
+	}
 	return 0;
 }
 
@@ -1406,28 +1406,28 @@ int mpu_set_sample_rate(int rate){
 *******************************************************************************/
 int mpu_set_dmp_state(unsigned char enable){
 
-    if (enable) {
-        /* Disable data ready interrupt. */
-        set_int_enable(0);
-        /* Disable bypass mode. */
-        mpu_set_bypass(0);
+	if (enable) {
+		/* Disable data ready interrupt. */
+		set_int_enable(0);
+		/* Disable bypass mode. */
+		mpu_set_bypass(0);
 		// if(mpu_set_sample_rate(config.dmp_sample_rate)){
 		// 	printf("ERROR in mpu_set_dmp_date can't change sample rate\n");
 		// 	return -1;
 		// }
-        /* Remove FIFO elements. */
-        i2c_write_byte(IMU_BUS, FIFO_EN , 0);
-        /* Enable DMP interrupt. */
-        set_int_enable(1);
-        mpu_reset_fifo();
-    } else {
-        /* Disable DMP interrupt. */
-        set_int_enable(0);
-        /* Restore FIFO settings. */
-        i2c_write_byte(IMU_BUS, FIFO_EN , 0);
-        mpu_reset_fifo();
-    }
-    return 0;
+		/* Remove FIFO elements. */
+		i2c_write_byte(IMU_BUS, FIFO_EN , 0);
+		/* Enable DMP interrupt. */
+		set_int_enable(1);
+		mpu_reset_fifo();
+	} else {
+		/* Disable DMP interrupt. */
+		set_int_enable(0);
+		/* Restore FIFO settings. */
+		i2c_write_byte(IMU_BUS, FIFO_EN , 0);
+		mpu_reset_fifo();
+	}
+	return 0;
 }
 
 /*******************************************************************************
@@ -2205,12 +2205,12 @@ COLLECT_DATA:
 		vy.data[i] = (double)y;
 		vz.data[i] = (double)z;
 	}
-  	dev_x = standard_deviation(vx);
-  	dev_y = standard_deviation(vy);
-  	dev_z = standard_deviation(vz);
-  	destroy_vector(&vx);
-  	destroy_vector(&vy);
-  	destroy_vector(&vz);
+	dev_x = standard_deviation(vx);
+	dev_y = standard_deviation(vy);
+	dev_z = standard_deviation(vz);
+	destroy_vector(&vx);
+	destroy_vector(&vy);
+	destroy_vector(&vz);
 
 	#ifdef DEBUG
 	printf("gyro sums: %d %d %d\n", gyro_sum[0], gyro_sum[1], gyro_sum[2]);
@@ -2266,23 +2266,23 @@ COLLECT_DATA:
 * for use by inv_orientation_matrix_to_scalar.
 *******************************************************************************/
 unsigned short inv_row_2_scale(signed char row[]){
-    unsigned short b;
+	unsigned short b;
 
-    if (row[0] > 0)
-        b = 0;
-    else if (row[0] < 0)
-        b = 4;
-    else if (row[1] > 0)
-        b = 1;
-    else if (row[1] < 0)
-        b = 5;
-    else if (row[2] > 0)
-        b = 2;
-    else if (row[2] < 0)
-        b = 6;
-    else
-        b = 7;      // error
-    return b;
+	if (row[0] > 0)
+		b = 0;
+	else if (row[0] < 0)
+		b = 4;
+	else if (row[1] > 0)
+		b = 1;
+	else if (row[1] < 0)
+		b = 5;
+	else if (row[2] > 0)
+		b = 2;
+	else if (row[2] < 0)
+		b = 6;
+	else
+		b = 7;      // error
+	return b;
 }
 
 /*******************************************************************************
@@ -2294,12 +2294,12 @@ unsigned short inv_row_2_scale(signed char row[]){
 * scalars once to populate the imu_orientation_t enum during development.
 *******************************************************************************/
 unsigned short inv_orientation_matrix_to_scalar(signed char mtx[]){
-    unsigned short scalar;
+	unsigned short scalar;
 
-    scalar = inv_row_2_scale(mtx);
-    scalar |= inv_row_2_scale(mtx + 3) << 3;
-    scalar |= inv_row_2_scale(mtx + 6) << 6;
-    return scalar;
+	scalar = inv_row_2_scale(mtx);
+	scalar |= inv_row_2_scale(mtx + 3) << 3;
+	scalar |= inv_row_2_scale(mtx + 6) << 6;
+	return scalar;
 }
 
 /*******************************************************************************

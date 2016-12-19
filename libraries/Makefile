@@ -5,7 +5,8 @@ SUBDIRS		:=	$(shell find * -type d -print)
 CC			:= gcc
 LINKER		:= gcc
 TOUCH		:= $(shell touch *)
-CFLAGS		:= -Wall -fPIC -march=armv7-a -mtune=cortex-a8 
+CWARNINGS	:= -Wall
+CFLAGS		:= -O2 -fPIC -march=armv7-a -mtune=cortex-a8 
 LFLAGS		:= -lm -lrt -lpthread -shared -Wl,-soname,$(TARGET)
 
 SOURCES		:= $(shell find ./ -name '*.c')
@@ -27,7 +28,7 @@ $(TARGET): $(OBJECTS)
 	@echo " "
 	
 $(OBJECTS): %.o : %.c
-	@$(TOUCH) $(CC) $(CFLAGS) $(DEBUGFLAG) $(DEFS) -c $< -o $(@)
+	@$(TOUCH) $(CC) $(CFLAGS) $(CWARNINGS) $(DEBUGFLAG) $(DEFS) -c $< -o $(@)
 	@echo "Compiled: "$<
 
 all:
