@@ -35,7 +35,7 @@ int dmp_en;
 int packet_len;
 pthread_t imu_interrupt_thread;
 struct sched_param params;
-int (*imu_interrupt_func)();
+void (*imu_interrupt_func)(); // pointer to user's interrupt function
 int interrupt_func_set;
 double mag_factory_adjust[3];
 double mag_offsets[3];
@@ -79,7 +79,6 @@ int load_gyro_offets();
 int load_mag_calibration();
 int write_mag_cal_to_disk(double offsets[3], double scale[3]);
 void* imu_interrupt_handler(void* ptr);
-int (*imu_interrupt_func)(); // pointer to user-defined function
 int check_quaternion_validity(unsigned char* raw, int i);
 
 
@@ -1495,11 +1494,15 @@ void* imu_interrupt_handler(void* ptr){
 }
 
 /*******************************************************************************
-* int set_imu_interrupt_func(int (*func)(void))
+* int set_imu_interrupt_func(void (*func)(void))
 *
 * sets a user function to be called when new data is read
 *******************************************************************************/
-int set_imu_interrupt_func(int (*func)(void)){
+int set_imu_interrupt_func(void (*func)(void)){
+	if(func==NULL){
+		printf("ERROR: trying to assign NULL pointer to imu_interrupt_func\n");
+		return -1;
+	}
 	imu_interrupt_func = func;
 	interrupt_func_set = 1;
 	return 0;

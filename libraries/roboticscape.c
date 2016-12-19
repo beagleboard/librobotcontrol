@@ -12,7 +12,8 @@
 #include "mmap/mmap_gpio_adc.h"		// used for fast gpio functions
 #include "mmap/mmap_pwmss.h"		// used for fast pwm functions
 #include "other/robotics_pru.h"
-
+#include "other/roboticscape_buttons.h"
+#include "other/roboticscape_motors.h"
 
 #define CAPE_NAME	"RoboticsCape"
 #define MAX_BUF		512
@@ -20,9 +21,8 @@
 /*******************************************************************************
 * Global Variables
 *******************************************************************************/
+// global roboticscape state
 enum rc_state_t rc_state = UNINITIALIZED;
-int pause_btn_state, mode_btn_state;
-int mdir1a, mdir2b; // variable gpio pin assignments
 
 
 
@@ -30,28 +30,7 @@ int mdir1a, mdir2b; // variable gpio pin assignments
 * local function declarations
 *******************************************************************************/
 int is_cape_loaded();
-int initialize_button_handlers();
-int (*pause_released_func)(void);
-int (*pause_pressed_func)(void);
-int (*mode_released_func)(void);
-int (*mode_pressed_func)(void);
 void shutdown_signal_handler(int signo);
-
-/*******************************************************************************
-* local thread function declarations
-*******************************************************************************/
-void* pause_pressed_handler(void* ptr);
-void* pause_released_handler(void* ptr);
-void* mode_pressed_handler(void* ptr);
-void* mode_released_handler(void* ptr);
-
-/*******************************************************************************
-* local thread structs
-*******************************************************************************/
-pthread_t pause_pressed_thread;
-pthread_t pause_released_thread;
-pthread_t mode_pressed_thread;
-pthread_t mode_released_thread;
 
 
 /*******************************************************************************
@@ -69,7 +48,7 @@ int initialize_roboticscape(){
 	#endif
 	kill_robot();
 
-	// all done
+	// start state as Uninitialized
 	rc_set_state(UNINITIALIZED);
 	
 	// Start Signal Handler
@@ -78,16 +57,6 @@ int initialize_roboticscape(){
 	#endif
 	enable_rc_sig_handler();
 
-
-	// do any board-specific config
-	if(get_bb_model()==BB_BLUE){
-		mdir1a = MDIR1A_BLUE;
-		mdir2b = MDIR2B_BLUE;
-	}
-	else{
-		mdir1a = MDIR1A;
-		mdir2b = MDIR2B;
-	}
 
 	// initialize pinmux
 	#ifdef DEBUG
@@ -122,36 +91,29 @@ int initialize_roboticscape(){
 		return -1;
 	}
 
-	// now eqep
+	// eQep encoder counters
 	#ifdef DEBUG
 	printf("Initializing: eQEP\n");
 	#endif
+	// this also zero's out the encoder counters
 	if(init_eqep(0)){
-		printf("ERROR: failed to initialize eQEP0\n");
-		// return -1;
+		printf("WARNING: failed to initialize eQEP0\n");
 	}
 	if(init_eqep(1)){
-		printf("ERROR: failed to initialize eQEP1\n");
-		// return -1;
+		printf("WARNING: failed to initialize eQEP1\n");
 	}
 	if(init_eqep(2)){
-		printf("ERROR: failed to initialize eQEP2\n");
-		// return -1;
+		printf("WARNING: failed to initialize eQEP2\n");
 	}
-	
-	// now pwm
+
+	// motors
 	#ifdef DEBUG
-	printf("Initializing: PWM\n");
+	printf("Initializing: Motors\n");
 	#endif
-	if(simple_init_pwm(1,PWM_FREQ)){
-		printf("ERROR: failed to initialize hrpwm1\n");
-		return -1;
+	if(initialize_motors()){
+		printf("WARNING: Failed to initialize motors\n");
 	}
-	if(simple_init_pwm(2,PWM_FREQ)){
-		printf("ERROR: failed to initialize PWMSS 2\n");
-		return -1;
-	}
-	
+
 	//set up function pointers for button press events
 	#ifdef DEBUG
 	printf("Initializing: Buttons\n");
@@ -160,14 +122,12 @@ int initialize_roboticscape(){
 		printf("ERROR: failed to start button threads\n");
 		return -1;
 	}
-	
+
 	// start PRU
 	#ifdef DEBUG
 	printf("Initializing: PRU\n");
 	#endif
 	initialize_pru();
-	// zero out 4th encoder, eQEP encoders are already zero'd previously
-	set_encoder_pos(4,0);
 
 	// create new pid file with process id
 	#ifdef DEBUG
@@ -202,61 +162,44 @@ int initialize_roboticscape(){
 int cleanup_roboticscape(){
 	// just in case the user forgot, set state to exiting
 	rc_set_state(EXITING);
-	
+
 	// announce we are starting cleanup process
 	printf("\nExiting Cleanly\n");
 	
-	//allow up to 3 seconds for thread cleanup
-	struct timespec thread_timeout;
-	clock_gettime(CLOCK_REALTIME, &thread_timeout);
-	thread_timeout.tv_sec += 3;
-	int thread_err = 0;
-
 	#ifdef DEBUG
-	printf("joining button threads\n");
+	printf("waiting for button handlers to join\n");
 	#endif
-	thread_err = pthread_timedjoin_np(pause_pressed_thread, NULL, \
-															&thread_timeout);
-	if(thread_err == ETIMEDOUT){
-		printf("WARNING: pause_pressed_thread exit timeout\n");
-	}
-	thread_err = 0;
-	thread_err = pthread_timedjoin_np(pause_released_thread, NULL, \
-															&thread_timeout);
-	if(thread_err == ETIMEDOUT){
-		printf("WARNING: pause_released_thread exit timeout\n");
-	}
-	thread_err = 0;
-	thread_err = pthread_timedjoin_np(mode_pressed_thread, NULL, \
-															&thread_timeout);
-	if(thread_err == ETIMEDOUT){
-		printf("WARNING: mode_pressed_thread exit timeout\n");
-	}
-	thread_err = 0;
-	thread_err = pthread_timedjoin_np(mode_released_thread, NULL, \
-															&thread_timeout);
-	if(thread_err == ETIMEDOUT){
-		printf("WARNING: mode_released_thread exit timeout\n");
-	}
-	
-	
+	wait_for_button_handlers_to_join();
+
 	#ifdef DEBUG
 	printf("turning off GPIOs & PWM\n");
 	#endif
 	rc_set_led(GREEN,LOW);
-	rc_set_led(RED,LOW);	
+	rc_set_led(RED,LOW);
+
+	#ifdef DEBUG
+	printf("Turning off motors\n");
+	#endif
 	disable_motors();
-	manual_deselect_spi_slave(1);	
-	manual_deselect_spi_slave(2);	
+
+	#ifdef DEBUG
+	printf("Turning off SPI slaves\n");
+	#endif
+	manual_deselect_spi_slave(1);
+	manual_deselect_spi_slave(2);
+
+	#ifdef DEBUG
+	printf("Turning off servo power rail\n");
+	#endif
 	disable_servo_power_rail();
 	
 	#ifdef DEBUG
-	printf("stopping dsm service\n");
+	printf("Stopping dsm service\n");
 	#endif
 	stop_dsm_service();	
 	
 	#ifdef DEBUG
-	printf("deleting PID file\n");
+	printf("Deleting PID file\n");
 	#endif
 	FILE* fd;
 	// clean up the pid_file if it still exists
@@ -393,426 +336,6 @@ int rc_blink_led(rc_led_t led, double hz, double period){
 	}
 	
 	rc_set_led(led, 0); // make sure it is left off
-	return 0;
-}
-
-/*******************************************************************************
-*	int initialize_button_interrups()
-*
-*	start 4 threads to handle 4 interrupt routines for pressing and
-*	releasing the two buttons.
-*******************************************************************************/
-int initialize_button_handlers(){
-
-	set_pause_pressed_func(&null_func);
-	set_pause_released_func(&null_func);
-	set_mode_pressed_func(&null_func);
-	set_mode_released_func(&null_func);
-	
-	#ifdef DEBUG
-	printf("starting button threads\n");
-	#endif
-	pthread_create(&pause_pressed_thread, NULL,	\
-				pause_pressed_handler, (void*) NULL);
-	pthread_create(&pause_released_thread, NULL,	\
-				pause_released_handler, (void*) NULL);
-	pthread_create(&mode_pressed_thread, NULL,		\
-					mode_pressed_handler, (void*) NULL);
-	pthread_create(&mode_released_thread, NULL,	\
-					mode_released_handler, (void*) NULL);
-
-	// apply priority to all threads
-	#ifdef DEBUG
-	printf("setting button thread priorities\n");
-	#endif
-	struct sched_param params;
-	params.sched_priority = sched_get_priority_max(SCHED_FIFO)-5;
-	pthread_setschedparam(pause_pressed_thread, SCHED_FIFO, &params);
-	pthread_setschedparam(pause_released_thread, SCHED_FIFO, &params);
-	pthread_setschedparam(mode_pressed_thread, SCHED_FIFO, &params);
-	pthread_setschedparam(mode_released_thread, SCHED_FIFO, &params);
-	 
-	return 0;
-}
-
-/*******************************************************************************
-*	void* pause_pressed_handler(void* ptr)
-* 
-*	wait on falling edge of pause button
-*******************************************************************************/
-void* pause_pressed_handler(void* ptr){
-	struct pollfd fdset[1];
-	char buf[MAX_BUF];
-	int gpio_fd = gpio_fd_open(PAUSE_BTN);
-	fdset[0].fd = gpio_fd;
-	fdset[0].events = POLLPRI; // high-priority interrupt
-	// keep running until the program closes
-	while(rc_get_state() != EXITING) {
-		// system hangs here until FIFO interrupt
-		poll(fdset, 1, POLL_TIMEOUT);        
-		if (fdset[0].revents & POLLPRI) {
-			lseek(fdset[0].fd, 0, SEEK_SET);  
-			read(fdset[0].fd, buf, MAX_BUF);
-			// delay debouce
-			usleep(500); 
-			if(get_pause_button()==PRESSED){
-				usleep(500);
-				if(get_pause_button()==PRESSED){
-					usleep(500);
-					if(get_pause_button()==PRESSED){
-						pause_pressed_func(); 
-					}
-				}
-			}
-			// purge any interrupts that may have stacked up
-			lseek(fdset[0].fd, 0, SEEK_SET);  
-			read(fdset[0].fd, buf, MAX_BUF);
-		}
-	}
-	gpio_fd_close(gpio_fd);
-	return 0;
-}
-
-/*******************************************************************************
-* @ void* pause_released_handler(void* ptr) 
-*
-* wait on rising edge of pause button
-*******************************************************************************/
-void* pause_released_handler(void* ptr){
-	struct pollfd fdset[1];
-	char buf[MAX_BUF];
-	int gpio_fd = gpio_fd_open(PAUSE_BTN);
-	fdset[0].fd = gpio_fd;
-	fdset[0].events = POLLPRI; // high-priority interrupt
-	// keep running until the program closes
-	while(rc_get_state() != EXITING) {
-		// system hangs here until FIFO interrupt
-		poll(fdset, 1, POLL_TIMEOUT);        
-		if (fdset[0].revents & POLLPRI) {
-			lseek(fdset[0].fd, 0, SEEK_SET);  
-			read(fdset[0].fd, buf, MAX_BUF);
-			// delay debouce
-			usleep(500); 
-			if(get_pause_button()==RELEASED){
-				usleep(500);
-				if(get_pause_button()==RELEASED){
-					usleep(500);
-					if(get_pause_button()==RELEASED){
-						pause_released_func(); 
-					}
-				}
-			}
-			// purge any interrupts that may have stacked up
-			lseek(fdset[0].fd, 0, SEEK_SET);  
-			read(fdset[0].fd, buf, MAX_BUF);
-		}
-	}
-	gpio_fd_close(gpio_fd);
-	return 0;
-}
-
-/*******************************************************************************
-*	void* mode_pressed_handler(void* ptr) 
-*	wait on falling edge of mode button
-*******************************************************************************/
-void* mode_pressed_handler(void* ptr){
-	struct pollfd fdset[1];
-	char buf[MAX_BUF];
-	int gpio_fd = gpio_fd_open(MODE_BTN);
-	fdset[0].fd = gpio_fd;
-	fdset[0].events = POLLPRI; // high-priority interrupt
-	// keep running until the program closes
-	while(rc_get_state() != EXITING) {
-		// system hangs here until FIFO interrupt
-		poll(fdset, 1, POLL_TIMEOUT);        
-		if (fdset[0].revents & POLLPRI) {
-			lseek(fdset[0].fd, 0, SEEK_SET);  
-			read(fdset[0].fd, buf, MAX_BUF);
-			// delay debouce
-			usleep(500); 
-			if(get_mode_button()==PRESSED){
-				usleep(500);
-				if(get_mode_button()==PRESSED){
-					usleep(500);
-					if(get_mode_button()==PRESSED){
-						mode_pressed_func(); 
-					}
-				}
-			}
-			// purge any interrupts that may have stacked up
-			lseek(fdset[0].fd, 0, SEEK_SET);  
-			read(fdset[0].fd, buf, MAX_BUF);
-		}
-	}
-	gpio_fd_close(gpio_fd);
-	return 0;
-}
-
-/*******************************************************************************
-*	void* mode_released_handler(void* ptr) 
-*	wait on rising edge of mode button
-*******************************************************************************/
-void* mode_released_handler(void* ptr){
-	struct pollfd fdset[1];
-	char buf[MAX_BUF];
-	int gpio_fd = gpio_fd_open(MODE_BTN);
-	fdset[0].fd = gpio_fd;
-	fdset[0].events = POLLPRI; // high-priority interrupt
-	// keep running until the program closes
-	while(rc_get_state() != EXITING) {
-		// system hangs here until FIFO interrupt
-		poll(fdset, 1, POLL_TIMEOUT);        
-		if (fdset[0].revents & POLLPRI) {
-			lseek(fdset[0].fd, 0, SEEK_SET);  
-			read(fdset[0].fd, buf, MAX_BUF);
-			// delay debouce
-			usleep(500); 
-			if(get_mode_button()==RELEASED){
-				usleep(500);
-				if(get_mode_button()==RELEASED){
-					usleep(500);
-					if(get_mode_button()==RELEASED){
-						mode_released_func(); 
-					}
-				}
-			}
-			// purge any interrupts that may have stacked up
-			lseek(fdset[0].fd, 0, SEEK_SET);  
-			read(fdset[0].fd, buf, MAX_BUF);
-		}
-	}
-	gpio_fd_close(gpio_fd);
-	return 0;
-}
-
-/*******************************************************************************
-*	button function assignments
-*******************************************************************************/
-int set_pause_pressed_func(int (*func)(void)){
-	pause_pressed_func = func;
-	return 0;
-}
-int set_pause_released_func(int (*func)(void)){
-	pause_released_func = func;
-	return 0;
-}
-int set_mode_pressed_func(int (*func)(void)){
-	mode_pressed_func = func;
-	return 0;
-}
-int set_mode_released_func(int (*func)(void)){
-	mode_released_func = func;
-	return 0;
-}
-
-/*******************************************************************************
-* rc_button_state_t get_pause_button()
-*******************************************************************************/
-rc_button_state_t get_pause_button(){
-	if(mmap_gpio_read(PAUSE_BTN)==HIGH){
-		return RELEASED;
-	}
-	else{
-		return PRESSED;
-	}
-}
-
-/********************************************************************************
-* rc_button_state_t get_mode_button()
-*******************************************************************************/
-rc_button_state_t get_mode_button(){
-	if(mmap_gpio_read(MODE_BTN)==HIGH){
-		return RELEASED;
-	}
-	else{
-		return PRESSED;
-	}
-}
-
-/*******************************************************************************
-* enable_motors()
-* 
-* turns on the standby pin to enable the h-bridge ICs
-* returns 0 on success
-*******************************************************************************/
-int enable_motors(){
-	set_motor_free_spin_all();
-	return mmap_gpio_write(MOT_STBY, HIGH);
-}
-
-/*******************************************************************************
-* int disable_motors()
-* 
-* turns off the standby pin to disable the h-bridge ICs
-* and disables PWM output signals, returns 0 on success
-*******************************************************************************/
-int disable_motors(){
-	set_motor_free_spin_all();
-	return mmap_gpio_write(MOT_STBY, LOW);
-}
-
-/*******************************************************************************
-* int set_motor(int motor, double duty)
-* 
-* set a motor direction and power
-* motor is from 1 to 4, duty is from -1.0 to +1.0
-*******************************************************************************/
-int set_motor(int motor, double duty){
-	uint8_t a,b;
-
-	//check that the duty cycle is within +-1
-	if (duty>1.0){
-		duty = 1.0;
-	}
-	else if(duty<-1.0){
-		duty=-1.0;
-	}
-	//switch the direction pins to H-bridge
-	if (duty>=0){
-	 	a=HIGH;
-		b=LOW;
-	}
-	else{
-		a=LOW;
-		b=HIGH;
-		duty=-duty;
-	}
-	
-	// set gpio direction outputs & duty
-	switch(motor){
-		case 1:
-			mmap_gpio_write(mdir1a, a);
-			mmap_gpio_write(MDIR1B, b);
-			mmap_set_pwm_duty(1, 'A', duty);
-			break;
-		case 2:
-			mmap_gpio_write(MDIR2A, b);
-			mmap_gpio_write(mdir2b, a);
-			mmap_set_pwm_duty(1, 'B', duty);
-			break;
-		case 3:
-			mmap_gpio_write(MDIR3A, b);
-			mmap_gpio_write(MDIR3B, a);
-			mmap_set_pwm_duty(2, 'A', duty);
-			break;
-		case 4:
-			mmap_gpio_write(MDIR4A, a);
-			mmap_gpio_write(MDIR4B, b);
-			mmap_set_pwm_duty(2, 'B', duty);
-			break;
-		default:
-			printf("enter a motor value between 1 and 4\n");
-			return -1;
-	}
-	return 0;
-}
-
-/*******************************************************************************
-* int set_motor_all(double duty)
-* 
-* applies the same duty cycle argument to all 4 motors
-*******************************************************************************/
-int set_motor_all(double duty){
-	int i;
-	for(i=1;i<=MOTOR_CHANNELS; i++){
-		set_motor(i, duty);
-	}
-	return 0;
-}
-
-/*******************************************************************************
-* int set_motor_free_spin(int motor)
-* 
-* This puts one or all motor outputs in high-impedance state which lets the 
-* motor spin freely as if it wasn't connected to anything.
-*******************************************************************************/
-int set_motor_free_spin(int motor){
-	
-	// set gpio direction outputs & duty
-	switch(motor){
-		case 1:
-			mmap_gpio_write(mdir1a, 0);
-			mmap_gpio_write(MDIR1B, 0);
-			mmap_set_pwm_duty(1, 'A', 0.0);
-			break;
-		case 2:
-			mmap_gpio_write(MDIR2A, 0);
-			mmap_gpio_write(mdir2b, 0);
-			mmap_set_pwm_duty(1, 'B', 0.0);
-			break;
-		case 3:
-			mmap_gpio_write(MDIR3A, 0);
-			mmap_gpio_write(MDIR3B, 0);
-			mmap_set_pwm_duty(2, 'A', 0.0);
-			break;
-		case 4:
-			mmap_gpio_write(MDIR4A, 0);
-			mmap_gpio_write(MDIR4B, 0);
-			mmap_set_pwm_duty(2, 'B', 0.0);
-			break;
-		default:
-			printf("enter a motor value between 1 and 4\n");
-			return -1;
-	}
-	return 0;
-}
-
-/*******************************************************************************
-* @ int set_motor_free_spin_all()
-*******************************************************************************/
-int set_motor_free_spin_all(){
-	int i;
-	for(i=1;i<=MOTOR_CHANNELS; i++){
-		set_motor_free_spin(i);
-	}
-	return 0;
-}
-
-/*******************************************************************************
-* int set_motor_brake(int motor)
-* 
-* These will connect one or all motor terminal pairs together which
-* makes the motor fight against its own back EMF turning it into a brake.
-*******************************************************************************/
-int set_motor_brake(int motor){
-
-	// set gpio direction outputs & duty
-	switch(motor){
-		case 1:
-			mmap_gpio_write(mdir1a, 1);
-			mmap_gpio_write(MDIR1B, 1);
-			mmap_set_pwm_duty(1, 'A', 0.0);
-			break;
-		case 2:
-			mmap_gpio_write(MDIR2A, 1);
-			mmap_gpio_write(mdir2b, 1);
-			mmap_set_pwm_duty(1, 'B', 0.0);
-			break;
-		case 3:
-			mmap_gpio_write(MDIR3A, 1);
-			mmap_gpio_write(MDIR3B, 1);
-			mmap_set_pwm_duty(2, 'A', 0.0);
-			break;
-		case 4:
-			mmap_gpio_write(MDIR4A, 1);
-			mmap_gpio_write(MDIR4B, 1);
-			mmap_set_pwm_duty(2, 'B', 0.0);
-			break;
-		default:
-			printf("enter a motor value between 1 and 4\n");
-			return -1;
-	}
-	return 0;
-}
-
-/*******************************************************************************
-* @ int set_motor_brake_all()
-*******************************************************************************/
-int set_motor_brake_all(){
-	int i;
-	for(i=1;i<=MOTOR_CHANNELS; i++){
-		set_motor_brake(i);
-	}
 	return 0;
 }
 

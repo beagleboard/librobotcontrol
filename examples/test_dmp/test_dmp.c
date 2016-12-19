@@ -24,7 +24,7 @@ imu_data_t data;
 // local functions
 imu_orientation_t orientation_prompt();
 void print_usage();
-int print_data();
+void print_data(); // imu interrupt function
 void print_header();
 
 
@@ -52,11 +52,11 @@ void print_usage(){
 }
 
 /*******************************************************************************
-* int print_data()
+* void print_data()
 *
 * This is the IMU interrupt function.  
 *******************************************************************************/
-int print_data(){
+void print_data(){
 	printf("\r");
 	printf(" ");
 	
@@ -102,7 +102,7 @@ int print_data(){
 	}
 													
 	fflush(stdout);
-	return 0;
+	return;
 }
 
 /*******************************************************************************

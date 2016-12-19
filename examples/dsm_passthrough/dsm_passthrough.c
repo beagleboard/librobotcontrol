@@ -21,7 +21,7 @@ typedef enum p_mode_t{
 } p_mode_t;
 
 // function to be called every time new a new DSM2 packet is received.
-int send_pulses(){
+void send_pulses(){
 	int i, ch;
 	// send single pulse to each servo
 	for(i=0; i<8; i++){
@@ -35,7 +35,7 @@ int send_pulses(){
 		printf("% 4d   ", get_dsm_ch_raw(i+1));
 	}
 	fflush(stdout);	
-	return 0;
+	return;
 }
 
 

@@ -68,7 +68,7 @@ typedef struct core_state_t{
 * Local Function declarations	
 *******************************************************************************/
 // IMU interrupt routine
-int balance_controller(); 
+void balance_controller(); 
 // threads
 void* setpoint_manager(void* ptr);
 void* battery_checker(void* ptr);
@@ -78,8 +78,8 @@ int zero_out_controller();
 int disarm_controller();
 int arm_controller();
 int wait_for_starting_condition();
-int on_pause_press();
-int on_mode_release();
+void on_pause_press();
+void on_mode_release();
 int blink_green();
 int blink_red();
 
@@ -265,12 +265,12 @@ void* setpoint_manager(void* ptr){
 }
 
 /*******************************************************************************
-* balance_controller()
+* void balance_controller()
 *
 * discrete-time balance controller operated off IMU interrupt
 * Called at SAMPLE_RATE_HZ
 *******************************************************************************/
-int balance_controller(){
+void balance_controller(){
 	static int inner_saturation_counter = 0; 
 	double dutyL, dutyR;
 	/******************************************************************
@@ -299,23 +299,23 @@ int balance_controller(){
 	***************************************************************/
 	if(rc_get_state() == EXITING){
 		disable_motors();
-		return 0;
+		return;
 	}
 	// if controller is still ARMED while state is PAUSED, disarm it
 	if(rc_get_state()!=RUNNING && setpoint.arm_state==ARMED){
 		disarm_controller();
-		return 0;
+		return;
 	}
 	// exit if the controller is disarmed
 	if(setpoint.arm_state==DISARMED){
-		return 0;
+		return;
 	}
 	
 	// check for a tipover
 	if(fabs(cstate.theta) > TIP_ANGLE){
 		disarm_controller();
 		printf("tip detected \n");
-		return 0;
+		return;
 	}
 	
 	/************************************************************
@@ -349,7 +349,7 @@ int balance_controller(){
 		printf("inner loop controller saturated\n");
 		disarm_controller();
 		inner_saturation_counter = 0;
-		return 0;
+		return;
 	}
 	
 	/**********************************************************
@@ -369,7 +369,7 @@ int balance_controller(){
 	set_motor(MOTOR_CHANNEL_L, MOTOR_POLARITY_L * dutyL); 
 	set_motor(MOTOR_CHANNEL_R, MOTOR_POLARITY_R * dutyR); 
 
-	return 0;
+	return;
 }
 
 /*******************************************************************************
@@ -511,11 +511,12 @@ void* printf_loop(void* ptr){
 } 
 
 /*******************************************************************************
-*	on_pause_press() 
-*	Disarm the controller and set system state to paused.
-*	If the user holds the pause button for 2 seconds, exit cleanly
+* void on_pause_press() 
+*
+* Disarm the controller and set system state to paused.
+* If the user holds the pause button for 2 seconds, exit cleanly
 *******************************************************************************/
-int on_pause_press(){
+void on_pause_press(){
 	int i=0;
 	const int samples = 100;	// check for release 100 times in this period
 	const int us_wait = 2000000; // 2 seconds
@@ -523,7 +524,7 @@ int on_pause_press(){
 	switch(rc_get_state()){
 	// pause if running
 	case EXITING:
-		return 0;
+		return;
 	case RUNNING:
 		rc_set_state(PAUSED);
 		disarm_controller();
@@ -544,7 +545,7 @@ int on_pause_press(){
 	while(i<samples){
 		usleep(us_wait/samples);
 		if(get_pause_button() == RELEASED){
-			return 0; //user let go before time-out
+			return; //user let go before time-out
 		}
 		i++;
 	}
@@ -552,14 +553,15 @@ int on_pause_press(){
 	//user held the button down long enough, blink and exit cleanly
 	rc_blink_led(RED,5,2);
 	rc_set_state(EXITING);
-	return 0;
+	return;
 }
 
 /*******************************************************************************
-*	on_mode_release()
-*	toggle between position and angle modes if MiP is paused
+* void on_mode_release()
+*
+* toggle between position and angle modes if MiP is paused
 *******************************************************************************/
-int on_mode_release(){
+void on_mode_release(){
 	// toggle between position and angle modes
 	if(setpoint.drive_mode == NOVICE){
 		setpoint.drive_mode = ADVANCED;
@@ -571,5 +573,5 @@ int on_mode_release(){
 	}
 	
 	rc_blink_led(GREEN,5,1);
-	return 0;
+	return;
 }

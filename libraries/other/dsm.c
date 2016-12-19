@@ -34,7 +34,7 @@ int dsm_frame_rate;
 uint64_t last_time;
 pthread_t serial_parser_thread;
 int listening; // for calibration routine only
-int (*dsm_ready_func)();
+void (*dsm_ready_func)();
 int is_dsm_active_flag; 
 
 /*******************************************************************************
@@ -159,11 +159,15 @@ int is_new_dsm_data(){
 }
 
 /*******************************************************************************
-* @ int set_new_dsm_data_func(int (*func)(void))
+* @ int set_new_dsm_data_func(void (*func)(void))
 * 
 * sets the 
 *******************************************************************************/
-int set_new_dsm_data_func(int (*func)(void)){
+int set_new_dsm_data_func(void (*func)(void)){
+	if(func==NULL){
+		printf("ERROR: trying to assign NULL pointer to new_dsm_data_func\n");
+		return -1;
+	}
 	dsm_ready_func = func;
 	return 0;
 }

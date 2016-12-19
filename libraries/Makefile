@@ -1,21 +1,21 @@
 TARGET = libroboticscape.so
 
 
-SUBDIRS = $(shell find * -type d -print)
-CC = gcc
-LINKER   := gcc
-TOUCH 	 := $(shell touch *)
-CFLAGS := -Wall -fsingle-precision-constant -fpic -march=armv7-a -mtune=cortex-a8 
-LFLAGS	:= -lm -lrt -lpthread -shared -Wl,-soname,$(TARGET)
+SUBDIRS		:=	$(shell find * -type d -print)
+CC			:= gcc
+LINKER		:= gcc
+TOUCH		:= $(shell touch *)
+CFLAGS		:= -Wall -g -fpic -march=armv7-a -mtune=cortex-a8 
+LFLAGS		:= -lm -lrt -lpthread -shared -Wl,-soname,$(TARGET)
 
-SOURCES := $(shell find ./ -name '*.c')
-INCLUDES := $(shell find ./ -name '*.h')
-OBJECTS  := $(SOURCES:$%.c=$%.o)
+SOURCES		:= $(shell find ./ -name '*.c')
+INCLUDES	:= $(shell find ./ -name '*.h')
+OBJECTS		:= $(SOURCES:$%.c=$%.o)
 
-prefix := /usr
-RM := rm -f -r
-INSTALL := install -m 755 
-INSTALLDIR := install -d -m 644
+prefix		:= /usr
+RM			:= rm -f -r
+INSTALL		:= install -m 755 
+INSTALLDIR	:= install -d -m 644
 INSTALLNOEXEC := install -m 644
 
 

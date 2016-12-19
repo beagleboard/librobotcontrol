@@ -10,8 +10,8 @@
 
 
 // function declarations
-int on_pause_pressed();
-int on_pause_released();
+void on_pause_pressed();
+void on_pause_released();
 
 
 /*******************************************************************************
@@ -58,24 +58,24 @@ int main(){
 
 
 /*******************************************************************************
-* int on_pause_released() 
+* void on_pause_released() 
 *	
 * Make the Pause button toggle between paused and running states.
 *******************************************************************************/
-int on_pause_released(){
+void on_pause_released(){
 	// toggle betewen paused and running modes
-	if(rc_get_state()==RUNNING)   		rc_set_state(PAUSED);
+	if(rc_get_state()==RUNNING)		rc_set_state(PAUSED);
 	else if(rc_get_state()==PAUSED)	rc_set_state(RUNNING);
-	return 0;
+	return;
 }
 
 /*******************************************************************************
-* int on_pause_pressed() 
+* void on_pause_pressed() 
 *	
 * If the user holds the pause button for 2 seconds, set state to exiting which 
 * triggers the rest of the program to exit cleanly.
 *******************************************************************************/
-int on_pause_pressed(){
+void on_pause_pressed(){
 	int i=0;
 	const int samples = 100;	// check for release 100 times in this period
 	const int us_wait = 2000000; // 2 seconds
@@ -83,9 +83,9 @@ int on_pause_pressed(){
 	// now keep checking to see if the button is still held down
 	for(i=0;i<samples;i++){
 		usleep(us_wait/samples);
-		if(get_pause_button() == RELEASED) return 0;
+		if(get_pause_button() == RELEASED) return;
 	}
 	printf("long press detected, shutting down\n");
 	rc_set_state(EXITING);
-	return 0;
+	return;
 }

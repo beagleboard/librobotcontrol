@@ -20,57 +20,65 @@
 #define QUIT_TIMEOUT_US 1500000 // quit after 1.5 seconds holding pause button
 
 // mode=0,1,2 corresponds to us_delay index for slow,medium,fast
-const int us_delay[] = {400000, 200000, 100000};	
+const int us_delay[] = {400000, 170000, 100000};	
 int mode;
 int toggle; // toggles between 0&1 for led blink
 
 
-// Function to be called when pause button is pressed
-// this is called on press instead of release so it can time
-// how long the user has held the button and exit after 1.5 seconds.
-int on_pause_press(){
-	printf("user pressed Pause\n");
-	// toggle between PAUSED and RUNNING 
-	switch(rc_get_state()){
-	case PAUSED:
-		rc_set_state(RUNNING); // toggle running/paused
-		break;
-	case RUNNING:
-		rc_set_state(PAUSED);	// toggle running/paused
-		break;
-	case EXITING: // be careful to exit if program is already shutting down!!!
-		return 0; 
-	default: // ignore other states
-		break;
-	}
-	
-	// now wait to see if the user want to shut down the program
-	int i=0;
-	while(i<QUIT_TIMEOUT_US){
-		usleep(1000);
-		if(get_pause_button() == RELEASED){
-			printf("user released pause button\n");
-			return 0; //user let go before time-out
-		}
-		i+=1000;
-	}
-	printf("long press detected, shutting down\n");
-	rc_blink_led(RED, 15, 0.5); // blink 5hz for 1 second
-	//user held the button down long enough, blink and exit cleanly
-	rc_set_state(EXITING);
-	return 0;
+/*******************************************************************************
+* void on_pause_released() 
+*	
+* Make the Pause button toggle between paused and running states.
+*******************************************************************************/
+void on_pause_released(){
+	// toggle betewen paused and running modes
+	if(rc_get_state()==RUNNING)		rc_set_state(PAUSED);
+	else if(rc_get_state()==PAUSED)	rc_set_state(RUNNING);
+	return;
 }
 
-// increment mode and therefore speed
-int on_mode_release(){
+/*******************************************************************************
+* void on_pause_pressed() 
+*	
+* If the user holds the pause button for 2 seconds, set state to exiting which 
+* triggers the rest of the program to exit cleanly.
+*******************************************************************************/
+void on_pause_pressed(){
+	int i=0;
+	const int samples = 100;	// check for release 100 times in this period
+	const int us_wait = 2000000; // 2 seconds
+	
+	// now keep checking to see if the button is still held down
+	for(i=0;i<samples;i++){
+		usleep(us_wait/samples);
+		if(get_pause_button() == RELEASED) return;
+	}
+	printf("long press detected, shutting down\n");
+	rc_set_state(EXITING);
+	return;
+}
+
+
+/*******************************************************************************
+* void on_mode_released() 
+*	
+* If the user holds the pause button for 2 seconds, set state to exiting which 
+* triggers the rest of the program to exit cleanly.
+*******************************************************************************/
+void on_mode_released(){
 	if(mode<2)mode++;
 	else mode=0;
 	
 	printf("setting mode: %d\n", mode);
-	return 0;
+	return;
 }
 
-// main function usually sits in one while loop blinking LEDs depending
+/*******************************************************************************
+* int main()
+*
+* main function sits in one while loop blinking LEDs while button handlers
+* control the blink speed and program state
+*******************************************************************************/
 int main(){
 	if(initialize_roboticscape()){
 		printf("failed to initialize cape\n");
@@ -81,8 +89,9 @@ int main(){
 	printf("hold pause button to exit\n");
 	
 	//Assign your own functions to be called when events occur
-	set_pause_pressed_func(&on_pause_press);
-	set_mode_released_func(&on_mode_release);
+	set_pause_pressed_func(&on_pause_pressed);
+	set_pause_released_func(&on_pause_released);
+	set_mode_released_func(&on_mode_released);
 	
 	// start in slow mode
 	mode = 0;

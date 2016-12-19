@@ -178,10 +178,10 @@ typedef enum rc_button_state_t {
 	RELEASED,
 	PRESSED
 } rc_button_state_t;
-int set_pause_pressed_func(int (*func)(void));
-int set_pause_released_func(int (*func)(void));
-int set_mode_pressed_func(int (*func)(void));
-int set_mode_released_func(int (*func)(void));
+int set_pause_pressed_func(void (*func)(void));
+int set_pause_released_func(void (*func)(void));
+int set_mode_pressed_func(void (*func)(void));
+int set_mode_released_func(void (*func)(void));
 rc_button_state_t get_pause_button();
 rc_button_state_t get_mode_button();
 
@@ -440,7 +440,7 @@ int send_oneshot_pulse_normalized_all(double input);
 int   initialize_dsm();
 int   is_new_dsm_data();
 int   is_dsm_active();
-int   set_new_dsm_data_func(int (*func)(void));
+int   set_new_dsm_data_func(void (*func)(void));
 int   get_dsm_ch_raw(int channel);
 double get_dsm_ch_normalized(int channel);
 int   ms_since_last_dsm_packet();
@@ -641,7 +641,7 @@ int read_imu_temp(imu_data_t* data);
 
 // interrupt-driven sampling mode functions
 int initialize_imu_dmp(imu_data_t *data, imu_config_t conf);
-int set_imu_interrupt_func(int (*func)(void));
+int set_imu_interrupt_func(void (*func)(void));
 int stop_imu_interrupt_func();
 int was_last_read_successful();
 uint64_t micros_since_last_interrupt();
@@ -898,7 +898,7 @@ int print_cpu_frequency();
 * This is a collection of miscellaneous useful functions that are part of the
 * robotics cape library. These do not necessarily interact with hardware.
 *
-* @ int null_func()
+* @ void null_func()
 *
 * A simple function that returns 0. This exists so function pointers can be 
 * set to do nothing such as button and imu interrupt handlers.
@@ -971,7 +971,7 @@ int print_cpu_frequency();
 * This is a useful function for checking if the user wishes to continue with a 
 * process or quit.
 *******************************************************************************/
-int null_func();
+void null_func();
 float get_random_float();
 double get_random_double();
 int saturate_float(float* val, float min, float max);

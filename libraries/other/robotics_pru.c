@@ -87,8 +87,11 @@ int initialize_pru(){
 	printf("zeroing out PRU shared memory\n");
 	#endif
 	memset(prusharedMem_32int_ptr, 0, 9*4);
-	
-    return 0;
+
+	// zero out 4th encoder, eQEP encoders are already zero'd previously
+	set_encoder_pos(4,0);
+
+	return 0;
 }
 
 /*******************************************************************************

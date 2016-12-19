@@ -9,13 +9,13 @@
 #include "../roboticscape-usefulincludes.h"
 
 /*******************************************************************************
-* @ int null_func()
+* @ void null_func()
 *
-* A simple function that returns 0. This exists so function pointers can be 
+* A simple function that just returns. This exists so function pointers can be 
 * set to do nothing such as button and imu interrupt handlers.
 *******************************************************************************/
-int null_func(){
-	return 0;
+void null_func(){
+	return;
 }
 
 

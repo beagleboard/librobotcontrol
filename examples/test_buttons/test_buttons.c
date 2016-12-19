@@ -10,31 +10,31 @@
 #include "../../libraries/roboticscape.h"
 
 // pause button pressed interrupt function
-int on_pause_pressed(){
-	rc_set_led(GREEN, ON);
+void on_pause_pressed(){
+	rc_set_led(RED, ON);
 	printf("Pause Pressed\n");
-	return 0;
+	return;
 }
 
 // pause button released interrupt function
-int on_pause_released(){
-	rc_set_led(GREEN, OFF);
+void on_pause_released(){
+	rc_set_led(RED, OFF);
 	printf("Pause Released\n");
-	return 0;
+	return;
 }
 
 // mode button pressed interrupt function
-int on_mode_pressed(){
-	rc_set_led(RED, ON);
+void on_mode_pressed(){
+	rc_set_led(GREEN, ON);
 	printf("Mode Pressed\n");
-	return 0;
+	return;
 }
 
 // mode button released interrupt function
-int on_mode_released(){
-	rc_set_led(RED,OFF);
+void on_mode_released(){
+	rc_set_led(GREEN,OFF);
 	printf("Mode Released\n");
-	return 0;
+	return;
 }
 
 // main just assigns interrupt functions and waits to exit

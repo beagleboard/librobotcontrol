@@ -14,10 +14,10 @@
 
 
 void fail_test();
-int on_pause_pressed();
-int on_pause_released();
-int on_mode_pressed();
-int on_mode_released();
+void on_pause_pressed();
+void on_pause_released();
+void on_mode_pressed();
+void on_mode_released();
 void clear_screen();
 void goto_line(int line);
 void clear_line();
@@ -324,31 +324,31 @@ void fail_test(){
 }
 
 // pause button pressed interrupt function
-int on_pause_pressed(){
+void on_pause_pressed(){
 	rc_set_led(RED, ON);
 	fflush(stdout);
-	return 0;
+	return;
 }
 
 // pause button released interrupt function
-int on_pause_released(){
+void on_pause_released(){
 	rc_set_led(RED, OFF);
 	fflush(stdout);
-	return 0;
+	return;
 }
 
 // mode button pressed interrupt function
-int on_mode_pressed(){
+void on_mode_pressed(){
 	rc_set_led(GREEN, ON);
 	fflush(stdout);
-	return 0;
+	return;
 }
 
 // mode button released interrupt function
-int on_mode_released(){
+void on_mode_released(){
 	rc_set_led(GREEN,OFF);
 	fflush(stdout);
-	return 0;
+	return;
 }
 
 void* blinking_function(void* ptr){
