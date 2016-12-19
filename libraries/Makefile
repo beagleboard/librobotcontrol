@@ -5,7 +5,7 @@ SUBDIRS		:=	$(shell find * -type d -print)
 CC			:= gcc
 LINKER		:= gcc
 TOUCH		:= $(shell touch *)
-CFLAGS		:= -Wall -g -fpic -march=armv7-a -mtune=cortex-a8 
+CFLAGS		:= -Wall -fPIC -march=armv7-a -mtune=cortex-a8 
 LFLAGS		:= -lm -lrt -lpthread -shared -Wl,-soname,$(TARGET)
 
 SOURCES		:= $(shell find ./ -name '*.c')

@@ -47,22 +47,22 @@ d_filter_t create_filter(vector_t num, vector_t den, double dt){
 		printf("ERROR: first coefficient in denominator is 0\n");
 	}
 
-	filter.order = den.len-1;
-	filter.gain = 1;
-	filter.newest_input = 0;
-	filter.newest_output = 0;
-	filter.saturation_en = 0;
-	filter.saturation_min = 0;
-	filter.saturation_max = 0;
-	filter.saturation_flag = 0;
-	filter.soft_start_en = 0;
-	filter.soft_start_steps = 0;
-	filter.numerator   = num;
-	filter.denominator = den;
-	filter.in_buf 	   = create_ring_buf(den.len);
-	filter.out_buf     = create_ring_buf(den.len);
-	filter.initialized = 1;
-	filter.step = 0;
+	filter.order			= den.len-1;
+	filter.gain				= 1;
+	filter.newest_input		= 0;
+	filter.newest_output	= 0;
+	filter.saturation_en	= 0;
+	filter.saturation_min	= 0;
+	filter.saturation_max	= 0;
+	filter.saturation_flag	= 0;
+	filter.soft_start_en	= 0;
+	filter.soft_start_steps	= 0;
+	filter.numerator		= num;
+	filter.denominator		= den;
+	filter.in_buf			= create_ring_buf(den.len);
+	filter.out_buf			= create_ring_buf(den.len);
+	filter.initialized		= 1;
+	filter.step				= 0;
 	return filter;
 }
 
@@ -132,11 +132,11 @@ d_filter_t create_empty_filter(int order){
 	filter.saturation_flag = 0;
 	filter.soft_start_en = 0;
 	filter.soft_start_steps = 0;
-	filter.numerator   = create_vector(order+1);
-	filter.denominator = create_vector(order+1);
-	filter.in_buf 	   = create_ring_buf(order+1);
-	filter.out_buf     = create_ring_buf(order+1);
-	filter.initialized = 1;
+	filter.numerator	= create_vector(order+1);
+	filter.denominator	= create_vector(order+1);
+	filter.in_buf		= create_ring_buf(order+1);
+	filter.out_buf		= create_ring_buf(order+1);
+	filter.initialized	= 1;
 	filter.step = 0;
 	return filter;
 	
@@ -224,9 +224,9 @@ double march_filter(d_filter_t* filter, double new_input){
 int reset_filter(d_filter_t* filter){
 	reset_ring_buf(&filter->in_buf);
 	reset_ring_buf(&filter->out_buf);
-	filter->newest_input = 0;
-	filter->newest_output = 0;
-	filter->step = 0;
+	filter->newest_input	= 0;
+	filter->newest_output	= 0;
+	filter->step			= 0;
 	return 0;
 }
 
@@ -246,9 +246,9 @@ int enable_saturation(d_filter_t* filter, double min, double max){
 		printf("ERORR: saturation max must be > min\n");
 		return -1;
 	}
-	filter->saturation_en = 1;
-	filter->saturation_min = min;
-	filter->saturation_max = max;
+	filter->saturation_en	= 1;
+	filter->saturation_min	= min;
+	filter->saturation_max	= max;
 	return 0;
 }
 
@@ -268,8 +268,8 @@ int enable_soft_start(d_filter_t* filter, double seconds){
 		printf("ERROR: saturation must be enabled to use soft start.\n");
 		return -1;
 	}
-	filter->soft_start_en = 1;
-	filter->soft_start_steps = seconds/filter->dt;
+	filter->soft_start_en		= 1;
+	filter->soft_start_steps	= seconds/filter->dt;
 	
 	return 0;
 }
@@ -459,14 +459,14 @@ d_filter_t C2DTustin(vector_t num, vector_t den, double dt, double w){
 	int   m = num.len - 1;			// highest order of num
 	int   n = den.len - 1;			// highest order of den
 	double A0;
-	vector_t numZ = create_vector(n+1);	// make vectors with den order +1
-	vector_t denZ = create_vector(n+1);
-	vector_t p1  = create_vector(2);	// (z - 1)
-	p1.data[0]   = 1;
-	p1.data[1]   = -1;
-	vector_t p2  = create_vector(2);	// (z + 1)
-	p2.data[0]   = 1;
-	p2.data[1]   = 1;
+	vector_t numZ	= create_vector(n+1);	// make vectors with den order +1
+	vector_t denZ	= create_vector(n+1);
+	vector_t p1		= create_vector(2);	// (z - 1)
+	p1.data[0]		= 1;
+	p1.data[1]		= -1;
+	vector_t p2		= create_vector(2);	// (z + 1)
+	p2.data[0]		= 1;
+	p2.data[1]		= 1;
 	vector_t temp, v1, v2;
 	
 	// from zeroth up to and including mth
@@ -512,11 +512,12 @@ d_filter_t C2DTustin(vector_t num, vector_t den, double dt, double w){
 *******************************************************************************/
 d_filter_t create_first_order_lowpass(double dt, double time_constant){
 	double lp_const = dt/time_constant;
-	vector_t num = create_vector(1);
+	vector_t num = create_vector(2);
 	vector_t den = create_vector(2);
 	num.data[0] = lp_const;
+	num.data[1] = 0;
 	den.data[0] = 1.0;
-	den.data[1] = lp_const-1.0;
+	den.data[1] = lp_const -1.0;
 	return create_filter(num,den,dt);
 }
 

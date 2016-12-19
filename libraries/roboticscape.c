@@ -4,8 +4,9 @@
 * This is one of many c-files that are used to build libroboticscape.so
 * however it contains the majority of the core components.
 *******************************************************************************/
-
-#include "roboticscape-usefulincludes.h"
+#include <signal.h>
+#include <stdio.h>
+#include <unistd.h>
 #include "roboticscape.h"
 #include "roboticscape-defs.h"
 #include "simple_gpio/gpio_setup.h"
@@ -432,7 +433,6 @@ double get_adc_volt(int ch){
 
 
 
-
 /*******************************************************************************
 * int enable_servo_power_rail()
 * 
@@ -464,55 +464,10 @@ void shutdown_signal_handler(int signo){
 	if (signo == SIGINT){
 		rc_set_state(EXITING);
 		printf("\nreceived SIGINT Ctrl-C\n");
- 	}else if (signo == SIGTERM){
+	}else if (signo == SIGTERM){
 		rc_set_state(EXITING);
 		printf("\nreceived SIGTERM\n");
- 	}
-}
-
-
-/*******************************************************************************
-*	is_cape_loaded()
-*
-*	check to make sure robotics cape overlay is loaded
-*	return 1 if cape is loaded
-*	return -1 if cape_mgr is missing
-* 	return 0 if mape_mgr is present but cape is missing
-*******************************************************************************/
-int is_cape_loaded(){
-	int ret;
-	
-	// first check if the old (Wheezy) location of capemanager exists
-	if(system("ls /sys/devices/ | grep -q \"bone_capemgr\"")==0){
-		#ifdef DEBUG
-		printf("checking /sys/devices/bone_capemgr*/slots\n");
-		#endif
-		ret = system("grep -q "CAPE_NAME" /sys/devices/bone_capemgr*/slots");
 	}
-	else if(system("ls /sys/devices/platform/ | grep -q \"bone_capemgr\"")==0){
-		#ifdef DEBUG
-		printf("checking /sys/devices/platform/bone_capemgr*/slots\n");
-		#endif
-		ret = system("grep -q "CAPE_NAME" /sys/devices/platform/bone_capemgr*/slots");
-	}
-	else{
-		printf("Cannot find bone_capemgr*/slots\n");
-		return -1;
-	}
-	
-	if(ret == 0){
-		#ifdef DEBUG
-		printf("Cape Loaded\n");
-		#endif
-		return 1;
-	} 
-	
-	#ifdef DEBUG
-	printf("Cape NOT Loaded\n");
-	printf("grep returned %d\n", ret);
-	#endif
-	
-	return 0;
 }
 
 
