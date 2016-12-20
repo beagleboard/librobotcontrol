@@ -1,21 +1,23 @@
-TOUCH 	 := $(shell touch *)
-CC	:= gcc
-LINKER   := gcc -o
-CFLAGS	:= -c -Wall -g
-LFLAGS	:= -L ../../libraries -lm -lrt -lpthread -lroboticscape
+# shared makefile for all the examples
 
-SOURCES  := $(wildcard *.c)
-INCLUDES := $(wildcard *.h)
-OBJECTS  := $(SOURCES:$%.c=$%.o)
+TOUCH		:= $(shell touch *)
+CC			:= gcc
+LINKER		:= gcc -o
+CFLAGS		:= -c -Wall -O2
+LFLAGS		:= -L ../../libraries -lm -lrt -lpthread -lroboticscape
 
-prefix := /usr
-RM := rm -f
-INSTALL := install -m 755 
-INSTALLDIR := install -d -m 644
+SOURCES		:= $(wildcard *.c)
+INCLUDES	:= $(wildcard *.h)
+OBJECTS		:= $(SOURCES:$%.c=$%.o)
 
-LINK := ln -s -f
-LINKDIR := /etc/roboticscape
-LINKNAME := link_to_startup_program
+prefix		:= /usr
+RM			:= rm -f
+INSTALL		:= install -m 755 
+INSTALLDIR	:= install -d -m 644
+
+LINK		:= ln -s -f
+LINKDIR		:= /etc/roboticscape
+LINKNAME	:= link_to_startup_program
 
 # linking Objects
 $(TARGET): $(OBJECTS)

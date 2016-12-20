@@ -21,19 +21,20 @@ typedef enum m_mode_t{
 // printed if some invalid argument was given
 void print_usage(){
 	printf("\n");
-	printf("-d {duty}		define a duty cycle from -1.0 to 1.0\n");
-	printf("-b  			enbale motor brake function\n");
-	printf("-f 			enable free spin function\n");
-	printf("-s {duty}		sweep motors back and foward at duty cycle\n");
-	printf("-m {motor}		specify a single motor from 1-4, otherwise all\n");
-	printf("			motors will be driven equally.\n");
-	printf("-h			print this help message\n");
+	printf("-d {duty}   define a duty cycle from -1.0 to 1.0\n");
+	printf("-b          enable motor brake function\n");
+	printf("-f          enable free spin function\n");
+	printf("-s {duty}   sweep motors back and forward at duty cycle\n");
+	printf("-m {motor}  specify a single motor from 1-4, otherwise all\n");
+	printf("            motors will be driven equally.\n");
+	printf("-h          print this help message\n");
 	printf("\n");
 }
 
 int main(int argc, char *argv[]){
-	double duty;
-	int ch, c, in;
+	double duty = 0.0;
+	int ch = 1;
+	int c, in;
 	int all = 1;	// set to 0 if a motor (-m) argument is given 
 	m_mode_t m_mode = DISABLED;
 	

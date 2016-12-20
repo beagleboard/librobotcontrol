@@ -7,7 +7,7 @@ LINKER		:= gcc
 TOUCH		:= $(shell touch *)
 CWARNINGS	:= -Wall
 CFLOATFLAGS	:= -frounding-math -fsignaling-nans
-CFLAGS		:= -fPIC -march=armv7-a -mtune=cortex-a8 
+CFLAGS		:= -c -fPIC -march=armv7-a -mtune=cortex-a8 
 LFLAGS		:= -lm -lrt -lpthread -shared -Wl,-soname,$(TARGET)
 
 SOURCES		:= $(shell find ./ -name '*.c')
