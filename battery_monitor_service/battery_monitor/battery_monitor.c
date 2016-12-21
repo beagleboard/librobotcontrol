@@ -28,6 +28,9 @@
 #define FITLER_SAMPLES		6		// average over 6 samples, 3 seconds
 #define STD_DEV_TOLERANCE	0.04 	// above 0.1 definitely charging
 
+#define MODEL_DIR "/proc/device-tree/model"
+#define BUF_SIZE 128
+
 // functions
 void illuminate_leds(int i);
 int kill_existing_instance();
@@ -43,6 +46,7 @@ int running;
 // main() takes only one optional argument: -k (kill)
 int main(int argc, char *argv[]){
 	FILE* fd;
+	char d[BUF_SIZE];
 	double v_pack;	// 2S pack voltage on JST XH 2S balance connector
 	double v_jack;	// could be dc power supply or another battery
 	double cell_voltage;	// cell voltage from either 2S or external pack
@@ -69,7 +73,41 @@ int main(int argc, char *argv[]){
 			return -1;
 			break;
 		}
-    }
+	}
+
+	// from: get_bb_model_from_device_tree (bb_model.c)
+	if ((fd = fopen(MODEL_DIR, "r")) == NULL)
+	{
+		printf("ERROR: can't open %s \n", MODEL_DIR);
+		kill_existing_instance();
+		return -1;
+	}
+
+	// read model
+	memset(d, 0, BUF_SIZE);
+	fgets(d, BUF_SIZE, fd);
+	fclose(fd);
+
+	// now do the checks
+	if(strcmp(d, "TI AM335x BeagleBone Blue")==0) {
+		printf("TI AM335x BeagleBone Blue\n");
+	} else if(strcmp(d, "TI AM335x BeagleBone Black RoboticsCape")==0) {
+		printf("TI AM335x BeagleBone Black with RoboticsCape\n");
+	} else if(strcmp(d, "TI AM335x BeagleBone Black Wireless RoboticsCape")==0) {
+		printf("TI AM335x BeagleBone Black Wireless with RoboticsCape\n");
+	} else if(strcmp(d, "TI AM335x BeagleBone Green")==0) {
+		printf("TI AM335x BeagleBone Green (UNTESTED, exiting...)\n");
+		kill_existing_instance();
+		return 0;
+	} else if(strcmp(d, "TI AM335x BeagleBone Green Wireless")==0) {
+		printf("TI AM335x BeagleBone Green Wireless (UNSUPPORTED breaks wl18xx exiting...)\n");
+		kill_existing_instance();
+		return 0;
+	} else {
+		printf("Unknown UNSUPPORTED...\n");
+		kill_existing_instance();
+		return 0;
+	}
 
 	// we only want one instance running, so check is a pid file already exists
 	if(access(PID_FILE, F_OK ) == 0){
