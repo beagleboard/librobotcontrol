@@ -304,7 +304,7 @@ int qr_multiply_r_left(matrix_t x, matrix_t* A, double norm){
 *******************************************************************************/
 matrix_t qr_householder_matrix(vector_t x, double* new_norm){
 	int i, j;
-	double norm, tau;
+	double norm, tau, dot;
 	matrix_t out;
 	vector_t v;
 
@@ -318,7 +318,7 @@ matrix_t qr_householder_matrix(vector_t x, double* new_norm){
 	v = create_vector(x.len);
 	norm = vector_norm(x,2);
 
-	//x.data[0]=(x.data[0]-norm);
+	// set sign of norm to opposite of the pivot to avoid loss of significance
 	if(x.data[0]>=0.0){
 		x.data[0]=(x.data[0]+norm);
 		*new_norm = -norm;
@@ -327,10 +327,10 @@ matrix_t qr_householder_matrix(vector_t x, double* new_norm){
 		x.data[0]=(x.data[0]-norm);
 		*new_norm = norm;
 	}
-
-	// now norm is the norm of u
-	tau = -2.0/vector_dot_product(x,x);
-	
+	// pre-calculate matrix multiplication coefficient
+	// doing this on one line causes a compiler optimization error :-/
+	dot = vector_dot_product(x,x);
+	tau = -2.0/dot;
 	// fill in diagonal and upper triangle of H
 	for(i=0;i<v.len;i++){
 		// H=I-(2/norm(x))vv' so add 1 on the diagonal
@@ -397,7 +397,7 @@ int QR_decomposition(matrix_t A, matrix_t* Q, matrix_t* R){
 		// right multiply and free the memory
 		if(i==0){
 			*Q = H;
-		} 
+		}
 		else{
 			qr_multiply_Q_right(Q,H);
 			destroy_matrix(&H);

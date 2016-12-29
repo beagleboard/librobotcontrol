@@ -424,7 +424,7 @@ matrix_t vector_outer_product(vector_t v1, vector_t v2){
 * 
 *******************************************************************************/
 double vector_dot_product(vector_t v1, vector_t v2){
-	double out;
+	double out = 0.0;
 	int i;
 	if(!v1.initialized || !v2.initialized){
 		printf("ERROR: vector not initialized yet\n");
@@ -435,7 +435,7 @@ double vector_dot_product(vector_t v1, vector_t v2){
 		return -1;
 	}
 	for(i=0; i<v1.len; i++){
-		out = out + (v1.data[i] * v2.data[i]);
+		out += (v1.data[i] * v2.data[i]);
 	}
 	return out;
 }
