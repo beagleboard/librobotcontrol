@@ -74,23 +74,20 @@ int main(){
 	vector_t xqr = lin_system_solve_qr(A, b);
 	print_vector(xqr);
 
-	// If b are the coefficients of a polynomial, get the coefficients of the
-	// new polynomial b^2
-	printf("\nCoefficients of polynomial b times itself\n");
-	vector_t bb = poly_power(b,2);
-	print_vector(bb);
-
 	// clean up all the allocated memory. This isn't strictly necessary since
 	// we are already at the end of the program, but good practice to do.
 	destroy_matrix(&A);
-	destroy_matrix(&AA);
 	destroy_vector(&b);
-	destroy_vector(&bb);
-	destroy_vector(&x);
+	destroy_matrix(&Ainv);
+	destroy_matrix(&AA);
+	destroy_matrix(&L);
+	destroy_matrix(&U);
+	destroy_matrix(&P);
 	destroy_vector(&xqr);
 	destroy_matrix(&Q);
 	destroy_matrix(&R);
+	destroy_vector(&x);
 
-	printf("DONE\n");
+	printf("\nDONE\n");
 	return 0;
 }
