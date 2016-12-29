@@ -6,7 +6,8 @@ CC			:= gcc
 LINKER		:= gcc
 TOUCH		:= $(shell touch *)
 CWARNINGS	:= -Wall
-CFLOATFLAGS	:= -frounding-math -fsignaling-nans
+# don't use -O optimization, it breaks linear algebra
+CFLOATFLAGS	:= -fsignaling-nans 
 CFLAGS		:= -c -fPIC -march=armv7-a -mtune=cortex-a8 
 LFLAGS		:= -lm -lrt -lpthread -shared -Wl,-soname,$(TARGET)
 

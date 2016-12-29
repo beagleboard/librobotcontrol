@@ -11,6 +11,23 @@
 #include <stdlib.h>
 #include <string.h> // for memset
 
+#define ZERO_TOLERANCE 1e-9 // consider v to be zero if fabs(v)<ZERO_TOLERANCE
+
+
+/*******************************************************************************
+* typedef struct givens_data_t
+*
+* the parameters for a fast givens rotation are packaged here for neatness
+* if donothing==1 then there is nothing to be done in the rotation as g==0
+*******************************************************************************/
+typedef struct givens_data_t{
+	int donothing;
+	double a;
+	double b;
+	double gamma;
+	double dnew0;
+	double dnew1;
+} givens_data_t;
 
 
 /*******************************************************************************
@@ -73,6 +90,9 @@ vector_t row_vec_times_matrix(vector_t v, matrix_t A){
 double matrix_determinant(matrix_t A){
 	int i,j,k;
 	double ratio, det;
+	matrix_t tmp;
+
+	// sanity checks
 	if(!A.initialized){
 		printf("ERROR: matrix not initialized yet\n");
 		return -1;
@@ -86,28 +106,26 @@ double matrix_determinant(matrix_t A){
 	// shortcut for 2x2 matrix
 	if(A.rows==2) return A.data[0][0]*A.data[1][1] - A.data[0][1]*A.data[1][0];
 
-	matrix_t temp = duplicate_matrix(A);
-	for(i=0;i<A.rows;i++){
-		for(j=0;j<A.rows;j++){
-			if(j>i){
-				ratio = temp.data[j][i]/temp.data[i][i];
-				for(k=0;k<A.rows;k++){
-					temp.data[j][k] = temp.data[j][k] - ratio * temp.data[i][k];
-				}
+	tmp = duplicate_matrix(A);
+	for(i=0;i<(A.rows-1);i++){
+		for(j=i+1;j<A.rows;j++){
+			ratio = tmp.data[j][i]/tmp.data[i][i];
+			for(k=0;k<A.rows;k++){
+				tmp.data[j][k] = tmp.data[j][k] - ratio * tmp.data[i][k];
 			}
 		}
 	}
 	det = 1.0; //storage for determinant
-	for(i=0;i<A.rows;i++) det = det*temp.data[i][i];
+	for(i=0;i<A.rows;i++) det = det*tmp.data[i][i];
 
-	destroy_matrix(&temp);
+	destroy_matrix(&tmp);
 	return det;  
 }
 
 /*******************************************************************************
 * int LUP_decomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P)
 *
-* LUP decomposition with partial pivoting 
+* LUP decomposition with partial pivoting  
 *******************************************************************************/
 int LUP_decomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P){
 	int i, j, k, m, index;
@@ -132,7 +150,6 @@ int LUP_decomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P){
 			if(fabs(A.data[j][i]) >= fabs(A.data[index][i])){
 				index = j;
 			}
-				
 		}
 		if(index != i){
 			for(j=0;j<m;j++){
@@ -172,74 +189,220 @@ int LUP_decomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P){
 }
 
 /*******************************************************************************
+* int qr_multiply_Q_right(matrix_t* A, matrix_t x)
+*
+* performs a right matrix multiplication of x on the bottom right minor of A 
+* where x is smaller than or equal to the size of A
+*******************************************************************************/
+int qr_multiply_Q_right(matrix_t* A, matrix_t x){
+	int i,j,k,q;
+	double new;
+	matrix_t tmp;
+	if(!A->initialized){
+		printf("ERROR: Matrix A not initialized yet\n");
+		return -1;
+	}
+	if(!x.initialized){
+		printf("ERROR: Matrix x not initialized yet\n");
+		return -1;
+	}
+	if(A->cols<x.rows){
+		printf("ERROR: multiply_matrix_minor dimension mismatch\n");
+		return -1;
+	}
+	if(A->rows<x.cols){
+		printf("ERROR: multiply_matrix_minor dimension mismatch\n");
+		return -1;
+	}
+	// q is the number of columns of A left untouched because x is smaller
+	q=A->cols-x.rows;
+	// duplicate the subset of A to be operated on
+	tmp = create_matrix_fast(A->rows, x.rows);
+	for(i=0;i<A->rows;i++){
+		for(j=0;j<x.rows;j++){
+			tmp.data[i][j]=A->data[i][j+q];
+		}
+	}
+	// do the multiplication, overwriting A
+	for(i=0;i<A->rows;i++){
+		// left q columns of A remain untouched 
+		for(j=q;j<A->cols;j++){
+			new = 0.0;
+			for(k=0;k<(x.rows);k++){
+				// do the matrix multiplication
+				new += tmp.data[i][k]*x.data[k][j-q];
+			}
+			A->data[i][j]=new;
+		}
+	}
+	// free up tmp memory
+	destroy_matrix(&tmp);
+	return 0;
+}
+
+/*******************************************************************************
+* int qr_multiply_r_left(matrix_t x, matrix_t* Am, double norm)
+*
+* performs a left matrix multiplication of x on the bottom right minor of A 
+* where x is smaller than or equal to the size of A
+*******************************************************************************/
+int qr_multiply_r_left(matrix_t x, matrix_t* A, double norm){
+	int i,j,k,p;
+	double new;
+	matrix_t tmp;
+	if(!A->initialized){
+		printf("ERROR: Matrix A not initialized yet\n");
+		return -1;
+	}
+	if(!x.initialized){
+		printf("ERROR: Matrix x not initialized yet\n");
+		return -1;
+	}
+	if(A->rows<x.cols){
+		printf("ERROR: qr_multiply_r_left dimension mismatch\n");
+		return -1;
+	}
+	// p is the index of A defining the top left corner of the operation
+	// p=q=0 if x is same size as A'
+	p=A->rows-x.cols;
+
+	// duplicate the subset of A to be operated on
+	tmp = create_matrix_fast(A->rows-p, A->cols-p);
+	for(i=0;i<A->rows-p;i++){
+		for(j=0;j<A->cols-p;j++){
+			tmp.data[i][j]=A->data[i+p][j+p];
+		}
+	}
+	// we know first column of A will be mostly zeros, so fill in zeros where
+	// possible and multiply otherwise. overwrite A here
+	for(i=0;i<(A->rows-p);i++){
+		if(i==0)	A->data[i+p][p]=norm;
+		else		A->data[i+p][p]=0.0;
+		// do multiplication for the rest of the columns
+		for(j=1;j<(A->cols-p);j++){
+			new = 0.0;
+			for(k=0;k<x.cols;k++){
+				// do the matrix multiplication
+				new += x.data[i][k]*tmp.data[k][j];
+			}
+			A->data[i+p][j+p]=new;
+		}
+	}
+	// free up tmp memory
+	destroy_matrix(&tmp);
+	return 0;
+}
+
+
+
+/*******************************************************************************
+* matrix_t qr_householder_matrix(vector_t x, double* new_norm)
+*
+* returns the householder reflection matrix for a given vector
+* where u=x-ae1, v=u/norm(u), H=I-(2/norm(x))vv'
+* warning! modifies x!, only for use by qr decomposition below
+*******************************************************************************/
+matrix_t qr_householder_matrix(vector_t x, double* new_norm){
+	int i, j;
+	double norm, tau;
+	matrix_t out;
+	vector_t v;
+
+	if(!x.initialized){
+		printf("ERROR: vector not initialized yet\n");
+		return empty_matrix();
+	}
+	// find the coefficient 
+	// allocate memory for output matrix
+	out = create_matrix_fast(x.len, x.len);
+	v = create_vector(x.len);
+	norm = vector_norm(x,2);
+
+	//x.data[0]=(x.data[0]-norm);
+	if(x.data[0]>=0.0){
+		x.data[0]=(x.data[0]+norm);
+		*new_norm = -norm;
+	}
+	else {
+		x.data[0]=(x.data[0]-norm);
+		*new_norm = norm;
+	}
+
+	// now norm is the norm of u
+	tau = -2.0/vector_dot_product(x,x);
+	
+	// fill in diagonal and upper triangle of H
+	for(i=0;i<v.len;i++){
+		// H=I-(2/norm(x))vv' so add 1 on the diagonal
+		out.data[i][i] = 1.0 + tau*x.data[i]*x.data[i];
+		for(j=i+1;j<v.len;j++){
+			out.data[i][j] = tau*x.data[i]*x.data[j];
+		}
+	}
+	// copy to lower triangle
+	for(i=1;i<v.len;i++){
+		for(j=0;j<i;j++){
+			out.data[i][j] = out.data[j][i];
+		}
+	}
+	destroy_vector(&v);
+	return out;
+}
+
+/*******************************************************************************
 * int QR_decomposition(matrix_t A, matrix_t* Q, matrix_t* R)
 *
-* 
+* Using householder reflection method
 *******************************************************************************/
 int QR_decomposition(matrix_t A, matrix_t* Q, matrix_t* R){
-	int i, j, k, s;
-	int m = A.rows;
-	int n = A.cols;
-	vector_t xtemp;
-	matrix_t Qt, Rt, Qi, F, temp;
-	
+	int i,j,steps;
+	double norm;
+	vector_t x;
+	matrix_t H;
+
+	// Sanity Checks
 	if(!A.initialized){
 		printf("ERROR: matrix not initialized yet\n");
 		return -1;
 	}
-	
+
+	// make sure any previous memory allocated in q&r are freed
 	destroy_matrix(Q);
 	destroy_matrix(R);
-	
-	Qt = create_matrix(m,m);
-	for(i=0;i<m;i++){					// initialize Qt as I
-		Qt.data[i][i] = 1;
-	}
-	
-	Rt = duplicate_matrix(A);			// duplicate A to Rt
+	// start R as A, will fill in q later
+	*R = duplicate_matrix(A);
 
-	for(i=0;i<n;i++){					// iterate through columns of A
-		xtemp = create_vector(m-i);		// allocate length, decreases with i
-		
-		for(j=i;j<m;j++){						// take col of -R from diag down
-			xtemp.data[j-i] = -Rt.data[j][i]; 	
+	// find out how many householder reflections are necessary
+	if(A.rows==A.cols) steps=A.cols-1;		// square
+	else if(A.rows>A.cols) steps=A.cols;	// tall
+	else steps=A.rows-1;					// wide
+
+	// iterate through columns of A doing householder reflection to zero
+	// the entries below the diagonal
+	for(i=0;i<steps;i++){
+
+		// take col of R from diag down
+		x = create_vector(A.rows-i);
+		for(j=i;j<A.rows;j++) x.data[j-i]=R->data[j][i];
+
+		// get the ever-shrinking householder reflection for that column
+		// qr_householder also fills in the norm of that column to 'norm'
+		H = qr_householder_matrix(x, &norm);
+		destroy_vector(&x);
+
+		// left multiply R
+		qr_multiply_r_left(H,R,norm);
+
+		// on first loop, Q is just the householder matrix, otherwise 
+		// right multiply and free the memory
+		if(i==0){
+			*Q = H;
+		} 
+		else{
+			qr_multiply_Q_right(Q,H);
+			destroy_matrix(&H);
 		}
-		if(Rt.data[i][i] > 0)	s = -1;			// check the sign
-		else					s = 1;
-		xtemp.data[0] += s*vector_norm(xtemp, 2);	// add norm to 1st element
-		
-		Qi = create_square_matrix(m);			// initialize Qi
-		F  = create_square_matrix(m-i);			// initialize shrinking householder_matrix
-		F  = householder_matrix(xtemp);			// fill in Househodor
-		
-		for(j=0;j<i;j++){
-			Qi.data[j][j] = 1;				// fill in partial I matrix
-		}
-		for(j=i;j<m;j++){					// fill in remainder (householder_matrix)
-			for(k=i;k<m;k++){
-				Qi.data[j][k] = F.data[j-i][k-i];
-			}
-		}
-		// multiply new Qi to old Qtemp
-		temp = duplicate_matrix(Qt);
-		destroy_matrix(&Qt);
-		Qt = multiply_matrices(Qi,temp);
-		destroy_matrix(&temp);
-		
-		// same with Rtemp
-		temp = duplicate_matrix(Rt);
-		destroy_matrix(&Rt);
-		Rt = multiply_matrices(Qi,temp);
-		destroy_matrix(&temp);
-		
-		// free other allocation used in this step
-		destroy_matrix(&Qi);					
-		destroy_matrix(&F);
-		destroy_vector(&xtemp);
 	}
-	transpose_matrix(&Qt);
-	*Q = Qt;
-	*R = Rt;
 	return 0;
 }
 
@@ -276,7 +439,8 @@ matrix_t matrix_inverse(matrix_t A){
 				D.data[i][j] -= L.data[i][k] * D.data[k][j];
 			}
 		}
-		for(i=m-1;i>=0;i--){				// backwards.. last to first
+		// backwards.. last to first
+		for(i=m-1;i>=0;i--){
 			temp.data[i][j] = D.data[i][j];
 			for(k=i+1;k<m;k++){
 				temp.data[i][j] -= U.data[i][k] * temp.data[k][j];
@@ -285,41 +449,16 @@ matrix_t matrix_inverse(matrix_t A){
 		}
 	}
 	// multiply by permutation matrix
-	out = multiply_matrices(temp, P);		
+	out = multiply_matrices(temp, P);
 	// free allocation	
-	destroy_matrix(&temp);	
-	destroy_matrix(&L);		
+	destroy_matrix(&temp);
+	destroy_matrix(&L);
 	destroy_matrix(&U);
 	destroy_matrix(&P);
 	destroy_matrix(&D);
 	return out;
 }
 
-/*******************************************************************************
-* matrix_t householder_matrix(vector_t v)
-*
-* returns the householder reflection matrix for a given vector
-*******************************************************************************/
-matrix_t householder_matrix(vector_t v){
-	int i, j;
-	double tau;
-	matrix_t out = empty_matrix();
-	if(!v.initialized){
-		printf("ERROR: vector not initialized yet\n");
-		return out;
-	}
-	out = create_square_matrix(v.len);
-	for(i=0;i<v.len;i++){
-		out.data[i][i] = 1;
-	}
-	tau = 2.0/vector_dot_product(v,v);
-	for(i=0;i<v.len;i++){
-		for(j=0;j<v.len;j++){
-			out.data[i][j] -= tau * v.data[i]*v.data[j];
-		}
-	}
-	return out;
-}
 
 /*******************************************************************************
 * vector_t lin_system_solve(matrix_t A, vector_t b)
@@ -460,6 +599,8 @@ vector_t lin_system_solve_qr(matrix_t A, vector_t b){
 * vector_t* lengths is a pointer to a user-created vector which will be 
 * populated with the 3 distances from the surface to the centroid in each of the 
 * 3 directions.
+*
+* See Numerical Renaissance chapter 4 for algorithm 
 *******************************************************************************/
 int fit_ellipsoid(matrix_t points, vector_t* center, vector_t* lengths){
 	int i,p;
@@ -535,6 +676,156 @@ int fit_ellipsoid(matrix_t points, vector_t* center, vector_t* lengths){
 	destroy_vector(&b);
 	return 0;
 }
+
+/*******************************************************************************
+* givens_data_t fast_givens_compute(double f, double g, double di, double dk)
+*
+* Compute the parameters {a,b,gamma,donothing} of a Fast Givens transformation 
+* matrix designed to transform the vector (f;g) to (*;0).
+* returns 1 if there is nothing to do (g is already 0)
+* return 0 is all went well
+*
+* See Numerical Renaissance chapter 4 for algorithm 
+*******************************************************************************/
+// givens_data_t fast_givens_compute(double f, double g, double di, double dk){
+// 	givens_data_t out;
+// 	// if g is sufficiently small, rotation has nothing to do
+// 	if(fabs(g)<ZERO_TOLERANCE){
+// 		out.donothing = 1;
+// 		return out;
+// 	}
+// 	out.donothing = 0;
+// 	out.a = -f/g;
+// 	out.b = - *a * dk/di;
+// 	out.gamma = -*a * *b;
+// 	if(out.gamma<=1.0){
+// 		out.dnew0=(1.0 + *gamma)*dk;
+// 		out.dnew1=(1.0 + *gamma)*di;
+// 	}
+// 	else{
+// 		out.dnew0=(1.0+(1.0 / *gamma)) * di;
+// 		out.dnew1=(1.0+(1.0 / *gamma)) * dK;
+// 		out.a = 1.0 / out.a;
+// 		out.b = 1.0 / out.b;
+// 	}
+// 	return out;
+// }
+
+
+/*******************************************************************************
+* int fast_givens(matrix_t* X, givens_data_t gd, double i, double k, double p,
+												double q, char c)
+*
+* performs fast givens transformation on X in-place with givens_data_t gd 
+* obtained from fast_givens_compute(). 
+* c is a character that can be 'L', 'R', or 'B' indicating do perform a
+* left premultiply by F^H, a right postmultiply by F, or to do both.
+*
+* See Numerical Renaissance chapter 4 for algorithm 
+*******************************************************************************/
+// int fast_givens(matrix_t* X, givens_data_t gd, double i, double k, double p,
+// 												double q, char c){
+// 	int j;
+// 	matrix_t tmp;
+
+// 	// nothing to do!!
+// 	if(gd.donothing) return 0;
+
+// 	// sanity checks
+// 	if(!X->initialized){
+// 		printf("ERROR: trying to do fast_givens on uninitialized matrix\n");
+// 		return -1;
+// 	}
+// 	if(q>=p){
+// 		printf("ERROR: q must be greater than p\n");
+// 		return -1;
+// 	}
+// 	if(c!='L' && c!='R' && c!='B'){
+// 		printf("ERROR: c must be L R or B\n");
+// 		return -1;
+// 	}
+
+// 	// do left-multiply if requested (or both are requested)
+// 	if(c=='L' || c=='B'){
+// 		if(i>X->rows || i<0){
+// 			printf("ERROR: i out of bounds\n");
+// 			return -1;
+// 		}
+// 		if(k>X->rows || K<0){
+// 			printf("ERROR: k out of bounds\n");
+// 			return -1;
+// 		}
+// 		if(p>X->cols || p<0){
+// 			printf("ERROR: p out of bounds\n");
+// 			return -1;
+// 		}
+// 		if(q>X->cols || q<0){
+// 			printf("ERROR: q out of bounds\n");
+// 			return -1;
+// 		}
+// 		// first make tmp matrix to hold original contents of X
+// 		tmp = create_matrix(2,q=p+1);
+// 		for(j=0;j<=q-p;j++){
+// 			tmp.data[0][j]=X->data[i][j+p];
+// 			tmp.data[1][j]=X->data[k][j+p];
+// 		}
+// 		if(gamma<=1.0){
+// 			// for row i, then row k, operate on columns p through q
+// 			for(j=0;j<=q-p;j++){
+// 				X->data[i][j+p]=gd.b*tmp.data[0][j]+tmp.data[1][j];
+// 				X->data[k][j+p]=tmp.data[0][j]+a*tmp.data[1][j];
+// 			}
+// 		}
+// 		else{
+// 			for(j=0;j<=q-p;j++){
+// 				X->data[i][j+p]=tmp.data[0][j]+gd.b*tmp.data[1][j];
+// 				X->data[k][j+p]=a*tmp.data[0][j]+tmp.data[1][j];
+// 			}
+// 		}
+// 		destroy_matrix(*tmp);
+// 	}
+
+// 	// do right-multiply if requested (or both are requested)
+// 	if(c=='R' || c=='B'){
+// 		if(i>X->cols || i<0){
+// 			printf("ERROR: i out of bounds\n");
+// 			return -1;
+// 		}
+// 		if(k>X.cols || k<0){
+// 			printf("ERROR: k out of bounds\n");
+// 			return -1;
+// 		}
+// 		if(p>X.rows || p<0){
+// 			printf("ERROR: p out of bounds\n");
+// 			return -1;
+// 		}
+// 		if(q>X.rows || p<0){
+// 			printf("ERROR: q out of bounds\n");
+// 			return -1;
+// 		}
+// 		// first make tmp matrix to hold original contents of X
+// 		tmp = create_matrix(q=p+1,2);
+// 		for(j=0;j<=q-p;j++){
+// 			tmp.data[j][0]=X->data[j+p][i];
+// 			tmp.data[j][1]=X->data[j+p][k];
+// 		}
+// 		if(gamma<=1.0){
+// 			// for row i, then row k, operate on columns p through q
+// 			for(j=0;j<=q-p;j++){
+// 				X->data[j+p][i]=gd.b*tmp.data[j][0]+tmp.data[j][1];
+// 				X->data[j+p][k]=tmp.data[j][0]+a*tmp.data[j][1];
+// 			}
+// 		}
+// 		else{
+// 			for(j=0;j<=q-p;j++){
+// 				X->data[j+p][i]=tmp.data[j][0]+gd.b*tmp.data[j][1];
+// 				X->data[j+p][k]=a*tmp.data[j][0]+tmp.data[j][1];
+// 			}
+// 		}
+// 		destroy_matrix(*tmp);
+// 	}
+// 	return 0;
+// }
 
 
 

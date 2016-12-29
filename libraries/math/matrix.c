@@ -15,7 +15,8 @@
 /*******************************************************************************
 * matrix_t create_matrix(int rows, int cols)
 *
-* 
+* Allocates memory for a matrix full of zeros. Returns the matrix_t struct
+* containing rows, columns, and the memory pointer
 *******************************************************************************/
 matrix_t create_matrix(int rows, int cols){
 	int i;
@@ -29,6 +30,32 @@ matrix_t create_matrix(int rows, int cols){
 	// allocate contiguous memory
 	A.data = (double**)malloc(rows*sizeof(double*));
 	void* ptr = calloc(rows*cols, sizeof(double));
+	// manually fill in the pointer to each row
+	for (i=0; i<rows; i++){
+		A.data[i] = (double*)(ptr + i*cols*sizeof(double));
+	}
+	
+	A.initialized = 1;
+	return A;
+}
+
+/*******************************************************************************
+* matrix_t create_matrix_fast(int rows, int cols)
+*
+* Like create_matrix but contents are not guaranteed to be 0
+*******************************************************************************/
+matrix_t create_matrix_fast(int rows, int cols){
+	int i;
+	matrix_t A;
+	if(rows<1 || cols<1){
+		printf("error creating matrix, row or col must be >=1");
+		return A;
+	}
+	A.rows = rows;
+	A.cols = cols;
+	// allocate contiguous memory
+	A.data = (double**)malloc(rows*sizeof(double*));
+	void* ptr = malloc(rows*cols*sizeof(double));
 	// manually fill in the pointer to each row
 	for (i=0; i<rows; i++){
 		A.data[i] = (double*)(ptr + i*cols*sizeof(double));
@@ -79,7 +106,7 @@ matrix_t duplicate_matrix(matrix_t A){
 		printf("ERROR: matrix not initialized yet\n");
 		return out;
 	}
-	out = create_matrix(A.rows,A.cols);
+	out = create_matrix_fast(A.rows,A.cols);
 	for(i=0;i<A.rows;i++){
 		for(j=0;j<A.cols;j++){
 			out.data[i][j] = A.data[i][j];
@@ -111,10 +138,11 @@ matrix_t create_random_matrix(int rows, int cols){
 		printf("error creating matrix, row & col must be >=1");
 		return A;
 	}
-	A = create_matrix(rows, cols);
+	A = create_matrix_fast(rows, cols);
 	for(i=0;i<rows;i++){
 		for(j=0;j<cols;j++){
-			A.data[i][j]=get_random_double();
+			// use random 32-bit floats because it's faster to generate
+			A.data[i][j]=get_random_float();
 		}
 	}
 	return A;
@@ -163,16 +191,20 @@ matrix_t create_diagonal_matrix(vector_t v){
 *
 * 
 *******************************************************************************/
-matrix_t create_matrix_of_ones(int dim){
+matrix_t create_matrix_of_ones(int rows, int cols){
 	int i,j;
 	matrix_t A;
-	if(dim<1){
+	if(rows<1){
 		printf("error creating matrix, dim must be >=1");
-		return A;
+		return empty_matrix();
 	}
-	A = create_square_matrix(dim);
-	for(i=0;i<dim;i++){
-		for(j=0;j<dim;j++){
+	if(cols<1){
+		printf("error creating matrix, dim must be >=1");
+		return empty_matrix();
+	}
+	A = create_matrix_fast(rows, cols);
+	for(i=0;i<rows;i++){
+		for(j=0;j<cols;j++){
 			A.data[i][j]=1.0;
 		}
 	}
@@ -311,7 +343,7 @@ int matrix_times_scalar(matrix_t* A, double s){
 		return -1;
 	}
 	for(i=0;i<(A->rows);i++){
-		for(j=0;j<(A->cols);j++){	
+		for(j=0;j<(A->cols);j++){
 			A->data[i][j] = s*A->data[i][j];
 		}
 	}
@@ -334,7 +366,7 @@ matrix_t add_matrices(matrix_t A, matrix_t B){
 		printf("ERROR: trying to add matrices with mismatched dimensions\n");
 		return empty_matrix();
 	}
-	out = create_matrix(A.rows, A.cols);
+	out = create_matrix_fast(A.rows, A.cols);
 	for(i=0;i<(A.rows);i++){
 		for(j=0;j<(A.cols);j++){
 			out.data[i][j] = A.data[i][j] + B.data[i][j];
@@ -356,10 +388,12 @@ int transpose_matrix(matrix_t* A){
 	}
 	// shortcut for 1x1 matrix
 	if(A->rows==1 && A->cols==1) return 0;
-	// swap rows and cols
+	// allocate memory for new A, easier than doing it in place
+	// since A will change size if non-square
 	matrix_t temp = create_matrix(A->cols, A->rows);
+	// fill in A
 	for(i=0;i<(A->rows);i++){
-		for(j=0;j<(A->cols);j++){	
+		for(j=0;j<(A->cols);j++){
 			temp.data[i][j] = A->data[j][i];
 		}
 	}

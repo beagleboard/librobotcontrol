@@ -15,9 +15,10 @@
 int main(){
 	printf("Let's test some linear algebra functions....\n\n");
 
-	// create a random nxn matrix for later use
+	//create a random nxn matrix for later use
 	printf("New Random Matrix A:\n");
 	matrix_t A = create_random_matrix(DIM,DIM);
+
 	print_matrix(A);
 
 	// also create random vector

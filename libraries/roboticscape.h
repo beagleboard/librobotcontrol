@@ -1041,6 +1041,7 @@ typedef struct matrix_t{
 
 // Basic Matrix creation, modification, and access
 matrix_t create_matrix(int rows, int cols);
+matrix_t create_matrix_fast(int rows, int cols);
 void destroy_matrix(matrix_t* A);
 matrix_t empty_matrix();
 matrix_t duplicate_matrix(matrix_t A);
@@ -1048,13 +1049,12 @@ matrix_t create_square_matrix(int n);
 matrix_t create_random_matrix(int rows, int cols);
 matrix_t create_identity_matrix(int dim);
 matrix_t create_diagonal_matrix(vector_t v);
-matrix_t create_matrix_of_ones(int dim);
+matrix_t create_matrix_of_ones(int rows, int cols);
 int set_matrix_entry(matrix_t* A, int row, int col, double val);
 double get_matrix_entry(matrix_t A, int row, int col);
 void print_matrix(matrix_t A);
 void print_matrix_sci_notation(matrix_t A);
 matrix_t vector_outer_product(vector_t v1, vector_t v2);
-
 // Multiplication, Addition, and other transforms
 matrix_t multiply_matrices(matrix_t A, matrix_t B);
 int matrix_times_scalar(matrix_t* A, double s);
@@ -1075,8 +1075,6 @@ double matrix_determinant(matrix_t A);
 int LUP_decomposition(matrix_t A, matrix_t* L, matrix_t* U, matrix_t* P);
 int QR_decomposition(matrix_t A, matrix_t* Q, matrix_t* R);
 matrix_t matrix_inverse(matrix_t A);
-matrix_t householder_matrix(vector_t v);
-
 // linear system solvers
 vector_t lin_system_solve(matrix_t A, vector_t b);
 vector_t lin_system_solve_qr(matrix_t A, vector_t b);
