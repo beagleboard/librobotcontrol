@@ -120,6 +120,7 @@ void* pause_pressed_handler(void* ptr){
 		}
 	}
 	gpio_fd_close(gpio_fd);
+	(void)ptr; // shut up gcc
 	return 0;
 }
 
@@ -158,6 +159,7 @@ void* pause_released_handler(void* ptr){
 		}
 	}
 	gpio_fd_close(gpio_fd);
+	(void)ptr; // shut up gcc
 	return 0;
 }
 
@@ -195,6 +197,7 @@ void* mode_pressed_handler(void* ptr){
 		}
 	}
 	gpio_fd_close(gpio_fd);
+	(void)ptr; // shut up gcc
 	return 0;
 }
 
@@ -232,6 +235,7 @@ void* mode_released_handler(void* ptr){
 		}
 	}
 	gpio_fd_close(gpio_fd);
+	(void)ptr; // shut up gcc
 	return 0;
 }
 

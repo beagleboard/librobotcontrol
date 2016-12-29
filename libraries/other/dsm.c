@@ -42,7 +42,7 @@ int is_dsm_active_flag;
 *******************************************************************************/
 int load_default_calibration();
 void* serial_parser(void *ptr); //background thread
-void* calibration_listen_func(void *params);
+void* calibration_listen_func(void *ptr);
 
 /*******************************************************************************
 * int initialize_dsm()
@@ -242,9 +242,6 @@ void* serial_parser(void *ptr){
 	char channels_detected_2048[MAX_DSM_CHANNELS];
 	memset(channels_detected_1024,0,MAX_DSM_CHANNELS);
 	memset(channels_detected_2048,0,MAX_DSM_CHANNELS);
-
-	
-
 
 	/***************************************************************************
 	* First packets that come in are read just to detect resolution and channels
@@ -511,6 +508,7 @@ START_NORMAL_LOOP:
 		printf("\n");
 		#endif
 	}
+	(void)ptr; // shut up gcc
 	return NULL;
 }
 
@@ -713,12 +711,12 @@ int load_default_calibration(){
 }
 
 /*******************************************************************************
-* void *calibration_listen_func(void *params)
+* void *calibration_listen_func(void *ptr)
 *
 * this is started as a background thread by calibrate_dsm_routine(). 
 * Only used during calibration to monitor data as it comes in.
 *******************************************************************************/
-void *calibration_listen_func(void *params){
+void *calibration_listen_func(void *ptr){
 	//wait for data to start
 	printf("waiting for dsm connection");
 	get_dsm_ch_raw(1); // flush the data ready flag with a read
@@ -755,6 +753,7 @@ void *calibration_listen_func(void *params){
 		}
 		usleep(10000); 
 	}
+	(void)ptr; // shut up gcc
 	return 0;
 }
 

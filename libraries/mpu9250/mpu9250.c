@@ -1490,6 +1490,7 @@ void* imu_interrupt_handler(void* ptr){
 		}
 	}
 	gpio_fd_close(imu_gpio_fd);
+	(void)ptr; // shut up gcc
 	return 0;
 }
 

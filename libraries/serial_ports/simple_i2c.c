@@ -190,17 +190,14 @@ int i2c_read_bytes(int bus, uint8_t regAddr, uint8_t length,\
 												uint8_t *data) {
 	int ret;
 	
-    // Boundary checks
+	// Boundary checks
 	if(bus!=1 && bus!=2){
 		printf("i2c bus must be 1 or 2\n");
 		return -1;
 	}
-    if(length > MAX_I2C_LENGTH){
-        printf("i2c_read_byte data length is enforced as MAX_I2C_LENGTH!\n");
-    }else if(length<0){
-        printf("i2c_read_byte data length must be greater than 0\n"); 
-    }
-
+	if(length > MAX_I2C_LENGTH){
+		printf("i2c_read_byte data length is enforced as MAX_I2C_LENGTH!\n");
+	}
 	// claim the bus during this operation
 	int old_in_use = i2c[bus].in_use;
 	i2c[bus].in_use = 1;
@@ -223,14 +220,14 @@ int i2c_read_bytes(int bus, uint8_t regAddr, uint8_t length,\
 
 	// return the in_use state to previous state.
 	i2c[bus].in_use = old_in_use;
-    return ret;
+	return ret;
 }
 
 /******************************************************************
 * i2c_read_byte
 ******************************************************************/
 int i2c_read_byte(int bus, uint8_t regAddr, uint8_t *data) {
-    return i2c_read_bytes(bus, regAddr, 1, data);
+	return i2c_read_bytes(bus, regAddr, 1, data);
 }
 
 /******************************************************************
@@ -238,22 +235,18 @@ int i2c_read_byte(int bus, uint8_t regAddr, uint8_t *data) {
 ******************************************************************/
 int i2c_read_words(int bus, uint8_t regAddr, uint8_t length,\
 												uint16_t *data) {
-    int ret,i;
+	int ret,i;
 	char buf[MAX_I2C_LENGTH];
-	
-    // Boundary checks
+
+	// Boundary checks
 	if(bus!=1 && bus!=2){
 		printf("i2c bus must be 1 or 2\n");
 		return -1;
 	}
-    if(length>(MAX_I2C_LENGTH/2)){
-        printf("i2c_read_words length must be less than MAX_I2C_LENGTH/2\n"); 
+	if(length>(MAX_I2C_LENGTH/2)){
+		printf("i2c_read_words length must be less than MAX_I2C_LENGTH/2\n"); 
 		return -1;
-    }else if(length < 0){
-        printf("read_words length must be greater than 0\n");
-		return -1;
-    }
-	
+	}
 	// claim the bus during this operation
 	int old_in_use = i2c[bus].in_use;
 	i2c[bus].in_use = 1;
@@ -286,14 +279,14 @@ int i2c_read_words(int bus, uint8_t regAddr, uint8_t length,\
 	// return the in_use state to previous state.
 	i2c[bus].in_use = old_in_use;
 	
-    return 0;
+	return 0;
 }
 
 /******************************************************************
 * i2c_read_word
 ******************************************************************/
 int i2c_read_word(int bus, uint8_t regAddr, uint16_t *data) {
-    return i2c_read_words(bus, regAddr, 1, data);
+	return i2c_read_words(bus, regAddr, 1, data);
 }
 
 /******************************************************************
@@ -301,10 +294,10 @@ int i2c_read_word(int bus, uint8_t regAddr, uint16_t *data) {
 ******************************************************************/
 int i2c_read_bit(int bus, uint8_t regAddr, uint8_t bitNum,\
 												uint8_t *data) {
-    uint8_t b;
-    uint8_t count = i2c_read_byte(bus, regAddr, &b);
-    *data = b & (1 << bitNum);
-    return count;
+	uint8_t b;
+	uint8_t count = i2c_read_byte(bus, regAddr, &b);
+	*data = b & (1 << bitNum);
+	return count;
 }
 
 /******************************************************************
@@ -334,15 +327,15 @@ int i2c_write_bytes(int bus, uint8_t regAddr, uint8_t length,\
 	printf("i2c devAddr:0x%x  ", i2c[bus].devAddr);
 	printf("writing %d bytes to 0x%x\n", length, regAddr);
 	printf("0x");
-    for (i=0; i<length; i++){
+	for (i=0; i<length; i++){
 		printf("%x\t", data[i]);
 	}
-    printf("\n");
+	printf("\n");
 	#endif 
 	
 	// send the bytes
 	ret = write(i2c[bus].file, writeData, length+1);
-    // write should have returned the correct # bytes written
+	// write should have returned the correct # bytes written
 	if( ret!=(length+1)){
 		printf("i2c_write failed\n");
 		return -1;
@@ -356,7 +349,7 @@ int i2c_write_bytes(int bus, uint8_t regAddr, uint8_t length,\
 * i2c_write_byte
 ******************************************************************/
 int i2c_write_byte(int bus, uint8_t regAddr, uint8_t data) {
-    return i2c_write_bytes(bus, regAddr, 1, &data);
+	return i2c_write_bytes(bus, regAddr, 1, &data);
 }
 
 
@@ -383,13 +376,13 @@ int i2c_write_words(int bus, uint8_t regAddr, uint8_t length,\
 	printf("i2c devAddr:0x%x  ", i2c[bus].devAddr);
 	printf("writing %d bytes to 0x%x\n", length, regAddr);
 	printf("0x");
-    for (i=0; i<(length*2)+1; i++){
+	for (i=0; i<(length*2)+1; i++){
 		printf("%x\t", writeData[i]);
 	}
-    printf("\n");
+	printf("\n");
 #endif 
 
-    ret = write(i2c[bus].file, writeData, (length*2)+1);
+	ret = write(i2c[bus].file, writeData, (length*2)+1);
 	if(ret!=(length*2)+1){
 		printf("i2c write failed\n");
 		return -1;
@@ -405,7 +398,7 @@ int i2c_write_words(int bus, uint8_t regAddr, uint8_t length,\
 * i2c_write_word
 ******************************************************************/
 int i2c_write_word(int bus, uint8_t regAddr, uint16_t data) {
-    return i2c_write_words(bus, regAddr, 1, &data);
+	return i2c_write_words(bus, regAddr, 1, &data);
 }
 
 /******************************************************************
@@ -413,13 +406,13 @@ int i2c_write_word(int bus, uint8_t regAddr, uint16_t data) {
 ******************************************************************/
 int i2c_write_bit(int bus, uint8_t regAddr, uint8_t bitNum,\
 												uint8_t data) {
-    uint8_t b;
-    // read back the current state of the register
-    i2c_read_byte(bus, regAddr, &b);
+	uint8_t b;
+	// read back the current state of the register
+	i2c_read_byte(bus, regAddr, &b);
 	// modify that bit in the register
-    b = (data != 0) ? (b | (1 << bitNum)) : (b & ~(1 << bitNum));
+	b = (data != 0) ? (b | (1 << bitNum)) : (b & ~(1 << bitNum));
 	// write it back
-    return i2c_write_byte(bus, regAddr, b);
+	return i2c_write_byte(bus, regAddr, b);
 }
 
 /******************************************************************
@@ -444,7 +437,7 @@ int i2c_send_bytes(int bus, uint8_t length, uint8_t* data){
 
 	// send the bytes
 	ret = write(i2c[bus].file, data, length);
-    // write should have returned the correct # bytes written
+	// write should have returned the correct # bytes written
 	if(ret!=length){
 		printf("i2c_send failed\n");
 		return -1;
@@ -453,10 +446,10 @@ int i2c_send_bytes(int bus, uint8_t length, uint8_t* data){
 #ifdef DEBUG
 	int i=0;
 	printf("0x");
-    for (i=0; i<length; i++){
+	for (i=0; i<length; i++){
 		printf("%x\t", data[i]);
 	}
-    printf("\n");
+	printf("\n");
 #endif 
 	
 	// return the in_use state to previous state.

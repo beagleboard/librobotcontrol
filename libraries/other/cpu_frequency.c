@@ -82,7 +82,7 @@ int set_cpu_frequency(cpu_frequency_t freq){
 cpu_frequency_t get_cpu_frequency(){
 	int freq;
 	FILE* freq_fd = fopen(CURFREQ_PATH, "r");
-	if (freq_fd < 0) {
+	if (freq_fd == NULL) {
 		printf("error opening CPU current frequency path\n");
 		return -1;
 	}
