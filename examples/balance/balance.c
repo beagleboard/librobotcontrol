@@ -468,6 +468,7 @@ void* battery_checker(void* ptr){
 *******************************************************************************/
 void* printf_loop(void* ptr){
 	rc_state_t last_rc_state, new_rc_state; // keep track of last state 
+	last_rc_state = rc_get_state();
 	while(rc_get_state()!=EXITING){
 		new_rc_state = rc_get_state();
 		// check if this is the first time since being paused

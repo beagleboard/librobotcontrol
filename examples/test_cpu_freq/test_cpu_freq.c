@@ -77,7 +77,8 @@ int run_test(){
 
 
 int main(int argc, char *argv[]){
-	int c, freq_int;
+	int c;
+	int freq_int = 0;
 	test_mode_t test_mode = NOT_SET;
 	cpu_frequency_t freq;
 

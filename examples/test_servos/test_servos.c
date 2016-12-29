@@ -65,9 +65,13 @@ void print_usage(){
 }
 
 int main(int argc, char *argv[]){
-	double servo_pos, sweep_limit, esc_throttle;
+	double servo_pos = 0;
+	double sweep_limit = 0;
+	double esc_throttle = 0;
+	int width_us = 0;
+	int ch = 0;
 	double direction = 1; // switches between 1 & -1 in sweep mode
-	int ch, c, width_us;
+	int c;
 	int all = 1;	// set to 0 if a channel -c  argument is given 
 	test_mode_t mode = DISABLED; //start mode disabled
 	int power_en = 0; // change to 1 if user wishes to enable power rail
