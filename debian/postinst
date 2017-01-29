@@ -31,7 +31,6 @@ if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
 		exit 1
 	fi
 
-	if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ]
 	# enable roboticscape service
 	echo "systemctl daemon-reload"
 	systemctl daemon-reload
