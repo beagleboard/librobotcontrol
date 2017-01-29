@@ -122,8 +122,8 @@ echo "Select 'existing' to keep current configuration."
 echo "type 1-4 then enter"
 select bfn in "rc_blink" "rc_balance" "none" "existing"; do
 	case $bfn in
-		blink ) PROG="rc_blink"; break;;
-		balance ) PROG="rc_balance"; break;;
+		rc_blink ) PROG="rc_blink"; break;;
+		rc_balance ) PROG="rc_balance"; break;;
 		none ) PROG="rc_bare_minimum"; break;;
 		existing ) PROG="existing"; break;;
 	esac
