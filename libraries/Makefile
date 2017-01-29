@@ -6,8 +6,11 @@ CC			:= gcc
 LINKER		:= gcc
 TOUCH		:= $(shell touch *)
 CWARNINGS	:= -Wall -Wextra
-CFLOATFLAGS	:= -fsignaling-nans -O3
-CFLAGS		:= -c -fPIC -march=armv7-a -mtune=cortex-a8 
+# achitecture flags enables the NEON hardware SIMD floating point unit
+ARCFLAGS	:= -mfpu=neon -mfloat-abi=hard -march=armv7-a -mtune=cortex-a8 
+# enable O3 optimization and vectorized math
+FFLAGS		:= -O3 -ffast-math -ftree-vectorize
+CFLAGS		:= -c -fPIC
 LFLAGS		:= -lm -lrt -lpthread -shared -Wl,-soname,$(TARGET)
 
 SOURCES		:= $(shell find ./ -name '*.c')
@@ -29,7 +32,7 @@ $(TARGET): $(OBJECTS)
 	@echo " "
 	
 $(OBJECTS): %.o : %.c
-	@$(TOUCH) $(CC) $(CFLAGS) $(CWARNINGS) $(CFLOATFLAGS) $(DEBUGFLAG) $(DEFS) -c $< -o $(@)
+	@$(TOUCH) $(CC) $(CFLAGS) $(CWARNINGS) $(FFLAGS) $(ARCFLAGS) $(DEBUGFLAG) $(DEFS) -c $< -o $(@)
 	@echo "Compiled: "$<
 
 all:
@@ -47,8 +50,7 @@ install:
 	@# includes
 	$(INSTALLDIR) $(DESTDIR)$(prefix)/include
 	$(INSTALL) roboticscape.h $(DESTDIR)$(prefix)/include/
-	$(INSTALL) roboticscape-defs.h $(DESTDIR)$(prefix)/include/
-	$(INSTALL) roboticscape-usefulincludes.h $(DESTDIR)$(prefix)/include/
+	$(INSTALL) rc_usefulincludes.h $(DESTDIR)$(prefix)/include/
 	@# library .so
 	$(INSTALLDIR) $(DESTDIR)$(prefix)/lib
 	$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/lib

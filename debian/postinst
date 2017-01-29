@@ -20,12 +20,12 @@ if [ ! -d "/etc/roboticscape" ]; then
 fi
 
 if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
-	if [ "$PROG" = "blink" ]; then
-		ln -s -f /usr/bin/blink /etc/roboticscape/link_to_startup_program
-	elif  [ "$PROG" = "balance" ]; then
-		ln -s -f /usr/bin/balance /etc/roboticscape/link_to_startup_program
+	if [ "$PROG" = "rc_blink" ]; then
+		ln -s -f /usr/bin/rc_blink /etc/roboticscape/link_to_startup_program
+	elif  [ "$PROG" = "rc_balance" ]; then
+		ln -s -f /usr/bin/rc_balance /etc/roboticscape/link_to_startup_program
 	elif  [ "$PROG" = "none" ]; then
-		ln -s -f /usr/bin/bare_minimum /etc/roboticscape/link_to_startup_program
+		ln -s -f /usr/bin/rc_bare_minimum /etc/roboticscape/link_to_startup_program
 	else
 		echo "invalid answer to question"
 		exit 1
@@ -41,10 +41,10 @@ if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
 	# only run the battery monitor if not a green wireless
 	MODEL="$(cat /proc/device-tree/model)"
 	if [ ! "$MODEL" == "TI AM335x BeagleBone Green Wireless" ]; then
-		echo "Enabling battery_monitor Service"
-		systemctl enable battery_monitor
-		echo "Starting battery_monitor Service"
-		systemctl start battery_monitor
+		echo "Enabling rc_battery_monitor Service"
+		systemctl enable rc_battery_monitor
+		echo "Starting rc_battery_monitor Service"
+		systemctl start rc_battery_monitor
 	fi
 
 	echo "Configuring Device Tree"

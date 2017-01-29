@@ -9,11 +9,11 @@ INSTALLNONEXEC := install -m 644
 
 
 all:
-	@$(MAKE) -C robot_startup_routine -s --no-print-directory
-	@echo "robot_startup_routine Make Complete"
+	@$(MAKE) -C rc_startup_routine -s --no-print-directory
+	@echo "rc_startup_routine Make Complete"
 
 install: $(all)
-	@$(MAKE) -C robot_startup_routine -s install
+	@$(MAKE) -C rc_startup_routine -s install
 	@$(INSTALLDIR) $(DESTDIR)/lib/systemd/system
 	@$(INSTALLNONEXEC) $(SERVICE).service $(DESTDIR)/lib/systemd/system/
 	@$(INSTALLDIR) $(DESTDIR)/etc/modules-load.d/
@@ -21,12 +21,12 @@ install: $(all)
 	@echo "roboticscape Service Install Complete"
 	
 clean:
-	@$(MAKE) -C robot_startup_routine -s clean
+	@$(MAKE) -C rc_startup_routine -s clean
 
 uninstall:
 	@$(RM) $(DESTDIR)/lib/systemd/system/$(SERVICE).service
 	@$(RM) $(DESTDIR)/etc/modules-load.d/roboticscape_modules.conf
-	@$(MAKE) -C robot_startup_routine -s uninstall
+	@$(MAKE) -C rc_startup_routine -s uninstall
 	@echo "roboticscape Service Uninstall Complete"
 
 

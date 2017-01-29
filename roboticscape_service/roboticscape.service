@@ -5,9 +5,9 @@ Requires=systemd-modules-load.service
 [Service]
 User=root
 PIDFile=/var/run/robotcscape.pid
-ExecStartPre=/usr/bin/robot_startup_routine
+ExecStartPre=/usr/bin/rc_startup_routine
 ExecStart=/etc/roboticscape/link_to_startup_program
-ExecStop=/usr/bin/kill_robot
+ExecStop=/usr/bin/rc_kill_robot
 
 [Install]
 WantedBy=multi-user.target

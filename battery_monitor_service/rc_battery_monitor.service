@@ -1,0 +1,12 @@
+[Unit]
+Description=rc_battery_monitor
+
+[Service]
+User=root
+PIDFile=/var/run/rc_battery_monitor.pid
+ExecStartPre=/usr/bin/rc_battery_monitor -k
+ExecStart=/usr/bin/rc_battery_monitor
+ExecStop=/usr/bin/rc_battery_monitor -k
+
+[Install]
+WantedBy=multi-user.target

@@ -98,10 +98,10 @@ echo "Enabling roboticscape Service"
 systemctl enable roboticscape
 # don't enable battery_monitor on BB Green Wireless
 if [ ! "$MODEL" == "TI AM335x BeagleBone Green Wireless" ]; then
-	echo "Enabling battery_monitor Service"
-	systemctl enable battery_monitor
-	echo "Starting battery_monitor Service"
-	systemctl start battery_monitor
+	echo "Enabling rc_battery_monitor Service"
+	systemctl enable rc_battery_monitor
+	echo "Starting rc_battery_monitor Service"
+	systemctl start rc_battery_monitor
 fi
 
 echo "Configuring Device Tree"
@@ -114,29 +114,29 @@ bash /usr/bin/configure_robotics_dt.sh
 
 echo " "
 echo "Which program should run on boot?"
-echo "Select 'blink' if you are unsure."
-echo "Select 'balance' for BeagleMiP"
+echo "Select 'rc_blink' if you are unsure."
+echo "Select 'rc_balance' for BeagleMiP"
 echo "Select 'none' to start nothing on boot"
 echo "Select 'existing' to keep current configuration."
 
 echo "type 1-4 then enter"
-select bfn in "blink" "balance" "none" "existing"; do
+select bfn in "rc_blink" "rc_balance" "none" "existing"; do
 	case $bfn in
-		blink ) PROG="blink"; break;;
-		balance ) PROG="balance"; break;;
-		none ) PROG="bare_minimum"; break;;
+		blink ) PROG="rc_blink"; break;;
+		balance ) PROG="rc_balance"; break;;
+		none ) PROG="rc_bare_minimum"; break;;
 		existing ) PROG="existing"; break;;
 	esac
 done
 
 # now make a link to the right program
 # if 'none' was selected then leave default as bare_minimum (does nothing)
-if [ "$PROG" == "blink" ]; then
-	ln -s -f /usr/bin/blink /etc/roboticscape/link_to_startup_program
-elif  [ "$PROG" == "balance" ]; then
-	ln -s -f /usr/bin/balance /etc/roboticscape/link_to_startup_program
+if [ "$PROG" == "rc_blink" ]; then
+	ln -s -f /usr/bin/rc_blink /etc/roboticscape/link_to_startup_program
+elif  [ "$PROG" == "rc_balance" ]; then
+	ln -s -f /usr/bin/rc_balance /etc/roboticscape/link_to_startup_program
 elif  [ "$PROG" == "none" ]; then
-	ln -s -f /usr/bin/bare_minimum /etc/roboticscape/link_to_startup_program
+	ln -s -f /usr/bin/rc_bare_minimum /etc/roboticscape/link_to_startup_program
 fi
 
 

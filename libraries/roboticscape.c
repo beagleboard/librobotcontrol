@@ -8,13 +8,13 @@
 #include <stdio.h>
 #include <unistd.h>
 #include "roboticscape.h"
-#include "roboticscape-defs.h"
-#include "simple_gpio/gpio_setup.h"
-#include "mmap/mmap_gpio_adc.h"		// used for fast gpio functions
-#include "mmap/mmap_pwmss.h"		// used for fast pwm functions
-#include "other/robotics_pru.h"
-#include "other/roboticscape_buttons.h"
-#include "other/roboticscape_motors.h"
+#include "rc_defs.h"
+#include "gpio/rc_gpio_setup.h"
+#include "mmap/rc_mmap_gpio_adc.h"	// used for fast gpio functions
+#include "mmap/rc_mmap_pwmss.h"		// used for fast pwm functions
+#include "other/rc_pru.h"
+#include "other/rc_buttons.h"
+#include "other/rc_motors.h"
 
 #define CAPE_NAME	"RoboticsCape"
 #define MAX_BUF		512
@@ -35,11 +35,11 @@ void shutdown_signal_handler(int signo);
 
 
 /*******************************************************************************
-* int initialize_roboticscape()
+* int rc_initialize()
 * sets up necessary hardware and software
 * should be the first thing your program calls
 *******************************************************************************/
-int initialize_roboticscape(){
+int rc_initialize(){
 	FILE *fd; 
 
 	// check if another project was using resources
@@ -47,7 +47,7 @@ int initialize_roboticscape(){
 	#ifdef DEBUG
 		printf("checking for existing PID_FILE\n");
 	#endif
-	kill_robot();
+	rc_kill();
 
 	// start state as Uninitialized
 	rc_set_state(UNINITIALIZED);
@@ -56,14 +56,14 @@ int initialize_roboticscape(){
 	#ifdef DEBUG
 	printf("Initializing exit signal handler\n");
 	#endif
-	enable_rc_sig_handler();
+	rc_enable_signal_handler();
 
 
 	// initialize pinmux
 	#ifdef DEBUG
 	printf("Initializing: PINMUX\n");
 	#endif
-	set_default_pinmux();
+	rc_set_default_pinmux();
 
 	// initialize gpio pins
 	#ifdef DEBUG
@@ -150,17 +150,17 @@ int initialize_roboticscape(){
  	#endif
 
 	// wait to let threads start up
-	usleep(10000);
+	rc_usleep(10000);
 
 	return 0;
 }
 
 /*******************************************************************************
-*	int cleanup_roboticscape()
+*	int rc_cleanup()
 *	shuts down library and hardware functions cleanly
 *	you should call this before your main() function returns
 *******************************************************************************/
-int cleanup_roboticscape(){
+int rc_cleanup(){
 	// just in case the user forgot, set state to exiting
 	rc_set_state(EXITING);
 
@@ -181,23 +181,23 @@ int cleanup_roboticscape(){
 	#ifdef DEBUG
 	printf("Turning off motors\n");
 	#endif
-	disable_motors();
+	rc_disable_motors();
 
 	#ifdef DEBUG
 	printf("Turning off SPI slaves\n");
 	#endif
-	manual_deselect_spi_slave(1);
-	manual_deselect_spi_slave(2);
+	rc_manual_deselect_spi_slave(1);
+	rc_manual_deselect_spi_slave(2);
 
 	#ifdef DEBUG
 	printf("Turning off servo power rail\n");
 	#endif
-	disable_servo_power_rail();
+	rc_disable_servo_power_rail();
 	
 	#ifdef DEBUG
 	printf("Stopping dsm service\n");
 	#endif
-	stop_dsm_service();	
+	rc_stop_dsm_service();	
 	
 	#ifdef DEBUG
 	printf("Deleting PID file\n");
@@ -210,13 +210,11 @@ int cleanup_roboticscape(){
 		fclose(fd);
 		remove(PID_FILE);
 	}
-
 	#ifdef DEBUG
 	printf("end of cleanup_cape\n");
 	#endif
 	return 0;
 }
-
 
 /*******************************************************************************
 * @ rc_state_t rc_get_state()
@@ -227,7 +225,6 @@ int cleanup_roboticscape(){
 rc_state_t rc_get_state(){
 	return rc_state;
 }
-
 
 /*******************************************************************************
 * @ int rc_set_state(rc_state_t new_state)
@@ -266,7 +263,6 @@ int rc_print_state(){
 	return 0;
 }
 
-
 /*******************************************************************************
 * @ int rc_set_led(rc_led_t led, int state)
 * 
@@ -281,10 +277,10 @@ int rc_set_led(rc_led_t led, int state){
 	
 	switch(led){
 	case GREEN:
-		return mmap_gpio_write(GRN_LED, val);
+		return rc_gpio_set_value_mmap(GRN_LED, val);
 		break;
 	case RED:
-		return mmap_gpio_write(RED_LED, val);
+		return rc_gpio_set_value_mmap(RED_LED, val);
 		break;
 	default:
 		printf("LED must be GREEN or RED\n");
@@ -300,29 +296,24 @@ int rc_set_led(rc_led_t led, int state){
 * state is LOW(0), or HIGH(1)
 *******************************************************************************/
 int rc_get_led(rc_led_t led){
-	int ret= -1;
 	switch(led){
 	case GREEN:
-		gpio_get_value(GRN_LED, &ret);
-		break;
+		return rc_gpio_get_value(GRN_LED);
 	case RED:
-		gpio_get_value(RED_LED, &ret);
-		break;
+		return rc_gpio_get_value(RED_LED);
 	default:
 		printf("LED must be GREEN or RED\n");
-		ret = -1;
-		break;
 	}
-	return ret;
+	return -1;
 }
 
 /*******************************************************************************
-* rc_blink_led(rc_led_t led, double hz, double period)
+* rc_blink_led(rc_led_t led, float hz, float period)
 *	
 * Flash an LED at a set frequency for a finite period of time.
 * This is a blocking call and only returns after flashing.
 *******************************************************************************/
-int rc_blink_led(rc_led_t led, double hz, double period){
+int rc_blink_led(rc_led_t led, float hz, float period){
 	const int delay_us = 1000000.0/(2.0*hz); 
 	const int blinks = period*2.0*hz;
 	int i;
@@ -333,82 +324,75 @@ int rc_blink_led(rc_led_t led, double hz, double period){
 		if(rc_get_state()==EXITING) break;
 		rc_set_led(led,toggle);
 		// wait for next blink
-		usleep(delay_us);
+		rc_usleep(delay_us);
 	}
 	
 	rc_set_led(led, 0); // make sure it is left off
 	return 0;
 }
 
-
-
 /*******************************************************************************
-* int get_encoder_pos(int ch)
+* int rc_get_encoder_pos(int ch)
 * 
 * returns the encoder counter position
 *******************************************************************************/
-int get_encoder_pos(int ch){
+int rc_get_encoder_pos(int ch){
 	if(ch<1 || ch>4){
 		printf("Encoder Channel must be from 1 to 4\n");
 		return -1;
 	}
 	// 4th channel is counted by the PRU not eQEP
 	if(ch==4) return get_pru_encoder_pos();
-	
 	// first 3 channels counted by eQEP
 	return  read_eqep(ch-1);
 }
 
-
 /*******************************************************************************
-* int set_encoder_pos(int ch, int val)
+* int rc_set_encoder_pos(int ch, int val)
 * 
 * sets the encoder counter position
 *******************************************************************************/
-int set_encoder_pos(int ch, int val){
+int rc_set_encoder_pos(int ch, int val){
 	if(ch<1 || ch>4){
 		printf("Encoder Channel must be from 1 to 4\n");
 		return -1;
 	}
 	// 4th channel is counted by the PRU not eQEP
 	if(ch==4) return set_pru_encoder_pos(val);
-
 	// else write to eQEP
 	return write_eqep(ch-1, val);
 }
 
-
-
 /*******************************************************************************
-* double get_battery_voltage()
+* float rc_battery_voltage()
 * 
 * returns the LiPo battery voltage on the robotics cape
 * this accounts for the voltage divider ont he cape
 *******************************************************************************/
-double get_battery_voltage(){
-	double v = (get_adc_volt(LIPO_ADC_CH)*V_DIV_RATIO)+LIPO_OFFSET; 
+float rc_battery_voltage(){
+	float v = (rc_adc_volt(LIPO_ADC_CH)*V_DIV_RATIO)+LIPO_OFFSET; 
 	if(v<0.3) v = 0.0;
 	return v;
 }
 
 /*******************************************************************************
-* double get_dc_jack_voltage()
+* float rc_dc_jack_voltage()
 * 
 * returns the DC power jack voltage on the robotics cape
 * this accounts for the voltage divider ont he cape
 *******************************************************************************/
-double get_dc_jack_voltage(){
-	double v = (get_adc_volt(DC_JACK_ADC_CH)*V_DIV_RATIO)+DC_JACK_OFFSET; 
+float rc_dc_jack_voltage(){
+	float v = (rc_adc_volt(DC_JACK_ADC_CH)*V_DIV_RATIO)+DC_JACK_OFFSET; 
 	if(v<0.3) v = 0.0;
 	return v;
 }
 
 /*******************************************************************************
-* int get_adc_raw(int ch)
+* int rc_adc_raw(int ch)
 *
 * returns the raw adc reading
 *******************************************************************************/
-int get_adc_raw(int ch){
+int rc_adc_raw(int ch){
 	if(ch<0 || ch>6){
 		printf("analog pin must be in 0-6\n");
 		return -1;
@@ -417,11 +401,11 @@ int get_adc_raw(int ch){
 }
 
 /*******************************************************************************
-* double get_adc_volt(int ch)
+* float rc_adc_volt(int ch)
 * 
 * returns an actual voltage for an adc channel
 *******************************************************************************/
-double get_adc_volt(int ch){
+float rc_adc_volt(int ch){
 	if(ch<0 || ch>6){
 		printf("analog pin must be in 0-6\n");
 		return -1;
@@ -430,29 +414,23 @@ double get_adc_volt(int ch){
 	return raw_adc * 1.8 / 4095.0;
 }
 
-
-
-
 /*******************************************************************************
-* int enable_servo_power_rail()
+* int rc_enable_servo_power_rail()
 * 
 * Turns on the 6V power regulator to the servo power rail.
 *******************************************************************************/
-int enable_servo_power_rail(){
-	return mmap_gpio_write(SERVO_PWR, HIGH);
+int rc_enable_servo_power_rail(){
+	return rc_gpio_set_value_mmap(SERVO_PWR, HIGH);
 }
 
 /*******************************************************************************
-* int disable_servo_power_rail()
+* int rc_disable_servo_power_rail()
 * 
 * Turns off the 6V power regulator to the servo power rail.
 *******************************************************************************/
-int disable_servo_power_rail(){
-	return mmap_gpio_write(SERVO_PWR, LOW);
+int rc_disable_servo_power_rail(){
+	return rc_gpio_set_value_mmap(SERVO_PWR, LOW);
 }
-
-
-
 
 /*******************************************************************************
 * shutdown_signal_handler(int signo)
@@ -461,23 +439,30 @@ int disable_servo_power_rail(){
 * all threads should watch for rc_get_state()==EXITING and shut down cleanly
 *******************************************************************************/
 void shutdown_signal_handler(int signo){
-	if (signo == SIGINT){
+	switch(signo){
+	case SIGINT: // normal ctrl-c shutdown interrupt
 		rc_set_state(EXITING);
 		printf("\nreceived SIGINT Ctrl-C\n");
-	}else if (signo == SIGTERM){
+		break;
+	case SIGTERM: // catchable terminate signal
 		rc_set_state(EXITING);
 		printf("\nreceived SIGTERM\n");
+		break;
+	case SIGHUP: // terminal closed or disconnected, carry on anyway
+		break;
+	default:
+		break;
 	}
+	return;
 }
 
-
 /*******************************************************************************
-* @ int kill_robot()
+* @ int rc_kill()
 *
 * This function is used by initialize_cape to make sure any existing program
 * using the robotics cape lib is stopped. The user doesn't need to integrate
 * this in their own program as initialize_cape calls it. However, the user may
-* call the kill_robot example program from the command line to close whatever
+* call the rc_kill example program from the command line to close whatever
 * program is running in the background.
 *
 * return values: 
@@ -486,89 +471,80 @@ void shutdown_signal_handler(int signo){
 *  0 : No existing program is running
 *  1 : An existing program was running but it shut down cleanly.
 *******************************************************************************/
-int kill_robot(){
+int rc_kill(){
 	FILE* fd;
 	int old_pid, i;
-
 	// start by checking if a pid file exists
 	if(access(PID_FILE, F_OK ) != 0){
 		// PID file missing
 		return 0;
 	}
-
 	// attempt to open PID file
 	// if the file didn't open, no project is runnning in the background
 	// so return 0
 	fd = fopen(PID_FILE, "r");
 	if (fd == NULL) return 0;
-	
 	// try to read the current process ID
 	fscanf(fd,"%d", &old_pid);
 	fclose(fd);
-	
 	// if the file didn't contain a PID number, remove it and 
 	// return -1 indicating weird behavior
 	if(old_pid == 0){
 		remove(PID_FILE);
 		return -2;
 	}
-
 	// check if it's our own pid, if so return 0
 	if(old_pid == (int)getpid()) return 0;
-	
 	// now see if the process for the read pid is still running
 	if(getpgid(old_pid) < 0){
 		// process not running, remove the pid file
 		remove(PID_FILE);
 		return 0;
 	}
-
 	// process must be running, attempt a clean shutdown
 	kill((pid_t)old_pid, SIGINT);
-	
 	// check every 0.1 seconds to see if it closed 
 	for(i=0; i<30; i++){
-		if(getpgid(old_pid) >= 0) usleep(100000);
+		if(getpgid(old_pid) >= 0) rc_usleep(100000);
 		else{ // succcess, it shut down properly
 			remove(PID_FILE);
 			return 1; 
 		}
 	}
-	
 	// otherwise force kill the program if the PID file never got cleaned up
 	kill((pid_t)old_pid, SIGKILL);
-	usleep(500000);
-
+	rc_usleep(500000);
 	// delete the old PID file if it was left over
 	remove(PID_FILE);
-
 	// return -1 indicating the program had to be killed
 	return -1;
 }
 
 /*******************************************************************************
-* @ void disable_rc_sig_handler(
+* @ void rc_disable_signal_handler(
 *
 * Disables the built-in signal handler. Use only if you want to implement your
 * own signal handler. Make sure your handler sets rc_state to EXITING or calls
 * cleanup_cape on shutdown to ensure roboticscape library threads close
 * cleanly.
 *******************************************************************************/
-void disable_rc_sig_handler(){
+void rc_disable_signal_handler(){
 	signal(SIGINT, SIG_DFL);
 	signal(SIGKILL, SIG_DFL);
+	signal(SIGHUP, SIG_DFL);
 	return;
 }
 
 /*******************************************************************************
-* @ void enable_rc_sig_handler(
+* @ void rc_enable_signal_handler(
 *
 * enables the built-in signal handler if it was disabled before. The built-in 
-* signal handler is enabled in initialize_roboticscape()
+* signal handler is enabled in rc_initialize()
 *******************************************************************************/
-void enable_rc_sig_handler(){
+void rc_enable_signal_handler(){
 	signal(SIGINT, shutdown_signal_handler);
 	signal(SIGTERM, shutdown_signal_handler);
+	signal(SIGHUP, shutdown_signal_handler);
 	return;
 }
 

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 SERVICE_DIR=/lib/systemd/system
-BATT_SERVICE=battery_monitor
+BATT_SERVICE=rc_battery_monitor
 ROBOT_SERVICE=roboticscape
 
 if [ -f "$SERVICE_DIR/$BATT_SERVICE.service" ]

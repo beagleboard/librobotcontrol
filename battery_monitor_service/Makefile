@@ -1,4 +1,4 @@
-SERVICE := battery_monitor
+SERVICE := rc_battery_monitor
 
 PREFIX := /usr
 RM := rm -f -r 
@@ -9,21 +9,21 @@ INSTALLNONEXEC := install -m 644
 
 
 all:
-	@$(MAKE) -C battery_monitor -s --no-print-directory
-	@echo "battery_monitor Make Complete"
+	@$(MAKE) -C rc_battery_monitor -s --no-print-directory
+	@echo "rc_battery_monitor Make Complete"
 
 install: $(all)
-	@$(MAKE) -C battery_monitor -s install
+	@$(MAKE) -C rc_battery_monitor -s install
 	@$(INSTALLDIR) $(DESTDIR)/lib/systemd/system
 	@$(INSTALLNONEXEC) $(SERVICE).service $(DESTDIR)/lib/systemd/system/
-	@echo "battery_monitor Service Install Complete"
+	@echo "rc_battery_monitor Service Install Complete"
 	
 clean:
-	@$(MAKE) -C battery_monitor -s clean
+	@$(MAKE) -C rc_battery_monitor -s clean
 
 uninstall:
 	$(RM) $(DESTDIR)/lib/systemd/system/$(SERVICE).service
-	$(MAKE) -C battery_monitor -s uninstall
-	@echo "Battery Monitor Service Uninstall Complete"
+	$(MAKE) -C rc_battery_monitor -s uninstall
+	@echo "rc_battery_monitor Service Uninstall Complete"
 
 
