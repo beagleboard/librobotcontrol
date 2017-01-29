@@ -150,18 +150,7 @@ int rc_free_filter(rc_filter_t* f){
 	rc_free_ringbuf(&f->out_buf);
 	rc_free_vector(&f->num);
 	rc_free_vector(&f->den);
-	f->order		= 0;
-	f->gain			= 1.0f;
-	f->sat_en		= 0;
-	f->sat_min		= 0.0f;
-	f->sat_max		= 0.0f;
-	f->sat_flag		= 0;
-	f->ss_en		= 0;
-	f->ss_steps		= 0;
-	f->newest_input	= 0.0f;
-	f->newest_output= 0.0f;
-	f->step			= 0;
-	f->initialized	= 0;
+	*f = rc_empty_filter();
 	return 0;
 }
 
@@ -209,7 +198,7 @@ rc_filter_t rc_empty_filter(){
 * typically the only function required afterwards.
 *******************************************************************************/
 float rc_march_filter(rc_filter_t* f, float new_input){
-	int i, relative_deg;
+	int i, rel_deg;
 	float new_out = 0.0f;
 	// sanity checks
 	if(unlikely(!f->initialized)){
@@ -221,17 +210,16 @@ float rc_march_filter(rc_filter_t* f, float new_input){
 	f->newest_input = new_input;
 	// relative degree should never be negative as rc_alloc_filter checks
 	// for improper transfer functions
-	relative_deg = f->den.len - f->num.len;
+	rel_deg = f->den.len - f->num.len;
 	// evaluate the difference equation
 	for(i=0; i<(f->num.len); i++){
-		new_out+=f->num.d[i]*rc_get_ringbuf_value(&f->in_buf, i+relative_deg);
+		new_out+=f->gain*f->num.d[i]*rc_get_ringbuf_value(&f->in_buf, i+rel_deg);
 	}
 	for(i=0; i<(f->order); i++){
 		new_out-=f->den.d[i+1]*rc_get_ringbuf_value(&f->out_buf, i);
 	}
 	// scale in case denominator doesn't have a leading 1
-	// also multiply by overall gain
-	new_out = f->gain * new_out / f->den.d[0];
+	new_out /= f->den.d[0];
 	// soft start limits
 	if(f->ss_en && f->step<f->ss_steps){
 		float a=f->sat_max*(f->step/f->ss_steps);
@@ -906,7 +894,7 @@ int rc_pid_filter(rc_filter_t* f,float kp,float ki,float kd,float Tf,float dt){
 		num.d[0] = (kp*Tf+kd)/Tf;
 		num.d[1] = (ki*dt*Tf + kp*(dt-Tf) - kp*Tf - 2.0*kd)/Tf;
 		num.d[2] = (((ki*dt-kp)*(dt-Tf))+kd)/Tf;
-		den.d[1] = 1.0f;
+		den.d[0] = 1.0f;
 		den.d[1] = (dt-(2.0*Tf))/Tf;
 		den.d[2] = (Tf-dt)/Tf;
 	}

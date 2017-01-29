@@ -77,6 +77,8 @@ int main(int argc, char *argv[]){
     model = rc_get_bb_model();
     if(model!=BB_BLACK && model!=BB_BLACK_W && model!=BB_BLUE){
     	printf("rc_battery_monitor can only run on BB Blue, Black, and Black wireless\n");
+    	printf("current model: ");
+    	rc_print_bb_model();
     	return -1;
     }
 

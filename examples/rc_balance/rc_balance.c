@@ -96,7 +96,6 @@ rc_imu_data_t imu_data;
 * Initialize the filters, IMU, threads, & wait untill shut down
 *******************************************************************************/
 int main(){
-	rc_set_cpu_frequency(FREQ_1000MHZ);
 
 	if(rc_initialize()<0){
 		printf("ERROR: failed to initialize cape\n");
@@ -106,15 +105,21 @@ int main(){
 	rc_set_led(GREEN,0);
 	rc_set_state(UNINITIALIZED);
 
-
 	// make sure setpoint starts at normal values
 	setpoint.arm_state = DISARMED;
 	setpoint.drive_mode = NOVICE;
 	
+	D1=rc_empty_filter();
+	D2=rc_empty_filter();
+	D3=rc_empty_filter();
+	
 	// set up D1 Theta controller
 	float D1_num[] = D1_NUM;
 	float D1_den[] = D1_DEN;
-	rc_alloc_filter_from_arrays(&D1,D1_ORDER, DT, D1_num, D1_den);
+	if(rc_alloc_filter_from_arrays(&D1,D1_ORDER, DT, D1_num, D1_den)){
+		printf("ERROR in rc_balance, failed to make filter D1\n");
+		return -1;
+	}
 	D1.gain = D1_GAIN;
 	rc_enable_saturation(&D1, -1.0, 1.0);
 	rc_enable_soft_start(&D1, SOFT_START_SEC);
@@ -122,13 +127,24 @@ int main(){
 	// set up D2 Phi controller
 	float D2_num[] = D2_NUM;
 	float D2_den[] = D2_DEN;
-	rc_alloc_filter_from_arrays(&D2, D2_ORDER, DT, D2_num, D2_den);
+	if(rc_alloc_filter_from_arrays(&D2, D2_ORDER, DT, D2_num, D2_den)){
+		printf("ERROR in rc_balance, failed to make filter D2\n");
+		return -1;
+	}
 	D2.gain = D2_GAIN;
 	rc_enable_saturation(&D2, -THETA_REF_MAX, THETA_REF_MAX);
 	rc_enable_soft_start(&D2, SOFT_START_SEC);
-
+	
+	printf("Inner Loop controller D1:\n");
+	rc_print_filter(D1);
+	printf("\nOuter Loop controller D2:\n");
+	rc_print_filter(D2);
+	
 	// set up D3 gamma (steering) controller
-	rc_pid_filter(&D3, D3_KP, D3_KI, D3_KD, 4*DT, DT);
+	if(rc_pid_filter(&D3, D3_KP, D3_KI, D3_KD, 4*DT, DT)){
+		printf("ERROR in rc_balance, failed to make steering controller\n");
+		return -1;
+	}
 	rc_enable_saturation(&D3, -STEERING_INPUT_MAX, STEERING_INPUT_MAX);
 
 	// set up button handlers
@@ -295,7 +311,7 @@ void balance_controller(){
 	/*************************************************************
 	* check for various exit conditions AFTER state estimate
 	***************************************************************/
-	if(rc_get_state() == EXITING){
+	if(rc_get_state()==EXITING){
 		rc_disable_motors();
 		return;
 	}
@@ -334,13 +350,13 @@ void balance_controller(){
 	* output u to compensate for changing battery voltage.
 	*************************************************************/
 	D1.gain = D1_GAIN * V_NOMINAL/cstate.vBatt;
-	cstate.d1_u = rc_march_filter(&D1,setpoint.theta - cstate.theta);
-
+	cstate.d1_u = rc_march_filter(&D1,(setpoint.theta-cstate.theta));
+	
 	/*************************************************************
 	* Check if the inner loop saturated. If it saturates for over
 	* a second disarm the controller to prevent stalling motors.
 	*************************************************************/
-	if(rc_did_filter_saturate(&D1)) inner_saturation_counter++;
+	if(fabs(cstate.d1_u)>0.95) inner_saturation_counter++;
 	else inner_saturation_counter = 0; 
  	// if saturate for a second, disarm for safety
 	if(inner_saturation_counter > (SAMPLE_RATE_HZ*D1_SATURATION_TIMEOUT)){
@@ -425,16 +441,27 @@ int wait_for_starting_condition(){
 	int checks_needed = round(START_DELAY*check_hz);
 	int wait_us = 1000000/check_hz; 
 
+	// wait for MiP to be tipped back or forward first
 	// exit if state becomes paused or exiting
 	while(rc_get_state()==RUNNING){
 		// if within range, start counting
-		if(fabs(cstate.theta) < START_ANGLE){
-			checks++;
-			// waited long enough, return
-			if(checks >= checks_needed) return 0;
-		}
+		if(fabs(cstate.theta) > START_ANGLE) checks++;
 		// fell out of range, restart counter
 		else checks = 0;
+		// waited long enough, return
+		if(checks >= checks_needed) break;
+		rc_usleep(wait_us);
+	}
+	// now wait for MiP to be upright
+	checks = 0;
+	// exit if state becomes paused or exiting
+	while(rc_get_state()==RUNNING){
+		// if within range, start counting
+		if(fabs(cstate.theta) < START_ANGLE) checks++;
+		// fell out of range, restart counter
+		else checks = 0;
+		// waited long enough, return
+		if(checks >= checks_needed) return 0;
 		rc_usleep(wait_us);
 	}
 	return -1;
@@ -491,14 +518,14 @@ void* printf_loop(void* ptr){
 		// decide what to print or exit
 		if(new_rc_state == RUNNING){	
 			printf("\r");
-			printf("%7.2f  |", cstate.theta);
-			printf("%7.2f  |", setpoint.theta);
-			printf("%7.2f  |", cstate.phi);
-			printf("%7.2f  |", setpoint.phi);
-			printf("%7.2f  |", cstate.gamma);
-			printf("%7.2f  |", cstate.d1_u);
-			printf("%7.2f  |", cstate.d3_u);
-			printf("%7.2f  |", cstate.vBatt);
+			printf("%7.3f  |", cstate.theta);
+			printf("%7.3f  |", setpoint.theta);
+			printf("%7.3f  |", cstate.phi);
+			printf("%7.3f  |", setpoint.phi);
+			printf("%7.3f  |", cstate.gamma);
+			printf("%7.3f  |", cstate.d1_u);
+			printf("%7.3f  |", cstate.d3_u);
+			printf("%7.3f  |", cstate.vBatt);
 			
 			if(setpoint.arm_state == ARMED) printf("  ARMED  |");
 			else printf("DISARMED |");
