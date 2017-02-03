@@ -5,20 +5,24 @@
 #include <stdio.h>
 #include "../rc_defs.h"
 #include "../roboticscape.h"
+#include <stdio.h>
+#include <stdlib.h> // for system()
+#include <unistd.h>	
+#include <string.h> // for strcat()
 
 
 int setup_output_pin(int pin, int val){
 
 	if(rc_gpio_export(pin)){
-		printf("ERROR: Failed to export gpio pin %d\n", pin);
+		fprintf(stderr,"ERROR: Failed to export gpio pin %d\n", pin);
 		return -1;
 	}
 	if(rc_gpio_set_dir(pin, OUTPUT_PIN)){
-		printf("ERROR: Failed to set gpio pin %d as output\n", pin);
+		fprintf(stderr,"ERROR: Failed to set gpio pin %d as output\n", pin);
 		return -1;
 	}
 	if(rc_gpio_set_value(pin, val)){
-		printf("ERROR: Failed to set gpio pin %d value\n", pin);
+		fprintf(stderr, "ERROR: Failed to set gpio pin %d value\n", pin);
 		return -1;
 	}
 	return 0;
@@ -27,11 +31,11 @@ int setup_output_pin(int pin, int val){
 int setup_input_pin(int pin){
 
 	if(rc_gpio_export(pin)){
-		printf("ERROR: Failed to export gpio pin %d\n", pin);
+		fprintf(stderr,"ERROR: Failed to export gpio pin %d\n", pin);
 		return -1;
 	}
 	if(rc_gpio_set_dir(pin, INPUT_PIN)){
-		printf("ERROR: Failed to set gpio pin %d as output\n", pin);
+		fprintf(stderr,"ERROR: Failed to set gpio pin %d as output\n", pin);
 		return -1;
 	}
 	return 0;
@@ -66,8 +70,25 @@ int configure_gpio_pins(){
 	// Shared Pins
 
 	// LEDs
-	ret |= setup_output_pin(RED_LED, LOW);
-	ret |= setup_output_pin(GRN_LED, LOW);
+	// don't return error on these guys, might be controlled by kernel
+	// but mmap will still work. shut up errors too
+	int old_stderr;
+	FILE  *null_out;
+	// change stdout to null for this operation as the prussdrv.so
+	// functions are noisy
+	old_stderr = dup(STDERR_FILENO);
+	fflush(stderr);
+	null_out = fopen("/dev/null", "w");
+	dup2(fileno(null_out), STDERR_FILENO);
+	// configure the pins
+	setup_output_pin(RED_LED, LOW);
+	setup_output_pin(GRN_LED, LOW);
+	// put back stdout
+	fflush(stderr);
+	fclose(null_out);
+	dup2(old_stderr,STDERR_FILENO);
+	close(old_stderr);
+
 
 	// MOTOR Direction and Standby pins
 	ret |= setup_output_pin(mdir1a, LOW);
