@@ -67,7 +67,7 @@ int main(int argc, char *argv[]){
 			break;
 			
 		default:
-			printf("\nInvalid Argument \n");
+			fprintf(stderr,"\nInvalid Argument \n");
 			return -1;
 			break;
 		}
@@ -76,23 +76,22 @@ int main(int argc, char *argv[]){
     // whitelist blue, black, and bw
     model = rc_get_bb_model();
     if(model!=BB_BLACK && model!=BB_BLACK_W && model!=BB_BLUE){
-    	printf("rc_battery_monitor can only run on BB Blue, Black, and Black wireless\n");
-    	printf("current model: ");
-    	rc_print_bb_model();
+    	fprintf(stderr,"rc_battery_monitor can only run on BB Blue, Black, and Black wireless\n");
     	return -1;
     }
 
 	// we only want one instance running, so check is a pid file already exists
 	if(access(PID_FILE, F_OK ) == 0){
 		// PID file exists
-		printf("instance of rc_battery_monitor already running\n");
-		return -1;
+		fprintf(stderr,"WARNING:instance of rc_battery_monitor already running\n");
+		fprintf(stderr,"Killing it and starting a new instance\n");
+		kill_existing_instance();
 	}
 
 	// make new pid file
 	fd = fopen(BATTPIDFILE, "ab");
 	if (fd < 0) {
-		printf("\n error opening PID file for writing\n");
+		fprintf(stderr,"ERROR in rc_battery_monitor, can't PID file for writing\n");
 		return -1;
 	}
 	pid_t current_pid = getpid();
@@ -349,8 +348,8 @@ void illuminate_leds(int i){
 		rc_gpio_set_value_mmap(BATT_LED_4,LOW);
 		break;
 	default:
-		printf("can only illuminate between 0 and 4 leds\n");
-		printf("attempting %d\n", i);
+		fprintf(stderr,"ERROR in rc_battery_monitor, can only illuminate between 0 and 4 leds\n");
+		fprintf(stderr,"attempted %d\n", i);
 		break;
 	}
 	return;
