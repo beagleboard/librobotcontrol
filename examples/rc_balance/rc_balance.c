@@ -195,9 +195,11 @@ int main(){
 	}
 	
 	// cleanup
+	rc_free_filter(&D1);
+	rc_free_filter(&D2);
+	rc_free_filter(&D3);
 	rc_power_off_imu();
 	rc_cleanup();
-	rc_set_cpu_frequency(FREQ_ONDEMAND);
 	return 0;
 }
 
