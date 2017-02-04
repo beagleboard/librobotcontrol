@@ -25,7 +25,7 @@
 int rc_set_cpu_frequency(rc_cpu_frequency_t freq){
 	FILE* gov_fd  = fopen(GOVERNOR_PATH,  "w");
 	if (gov_fd == NULL) {
-		printf("error opening CPU governor path\n");
+		fprintf(stderr,"ERROR in rc_set_cpu_frequency, cpu governor driver not available in this kernel\n");
 		return -1;
 	}
 	
@@ -40,7 +40,7 @@ int rc_set_cpu_frequency(rc_cpu_frequency_t freq){
 	// for a specific desired frequency, use userspace governor
 	FILE* freq_fd = fopen(SETSPEED_PATH, "w");
 	if (freq_fd == NULL) {
-		printf("error opening CPU set frequency path\n");
+		fprintf(stderr,"ERROR in rc_set_cpu_frequency, can't open CPU set frequency path\n");
 		fclose(gov_fd);
 		return -1;
 	}
@@ -83,11 +83,11 @@ rc_cpu_frequency_t rc_get_cpu_frequency(){
 	int freq;
 	FILE* freq_fd = fopen(CURFREQ_PATH, "r");
 	if (freq_fd == NULL) {
-		printf("error opening CPU current frequency path\n");
+		fprintf(stderr,"ERROR in rc_get_cpu_frequency, cpu governor driver not available in this kernel\n");
 		return -1;
 	}
 	if(fscanf(freq_fd,"%d",&freq)<0){
-		printf("ERROR: failed to read from CPU current frequency path\n");
+		fprintf(stderr,"ERROR in rc_get_cpu_frequency, failed to read from CPU current frequency path\n");
 		return -1;
 	}
 	fclose(freq_fd);
@@ -101,7 +101,7 @@ rc_cpu_frequency_t rc_get_cpu_frequency(){
 	case 1000000:
 		return FREQ_1000MHZ;
 	default:
-		printf("ERROR: unknown cpu frequency\n");
+		fprintf(stderr,"ERROR in rc_get_cpu_frequency, unknown cpu frequency detected\n");
 	}
 	return -1;
 }
@@ -116,11 +116,11 @@ int rc_print_cpu_frequency(){
 	int freq;
 	FILE* freq_fd = fopen(CURFREQ_PATH, "r");
 	if (freq_fd == NULL) {
-		printf("error opening CPU current frequency path\n");
+		fprintf(stderr,"ERROR in rc_print_cpu_frequency, cpu governor driver not available in this kernel\n");
 		return -1;
 	}
 	if(fscanf(freq_fd,"%d",&freq)<0){
-		printf("ERROR: failed to read from CPU current frequency path\n");
+		fprintf(stderr,"ERROR in rc_print_cpu_frequency, failed to read frequency path\n");
 		return -1;
 	}
 	fclose(freq_fd);
