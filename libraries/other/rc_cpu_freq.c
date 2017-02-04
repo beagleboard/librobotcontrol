@@ -1,5 +1,5 @@
 /*******************************************************************************
-* rc_cpu_frequency.c
+* rc_cpu_freq.c
 *
 * A collection of functions for adjusting the cpu frequency on the beaglebone.
 * This is part of the robotics cape library but is not dependent on any other
@@ -17,15 +17,15 @@
 
 
 /*******************************************************************************
-* int rc_set_cpu_frequency(rc_cpu_frequency_t freq)
+* int rc_set_cpu_freq(rc_cpu_freq_t freq)
 *
 * Sets the CPU frequency to either a fixed value or to onedemand automatic
 * scaling mode. Returns 0 on success, -1 on failure.
 *******************************************************************************/
-int rc_set_cpu_frequency(rc_cpu_frequency_t freq){
+int rc_set_cpu_freq(rc_cpu_freq_t freq){
 	FILE* gov_fd  = fopen(GOVERNOR_PATH,  "w");
 	if (gov_fd == NULL) {
-		fprintf(stderr,"ERROR in rc_set_cpu_frequency, cpu governor driver not available in this kernel\n");
+		fprintf(stderr,"ERROR in rc_set_cpu_freq, cpu governor driver not available in this kernel\n");
 		return -1;
 	}
 	
@@ -40,7 +40,7 @@ int rc_set_cpu_frequency(rc_cpu_frequency_t freq){
 	// for a specific desired frequency, use userspace governor
 	FILE* freq_fd = fopen(SETSPEED_PATH, "w");
 	if (freq_fd == NULL) {
-		fprintf(stderr,"ERROR in rc_set_cpu_frequency, can't open CPU set frequency path\n");
+		fprintf(stderr,"ERROR in rc_set_cpu_freq, can't open CPU set frequency path\n");
 		fclose(gov_fd);
 		return -1;
 	}
@@ -72,22 +72,22 @@ int rc_set_cpu_frequency(rc_cpu_frequency_t freq){
 }
 
 /*******************************************************************************
-* rc_cpu_frequency_t rc_get_cpu_frequency()
+* rc_cpu_freq_t rc_get_cpu_freq()
 *
 * Returns the current clock speed of the Beaglebone's Sitara processor in the
 * form of the provided enumerated type. It will never return the FREQ_ONDEMAND
 * value as the intention of this function is to see the clock speed as set by
 * either the user or the ondemand governor itself.
 *******************************************************************************/
-rc_cpu_frequency_t rc_get_cpu_frequency(){
+rc_cpu_freq_t rc_get_cpu_freq(){
 	int freq;
 	FILE* freq_fd = fopen(CURFREQ_PATH, "r");
 	if (freq_fd == NULL) {
-		fprintf(stderr,"ERROR in rc_get_cpu_frequency, cpu governor driver not available in this kernel\n");
+		fprintf(stderr,"ERROR in rc_get_cpu_freq, cpu governor driver not available in this kernel\n");
 		return -1;
 	}
 	if(fscanf(freq_fd,"%d",&freq)<0){
-		fprintf(stderr,"ERROR in rc_get_cpu_frequency, failed to read from CPU current frequency path\n");
+		fprintf(stderr,"ERROR in rc_get_cpu_freq, failed to read from CPU current frequency path\n");
 		return -1;
 	}
 	fclose(freq_fd);
@@ -101,26 +101,26 @@ rc_cpu_frequency_t rc_get_cpu_frequency(){
 	case 1000000:
 		return FREQ_1000MHZ;
 	default:
-		fprintf(stderr,"ERROR in rc_get_cpu_frequency, unknown cpu frequency detected\n");
+		fprintf(stderr,"ERROR in rc_get_cpu_freq, unknown cpu frequency detected\n");
 	}
 	return -1;
 }
 
 /*******************************************************************************
-* int rc_print_cpu_frequency()
+* int rc_print_cpu_freq()
 *
 * Prints the current frequency to the screen. For example "300MHZ".
 * Returns 0 on success or -1 on failure.
 *******************************************************************************/
-int rc_print_cpu_frequency(){
+int rc_print_cpu_freq(){
 	int freq;
 	FILE* freq_fd = fopen(CURFREQ_PATH, "r");
 	if (freq_fd == NULL) {
-		fprintf(stderr,"ERROR in rc_print_cpu_frequency, cpu governor driver not available in this kernel\n");
+		fprintf(stderr,"ERROR in rc_print_cpu_freq, cpu governor driver not available in this kernel\n");
 		return -1;
 	}
 	if(fscanf(freq_fd,"%d",&freq)<0){
-		fprintf(stderr,"ERROR in rc_print_cpu_frequency, failed to read frequency path\n");
+		fprintf(stderr,"ERROR in rc_print_cpu_freq, failed to read frequency path\n");
 		return -1;
 	}
 	fclose(freq_fd);

@@ -846,7 +846,7 @@ int rc_calibrate_dsm_routine(){
 	}
 	fclose(cal);
 	printf("New calibration file written\n");
-	printf("use test_dsm to confirm\n");
+	printf("use rc_test_dsm to confirm\n");
 	return 0;
 }
 

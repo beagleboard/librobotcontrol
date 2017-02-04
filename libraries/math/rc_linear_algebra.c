@@ -279,41 +279,45 @@ int qr_multiply_q_right(rc_matrix_t* A, rc_matrix_t x){
 * where x is smaller than or equal to the size of A. Only used here in the
 * backend, not for user access.
 *******************************************************************************/
-int qr_multiply_r_left(rc_matrix_t x, rc_matrix_t* A, float norm){
+int qr_multiply_r_left(rc_matrix_t H, rc_matrix_t* R, float norm){
 	int i,j,p;
 	rc_matrix_t tmp = rc_empty_matrix();
 	// sanity checks
-	if(unlikely(!A->initialized || !x.initialized)){
+	if(unlikely(!R->initialized || !H.initialized)){
 		fprintf(stderr,"ERROR in qr_multiply_q_right, uninitialized matrix\n");
 		return -1;
 	}
-	if(A->rows<x.cols){
+	if(R->rows<H.cols){
 		fprintf(stderr,"ERROR in  qr_multiply_r_left dimension mismatch\n");
 		return -1;
 	}
 	// p is the index of A defining the top left corner of the operation
-	// p=q=0 if x is same size as A'
-	p=A->rows-x.cols;
+	// p=q=0 if x is same size as A', 
+	p=R->rows-H.rows; 
+	//q=R->cols-H.cols;
 	// alloc memory for a duplicate the subset of A to be operated on
-	if(unlikely(rc_alloc_matrix(&tmp, A->rows-p, A->cols-p))){
+	if(unlikely(rc_alloc_matrix(&tmp, R->cols-p, R->rows-p))){
 		fprintf(stderr,"ERROR in qr_multiply_r_left, failed to allocate tmp\n");
 		return -1;
 	}
+	// Copy Section of R to be operated on
 	// store it in transpose form so memory access later is contiguous
-	for(i=0;i<A->rows-p;i++){
-		for(j=0;j<A->cols-p;j++){
-			tmp.d[j][i]=A->d[i+p][j+p];
+	for(i=0;i<R->rows-p;i++){
+		for(j=0;j<R->cols-p;j++){
+			tmp.d[j][i]=R->d[i+p][j+p];
 		}
 	}
-	// we know first column of A will be mostly zeros, so fill in zeros where
-	// possible and multiply otherwise. overwrite A here
-	for(i=0;i<(A->rows-p);i++){
-		if(i==0)	A->d[i+p][p]=norm;
-		else		A->d[i+p][p]=0.0;
+	// go through the rows of R starting from the first row that requires
+	// modifying. as H shrinks, only the lower rows need modifying
+	for(i=0;i<(R->rows-p);i++){
+		// we know first column of R will be mostly zeros, so fill in zeros
+		// or known norm where possible. we use p to 
+		if(i==0)	R->d[i+p][p]=norm;
+		else		R->d[i+p][p]=0.0f;
 		// do multiplication for the rest of the columns
 		// A has already been transposed so don't transpose each column
-		for(j=1;j<(A->cols-p);j++){
-			A->d[i+p][j+p]=rc_mult_accumulate(x.d[i],tmp.d[j],x.cols);
+		for(j=1;j<(R->cols-p);j++){
+			R->d[i+p][j+p]=rc_mult_accumulate(H.d[i],tmp.d[j],H.cols);
 		}
 	}
 	// free up tmp memory
@@ -403,8 +407,8 @@ int rc_qr_decomp(rc_matrix_t A, rc_matrix_t* Q, rc_matrix_t* R){
 		fprintf(stderr,"ERROR in rc_qr_decomp, failed to duplicate A\n");
 		return -1;
 	}
-	// free Q, will be filled in during loop
-	rc_free_matrix(Q);
+	// start R as square identity
+	rc_identity_matrix(Q,A.rows);
 	// find out how many householder reflections are necessary
 	if(A.rows==A.cols) steps=A.cols-1;		// square
 	else if(A.rows>A.cols) steps=A.cols;	// tall
@@ -421,13 +425,8 @@ int rc_qr_decomp(rc_matrix_t A, rc_matrix_t* Q, rc_matrix_t* R){
 		rc_free_vector(&x);
 		// left multiply R
 		qr_multiply_r_left(H,R,norm);
-		// on first loop, Q is just the householder matrix, otherwise 
-		// right multiply and free the memory
-		if(i==0) *Q=H;
-		else{
-			qr_multiply_q_right(Q,H);
-			rc_free_matrix(&H);
-		}
+		qr_multiply_q_right(Q,H);
+		rc_free_matrix(&H);
 	}
 	return 0;
 }
@@ -756,7 +755,7 @@ int rc_fit_ellipsoid(rc_matrix_t pts, rc_vector_t* ctr, rc_vector_t* lens){
 	ctr->d[2] = -f.d[5]/(2.0f*f.d[4]);
 	
 	// Solve for lengths
-	if(unlikely(rc_alloc_vector(&b,p))){
+	if(unlikely(rc_alloc_vector(&b,3))){
 		fprintf(stderr,"ERROR in rc_fit_ellipsoid, failed to alloc vector\n");
 		return -1;
 	}

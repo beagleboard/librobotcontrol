@@ -31,7 +31,7 @@ int main(){
 	}
 	
 	printf("\ngyro calibration file written\n");
-	printf("run test_imu to check performance\n");
+	printf("run rc_test_imu to check performance\n");
 		
 	rc_cleanup();
 	return 0;

@@ -2626,9 +2626,9 @@ int rc_calibrate_mag_routine(){
 		lengths.d[1]>200 || lengths.d[1]<5 || \
 		lengths.d[2]>200 || lengths.d[2]<5){
 		fprintf(stderr,"ERROR: length of fitted ellipsoid out of bounds\n");
-		rc_free_vector(&center);
-		rc_free_vector(&lengths);
-		return -1;
+		//rc_free_vector(&center);
+		//rc_free_vector(&lengths);
+		//return -1;
 	}
 	// all seems well, calculate scaling factors to map ellipse lengths to
 	// a sphere of radius 70uT, this scale will later be multiplied by the

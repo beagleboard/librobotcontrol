@@ -14,7 +14,7 @@ int main(){
 	uint64_t a,b,nanos;
 	
 	// set clock speed to 1000mhz to make sure scaling doesn't effect results
-	rc_set_cpu_frequency(FREQ_1000MHZ);
+	rc_set_cpu_freq(FREQ_1000MHZ);
 	
 	printf("\ntesting rc time functions\n");
 	
@@ -36,6 +36,6 @@ int main(){
 	nanos=(b-a)/LOOPS;
 	printf("time to call rc_nanos_thread_time: %lldns\n",nanos);
 	
-	rc_set_cpu_frequency(FREQ_ONDEMAND);
+	rc_set_cpu_freq(FREQ_ONDEMAND);
 	return 0;
 }

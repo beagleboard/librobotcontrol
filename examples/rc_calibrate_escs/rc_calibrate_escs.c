@@ -60,13 +60,13 @@ int main(){
 	printf("Press enter again after the ESCs chirping to finish calibration\n");
 	width = 0;
 	if(rc_continue_or_quit()<1){
-		printf("aborting calibrate_escs\n");
+		printf("aborting rc_calibrate_escs\n");
 		goto END;
 	}
 	
 
 	// cleanup and close
-	printf("\nCalibration complete, check with test_servos\n");
+	printf("\nCalibration complete, check with rc_test_servos\n");
 END:
 	rc_set_state(EXITING); // this tells the send_pulses thread to stop
 	pthread_join(send_pulse_thread, NULL); // wait for it to stop

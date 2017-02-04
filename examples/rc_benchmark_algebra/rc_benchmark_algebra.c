@@ -88,7 +88,7 @@ int main(int argc, char *argv[]){
 	}
 
 	// set clock speed to 1000mhz to make sure scaling doesn't effect results
-	rc_set_cpu_frequency(FREQ_1000MHZ);
+	rc_set_cpu_freq(FREQ_1000MHZ);
 	printf("Starting\n");
 	
 	// create a random nxn matrix for later use
@@ -162,6 +162,6 @@ int main(int argc, char *argv[]){
 	printf("%10lldus Time to solve linear system\n", diff/1000);
 
 	printf("DONE\n");
-	rc_set_cpu_frequency(FREQ_ONDEMAND);
+	rc_set_cpu_freq(FREQ_ONDEMAND);
 	return 0;
 }

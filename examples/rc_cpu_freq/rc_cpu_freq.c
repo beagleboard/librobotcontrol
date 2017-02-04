@@ -32,40 +32,40 @@ void print_usage(){
 
 int run_test(){
 	// try 300mhz
-	if(rc_set_cpu_frequency(FREQ_300MHZ)<0){
+	if(rc_set_cpu_freq(FREQ_300MHZ)<0){
 		printf("Failed to set CPU frequency to 300mhz\n");
 		return -1;
 	}
 	printf("\nFrequency set to:     ");  
-	rc_print_cpu_frequency();
+	rc_print_cpu_freq();
 	
 	// try 600mhz
-	if(rc_set_cpu_frequency(FREQ_600MHZ)<0){
+	if(rc_set_cpu_freq(FREQ_600MHZ)<0){
 		printf("Failed to set CPU frequency to 600mhz\n");
 		return -1;
 	}
 	printf("\nFrequency set to:     ");  
-	rc_print_cpu_frequency();
+	rc_print_cpu_freq();
 	
 	// try 800mhz
-	if(rc_set_cpu_frequency(FREQ_800MHZ)<0){
+	if(rc_set_cpu_freq(FREQ_800MHZ)<0){
 		printf("Failed to set CPU frequency to 800mhz\n");
 		return -1;
 	}
 	printf("\nFrequency set to:     ");  
-	rc_print_cpu_frequency();
+	rc_print_cpu_freq();
 	
 	// try 1000mhz
-	if(rc_set_cpu_frequency(FREQ_1000MHZ)<0){
+	if(rc_set_cpu_freq(FREQ_1000MHZ)<0){
 		printf("Failed to set CPU frequency to 1000mhz\n");
 		return -1;
 	}
 	printf("\nFrequency set to:     ");  
-	rc_print_cpu_frequency();
+	rc_print_cpu_freq();
 	
 	
 	// try auto ondemand governor
-	if(rc_set_cpu_frequency(FREQ_ONDEMAND)<0){
+	if(rc_set_cpu_freq(FREQ_ONDEMAND)<0){
 		printf("Failed to set CPU frequency to ONDEMAND\n");
 		return -1;
 	}
@@ -80,7 +80,7 @@ int main(int argc, char *argv[]){
 	int c;
 	int freq_int = 0;
 	test_mode_t test_mode = NOT_SET;
-	rc_cpu_frequency_t freq;
+	rc_cpu_freq_t freq;
 
 	// parse arguments
 	opterr = 0;
@@ -136,7 +136,7 @@ int main(int argc, char *argv[]){
 		return 0;
 	case READ_FREQ:
 		printf("Current Frequency: ");
-		rc_print_cpu_frequency();
+		rc_print_cpu_freq();
 		printf("\n");
 		return 0;
 	case SET_AUTO:
@@ -169,5 +169,5 @@ int main(int argc, char *argv[]){
 		return -1;
 	}
 
-	return rc_set_cpu_frequency(freq);
+	return rc_set_cpu_freq(freq);
 }
