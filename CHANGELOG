@@ -1,15 +1,20 @@
 
 0.3.0
     * add noninteractive mode to deb package installer
-    * add rc_ prefix to state and led functions
-    * fix IMU DMP priority
-    * filter improvements
-    * linear algebra now all double-precision
-    * ass test_vectors example
+    * add rc_ prefix to all functions and examples for uniqueness requirement
+    * fix IMU DMP priority and thread join causing segfaults in labview
+    * New functions rc_usleep and rc_nanosleep
+    * new timing functions rc_nanos_since_epoch(), rc_nanos_since_boot()
+    * New function rc_nanos_since_epoch() and rc_test_time example
+    * linear algebra functions use ARM-NEON hardware acceleration
+    * new exmaples rc_test_vectors, rc_test_polynomial, rc_benchmark_algebra
     * functions to enable/disable signal handler
-    * create_filter functions for vectors and arrays
-    * add poly_div, poly_add
-    * add get_random_double
+    * rc_create_filter functions for both vectors and arrays
+    * new functions rc_poly_div(), rc_poly_add(), rc_poly_subtract()
+    * add get_random_double for accelerated double-precision float generation
+    * Handle new BB_BLUE red and green LEDs being controlled by the kernel
+    * rc_battery_monitor whitelists Black, Black Wireless, and Blue
+    * other minor improvements
 
 0.2.2
     * move ldconfig out of makefile
