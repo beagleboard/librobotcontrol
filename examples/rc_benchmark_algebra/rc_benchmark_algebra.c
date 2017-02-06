@@ -20,7 +20,7 @@
 // printed if some invalid argument was given
 void print_usage(){
 	printf("\n");
-	printf("-d         use default matrix size (50x50)\n");
+	printf("-d         use default matrix size (%dx%d)\n",DEFAULT_DIM,DEFAULT_DIM);
 	printf("-s {size}  use custom matrix size\n");
 	printf("-h         print this help message\n");
 	printf("\n");
