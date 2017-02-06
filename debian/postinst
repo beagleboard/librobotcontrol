@@ -37,14 +37,11 @@ if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
 	echo "Enabling roboticscape Service"
 	systemctl enable roboticscape
 
-	# only run the battery monitor if not a green wireless
-	MODEL="$(cat /proc/device-tree/model)"
-	if [ ! "$MODEL" == "TI AM335x BeagleBone Green Wireless" ]; then
-		echo "Enabling rc_battery_monitor Service"
-		systemctl enable rc_battery_monitor
-		echo "Starting rc_battery_monitor Service"
-		systemctl start rc_battery_monitor
-	fi
+	# enable rc_battery_monitor
+	echo "Enabling rc_battery_monitor Service"
+	systemctl enable rc_battery_monitor
+	echo "Starting rc_battery_monitor Service"
+	systemctl start rc_battery_monitor
 
 	echo "Configuring Device Tree"
 	configure_robotics_dt.sh

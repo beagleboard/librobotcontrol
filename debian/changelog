@@ -1,7 +1,7 @@
 roboticscape (0.3.1) unstable; urgency=low
 
     * Safely handle old and new device trees with and without postfix
-	* stricter whitelisting of supported boards and device trees
+    * stricter whitelisting of supported boards and device trees
 
  -- James Strawson <james@strawsondesign.com>  Sun, 5 Feb 2017 21:11:00 +0000
 
