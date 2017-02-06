@@ -45,11 +45,10 @@ rc_bb_model_t rc_get_bb_model_from_device_tree(){
 
     // now do the checks
     if(		strcmp(c, "TI AM335x BeagleBone Black"				)==0) model=BB_BLACK;
-    else if(strcmp(c, "TI AM335x BeagleBone Black RoboticsCape"	)==0) model=BB_BLACK;
+    else if(strcmp(c, "TI AM335x BeagleBone Black RoboticsCape"	)==0) model=BB_BLACK_RC;
     else if(strcmp(c, "TI AM335x BeagleBone Blue"				)==0) model=BB_BLUE;
-    else if(strcmp(c, "TI AM335x BeagleBone Blue RoboticsCape"	)==0) model=BB_BLUE;
     else if(strcmp(c, "TI AM335x BeagleBone Black Wireless"		)==0) model=BB_BLACK_W;
-    else if(strcmp(c, "TI AM335x BeagleBone Black Wireless RoboticsCape")==0) model=BB_BLACK_W;
+    else if(strcmp(c, "TI AM335x BeagleBone Black Wireless RoboticsCape")==0) model=BB_BLACK_W_RC;
     else if(strcmp(c, "TI AM335x BeagleBone Green"				)==0) model=BB_GREEN;
     else if(strcmp(c, "TI AM335x BeagleBone Green Wireless"		)==0) model=BB_GREEN_W;
     else model = UNKNOWN_MODEL;
@@ -84,8 +83,14 @@ void rc_print_bb_model(){
 	case(BB_BLACK):
 		printf("BB_BLACK");
 		break;
+	case(BB_BLACK_RC):
+		printf("BB_BLACK_RC");
+		break;
 	case(BB_BLACK_W):
 		printf("BB_BLACK_W");
+		break;
+	case(BB_BLACK_W_RC):
+		printf("BB_BLACK_W_RC");
 		break;
 	case(BB_GREEN):
 		printf("BB_GREEN");

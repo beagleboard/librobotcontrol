@@ -1,8 +1,8 @@
 #!/bin/bash
 
 OVERLAY=RoboticsCape
-TREE_BLACK=am335x-boneblack-roboticscape.dtb
-TREE_BW=am335x-boneblack-wireless-roboticscape.dtb
+TREE_BLACK_RC=am335x-boneblack-roboticscape.dtb
+TREE_BW_RC=am335x-boneblack-wireless-roboticscape.dtb
 UENV=/boot/uEnv.txt
 
 KERNEL="$(uname -r)"
@@ -42,24 +42,56 @@ fi
 if [ "$MODEL" == "TI AM335x BeagleBone Blue" ]; then
 	echo "No overlay needed on the Blue!"
 	exit 0
+	
+# if black and black wireless already have the DT installed, nothing to do
+elif   [ "$MODEL" == "TI AM335x BeagleBone Black RoboticsCape" ]; then
+	echo "Detected BB Black with RoboticsCape device tree already installed\n"
+	echo "No changes required\n"
+	exit 0
+	
+elif   [ "$MODEL" == "TI AM335x BeagleBone Black Wireless RoboticsCape" ]; then
+	echo "Detected BB Black Wireless with RoboticsCape device tree already installed\n"
+	echo "No changes required\n"
+	exit 0
+
 
 # test for BBB wireless
 elif   [ "$MODEL" == "TI AM335x BeagleBone Black Wireless" ]; then
 
 	# if the roboticscape tree is available, use that
-	if [ -a "/boot/dtbs/$UNAME/$TREE_BW" ]; then
-		DTB="$TREE_BW"
+	if [ -a "/boot/dtbs/$UNAME/$TREE_BW_RC" ]; then
+		DTB="$TREE_BW_RC"
 	else
-		DTB="am335x-boneblack-wireless-emmc-overlay.dtb"
+		echo "ERROR, can't find $TREE_BW_RC for this kernel."
+		echo "no changes made to uEnv.txt"
 	fi
 
-# for black and all others (green, etc) just use boneblack dtb
-else  
+# test for BBB wireless
+elif   [ "$MODEL" == "TI AM335x BeagleBone Black" ]; then
+
 	# if the roboticscape tree is available, use that
-	if [ -a "/boot/dtbs/$UNAME/$TREE_BLACK" ]; then
-		DTB="$TREE_BLACK"
+	if [ -a "/boot/dtbs/$UNAME/$TREE_BLACK_RC" ]; then
+		DTB="$TREE_BLACK_RC"
 	else
-		DTB="am335x-boneblack-emmc-overlay.dtb"
+		echo "ERROR, can't find $TREE_BLACK_RC for this kernel."
+		echo "no changes made to uEnv.txt"
+	fi
+	
+# for all others (green, etc) just use boneblack dtb
+else  
+	echo "WARNING, roboticscape library only designed to work with Black, Black wireless, and Blue"
+	echo "At your own risk, you can try the normal BB Black RoboticsCape device tree."
+	read -r -p "Continue with BB Black RoboticsCape device tree? [y/n] " response
+	case $response in
+		[yY]) echo " " ;;
+		*) echo "cancelled"; exit;;
+	esac
+	# if the roboticscape tree is available, use that
+	if [ -a "/boot/dtbs/$UNAME/$TREE_BLACK_RC" ]; then
+		DTB="$TREE_BLACK_RC"
+	else
+		echo "ERROR, can't find $TREE_BLACK_RC for this kernel."
+		echo "no changes made to uEnv.txt"
 	fi
 fi
 
@@ -78,7 +110,7 @@ fi
 
 # wipe the file clean with an echo
 echo " " > $UENV
-echo "# this uEnv.txt created by configure_robotics_overlay.sh" >> $UENV
+echo "# this uEnv.txt created by configure_robotics_dt.sh" >> $UENV
 echo " " >> $UENV
 
 # write in kernel name from last UENV file
@@ -98,7 +130,7 @@ echo dtb=$DTB >> $UENV
 echo cmdline=coherent_pool=1M >> $UENV
 
 # if not using custom device tree, load the overlay
-if [ "$DTB" != "$TREE_BLACK" ] && [ "$DTB" != "$TREE_BW" ]; then
+if [ "$DTB" != "$TREE_BLACK_RC" ] && [ "$DTB" != "$TREE_BW_RC" ]; then
 	echo cape_enable=bone_capemgr.enable_partno=$OVERLAY >> $UENV
 	# modify default cape to load in case missing from initramfs
 	echo CAPE=$OVERLAY > /etc/default/capemgr

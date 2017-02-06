@@ -7,7 +7,10 @@
 * in order.
 *******************************************************************************/
 
-#include "../../libraries/rc_usefulincludes.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <error.h>
+#include <unistd.h>
 #include "../../libraries/roboticscape.h"
 #include "../../libraries/rc_defs.h"
 #include "../../libraries/gpio/rc_gpio_setup.h"
@@ -32,7 +35,8 @@ uint64_t start_us;
 int main(){
 	char buf[128];
 	float time;
-
+	rc_bb_model_t model;
+	
 	// log start time 
 	start_us = rc_nanos_since_epoch()/1000 ;
 	system("echo start > " START_LOG);
@@ -40,6 +44,15 @@ int main(){
 	// stop a possibly running process and
 	// delete old pid file if it's left over from an improper shudown
 	rc_kill();
+	
+	// whitelist blue, black, and black wireless only when RC device tree is in use
+    model = rc_get_bb_model();
+    if(model!=BB_BLACK_RC && model!=BB_BLACK_W_RC && model!=BB_BLUE){
+    	if(system("grep -q roboticscape /boot/uEnv.txt")!=0){
+			fprintf(stderr,"roboticscape service can only run on BB Blue, Black, and Black wireless when the roboticscape device tree is in use.\n");
+			return -1;
+		}
+    }
 
 	// export gpio pins
 	while(configure_gpio_pins()!=0){

@@ -5,7 +5,11 @@
 * see README.txt for details
 *******************************************************************************/
 
-#include "../../libraries/rc_usefulincludes.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <error.h>
+#include <unistd.h>
+#include <signal.h>
 #include "../../libraries/roboticscape.h"
 #include "../../libraries/rc_defs.h"
 #include "../../libraries/mmap/rc_mmap_gpio_adc.h"
@@ -73,11 +77,13 @@ int main(int argc, char *argv[]){
 		}
     }
     
-    // whitelist blue, black, and bw
+    // whitelist blue, black, and black wireless only when RC device tree is in use
     model = rc_get_bb_model();
-    if(model!=BB_BLACK && model!=BB_BLACK_W && model!=BB_BLUE){
-    	fprintf(stderr,"rc_battery_monitor can only run on BB Blue, Black, and Black wireless\n");
-    	return -1;
+    if(model!=BB_BLACK_RC && model!=BB_BLACK_W_RC && model!=BB_BLUE){
+    	if(system("grep -q roboticscape /boot/uEnv.txt")!=0){
+			fprintf(stderr,"rc_battery_monitor can only run on BB Blue, Black, and Black wireless when the roboticscape device tree is in use.\n");
+			return -1;
+		}
     }
 
 	// we only want one instance running, so check is a pid file already exists

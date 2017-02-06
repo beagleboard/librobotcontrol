@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <stdlib.h> // for system()
 #include "roboticscape.h"
 #include "rc_defs.h"
 #include "gpio/rc_gpio_setup.h"
@@ -41,13 +42,24 @@ void shutdown_signal_handler(int signo);
 *******************************************************************************/
 int rc_initialize(){
 	FILE *fd; 
-
+	rc_bb_model_t model;
+	
 	// check if another project was using resources
 	// kill that process cleanly with sigint if so
 	#ifdef DEBUG
 		printf("checking for existing PID_FILE\n");
 	#endif
 	rc_kill();
+	
+	// whitelist blue, black, and black wireless only when RC device tree is in use
+    model = rc_get_bb_model();
+    if(model!=BB_BLACK_RC && model!=BB_BLACK_W_RC && model!=BB_BLUE){
+    	// also check uEnv.txt in case using older device tree
+    	if(system("grep -q roboticscape /boot/uEnv.txt")!=0){
+			fprintf(stderr,"WARNING: RoboticsCape library should only be run on BB Blue, Black, and Black wireless when the roboticscape device tree is in use.\n");
+			fprintf(stderr,"If you are on a BB Black or Black Wireless, please execute \"configure_robotics_dt.sh\" and reboot to enable the device tree\n");
+    	}
+    }
 
 	// start state as Uninitialized
 	rc_set_state(UNINITIALIZED);

@@ -1974,7 +1974,9 @@ int   rc_pid_filter(rc_filter_t* f,float kp,float ki,float kd,float Tf,float dt)
 typedef enum rc_bb_model_t{
 	UNKNOWN_MODEL,
 	BB_BLACK,
+	BB_BLACK_RC,
 	BB_BLACK_W,
+	BB_BLACK_W_RC,
 	BB_GREEN,
 	BB_GREEN_W,
 	BB_BLUE
