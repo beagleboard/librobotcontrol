@@ -1,16 +1,8 @@
-roboticscape (0.3.0) unstable; urgency=low
+roboticscape (0.3.1) unstable; urgency=low
 
-    * add noninteractive mode to deb package installer
-    * add rc_ prefix to state and led functions
-    * fix IMU DMP priority
-    * filter improvements
-    * linear algebra now all double-precision
-    * ass test_vectors example
-    * functions to enable/disable signal handler
-    * create_filter functions for vectors and arrays
-    * add poly_div, poly_add
-    * add get_random_double
+    * Safely handle old and new device trees with and without postfix
+	* stricter whitelisting of supported boards and device trees
 
- -- James Strawson <james@strawsondesign.com>  Tue, 13 Dec 2016 21:11:00 +0000
+ -- James Strawson <james@strawsondesign.com>  Sun, 5 Feb 2017 21:11:00 +0000
 
 

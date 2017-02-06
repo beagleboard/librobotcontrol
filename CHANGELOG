@@ -1,4 +1,6 @@
-
+0.3.1
+	* Safely handle old and new device trees with and without postfix
+	* stricter whitelisting of supported boards and device trees
 0.3.0
     * add noninteractive mode to deb package installer
     * add rc_ prefix to all functions and examples for uniqueness requirement
