@@ -55,6 +55,11 @@ if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
 	echo "Robotics Cape package installation complete."
 	echo "Please reboot now."
 	echo " "
+	
+# in noninteractive mode still make a link for blink to start so something
+# happens when the user enables the roboticscape service for the first time
+else
+	ln -s -f /usr/bin/rc_blink /etc/roboticscape/link_to_startup_program
 fi
 
 exit 0
