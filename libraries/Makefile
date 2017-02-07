@@ -20,8 +20,7 @@ OBJECTS		:= $(SOURCES:$%.c=$%.o)
 prefix		:= /usr
 RM			:= rm -f -r
 INSTALL		:= install -m 755 
-INSTALLDIR	:= install -d -m 644
-INSTALLNOEXEC := install -m 644
+INSTALLDIR	:= install -d -m 755
 
 
 # linking Objects

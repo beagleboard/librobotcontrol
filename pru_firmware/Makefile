@@ -16,7 +16,7 @@ LINK_PRU0_FW=$(BIN_DIR)/pru0-encoder.object
 
 RM := rm -f -r 
 INSTALL := install -m 755 
-INSTALLDIR := install -d -m 644 
+INSTALLDIR := install -d -m 755
 INSTALLNONEXEC := install -m 644 
 
 

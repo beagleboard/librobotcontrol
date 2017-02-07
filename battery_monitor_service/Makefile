@@ -3,7 +3,7 @@ SERVICE := rc_battery_monitor
 PREFIX := /usr
 RM := rm -f -r 
 INSTALL := install -m 755 
-INSTALLDIR := install -d -m 644 
+INSTALLDIR := install -d -m 755 
 INSTALLNONEXEC := install -m 644 
 
 

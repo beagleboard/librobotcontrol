@@ -13,7 +13,7 @@ OBJECTS		:= $(SOURCES:$%.c=$%.o)
 prefix		:= /usr
 RM			:= rm -f
 INSTALL		:= install -m 755 
-INSTALLDIR	:= install -d -m 644
+INSTALLDIR	:= install -d -m 755
 
 LINK		:= ln -s -f
 LINKDIR		:= /etc/roboticscape

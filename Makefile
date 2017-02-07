@@ -1,7 +1,7 @@
 prefix := /usr
 RM := rm -r -f 
 INSTALL := install -m 755 
-INSTALLDIR := install -d -m 644 
+INSTALLDIR := install -d -m 755 
 INSTALLNONEXEC := install -m 644 
 
 CONFIG_SH := configure_robotics_dt.sh
