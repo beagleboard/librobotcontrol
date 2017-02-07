@@ -33,6 +33,25 @@ fi
 
 
 ################################################################################
+# check for the -f force flag
+################################################################################
+FORCE=NO
+while [[ $# -gt 0 ]]; do
+	key="$1"
+	case $key in
+		-f|--force)
+		FORCE=YES
+		echo "force enabled"
+		shift
+		;;
+		*)
+		 echo "Unknown Argument, continuing anyway"
+		;;
+	esac
+	shift
+done
+
+################################################################################
 # off we go!
 ################################################################################
 
@@ -66,7 +85,7 @@ elif   [ "$MODEL" == "TI AM335x BeagleBone Black Wireless" ]; then
 		echo "no changes made to uEnv.txt"
 	fi
 
-# test for BBB wireless
+# test for BBB
 elif   [ "$MODEL" == "TI AM335x BeagleBone Black" ]; then
 
 	# if the roboticscape tree is available, use that
@@ -77,21 +96,25 @@ elif   [ "$MODEL" == "TI AM335x BeagleBone Black" ]; then
 		echo "no changes made to uEnv.txt"
 	fi
 	
-# for all others (green, etc) just use boneblack dtb
+# for all others (green, etc) make sure the force argument was given, 
+# otherwise use the black_rc_overlay
 else  
-	echo "WARNING, roboticscape library only designed to work with Black, Black wireless, and Blue"
-	echo "At your own risk, you can try the normal BB Black RoboticsCape device tree."
-	read -r -p "Continue with BB Black RoboticsCape device tree? [y/n] " response
-	case $response in
-		[yY]) echo " " ;;
-		*) echo "cancelled"; exit;;
-	esac
-	# if the roboticscape tree is available, use that
-	if [ -a "/boot/dtbs/$UNAME/$TREE_BLACK_RC" ]; then
-		DTB="$TREE_BLACK_RC"
+	if [ "$FORCE" == "NO" ]; then
+		echo " "
+		echo "RoboticsCape library only designed to work with Black, Black wireless, and Blue"
+		echo "At your own risk, you can try the normal BB Black RoboticsCape device tree."
+		echo "Please run 'configure_robotics_dt.sh -f' manually to force this operation."
+		echo " "
+		exit 0
 	else
-		echo "ERROR, can't find $TREE_BLACK_RC for this kernel."
-		echo "no changes made to uEnv.txt"
+		# if the roboticscape tree is available, use that
+		if [ -a "/boot/dtbs/$UNAME/$TREE_BLACK_RC" ]; then
+			DTB="$TREE_BLACK_RC"
+			echo "Forcing use of $TREE_BLACK_RC on untested board!"
+		else
+			echo "ERROR, can't find $TREE_BLACK_RC for this kernel."
+			echo "no changes made to uEnv.txt"
+		fi
 	fi
 fi
 
