@@ -230,20 +230,19 @@ int rc_continue_or_quit(){
 * for easy comparison.
 *******************************************************************************/
 float rc_version_float(){
-	return RC_LIB_VERSION;
+	return RC_LIB_VERSION_FLOAT;
 }
 
 /*******************************************************************************
 * @ const char* rc_version_string()
 *
-* Returns a floating-point representation of the roboticscape library version
-* for easy comparison.
+* Returns a string of the roboticscape package version for printing.
 *******************************************************************************/
 const char* rc_version_string(){
 	// annoying macro hack to convert to string
 	#define Q(x) #x
 	#define QUOTE(x) Q(x)
-	return QUOTE(RC_LIB_VERSION);
+	return QUOTE(RC_LIB_VERSION_STRING);
 	#undef Q
 	#undef QUOTE
 }

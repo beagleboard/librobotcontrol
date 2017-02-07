@@ -14,7 +14,8 @@
 
 // library version, can also be printed from the command line with the included
 // example program rc_version
-#define RC_LIB_VERSION	0.30
+#define RC_LIB_VERSION_FLOAT	0.31
+#define RC_LIB_VERSION_STRING	0.3.1
 
 // necessary types for function prototypes
 #include <stdint.h> // for uint8_t types etc
