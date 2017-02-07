@@ -4,6 +4,7 @@
 
 #include "rc_mmap_pwmss.h"
 #include "rc_tipwmss.h"
+#include "../preprocessor_macros.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +15,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <math.h>
+#include <errno.h>
 
 volatile char *cm_per_base;
 int cm_per_mapped=0;
@@ -42,9 +44,10 @@ int map_pwmss(int ss){
 	#ifdef DEBUG
 		printf("opening /dev/mem\n");
 	#endif
-	int dev_mem;
-	if ((dev_mem = open("/dev/mem", O_RDWR | O_SYNC))==-1){
-	  printf("Could not open /dev/mem \n");
+	int dev_mem = open("/dev/mem", O_RDWR | O_SYNC);
+	errno=0;
+	if (unlikely(dev_mem ==-1)){
+	  perror("in map_pwmss(),Could not open /dev/mem");
 	  return -1;
 	}
 	

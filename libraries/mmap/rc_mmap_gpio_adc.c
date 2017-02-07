@@ -4,6 +4,7 @@
 
 #include "rc_mmap_gpio_adc.h"
 #include "rc_mmap_gpio_adc_defs.h"
+#include "../preprocessor_macros.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +14,7 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 
 
 volatile uint32_t *map; // pointer to /dev/mem
@@ -28,10 +30,11 @@ int init_mmap() {
 	if(mapped){
 		return 0;
 	}
-	int fd;
-	fd = open("/dev/mem", O_RDWR);
-	if(fd == -1) {
+	int fd = open("/dev/mem", O_RDWR);
+	errno=0;
+	if(unlikely(fd==-1)){
 		printf("Unable to open /dev/mem\n");
+		if(unlikely(errno==EPERM)) printf("Insufficient privileges\n");
 		return -1;
 	}
 	map = (uint32_t*)mmap(NULL, MMAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED,\

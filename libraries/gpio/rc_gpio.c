@@ -26,7 +26,6 @@ int rc_gpio_export(unsigned int gpio){
 	char buf[MAX_BUF];
 
 	fd = open(SYSFS_GPIO_DIR "/export", O_WRONLY);
-	//printf("%d\n", gpio);
 	if (fd < 0) {
 		perror("gpio/export");
 		return fd;

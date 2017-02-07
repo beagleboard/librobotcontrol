@@ -13,9 +13,10 @@
 * enum rc_pinmux_mode_t gives options for pinmuxing. Not every mode if available on
 * each pin. refer to the pin table for which to use. 
 *******************************************************************************/
-
+#include "../preprocessor_macros.h"
 #include "../roboticscape.h"
 #include "../rc_defs.h"
+#include <errno.h>
 #include <stdio.h>
 #include <fcntl.h> // for open
 #include <unistd.h> // for close
@@ -291,11 +292,13 @@ int rc_set_pinmux_mode(int pin, rc_pinmux_mode_t mode){
 	}
 
 	// open pin state fd
+	errno=0;
 	fd = open(path, O_WRONLY);
-	if(fd == -1){
+	if(unlikely(fd==-1)){
 		printf("can't open: ");
 		printf(path);
 		printf("\n");
+		perror("Pinmux");
 		return -1;
 	}
 
