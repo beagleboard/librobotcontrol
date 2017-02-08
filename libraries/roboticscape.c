@@ -14,8 +14,8 @@
 #include "mmap/rc_mmap_gpio_adc.h"	// used for fast gpio functions
 #include "mmap/rc_mmap_pwmss.h"		// used for fast pwm functions
 #include "other/rc_pru.h"
-#include "other/rc_buttons.h"
-#include "other/rc_motors.h"
+#include "gpio/rc_buttons.h"
+#include "pwm/rc_motors.h"
 
 #define CAPE_NAME	"RoboticsCape"
 #define MAX_BUF		512

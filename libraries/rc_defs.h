@@ -37,7 +37,7 @@
 #define SERVO_MID_US			1500 
 
 #define MOTOR_CHANNELS	4
-#define PWM_FREQ 25000
+#define DEFAULT_PWM_FREQ 25000
 
 //// input pins
 // gpio # for gpio_a.b = (32*a)+b

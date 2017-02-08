@@ -3,6 +3,7 @@
 *******************************************************************************/
 #include "../roboticscape.h"
 #include "rc_pwm_userspace_defs.h"
+#include "../rc_defs.h"
 #include <stdio.h>
 #include <dirent.h>
 #include <fcntl.h>
@@ -10,7 +11,6 @@
 
 
 #define MAXBUF 64
-#define DEFAULT_FREQ 20000 // 40khz pwm freq
 
 // variables
 int duty_fd[6]; 	// pointers to duty cycle file descriptor
@@ -195,7 +195,7 @@ int rc_pwm_set_duty_ns(int ss, char ch, int duty_ns){
 	// initialize subsystem if not already
 	if(simple_pwm_initialized[ss]==0){
 		printf("initializing PWMSS%d with default PWM frequency\n", ss);
-		rc_pwm_init(ss, DEFAULT_FREQ);
+		rc_pwm_init(ss, DEFAULT_PWM_FREQ);
 	}
 	// boundary check
 	if(duty_ns>period_ns[ss] || duty_ns<0){

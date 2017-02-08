@@ -30,11 +30,11 @@ int initialize_motors(){
 	#ifdef DEBUG
 	printf("Initializing: PWM\n");
 	#endif
-	if(rc_pwm_init(1,PWM_FREQ)){
+	if(rc_pwm_init(1,DEFAULT_PWM_FREQ)){
 		printf("ERROR: failed to initialize hrpwm1\n");
 		return -1;
 	}
-	if(rc_pwm_init(2,PWM_FREQ)){
+	if(rc_pwm_init(2,DEFAULT_PWM_FREQ)){
 		printf("ERROR: failed to initialize PWMSS 2\n");
 		return -1;
 	}
