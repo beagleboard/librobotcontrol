@@ -215,24 +215,29 @@ int write_eqep(int ch, int val){
 	return 0;
 }
 
-/****************************************************************
-* PWM
-* Due to conflicts with the linux driver the only available
-* mmap function for PWM is to set the duty cycle. Setup
-* must be done through /sys/class/pwm or with simple_pwm.c
-*****************************************************************/
+/*******************************************************************************
+* int rc_pwm_set_duty_mmap(int ss, char ch, float duty)
+*
+* This is the fastest way to set the pwm duty cycle and is used internally by
+* the rc_set_motor() function but is also available to the user. This is done
+* with direct memory access from userspace to the pwm subsystem. It's use is
+* identical to rc_pwm_set_duty where subsystem ss must be 0,1, or 2 where
+* 1 and 2 are used by the motor H bridges. Channel 'ch' must be 'A' or 'B' and
+* duty must be from 0.0f to 1.0f. The subsystem must be intialized with
+* rc_pwm_init() before use. Returns 0 on success or -1 on failure.
+*******************************************************************************/
 
 // set duty cycle for either channel A or B in a given subsystem
 // input channel is a character 'A' or 'B'
 int rc_pwm_set_duty_mmap(int ss, char ch, float duty){
 	// make sure the subsystem is mapped
-	if(map_pwmss(ss)){
-		printf("failed to map PWMSS %d\n", ss);
+	if(unlikely(map_pwmss(ss))){
+		fprintf(stderr,"ERROR in rc_pwm_set_duty_mmap,failed to map PWMSS %d\n", ss);
 		return -1;
 	}
 	//sanity check duty
-	if(duty>1.0 || duty<0.0){
-		printf("duty must be between 0.0 & 1.0\n");
+	if(unlikely(duty>1.0f||duty<0.0f)){
+		fprintf(stderr,"ERROR in rc_pwm_set_duty_mmap, duty must be between 0.0f & 1.0f\n");
 		return -1;
 	}
 	
@@ -254,7 +259,7 @@ int rc_pwm_set_duty_mmap(int ss, char ch, float duty){
 		*(uint16_t*)(pwm_base[ss]+PWM_OFFSET+CMPB) = new_duty;
 		break;
 	default:
-		printf("pwm channel must be 'A' or 'B'\n");
+		fprintf(stderr,"ERROR in rc_pwm_set_duty_mmap, pwm channel must be 'A' or 'B'\n");
 		return -1;
 	}
 	
