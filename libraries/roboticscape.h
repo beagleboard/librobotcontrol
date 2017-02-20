@@ -25,18 +25,54 @@ typedef struct timeval timeval;
 /*******************************************************************************
 * INITIALIZATION AND CLEANUP
 *
-* @ int initialize_cape() 
+* Because the Robotics Cape library is tightly integrated with hardware and 
+* utilizes background threads, it is critical that the user calls 
+* rc_initialize() and rc_cleanup() at the beginning and end of their programs to
+* ensure predictable operation. These methods, also enable the following two 
+* features.
 *
-* The user MUST call initialize_cape at beginning of your program. 
-* In addition to setting up hardware, it also places a process id file
-* in the file system at "/run/robotics_cape.pid" to indicate your program is
-* using the robotics cape library and hardware. If initialize_cape() is called
-* with an existing pid file in /run/ then it will try to shut down the existing 
-* program before continuing with your own to avoid conflicts.
+* Firstly, to ensure only one program interfaces with the Robotics Cape core 
+* functions at once, it  makes a PID file in /var/run/ called robotics.pid that
+* contains the process ID of the currently running robotics cape project. If a
+* second process is started that uses the Robotics Cape library, the call to
+* rc_initialize() in the new process cleanly shuts down the existing process
+* before returning. This PID file also helps systemd monitor robotics cape
+* projects that are started on boot as a service. See the services section of
+* the manual for more details on systemd services.
+*
+* Secondly, the call to rc_initialize() registers a system signal handler to 
+* intercept shutdown and halt signals. It is typical to stop a Linux program by
+* pressing Ctrl-C but this can halt the program in a problematic state if not
+* handled correctly. When the user presses Ctrl-C, the Linux kernel sends the
+* SIGINT signal to the program which is intercepted by the Robotics Cape signal
+* handler to set the program flow state to EXITING. The user's program should
+* then monitor for this condition in each thread and exit in a safe manner. This
+* is particularly important when driving motors and other actuators which should
+* be turned off or put in a safe position before the program closes. See the
+* flow state section of this manual for more details. The SIGHUP signal is also
+* caught and ignored so that robotics programs started from the command line
+* over a USB connection will continue to run if the USB cable is disconnected.
+
+* @ int rc_initialize() 
+*
+* To ensure full library functionality and to take advantage of the above
+* features, the user must call rc_initialize() at beginning of their program.
+* rc_initialize() will make sure any existing Robotics Cape project is shut down
+* cleanly before continuing to avoid conflicts. It then proceeds to open file
+* descriptors and start background threads that are necessary for the Robotics
+* Cape library to run. If you are running a kernel with missing drivers or the
+* Robotics Cape device tree is not loaded then this function will return -1 and
+* print an error message to indicate what is wrong. Otherwise it will return 0
+* to indicate success.
 * 
-* @ int cleanup_cape() 
+* @ int rc_cleanup() 
 *
-* This removes the pid file and closes file pointers cleanly. 
+* rc_cleanup() undoes everything done by initialize cape. It closes file
+* pointers, waits for background threads to stop cleanly, and finally removes
+* the PID file from /var/run/. Additionally it sets LEDs and slave select pins
+* in an 'OFF' state and puts the h-bridges into a low power standby state. This
+* should be called at the very end of the user's program. It returns 0 on
+* success or -1 on error. 
 * 
 * * @ int rc_kill()
 *
@@ -54,17 +90,17 @@ typedef struct timeval timeval;
 * All example programs use these functions. See the bare_minimum example 
 * for a skeleton outline.
 *
-* @ void rc_disable_signal_handler(
+* @ void rc_disable_signal_handler()
 *
 * Disables the built-in signal handler. Use only if you want to implement your
 * own signal handler. Make sure your handler sets rc_state to EXITING or calls
-* cleanup_cape on shutdown to ensure roboticscape library threads close
+* cleanup_cape on shutdown to ensure Robotics Cape library threads close
 * cleanly.
 *
-* @ void rc_enable_signal_handler(
+* @ void rc_enable_signal_handler()
 *
-* enables the built-in signal handler if it was disabled before. The built-in 
-* signal handler is enabled in rc_initialize()
+* Re-enables the built-in signal handler if it was disabled before. The built-in 
+* signal handler is enabled by default in rc_initialize().
 *******************************************************************************/
 int rc_initialize();	// call at the beginning of main()
 int rc_cleanup();		// call at the end of main()
@@ -76,18 +112,37 @@ void rc_enable_signal_handler();
 /*******************************************************************************
 * FLOW STATE FOR HIGH LEVEL PROGRAM CONTROL
 *
-* The user is encouraged to manage the initialization,running, and closing of 
-* their threads with the globally accessible program flow state. This state
-* can be set and accessed with rc_get_state() and rc_set_state() declared here.
-* Calling initialize_cape() will set the state to UNINITIALIZED. When the
-* user's own initialization sequence is complete they should set the flow
-* state to RUNNING to indicate to other threads that the program should now
-* behave in normal ongoing operational mode. Threads and loops should also
-* independently check for an EXITING state to know when to close and exit
-* cleanly when prompted by another thread. You may also call print_state()
-* to print the textual name of the state to the screen.
+* It can be tricky to manage the starting and stopping of mutiple threads and
+* loops. Since the robotics cape library has several background threads in
+* addition to any user-created threads, we encourage the use of the consolidated
+* high-level program flow control method described here.
 *
-* All example programs use these functions. See the bare_minimum example 
+* The rc_state_t struct tries to cover the majority of use cases in the context
+* of a robotics application. After the user has called rc_initialize(), the 
+* program flow state will be set to UNINITIALIZED. When the user's own 
+* initialization sequence is complete they should set the flow state to PAUSED 
+* or RUNNING to indicate to their own threads that the program should now behave
+* in normal ongoing operational mode.
+*
+* During normal operation, the user may elect to implement a PAUSED state where 
+* the user's own threads may keep running to read sensors but do not actuate 
+* motors, leaving their robot in a safe state. For example, pressing the pause 
+* button could be assigned to change this state back and forth between RUNNING 
+* and PAUSED. This is entirely optional.
+*
+* The most important state here is EXITING. The signal handler described in the 
+* Init & Cleanup section intercepts the SIGINT signal when the user pressed 
+* Ctrl-C and sets the flow state to EXITING. It is then up to the user's threads
+* to watch for this condition and exit quickly and cleanly. The user may also 
+* set the flow state to EXITING at any time to trigger the closing of their own 
+* threads and Robotics Cape library's own background threads.
+*
+* The flow state variable is kept safely in the robotics cape library's memory 
+* space and should be read and modified by the rc_get_state() and rc_set_state()
+* functions above. The user may optionally use the rc_print_state() function to 
+* print a human readable version of the state enum to the screen.
+
+* All example programs use these functions. See the rc_bare_minimum example 
 * for a skeleton outline.
 *******************************************************************************/
 typedef enum rc_state_t {
@@ -114,7 +169,10 @@ int rc_print_state();
 *
 * @ typedef enum rc_led_t
 * 
-* Two LEDs are available and defined as an enumerated type: RED or GREEN. 
+* Two LEDs are available and defined by an enumerated type led_t which can be
+* RED or GREEN. Just like most boolean states in the C language, a 0 indicates
+* 'false' or 'off' and anything else indicates 'on' or 'true'. To make code 
+* easier to read, #defines are provided for 'ON' and 'OFF'.
 *
 * @ int rc_set_led(rc_led_t led, int state)
 * 
@@ -134,8 +192,12 @@ int rc_print_state();
 *
 * See the blink example for sample use case of all of these functions.
 *******************************************************************************/
+#ifndef ON
 #define ON 	1
+#endif
+#ifndef OFF
 #define OFF	0
+#endif
 typedef enum rc_led_t {
 	GREEN,
 	RED
@@ -152,9 +214,9 @@ int rc_blink_led(rc_led_t led, float hz, float period);
 * they are not used by any background library functions and the user can assign
 * them to any function they wish. However, the user is encouraged to use the
 * pause button to toggle the program flow state between PAUSED and RUNNING
-* using the previously described rc_set_state(state_t new_state) function.
+* using the previously described rc_set_state() function.
 *
-* @ typedef enum button_state_t
+* @ typedef enum rc_button_state_t
 * 
 * A button state can be either RELEASED or PRESSED as defined by this enum.
 *
@@ -163,8 +225,8 @@ int rc_blink_led(rc_led_t led, float hz, float period);
 * @ int rc_set_mode_pressed_func(int (*func)(void))
 * @ int rc_set_mode_released_func(int (*func)(void))
 *
-* initialize_cape() sets up interrupt handlers that run in the background to
-* handle changes in button state in a way that uses minimal resources. The 
+* rc_initialize() sets up interrupt handlers that run in the background to
+* poll changes in button state in a way that uses minimal resources. The 
 * user can assign which function should be called when either button is pressed
 * or released. Functions can also be assigned under both conditions.
 * for example, a timer could be started when a button is pressed and stopped
@@ -175,10 +237,10 @@ int rc_blink_led(rc_led_t led, float hz, float period);
 * a more natural user experience aligning with consumer product functionality.
 * 
 * The user can also just do a basic call to rc_get_pause_button_state() or
-* get_mode_buttom_state() which returns the enumerated type RELEASED or 
+* rc_get_mode_buttom_state() which returns the enumerated type RELEASED or 
 * PRESSED.
 *
-* See the blink example program for sample use case.
+* See the rc_blink and rc_test_buttons example programs for sample use cases.
 ******************************************************************************/
 typedef enum rc_button_state_t {
 	RELEASED,
@@ -195,9 +257,12 @@ rc_button_state_t rc_get_mode_button();
 /******************************************************************************
 * DC MOTOR CONTROL
 *
-* The robotics cape can drive 4 DC motors bidirectionally from a 2-cell lithium
-* battery pack. The motors can not draw power from USB or a 12V charger as this
-* would likely draw too much current. Each channel can support 1.2A continuous.
+* The robotics cape can drive 4 DC motors bidirectionally powered only from a
+* 2-cell lithium battery pack connected to the cape. The motors will not draw
+* power from USB or the 9-18v DC Jack. Each channel can support 1.2A continuous
+* and the user must be careful to choose motors which will not exceed this
+* rating when stalled. Each channel is broken out on an independent 2-pin 
+* JST ZH connector.
 * 
 * @ int rc_enable_motors()
 * @ int rc_disable_motors()
