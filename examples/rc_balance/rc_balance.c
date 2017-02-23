@@ -189,6 +189,10 @@ int main(){
 	printf("\nHold your MIP upright to begin balancing\n");
 	rc_set_state(RUNNING);
 	
+	
+	// start dsm listener
+	rc_initialize_dsm()
+	
 	// chill until something exits the program
 	while(rc_get_state()!=EXITING){
 		rc_usleep(10000);
@@ -372,7 +376,7 @@ void balance_controller(){
 	* gama (steering) controller D3
 	* move the setpoint gamma based on user input like phi
 	***********************************************************/
-	if(fabs(setpoint.gamma_dot>0.0001)) setpoint.gamma += setpoint.gamma_dot * DT;
+	if(fabs(setpoint.gamma_dot)>0.0001) setpoint.gamma += setpoint.gamma_dot * DT;
 	cstate.d3_u = rc_march_filter(&D3,setpoint.gamma - cstate.gamma);
 	
 	/**********************************************************
