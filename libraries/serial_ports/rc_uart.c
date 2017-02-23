@@ -151,7 +151,7 @@ int rc_uart_init(int bus, int baudrate, float timeout_s){
 	config.c_lflag &= ~ICANON;	// turn off canonical read
 	config.c_cflag &= ~PARENB;  // no parity
 	config.c_cflag &= ~CSTOPB;  // disable 2 stop bits (use just 1)
-	config.c_cflag &= ~CSIZE;  // wipe all size masks
+	config.c_cflag &= ~CSIZE;  	// wipe all size masks
 	config.c_cflag |= CS8;		// set size to 8 bit characters
 	config.c_cflag |= CREAD;    // enable reading
 	config.c_cflag |= CLOCAL;	// ignore modem status lines

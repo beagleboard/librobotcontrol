@@ -222,7 +222,7 @@ int rc_manual_select_spi_slave(int slave){
 * @ int rc_manual_deselect_spi_slave(int slave)
 *
 * Deselects a slave (1 or 2) by pulling the corresponding slave select pin
-* to to 3.3V.
+* to 3.3V.
 *******************************************************************************/
 int rc_manual_deselect_spi_slave(int slave){
 	switch(slave){
@@ -306,7 +306,7 @@ int rc_spi_read_bytes(char* data, int bytes, int slave){
 }
 
 /*******************************************************************************
-* @ int rc_spi_transfer(char* tx_data, int tx_bytes, char* rx_data, inst slave)
+* @ int rc_spi_transfer(char* tx_data, int tx_bytes, char* rx_data, int slave)
 *
 * This is a generic wrapper for the ioctl spi transfer function. It lets the
 * user send any sequence of bytes and read the response. The return value is

@@ -41,7 +41,7 @@ float rc_get_random_float(){
 }
 
 /*******************************************************************************
-* float rc_get_random_double()
+* double rc_get_random_double()
 *
 * returns a random double-precision floating point number between -1 and 1
 *******************************************************************************/

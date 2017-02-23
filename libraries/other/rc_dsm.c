@@ -106,6 +106,36 @@ int rc_initialize_dsm(){
 	return 0;
 }
 
+/*******************************************************************************
+* @ int rc_stop_dsm_service()
+* 
+* signals the serial_parser_thread to stop and allows up to 1 second for the 
+* thread to  shut down before returning.
+*******************************************************************************/
+int rc_stop_dsm_service(){
+	int ret = 0;
+
+	if(running){
+		running = 0; // this tells serial_parser_thread loop to stop
+		// allow up to 0.3 seconds for thread cleanup
+		timespec thread_timeout;
+		clock_gettime(CLOCK_REALTIME, &thread_timeout);
+		rc_timespec_add(&thread_timeout, 0.3);
+		int thread_err = 0;
+		thread_err = pthread_timedjoin_np(serial_parser_thread, NULL, 
+															   &thread_timeout);
+		if(thread_err == ETIMEDOUT){
+			printf("WARNING: dsm serial_parser_thread exit timeout\n");
+			ret = -1;
+		}
+		#ifdef DEBUG
+		printf("DSM thread exited successfully\n");
+		#endif
+		
+		running = 0;
+	}
+	return ret;
+}
 
 /*******************************************************************************
 * @ int rc_get_dsm_ch_raw(int ch)
@@ -176,6 +206,20 @@ int rc_set_dsm_data_func(void (*func)(void)){
 }
 
 /*******************************************************************************
+* @ uint64_t rc_nanos_since_last_dsm_packet()
+* 
+* returns the number of milliseconds since the last dsm packet was received.
+* if no packet has ever been received, return -1;
+*******************************************************************************/
+uint64_t rc_nanos_since_last_dsm_packet(){
+	// if global variable last_time ==0 then no packet must have arrived yet
+	if (last_time==0){
+		return UINT64_MAX;
+	}	
+	return rc_nanos_since_epoch()-last_time;
+}
+
+/*******************************************************************************
 * @ int rc_get_dsm_resolution()
 * 
 * returns 10 or 11 indicating 10-bit or 11-bit resolution
@@ -203,20 +247,6 @@ int rc_num_dsm_channels(){
 *******************************************************************************/
 int rc_is_dsm_active(){
 	return rc_is_dsm_active_flag;
-}
-
-/*******************************************************************************
-* @ uint64_t rc_nanos_since_last_dsm_packet()
-* 
-* returns the number of milliseconds since the last dsm packet was received.
-* if no packet has ever been received, return -1;
-*******************************************************************************/
-uint64_t rc_nanos_since_last_dsm_packet(){
-	// if global variable last_time ==0 then no packet must have arrived yet
-	if (last_time==0){
-		return -1;
-	}	
-	return rc_nanos_since_epoch()-last_time;
 }
 
 /*******************************************************************************
@@ -509,37 +539,6 @@ START_NORMAL_LOOP:
 		#endif
 	}
 	return NULL;
-}
-
-/*******************************************************************************
-* @ int rc_stop_dsm_service()
-* 
-* signals the serial_parser_thread to stop and allows up to 1 second for the 
-* thread to  shut down before returning.
-*******************************************************************************/
-int rc_stop_dsm_service(){
-	int ret = 0;
-
-	if(running){
-		running = 0; // this tells serial_parser_thread loop to stop
-		// allow up to 0.3 seconds for thread cleanup
-		timespec thread_timeout;
-		clock_gettime(CLOCK_REALTIME, &thread_timeout);
-		rc_timespec_add(&thread_timeout, 0.3);
-		int thread_err = 0;
-		thread_err = pthread_timedjoin_np(serial_parser_thread, NULL, 
-															   &thread_timeout);
-		if(thread_err == ETIMEDOUT){
-			printf("WARNING: dsm serial_parser_thread exit timeout\n");
-			ret = -1;
-		}
-		#ifdef DEBUG
-		printf("DSM thread exited successfully\n");
-		#endif
-		
-		running = 0;
-	}
-	return ret;
 }
 
 /*******************************************************************************

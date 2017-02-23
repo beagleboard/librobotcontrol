@@ -485,10 +485,10 @@ int rc_send_oneshot_pulse_normalized_all(float input);
 * MUST run the clalibrate_dsm example to ensure the normalized values returned
 * by this function are correct.
 *
-* @ uint64_t rc_millis_since_last_dsm_packet();
+* @ uint64_t rc_nanos_since_last_dsm_packet();
 * 
-* returns the number of milliseconds since the last dsm packet was received.
-* if no packet has ever been received, return -1;
+* returns the number of nanoseconds since the last dsm packet was received.
+* if no packet has ever been received, returns UINT64_MAX;
 *
 * @ int rc_stop_dsm_service()
 *
@@ -507,15 +507,15 @@ int rc_send_oneshot_pulse_normalized_all(float input);
 * see rc_test_dsm, rc_calibrate_dsm, and rc_dsm_passthroguh examples
 ******************************************************************************/
 int   rc_initialize_dsm();
-int   rc_is_new_dsm_data();
-int   rc_is_dsm_active();
-int   rc_set_dsm_data_func(void (*func)(void));
+int   rc_stop_dsm_service();
 int   rc_get_dsm_ch_raw(int channel);
 float rc_get_dsm_ch_normalized(int channel);
+int   rc_is_new_dsm_data();
+int   rc_set_dsm_data_func(void (*func)(void));
+int   rc_is_dsm_active();
 uint64_t rc_nanos_since_last_dsm_packet();
 int   rc_get_dsm_resolution();
 int   rc_num_dsm_channels();
-int   rc_stop_dsm_service();
 int   rc_bind_dsm();
 int   rc_calibrate_dsm_routine();
 
@@ -648,7 +648,7 @@ typedef struct rc_imu_config_t{
 	rc_gyro_fsr_t gyro_fsr;  // GFS_250,GFS_500,GFS_1000,GFS_2000
 	
 	// internal low pass filter constants
-	rc_gyro_dlpf_t gyro_dlpf; // 
+	rc_gyro_dlpf_t gyro_dlpf;
 	rc_accel_dlpf_t accel_dlpf;
 	
 	// magnetometer use is optional 
@@ -667,8 +667,8 @@ typedef struct rc_imu_config_t{
 typedef struct rc_imu_data_t{
 	// last read sensor values in real units
 	float accel[3];	// units of m/s^2
-	float gyro[3];		// units of degrees/s
-	float mag[3];		// units of uT
+	float gyro[3];	// units of degrees/s
+	float mag[3];	// units of uT
 	float temp;		// units of degrees Celsius
 	
 	// 16 bit raw adc readings from each sensor
@@ -694,26 +694,28 @@ typedef struct rc_imu_data_t{
 
 // General functions
 rc_imu_config_t rc_default_imu_config();
-int rc_set_imu_config_to_defaults(rc_imu_config_t *conf);
-int rc_calibrate_gyro_routine();
-int rc_calibrate_mag_routine();
-int rc_is_gyro_calibrated();
-int rc_is_mag_calibrated();
+int rc_set_imu_config_to_defaults(rc_imu_config_t* conf);
 int rc_power_off_imu();
 
 // one-shot sampling mode functions
-int rc_initialize_imu(rc_imu_data_t *data, rc_imu_config_t conf);
-int rc_read_accel_data(rc_imu_data_t *data);
-int rc_read_gyro_data(rc_imu_data_t *data);
-int rc_read_mag_data(rc_imu_data_t *data);
+int rc_initialize_imu(rc_imu_data_t* data, rc_imu_config_t conf);
+int rc_read_accel_data(rc_imu_data_t* data);
+int rc_read_gyro_data(rc_imu_data_t* data);
+int rc_read_mag_data(rc_imu_data_t* data);
 int rc_read_imu_temp(rc_imu_data_t* data);
 
 // interrupt-driven sampling mode functions
-int rc_initialize_imu_dmp(rc_imu_data_t *data, rc_imu_config_t conf);
+int rc_initialize_imu_dmp(rc_imu_data_t* data, rc_imu_config_t conf);
 int rc_set_imu_interrupt_func(void (*func)(void));
 int rc_stop_imu_interrupt_func();
 int rc_was_last_imu_read_successful();
 uint64_t rc_nanos_since_last_imu_interrupt();
+
+// other
+int rc_calibrate_gyro_routine();
+int rc_calibrate_mag_routine();
+int rc_is_gyro_calibrated();
+int rc_is_mag_calibrated();
 
 /*******************************************************************************
 * BMP280 Barometer
@@ -871,8 +873,8 @@ int rc_i2c_send_byte(int bus, uint8_t data);
 /*******************************************************************************
 * SPI - Serial Peripheral Interface
 *
-* The Sitara's SPI bus is broken out on two JST SH 6-pin sockets labeled SPI.1 
-* and SPI.2 These share clock and serial IO signals, but have independent slave
+* The Sitara's SPI bus is broken out on two JST SH 6-pin sockets labeled SPI1.1 
+* and SPI1.2 These share clock and serial IO signals, but have independent slave
 * select lines. 
 * 
 * The slaves can be selected automatically by the SPI linux driver or manually
@@ -897,10 +899,11 @@ int rc_manual_select_spi_slave(int slave);
 int rc_manual_deselect_spi_slave(int slave);	
 int rc_spi_send_bytes(char* data, int bytes, int slave);
 int rc_spi_read_bytes(char* data, int bytes, int slave);
+int rc_spi_transfer(char* tx_data, int tx_bytes, char* rx_data, int slave);
 int rc_spi_write_reg_byte(char reg_addr, char data, int slave);
 char rc_spi_read_reg_byte(char reg_addr, int slave);
 int rc_spi_read_reg_bytes(char reg_addr, char* data, int bytes, int slave);
-int rc_spi_transfer(char* tx_data, int tx_bytes, char* rx_data, int slave);
+
 
 
 /*******************************************************************************
@@ -909,11 +912,11 @@ int rc_spi_transfer(char* tx_data, int tx_bytes, char* rx_data, int slave);
 int rc_uart_init(int bus, int speed, float timeout);
 int rc_uart_close(int bus);
 int rc_uart_fd(int bus);
-int rc_uart_flush(int bus);
 int rc_uart_send_bytes(int bus, int bytes, char* data);
 int rc_uart_send_byte(int bus, char data);
 int rc_uart_read_bytes(int bus, int bytes, char* buf);
 int rc_uart_read_line(int bus, int max_bytes, char* buf);
+int rc_uart_flush(int bus);
 int rc_uart_bytes_available(int bus);
 
 /*******************************************************************************
@@ -921,7 +924,7 @@ int rc_uart_bytes_available(int bus);
 *
 * @ int rc_set_cpu_freq(rc_cpu_freq_t freq)
 *
-* Sets the CPU frequency to either a fixed value or to onedemand automatic
+* Sets the CPU frequency to either a fixed value or to on-demand automatic
 * scaling mode. Returns 0 on success, -1 on failure.
 *
 * @ rc_cpu_freq_t rc_get_cpu_freq()
@@ -947,6 +950,327 @@ typedef enum rc_cpu_freq_t{
 int rc_set_cpu_freq(rc_cpu_freq_t freq);
 rc_cpu_freq_t rc_get_cpu_freq();
 int rc_print_cpu_freq();
+
+/*******************************************************************************
+* Board identification
+*
+* Because we wish to support different beagleboard products with this same
+* library, we must internally determine which board we are running on to decide
+* which pins to use. We make these functions available to the user in case they
+* wish to do the same. 
+* See the check_board example for a demonstration.
+*******************************************************************************/
+typedef enum rc_bb_model_t{
+	UNKNOWN_MODEL,
+	BB_BLACK,
+	BB_BLACK_RC,
+	BB_BLACK_W,
+	BB_BLACK_W_RC,
+	BB_GREEN,
+	BB_GREEN_W,
+	BB_BLUE
+} rc_bb_model_t;
+
+rc_bb_model_t rc_get_bb_model();
+void rc_print_bb_model();
+
+/*******************************************************************************
+* Pin Multiplexing (pinmux)
+*
+* On the Robotics Cape, we allow changing the pinmux on the SPI, GPS, and UART1
+* headers in case you wish to expose GPIO, CAN, or PWM functionality.
+* We use the GPIO number to identify the pins even though they may be used
+* for things other than GPIO as this provides consistency with the GPIO
+* functions which will likely be used. A list of defines are also given here
+* to make your code easier to read and to indicate which pins are available
+* for pinmuxing.
+*
+* enum rc_pinmux_mode_t gives options for pinmuxing. Not every mode if available on
+* each pin. refer to the pin table for which to use. 
+*
+* rc_set_default_pinmux() puts everything back to standard and is used by 
+* initialize_cape
+*******************************************************************************/
+// Cape and Blue
+#define GPS_HEADER_PIN_3		2	// P9_22, normally GPS UART2 RX
+#define GPS_HEADER_PIN_4		3	// P9_21, normally GPS UART2 TX
+#define UART1_HEADER_PIN_3		14	// P9_26, normally UART1 RX
+#define UART1_HEADER_PIN_4		15	// P9_24, normally UART1 TX
+#define SPI_HEADER_PIN_3		112	// P9_30, normally SPI1 MOSI		
+#define SPI_HEADER_PIN_4		111	// P9_29, normally SPI1 MISO	
+#define SPI_HEADER_PIN_5		110	// P9_31, normally SPI1 SCLK
+
+// Cape Only
+#define CAPE_SPI_PIN_6_SS1		113	// P9_28, normally SPI mode
+#define CAPE_SPI_PIN_6_SS2		49	// P9_23, normally GPIO mode
+
+// Blue Only
+#define BLUE_SPI_PIN_6_SS1		29	// gpio 0_29  pin H18
+#define BLUE_SPI_PIN_6_SS2		7	// gpio 0_7  pin C18		
+#define BLUE_GP0_PIN_3			57	// gpio 1_25 pin U16
+#define BLUE_GP0_PIN_4			49	// gpio 1_17 pin P9.23
+#define BLUE_GP0_PIN_5			116	// gpio 3_20 pin D13
+#define BLUE_GP0_PIN_6			113	// gpio 3_17 pin P9_28
+#define BLUE_GP1_PIN_3			98	// gpio 3_2  pin J15
+#define BLUE_GP1_PIN_4			97	// gpio 3_1  pin H17
+
+typedef enum rc_pinmux_mode_t{
+	PINMUX_GPIO,
+	PINMUX_GPIO_PU,
+	PINMUX_GPIO_PD,
+	PINMUX_PWM,
+	PINMUX_SPI,
+	PINMUX_UART,
+	PINMUX_CAN
+} rc_pinmux_mode_t;
+
+int rc_set_pinmux_mode(int pin, rc_pinmux_mode_t mode);
+int rc_set_default_pinmux();
+
+/*******************************************************************************
+* GPIO
+*******************************************************************************/
+#define HIGH 1
+#define LOW 0
+
+typedef enum rc_pin_direction_t{
+	INPUT_PIN,
+	OUTPUT_PIN
+}rc_pin_direction_t;
+
+typedef enum rc_pin_edge_t{
+	EDGE_NONE,
+	EDGE_RISING,
+	EDGE_FALLING,
+	EDGE_BOTH
+}rc_pin_edge_t;
+
+int rc_gpio_export(unsigned int gpio);
+int rc_gpio_unexport(unsigned int gpio);
+int rc_gpio_set_dir(int gpio, rc_pin_direction_t dir);
+int rc_gpio_set_value(unsigned int gpio, int value);
+int rc_gpio_get_value(unsigned int gpio);
+int rc_gpio_set_edge(unsigned int gpio, rc_pin_edge_t edge);
+int rc_gpio_fd_open(unsigned int gpio);
+int rc_gpio_fd_close(int fd);
+int rc_gpio_set_value_mmap(int pin, int state);
+int rc_gpio_get_value_mmap(int pin);
+
+
+/*******************************************************************************
+* PWM
+*
+* These functions provide a general interface to all 3 PWM subsystems, each of
+* which have two available channels A and B. PWM subsystems 1 and 2 are used for
+* controlling the 4 motors on the Robotics Cape, however they may be controlled
+* by the user directly instead of using the motor API. PWM subsystem 0 channels
+* A and B can be accessed on the UART1 header if set up with the Pinmux API to 
+* do so. The user may have exclusive use of that subsystem.
+*
+* @ int rc_pwm_init(int ss, int frequency)
+*
+* Configures subsystem 0, 1, or 2 to operate at a particular frequency. This may
+* be called at runtime to change the pwm frequency without stopping the motors
+* or pwm signal. Returns 0 on success or -1 on failure.
+*
+* @ int rc_pwm_close(int ss){
+*
+* Unexports a subsystem to put it into low-power state. Not necessary for the
+* the user to call during normal program operation. This is mostly for internal
+* use and cleanup.
+*
+* @ int rc_pwm_set_duty(int ss, char ch, float duty)
+*
+* Updates the duty cycle through the file system userspace driver. subsystem ss
+* must be 0,1,or 2 and channel 'ch' must be A or B. Duty cycle must be bounded
+* between 0.0f (off) and 1.0f(full on). Returns 0 on success or -1 on failure.
+*
+* @ int rc_pwm_set_duty_ns(int ss, char ch, int duty_ns)
+*
+* like rc_pwm_set_duty() but takes a pulse width in nanoseconds which must range
+* from 0 (off) to the number of nanoseconds in a single cycle as determined
+* by the freqency specified when calling rc_pwm_init(). The default PWM
+* frequency of the motors is 25kz corresponding to a maximum pulse width of
+* 40,000ns. However, this function will likely only be used by the user if they
+* have set a custom PWM frequency for a more specific purpose. Returns 0 on
+* success or -1 on failure.
+*
+* @ int rc_pwm_set_duty_mmap(int ss, char ch, float duty)
+*
+* This is the fastest way to set the pwm duty cycle and is used internally by
+* the rc_set_motor() function but is also available to the user. This is done
+* with direct memory access from userspace to the pwm subsystem. It's use is
+* identical to rc_pwm_set_duty where subsystem ss must be 0,1, or 2 where
+* 1 and 2 are used by the motor H bridges. Channel 'ch' must be 'A' or 'B' and
+* duty must be from 0.0f to 1.0f. The subsystem must be intialized with
+* rc_pwm_init() before use. Returns 0 on success or -1 on failure.
+*******************************************************************************/
+int rc_pwm_init(int ss, int frequency);
+int rc_pwm_close(int ss);
+int rc_pwm_set_duty(int ss, char ch, float duty);
+int rc_pwm_set_duty_ns(int ss, char ch, int duty_ns);
+int rc_pwm_set_duty_mmap(int ss, char ch, float duty);
+
+/*******************************************************************************
+* time
+*
+* @ void rc_nanosleep(uint64_t ns)
+* 
+* A wrapper for the normal UNIX nanosleep function which takes a number of
+* nanoseconds instead of a timeval struct. This also handles restarting
+* nanosleep with the remaining time in the event that nanosleep is interrupted
+* by a signal. There is no upper limit on the time requested.
+*
+* @ void rc_usleep(uint64_t ns)
+* 
+* The traditional usleep function, however common, is deprecated in linux as it
+* uses SIGALARM which interferes with alarm and timer functions. This uses the
+* new POSIX standard nanosleep to accomplish the same thing which further
+* supports sleeping for lengths longer than 1 second. This also handles
+* restarting nanosleep with the remaining time in the event that nanosleep is 
+* interrupted by a signal. There is no upper limit on the time requested.
+*
+* @ uint64_t rc_timespec_to_micros(timespec ts)
+* 
+* Returns a number of microseconds corresponding to a timespec struct.
+* Useful because timespec structs are annoying.
+*
+* @ uint64_t rc_timespec_to_millis(timespec ts)
+* 
+* Returns a number of milliseconds corresponding to a timespec struct.
+* Useful because timespec structs are annoying.
+*
+* @ uint64_t rc_timeval_to_micros(timeval tv)
+* 
+* Returns a number of microseconds corresponding to a timespec struct.
+* Useful because timeval structs are annoying.
+*
+* @ uint64_t rc_timeval_to_millis(timeval ts)
+* 
+* Returns a number of milliseconds corresponding to a timespec struct.
+* Useful because timeval structs are annoying.
+*
+* @ uint64_t rc_nanos_since_epoch()
+* 
+* Returns the number of nanoseconds since epoch using system CLOCK_REALTIME
+* This function itself takes about 1100ns to complete at 1ghz under ideal
+* circumstances.
+*
+* @ uint64_t rc_nanos_since_boot()
+* 
+* Returns the number of nanoseconds since system boot using CLOCK_MONOTONIC
+* This function itself takes about 1100ns to complete at 1ghz under ideal
+* circumstances.
+*
+* @ uint64_t rc_nanos_thread_time()
+* 
+* Returns the number of nanoseconds from when when the calling thread was
+* started in CPU time. This time only increments when the processor is working
+* on the calling thread and not when the thread is sleeping. This is usually for
+* timing how long blocks of user-code take to execute. This function itself
+* takes about 2100ns to complete at 1ghz under ideal circumstances.
+*
+* @ timespec rc_timespec_diff(timespec start, timespec end)
+* 
+* Returns the time difference between two timespec structs as another timespec.
+* Convenient for use with nanosleep() function and accurately timed loops.
+* Unlike timespec_sub defined in time.h, rc_timespec_diff does not care which
+* came first, A or B. A positive difference in time is always returned.
+*
+* @ int rc_timespec_add(timespec* start, double seconds)
+* 
+* Adds an amount of time in seconds to a timespec struct. The time added is a
+* floating point value to make respresenting fractions of a second easier.
+* the timespec is passed as a pointer so it can be modified in place.
+* Seconds may be negative.
+*******************************************************************************/
+void rc_nanosleep(uint64_t ns);
+void rc_usleep(unsigned int us);
+uint64_t rc_timespec_to_micros(timespec ts);
+uint64_t rc_timespec_to_millis(timespec ts);
+uint64_t rc_timeval_to_micros(timeval tv);
+uint64_t rc_timeval_to_millis(timeval tv);
+uint64_t rc_nanos_since_epoch();
+uint64_t rc_nanos_since_boot();
+uint64_t rc_nanos_thread_time();
+timespec rc_timespec_diff(timespec A, timespec B);
+void rc_timespec_add(timespec* start, double seconds);
+
+/*******************************************************************************
+* Other Functions
+*
+* This is a collection of miscellaneous useful functions that are part of the
+* robotics cape library. These do not necessarily interact with hardware.
+*
+* @ void rc_null_func()
+*
+* A simple function that just returns. This exists so function pointers can be 
+* set to do nothing such as button and imu interrupt handlers.
+*
+* @ float rc_get_random_float()
+* @ double rc_get_random_double()
+*
+* Returns a random single or double prevision point value between -1 and 1. 
+* These are here because the rand() function from stdlib.h only returns and
+* integer. These are highly optimized routines that use bitwise operation
+* instead of floating point division.
+*
+* @ int rc_saturate_float(float* val, float min, float max)
+* @ int rc_saturate_double(double* val, double min, double max)
+*
+* Modifies val to be bounded between between min and max. Returns 1 if 
+* saturation occurred, 0 if val was already in bound, and -1 if min was falsely
+* larger than max.
+*
+* @ char *rc_byte_to_binary(char x)
+* 
+* This returns a string (char*) of '1' and '0' representing a character.
+* For example, print "00101010" with printf(rc_byte_to_binary(42));
+*
+* @ int rc_suppress_stdout(int (*func)(void))
+*
+* Executes a functiton func with all outputs to stdout suppressed. func must
+* take no arguments and must return an integer. Adapt this source to your
+* liking if you need to pass arguments. For example, if you have a function
+* int foo(), call it with supressed output to stdout as follows:
+* int ret = rc_suppress_stdout(&foo);
+*
+* @ int rc_suppress_stderr(int (*func)(void))
+* 
+* executes a functiton func with all outputs to stderr suppressed. func must
+* take no arguments and must return an integer. Adapt this source to your
+* liking if you need to pass arguments. For example, if you have a function
+* int foo(), call it with supressed output to stderr as follows:
+* int ret = rc_suppress_stderr(&foo);
+*
+* @ rc_continue_or_quit()
+*
+* This is a blocking function which returns 1 if the user presses ENTER.
+* it returns 0 on any other keypress. If ctrl-C is pressed it will
+* additionally set the global state to EXITITING and return -1. 
+* This is a useful function for checking if the user wishes to continue with a 
+* process or quit.
+*
+* @ float rc_version_float()
+*
+* Returns a floating-point representation of the roboticscape library version
+* for easy comparison.
+*
+* @ const char* rc_version_string()
+*
+* Returns a string of the roboticscape package version for printing.
+*******************************************************************************/
+void rc_null_func();
+float rc_get_random_float();
+double rc_get_random_double();
+int rc_saturate_float(float* val, float min, float max);
+int rc_saturate_double(double* val, double min, double max);
+char* rc_byte_to_binary(unsigned char x);
+int rc_suppress_stdout(int (*func)(void));
+int rc_suppress_stderr(int (*func)(void));
+int rc_continue_or_quit();
+float rc_version_float();
+const char* rc_version_string();
 
 /*******************************************************************************
 * Linear Algebra Types
@@ -1076,7 +1400,7 @@ typedef struct rc_matrix_t{
 * In practice this is never used as it is much easier for the user to read
 * values directly with this code:
 *
-* @ val = v.d[pos];
+* val = v.d[pos];
 *
 * However, we provide this function for completeness. It also provides sanity
 * checks to avoid possible segfaults.
@@ -1505,7 +1829,7 @@ int   rc_fit_ellipsoid(rc_matrix_t pts, rc_vector_t* ctr, rc_vector_t* lens);
 * a and a's original contents are lost. More memory is allocated for a if
 * necessary. Returns 0 on success or -1 on failure.
 *
-* @int rc_poly_subtract(rc_vector_t a, rc_vector_t b, rc_vector_t* c)
+* @ int rc_poly_subtract(rc_vector_t a, rc_vector_t b, rc_vector_t* c)
 *
 * Subtracts two polynomials a-b with right justification and place the result in
 * c. Any existing memory allocated for c is freed and its contents are lost.
@@ -2028,314 +2352,7 @@ int   rc_integrator(rc_filter_t *f, float dt);
 int   rc_double_integrator(rc_filter_t* f, float dt);
 int   rc_pid_filter(rc_filter_t* f,float kp,float ki,float kd,float Tf,float dt);
 
-/*******************************************************************************
-* Board identification
-*
-* Because we wish to support different beagleboard products with this same
-* library, we must internally determine which board we are running on to decide
-* which pins to use. We make these functions available to the user in case they
-* wish to do the same. 
-* See the check_board example for a demonstration.
-*******************************************************************************/
-typedef enum rc_bb_model_t{
-	UNKNOWN_MODEL,
-	BB_BLACK,
-	BB_BLACK_RC,
-	BB_BLACK_W,
-	BB_BLACK_W_RC,
-	BB_GREEN,
-	BB_GREEN_W,
-	BB_BLUE
-} rc_bb_model_t;
 
-rc_bb_model_t rc_get_bb_model();
-void rc_print_bb_model();
-
-/*******************************************************************************
-* Pin Multiplexing (pinmux)
-*
-* On the Robotics Cape, we allow changing the pinmux on the SPI, GPS, and UART1
-* headers in case you wish to expose GPIO, CAN, or PWM functionality.
-* We use the GPIO number to identify the pins even though they may be used
-* for things other than GPIO as this provides consistency with the GPIO
-* functions which will likely be used. A list of defines are also given here
-* to make your code easier to read and to indicate which pins are available
-* for pinmuxing.
-*
-* enum rc_pinmux_mode_t gives options for pinmuxing. Not every mode if available on
-* each pin. refer to the pin table for which to use. 
-*
-* rc_set_default_pinmux() puts everything back to standard and is used by 
-* initialize_cape
-*******************************************************************************/
-// Cape and Blue
-#define GPS_HEADER_PIN_3		2	// P9_22, normally GPS UART2 RX
-#define GPS_HEADER_PIN_4		3	// P9_21, normally GPS UART2 TX
-#define UART1_HEADER_PIN_3		14	// P9_26, normally UART1 RX
-#define UART1_HEADER_PIN_4		15	// P9_24, normally UART1 TX
-#define SPI_HEADER_PIN_3		112	// P9_30, normally SPI1 MOSI		
-#define SPI_HEADER_PIN_4		111	// P9_29, normally SPI1 MISO	
-#define SPI_HEADER_PIN_5		110	// P9_31, normally SPI1 SCLK
-
-// Cape Only
-#define CAPE_SPI_PIN_6_SS1		113	// P9_28, normally SPI mode
-#define CAPE_SPI_PIN_6_SS2		49	// P9_23, normally GPIO mode
-
-// Blue Only
-#define BLUE_SPI_PIN_6_SS1		29	// gpio 0_29  pin H18
-#define BLUE_SPI_PIN_6_SS2		7	// gpio 0_7  pin C18		
-#define BLUE_GP0_PIN_3			57	// gpio 1_25 pin U16
-#define BLUE_GP0_PIN_4			49	// gpio 1_17 pin P9.23
-#define BLUE_GP0_PIN_5			116	// gpio 3_20 pin D13
-#define BLUE_GP0_PIN_6			113	// gpio 3_17 pin P9_28
-#define BLUE_GP1_PIN_3			98	// gpio 3_2  pin J15
-#define BLUE_GP1_PIN_4			97	// gpio 3_1  pin H17
-
-typedef enum rc_pinmux_mode_t{
-	PINMUX_GPIO,
-	PINMUX_GPIO_PU,
-	PINMUX_GPIO_PD,
-	PINMUX_PWM,
-	PINMUX_SPI,
-	PINMUX_UART,
-	PINMUX_CAN
-} rc_pinmux_mode_t;
-
-int rc_set_pinmux_mode(int pin, rc_pinmux_mode_t mode);
-int rc_set_default_pinmux();
-
-/*******************************************************************************
-* GPIO
-*******************************************************************************/
-#define HIGH 1
-#define LOW 0
-
-typedef enum rc_pin_direction_t{
-	INPUT_PIN,
-	OUTPUT_PIN
-}rc_pin_direction_t;
-
-typedef enum rc_pin_edge_t{
-	EDGE_NONE,
-	EDGE_RISING,
-	EDGE_FALLING,
-	EDGE_BOTH
-}rc_pin_edge_t;
-
-int rc_gpio_export(unsigned int gpio);
-int rc_gpio_unexport(unsigned int gpio);
-int rc_gpio_set_dir(int gpio, rc_pin_direction_t dir);
-int rc_gpio_set_value(unsigned int gpio, int value);
-int rc_gpio_get_value(unsigned int gpio);
-int rc_gpio_set_edge(unsigned int gpio, rc_pin_edge_t edge);
-int rc_gpio_fd_open(unsigned int gpio);
-int rc_gpio_fd_close(int fd);
-int rc_gpio_set_value_mmap(int pin, int state);
-int rc_gpio_get_value_mmap(int pin);
-
-
-/*******************************************************************************
-* PWM
-*
-* These functions provide a general interface to all 3 PWM subsystems, each of
-* which have two available channels A and B. PWM subsystems 1 and 2 are used for
-* controlling the 4 motors on the Robotics Cape, however they may be controlled
-* by the user directly instead of using the motor API. PWM subsystem 0 channels
-* A and B can be accessed on the UART1 header if set up with the Pinmux API to 
-* do so. The user may have exclusive use of that subsystem.
-*
-* @ int rc_pwm_init(int ss, int frequency)
-*
-* Configures subsystem 0, 1, or 2 to operate at a particular frequency. This may
-* be called at runtime to change the pwm frequency without stopping the motors
-* or pwm signal. Returns 0 on success or -1 on failure.
-*
-* @ int rc_pwm_close(int ss){
-*
-* Unexports a subsystem to put it into low-power state. Not necessary for the
-* the user to call during normal program operation. This is mostly for internal
-* use and cleanup.
-*
-* @ int rc_pwm_set_duty(int ss, char ch, float duty)
-*
-* Updates the duty cycle through the file system userspace driver. subsystem ss
-* must be 0,1,or 2 and channel 'ch' must be A or B. Duty cycle must be bounded
-* between 0.0f (off) and 1.0f(full on). Returns 0 on success or -1 on failure.
-*
-* @ int rc_pwm_set_duty_ns(int ss, char ch, int duty_ns)
-*
-* like rc_pwm_set_duty() but takes a pulse width in nanoseconds which must range
-* from 0 (off) to the number of nanoseconds in a single cycle as determined
-* by the freqency specified when calling rc_pwm_init(). The default PWM
-* frequency of the motors is 25kz corresponding to a maximum pulse width of
-* 40,000ns. However, this function will likely only be used by the user if they
-* have set a custom PWM frequency for a more specific purpose. Returns 0 on
-* success or -1 on failure.
-*
-* @ int rc_pwm_set_duty_mmap(int ss, char ch, float duty)
-*
-* This is the fastest way to set the pwm duty cycle and is used internally by
-* the rc_set_motor() function but is also available to the user. This is done
-* with direct memory access from userspace to the pwm subsystem. It's use is
-* identical to rc_pwm_set_duty where subsystem ss must be 0,1, or 2 where
-* 1 and 2 are used by the motor H bridges. Channel 'ch' must be 'A' or 'B' and
-* duty must be from 0.0f to 1.0f. The subsystem must be intialized with
-* rc_pwm_init() before use. Returns 0 on success or -1 on failure.
-*******************************************************************************/
-int rc_pwm_init(int ss, int frequency);
-int rc_pwm_close(int ss);
-int rc_pwm_set_duty(int ss, char ch, float duty);
-int rc_pwm_set_duty_ns(int ss, char ch, int duty_ns);
-int rc_pwm_set_duty_mmap(int ss, char ch, float duty);
-
-/*******************************************************************************
-* time
-*
-* @ void rc_nanosleep(uint64_t ns)
-* 
-* A wrapper for the normal UNIX nanosleep function which takes a number of
-* nanoseconds instead of a timeval struct. This also handles restarting
-* nanosleep with the remaining time in the event that nanosleep is interrupted
-* by a signal. There is no upper limit on the time requested.
-*
-* @ void rc_usleep(uint64_t ns)
-* 
-* The traditional usleep function, however common, is deprecated in linux as it
-* uses SIGALARM which interferes with alarm and timer functions. This uses the
-* new POSIX standard nanosleep to accomplish the same thing which further
-* supports sleeping for lengths longer than 1 second. This also handles
-* restarting nanosleep with the remaining time in the event that nanosleep is 
-* interrupted by a signal. There is no upper limit on the time requested.
-*
-* @ uint64_t rc_timespec_to_micros(timespec ts)
-* 
-* Returns a number of microseconds corresponding to a timespec struct.
-* Useful because timespec structs are annoying.
-*
-* @ uint64_t rc_timespec_to_millis(timespec ts)
-* 
-* Returns a number of milliseconds corresponding to a timespec struct.
-* Useful because timespec structs are annoying.
-*
-* @ uint64_t rc_timeval_to_micros(timeval tv)
-* 
-* Returns a number of microseconds corresponding to a timespec struct.
-* Useful because timeval structs are annoying.
-*
-* @ uint64_t rc_timeval_to_millis(timeval ts)
-* 
-* Returns a number of milliseconds corresponding to a timespec struct.
-* Useful because timeval structs are annoying.
-*
-* @ uint64_t rc_nanos_since_epoch()
-* 
-* Returns the number of nanoseconds since epoch using system CLOCK_REALTIME
-* This function itself takes about 1100ns to complete at 1ghz under ideal
-* circumstances.
-*
-* @ uint64_t rc_nanos_since_boot()
-* 
-* Returns the number of nanoseconds since system boot using CLOCK_MONOTONIC
-* This function itself takes about 1100ns to complete at 1ghz under ideal
-* circumstances.
-*
-* @ uint64_t rc_nanos_thread_time()
-* 
-* Returns the number of nanoseconds from when when the calling thread was
-* started in CPU time. This time only increments when the processor is working
-* on the calling thread and not when the thread is sleeping. This is usually for
-* timing how long blocks of user-code take to execute. This function itself
-* takes about 2100ns to complete at 1ghz under ideal circumstances.
-*
-* @ timespec rc_timespec_diff(timespec start, timespec end)
-* 
-* Returns the time difference between two timespec structs as another timespec.
-* Convenient for use with nanosleep() function and accurately timed loops.
-* Unlike timespec_sub defined in time.h, rc_timespec_diff does not care which
-* came first, A or B. A positive difference in time is always returned.
-*
-* @ int rc_timespec_add(timespec* start, double seconds)
-* 
-* Adds an amount of time in seconds to a timespec struct. The time added is a
-* floating point value to make respresenting fractions of a second easier.
-* the timespec is passed as a pointer so it can be modified in place.
-* Seconds may be negative.
-*******************************************************************************/
-void rc_nanosleep(uint64_t ns);
-void rc_usleep(unsigned int us);
-uint64_t rc_timespec_to_micros(timespec ts);
-uint64_t rc_timespec_to_millis(timespec ts);
-uint64_t rc_timeval_to_micros(timeval tv);
-uint64_t rc_timeval_to_millis(timeval tv);
-uint64_t rc_nanos_since_epoch();
-uint64_t rc_nanos_since_boot();
-uint64_t rc_nanos_thread_time();
-timespec rc_timespec_diff(timespec A, timespec B);
-void rc_timespec_add(timespec* start, double seconds);
-
-/*******************************************************************************
-* Other Functions
-*
-* This is a collection of miscellaneous useful functions that are part of the
-* robotics cape library. These do not necessarily interact with hardware.
-*
-* @ void rc_null_func()
-*
-* A simple function that returns 0. This exists so function pointers can be 
-* set to do nothing such as button and imu interrupt handlers.
-*
-* @ float rc_get_random_float()
-*
-* Returns a random floating point value between -1 and 1. This is here because
-* the rand() function from stdlib.h only returns and integer. This is an
-* optimized routine using bitwise operation instead of floating point division.
-*
-* @ rc_saturate_float(float* val, float min, float max)
-*
-* Modifies val to be bounded between between min and max. Returns 1 if 
-* saturation occurred, 0 if val was already in bound, and -1 if min was falsely
-* larger than max.
-*
-* @ char *rc_byte_to_binary(char x)
-* 
-* This returns a string (char*) of '1' and '0' representing a character.
-* For example, print "00101010" with printf(rc_byte_to_binary(42));
-*
-* @ int rc_suppress_stdout(int (*func)(void))
-*
-* Executes a functiton func with all outputs to stdout suppressed. func must
-* take no arguments and must return an integer. Adapt this source to your
-* liking if you need to pass arguments. For example, if you have a function
-* int foo(), call it with supressed output to stdout as follows:
-* int ret = rc_suppress_stdout(&foo);
-*
-* @ int rc_suppress_stderr(int (*func)(void))
-* 
-* executes a functiton func with all outputs to stderr suppressed. func must
-* take no arguments and must return an integer. Adapt this source to your
-* liking if you need to pass arguments. For example, if you have a function
-* int foo(), call it with supressed output to stderr as follows:
-* int ret = rc_suppress_stderr(&foo);
-*
-* @ rc_continue_or_quit()
-*
-* This is a blocking function which returns 1 if the user presses ENTER.
-* it returns 0 on any other keypress. If ctrl-C is pressed it will
-* additionally set the global state to EXITITING and return -1. 
-* This is a useful function for checking if the user wishes to continue with a 
-* process or quit.
-*******************************************************************************/
-void rc_null_func();
-float rc_get_random_float();
-double rc_get_random_double();
-int rc_saturate_float(float* val, float min, float max);
-int rc_saturate_double(double* val, double min, double max);
-char* rc_byte_to_binary(unsigned char x);
-int rc_suppress_stdout(int (*func)(void));
-int rc_suppress_stderr(int (*func)(void));
-int rc_continue_or_quit();
-float rc_version_float();
-const char* rc_version_string();
 
 #endif //ROBOTICS_CAPE
 
