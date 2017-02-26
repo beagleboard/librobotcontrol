@@ -1,3 +1,7 @@
+0.3.2
+	* Fix DSM driving in balance
+	* Update documentation source comments
+	*
 0.3.1
 	* Safely handle old and new device trees with and without postfix
 	* stricter whitelisting of supported boards and device trees

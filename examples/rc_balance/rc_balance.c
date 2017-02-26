@@ -191,7 +191,7 @@ int main(){
 	
 	
 	// start dsm listener
-	rc_initialize_dsm()
+	rc_initialize_dsm();
 	
 	// chill until something exits the program
 	while(rc_get_state()!=EXITING){

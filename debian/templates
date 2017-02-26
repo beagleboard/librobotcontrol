@@ -1,7 +1,12 @@
-Template: roboticscape/question1
+Template: roboticscape/q_enable_dt
+Type: boolean
+Default: false
+Description: Enable the Robotics Cape device tree?
+ For full support on BeagleBone Black and Black Wireless boards, '/boot/uEnv.txt' must be modified to load the Robotics Cape device tree on boot. A backup of the original file will me made as '/boot/uEnv.txt.backup'. If you are not using the Robotics Cape then select 'No'.
+
+Template: roboticscape/q_runonboot
 Type: select
-Default: rc_blink
+Default: none
 Choices: rc_blink, rc_balance, existing, none
 Description: Which program to run on boot?
  Please select a program to run on boot. The default value is 'rc_blink' which will flash the green and red LEDs on boot to indicate all if working. For BeagleMiP select 'rc_balance'. If you have your own roboticscape project set to run on boot and wish to leave it alone then select existing. To do nothing on boot select 'none'.
-

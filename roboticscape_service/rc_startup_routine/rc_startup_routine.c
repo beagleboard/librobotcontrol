@@ -155,8 +155,8 @@ int check_timeout(){
 * exports and sets the direction of each gpio pin
 *******************************************************************************/
 int setup_pwm(){
-	if(rc_pwm_init(1,PWM_FREQ)) return -1;
-	if(rc_pwm_init(2,PWM_FREQ)) return -1;
+	if(rc_pwm_init(1,DEFAULT_PWM_FREQ)) return -1;
+	if(rc_pwm_init(2,DEFAULT_PWM_FREQ)) return -1;
 	return 0;
 }
 
