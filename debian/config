@@ -6,20 +6,24 @@ set -e
 # Source debconf library.
 . /usr/share/debconf/confmodule
 
-# check model
-MODEL="$(cat /proc/device-tree/model)"
-ISBLACK=false
-ISBLUE=false
-if [ "$MODEL" = "TI AM335x BeagleBone Blue" ]; then
-	ISBLUE=true
-elif [ "$MODEL" = "TI AM335x BeagleBone Black" ]; then
-	ISBLACK=true
-elif [ "$MODEL" = "TI AM335x BeagleBone Black Wireless" ]; then
-	ISBLACK=true
-fi
-
 # if not running in noninteractive mode, ask some questions
 if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ]; then
+	# check model
+	MODEL="$(cat /proc/device-tree/model)"
+	ISBLACK=false
+	ISBLUE=false
+	ISCAPE=false
+	if [ "$MODEL" = "TI AM335x BeagleBone Blue" ]; then
+		ISBLUE=true
+	elif [ "$MODEL" = "TI AM335x BeagleBone Black" ]; then
+		ISBLACK=true
+	elif [ "$MODEL" = "TI AM335x BeagleBone Black Wireless" ]; then
+		ISBLACK=true
+	elif [ "$MODEL" = "TI AM335x BeagleBone Black RoboticsCape" ]; then
+		ISCAPE=true
+	elif [ "$MODEL" = "TI AM335x BeagleBone Black Wireless RoboticsCape" ]; then
+		ISCAPE=true
+	fi
 
 	# first, for Black and Black wireless we need to ask to modify uEnv.txt
 	if [ "$ISBLACK" = "true" ]; then
@@ -27,8 +31,14 @@ if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ]; then
 		db_go || true
 	fi
 
-	# if blue or black, ask for what should run on boot
-	if [ "$ISBLACK" = "true" ] || [ "$ISBLUE" = "true" ]; then
+	# now get the answer to the last question, if the user requested to enable
+	# the DT then set ISCAPE to true as well since it will be after reboot
+	db_get roboticscape/q_enable_dt || true
+	if [ "$RET" = "true" ]; then ISCAPE=true; fi
+	
+	# if blue or cape DT enabled, or cape DT was just requested to be enabled, 
+	# ask for what should run on boot
+	if [ "$ISCAPE" = "true" ] || [ "$ISBLUE" = "true" ]; then
 		db_input critical roboticscape/q_runonboot || true
 		db_go || true
 	fi
