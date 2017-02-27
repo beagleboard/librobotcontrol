@@ -9,4 +9,4 @@ Type: select
 Default: none
 Choices: rc_blink, rc_balance, existing, none
 Description: Which program to run on boot?
- Please select a program to run on boot. The default value is 'rc_blink' which will flash the green and red LEDs on boot to indicate all if working. For BeagleMiP select 'rc_balance'. If you have your own roboticscape project set to run on boot and wish to leave it alone then select existing. To do nothing on boot select 'none'.
+ Please select a program for the roboticscape service to run on boot. The default value is 'rc_blink' which will flash the green and red LEDs on boot to indicate the roboticscape service is running. For EduMiP select 'rc_balance'. If you have your own roboticscape project set to run on boot and wish to leave it alone then select existing. To make the roboticscape service do nothing on boot select 'none'.
