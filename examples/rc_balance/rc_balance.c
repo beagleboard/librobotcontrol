@@ -90,12 +90,56 @@ setpoint_t setpoint;
 rc_filter_t D1, D2, D3;
 rc_imu_data_t imu_data;
 
+// possible modes, user selected with command line arguments
+typedef enum m_input_mode_t{
+	NONE,
+	DSM,
+	STDIN
+} m_input_mode_t;
+m_input_mode_t m_input_mode = DSM;
+
+// printed if some invalid argument was given
+void print_usage(){
+	printf("\n");
+	printf("-i {dsm|stdin|none}     specify input\n");
+	printf("-h                      print this help message\n");
+	printf("\n");
+}
+
 /*******************************************************************************
 * main()
 *
 * Initialize the filters, IMU, threads, & wait untill shut down
 *******************************************************************************/
-int main(){
+int main(int argc, char *argv[]){
+	int c;
+
+	// parse arguments
+	opterr = 0;
+	while ((c = getopt(argc, argv, "i:")) != -1){
+		switch (c){
+		case 'i': // input option
+			if(!strcmp("dsm", optarg)) {
+				m_input_mode = DSM;
+			} else if(!strcmp("stdin", optarg)) {
+				m_input_mode = STDIN;
+			} else if(!strcmp("none", optarg)){
+				m_input_mode = NONE;
+			} else {
+				print_usage();
+				return -1;
+			}
+			break;
+		case 'h':
+			print_usage();
+			return -1;
+			break;
+		default:
+			print_usage();
+			return -1;
+			break;
+		}
+	}
 
 	if(rc_initialize()<0){
 		printf("ERROR: failed to initialize cape\n");
@@ -189,9 +233,8 @@ int main(){
 	printf("\nHold your MIP upright to begin balancing\n");
 	rc_set_state(RUNNING);
 	
-	
 	// start dsm listener
-	rc_initialize_dsm();
+	if(m_input_mode == DSM) rc_initialize_dsm();
 	
 	// chill until something exits the program
 	while(rc_get_state()!=EXITING){
@@ -215,7 +258,9 @@ int main(){
 * controller.
 *******************************************************************************/
 void* setpoint_manager(void* ptr){
-	float drive_stick, turn_stick; // dsm input sticks
+	float drive_stick, turn_stick; // input sticks
+	int i, ch, chan, stdin_timeout = 0; // for stdin input
+	char in_str[11];
 
 	// wait for IMU to settle
 	disarm_controller();
@@ -223,13 +268,16 @@ void* setpoint_manager(void* ptr){
 	rc_set_state(RUNNING);
 	rc_set_led(RED,0);
 	rc_set_led(GREEN,1);
-	
+
 	while(rc_get_state()!=EXITING){
+		// clear out input of old data before waiting for new data
+		if(m_input_mode == STDIN) fseek(stdin,0,SEEK_END);
+
 		// sleep at beginning of loop so we can use the 'continue' statement
 		rc_usleep(1000000/SETPOINT_MANAGER_HZ); 
 		
 		// nothing to do if paused, go back to beginning of loop
-		if(rc_get_state() != RUNNING) continue;
+		if(rc_get_state() != RUNNING || m_input_mode == NONE) continue;
 
 		// if we got here the state is RUNNING, but controller is not
 		// necessarily armed. If DISARMED, wait for the user to pick MIP up
@@ -241,14 +289,55 @@ void* setpoint_manager(void* ptr){
 			} 
 			else continue;
 		}
-	
+
+		if(m_input_mode == STDIN){
+			i = 0;
+
+			while ((ch = getchar()) != EOF && i < 10){
+				stdin_timeout = 0;
+				if(ch == 'n' || ch == '\n'){
+					if(i > 2){
+						if(chan == DSM_TURN_CH){
+							turn_stick = strtof(in_str, NULL)* DSM_TURN_POL;
+							setpoint.phi_dot = drive_stick;
+						}
+						else if(chan == DSM_TURN_CH){
+							drive_stick = strtof(in_str, NULL)* DSM_DRIVE_POL;
+							setpoint.gamma_dot = turn_stick;
+						}
+					}
+					if(ch == 'n') i = 1;
+					else i = 0;
+				}
+				else if(i == 1){
+					chan = ch - 0x30;
+					i = 2;
+				}
+				else{
+					in_str[i-2] = ch;
+				}
+			}
+
+			// if it has been more than 1 second since getting data
+			if(stdin_timeout >= SETPOINT_MANAGER_HZ){
+				setpoint.theta = 0;
+				setpoint.phi_dot = 0;
+				setpoint.gamma_dot = 0;
+			}
+			else{
+				stdin_timeout++;
+			}
+			continue;
+		}
+		// if not NONE or STDIN, assume input is DSM...
+
 		// if dsm is active, update the setpoint rates
 		if(rc_is_new_dsm_data()){
 			// Read normalized (+-1) inputs from RC radio stick and multiply by 
 			// polarity setting so positive stick means positive setpoint
 			turn_stick  = rc_get_dsm_ch_normalized(DSM_TURN_CH) * DSM_TURN_POL;
 			drive_stick = rc_get_dsm_ch_normalized(DSM_DRIVE_CH)* DSM_DRIVE_POL;
-			
+
 			// saturate the inputs to avoid possible erratic behavior
 			rc_saturate_float(&drive_stick,-1,1);
 			rc_saturate_float(&turn_stick,-1,1);
