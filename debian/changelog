@@ -1,9 +1,9 @@
-roboticscape (0.3.2) unstable; urgency=low
+roboticscape (0.3.3) unstable; urgency=low
 
-    * Fix DSM driving in balance
-    * Update documentation source comments
-    * Smoother install with new debconf question
+    * update project template for new api
+    * warn user if not running as root
+    * remove touch from makefiles
 
- -- James Strawson <james@strawsondesign.com>  Sun, 26 Feb 2017 21:11:00 +0000
+ -- James Strawson <james@strawsondesign.com>  Sun, 5 Mar 2017 21:11:00 +0000
 
 

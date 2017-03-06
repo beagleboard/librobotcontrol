@@ -1,3 +1,7 @@
+0.3.3
+	* update project template for new api
+	* warn user if not running as root
+	* remove touch from makefiles
 0.3.2
 	* Fix DSM driving in balance
 	* Update documentation source comments
