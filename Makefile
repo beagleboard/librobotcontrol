@@ -20,7 +20,7 @@ install:
 	@$(INSTALLDIR) $(DESTDIR)/var/log/roboticscape
 	@$(INSTALLDIR) $(DESTDIR)/etc/roboticscape
 	@$(INSTALL) device_tree/$(CONFIG_SH) $(DESTDIR)$(prefix)/bin
-	@cp -r -f  project_template $(DESTDIR)$(prefix)/share/roboticscape/
+	@cp -r -f  rc_project_template $(DESTDIR)$(prefix)/share/roboticscape/
 	@make -C pru_firmware -s install
 	@make -C libraries -s install
 	@make -C examples -s install
@@ -34,7 +34,7 @@ clean:
 	@make -C examples -s clean
 	@make -C battery_monitor_service -s clean
 	@make -C roboticscape_service -s clean
-	@make -C project_template -s clean
+	@make -C rc_project_template -s clean
 	@$(RM) debian/roboticscape
 	@$(RM) debian/roboticscape.postrm.debhelper
 	@$(RM) debian/roboticscape.substvars

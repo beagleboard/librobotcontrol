@@ -1,11 +1,14 @@
 /*******************************************************************************
-* project_template.c
+* rc_project_template.c
 *
 * This is meant to be a skeleton program for robotics cape projects. 
 * Change this description and file name 
 *******************************************************************************/
 
-#include <roboticscape-usefulincludes.h>
+// usefulincludes is a collection of common system includes for the lazy
+// This is not necessary for roboticscape projects but here for convenience
+#include <rc_usefulincludes.h> 
+// main roboticscape API header
 #include <roboticscape.h>
 
 
@@ -16,20 +19,20 @@ void on_pause_released();
 
 /*******************************************************************************
 * int main() 
-*	
+*
 * This template main function contains these critical components
-* - call to initialize_cape
+* - call to rc_initialize() at the beginning
 * - main while loop that checks for EXITING condition
-* - cleanup_roboticscape() at the end
+* - rc_cleanup() at the end
 *******************************************************************************/
 int main(){
 	// always initialize cape library first
-	initialize_roboticscape();
+	rc_initialize();
 
 	// do your own initialization here
 	printf("\nHello BeagleBone\n");
-	set_pause_pressed_func(&on_pause_pressed);
-	set_pause_released_func(&on_pause_released);
+	rc_set_pause_pressed_func(&on_pause_pressed);
+	rc_set_pause_released_func(&on_pause_released);
 
 	// done initializing so set state to RUNNING
 	rc_set_state(RUNNING); 
@@ -52,7 +55,7 @@ int main(){
 	}
 	
 	// exit cleanly
-	cleanup_roboticscape(); 
+	rc_cleanup(); 
 	return 0;
 }
 
@@ -71,7 +74,7 @@ void on_pause_released(){
 
 /*******************************************************************************
 * void on_pause_pressed() 
-*	
+*
 * If the user holds the pause button for 2 seconds, set state to exiting which 
 * triggers the rest of the program to exit cleanly.
 *******************************************************************************/
@@ -82,8 +85,8 @@ void on_pause_pressed(){
 	
 	// now keep checking to see if the button is still held down
 	for(i=0;i<samples;i++){
-		usleep(us_wait/samples);
-		if(get_pause_button() == RELEASED) return;
+		rc_usleep(us_wait/samples);
+		if(rc_get_pause_button() == RELEASED) return;
 	}
 	printf("long press detected, shutting down\n");
 	rc_set_state(EXITING);
