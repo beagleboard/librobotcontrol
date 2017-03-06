@@ -4,7 +4,6 @@ TARGET = libroboticscape.so
 SUBDIRS		:= $(shell find * -type d -print)
 CC			:= gcc
 LINKER		:= gcc
-TOUCH		:= $(shell touch *)
 CWARNINGS	:= -Wall -Wextra
 # achitecture flags enables the NEON hardware SIMD floating point unit
 ARCFLAGS	:= -mfpu=neon -mfloat-abi=hard -march=armv7-a -mtune=cortex-a8 
@@ -31,7 +30,7 @@ $(TARGET): $(OBJECTS)
 	@echo " "
 
 $(OBJECTS): %.o : %.c
-	@$(TOUCH) $(CC) $(CFLAGS) $(CWARNINGS) $(FFLAGS) $(ARCFLAGS) $(DEBUGFLAG) $(DEFS) -c $< -o $(@)
+	$(CC) $(CFLAGS) $(CWARNINGS) $(FFLAGS) $(ARCFLAGS) $(DEBUGFLAG) $(DEFS) -c $< -o $(@)
 	@echo "Compiled: "$<
 
 all:

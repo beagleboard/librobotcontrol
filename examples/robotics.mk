@@ -1,6 +1,5 @@
 # shared makefile for all the examples
 
-TOUCH		:= $(shell touch *)
 CC			:= gcc
 LINKER		:= gcc -o
 CFLAGS		:= -c -Wall -O2
@@ -26,7 +25,7 @@ $(TARGET): $(OBJECTS)
 
 # compiling command
 $(OBJECTS): %.o : %.c
-	@$(TOUCH) $(CC) $(CFLAGS) -c $< -o $(@)
+	$(CC) $(CFLAGS) -c $< -o $(@)
 
 
 
