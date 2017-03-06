@@ -38,24 +38,21 @@ void on_mode_released(){
 
 // main just assigns interrupt functions and waits to exit
 int main(){
+	// initialize hardware first
 	if(rc_initialize()){
-		printf("failed to initialize cape\n");
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
 		return -1;
 	}
-	
 	//Assign your own functions to be called when events occur
 	rc_set_pause_pressed_func(&on_pause_pressed);
 	rc_set_pause_released_func(&on_pause_released);
 	rc_set_mode_pressed_func(&on_mode_pressed);
 	rc_set_mode_released_func(&on_mode_released);
-	
 	printf("Press buttons to see response\n");
-	
 	//toggle leds till the program state changes
 	while(rc_get_state()!=EXITING){
-		usleep(10000);
+		rc_usleep(10000);
 	}
-	
 	rc_cleanup();
 	return 0;
 }

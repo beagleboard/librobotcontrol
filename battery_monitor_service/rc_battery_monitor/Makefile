@@ -2,8 +2,6 @@
 # Just change the target name to match your main source code filename.
 TARGET = rc_battery_monitor
 
-
-TOUCH 	 := $(shell touch *)
 CC	:= gcc
 LINKER   := gcc -o
 CFLAGS	:= -c -Wall -g
@@ -26,7 +24,7 @@ $(TARGET): $(OBJECTS)
 
 # compiling command
 $(OBJECTS): %.o : %.c
-	@$(TOUCH) $(CC) $(CFLAGS) -c $< -o $(@)
+	$(CC) $(CFLAGS) -c $< -o $(@)
 
 
 all: 

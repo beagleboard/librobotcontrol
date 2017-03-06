@@ -29,7 +29,6 @@ int main(int argc, char *argv[]){
 	int c;
 	m_mode_t mode = RAD; // default to radian mode.
 
-
 	// parse arguments
 	opterr = 0;
 	while ((c = getopt(argc, argv, "rdh")) != -1){
@@ -54,20 +53,21 @@ int main(int argc, char *argv[]){
 		}
 	}
 
+	// initialize hardware first
 	if(rc_initialize()){
-		printf("ERROR: failed to initialize_cape\n");
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
 		return -1;
 	}
-	
+
 	// use defaults for now, except also enable magnetometer.
 	rc_imu_config_t conf = rc_default_imu_config();
 	conf.enable_magnetometer=1;
-	
+
 	if(rc_initialize_imu(&data, conf)){
-		printf("rc_initialize_imu_failed\n");
+		fprintf(stderr,"rc_initialize_imu_failed\n");
 		return -1;
 	}
-	
+
 	// print a header
 	printf("\ntry 'test_imu -h' to see other options\n\n");
 	switch(mode){
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]){
 	printf("  Mag Field XYZ(uT)  |");
 	printf(" Temp (C)");
 	printf("\n");
-	
+
 	//now just wait, print_data will run
 	while (rc_get_state() != EXITING) {
 		printf("\r");

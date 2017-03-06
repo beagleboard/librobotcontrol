@@ -31,9 +31,14 @@ void print_usage(){
 
 
 int run_test(){
+	// ensure root privaleges until we sort out udev rules
+	if(geteuid()!=0){
+		fprintf(stderr,"ERROR: must be root to set cpu frequency\n");
+		return -1;
+	}
 	// try 300mhz
 	if(rc_set_cpu_freq(FREQ_300MHZ)<0){
-		printf("Failed to set CPU frequency to 300mhz\n");
+		fprintf(stderr,"Failed to set CPU frequency to 300mhz\n");
 		return -1;
 	}
 	printf("\nFrequency set to:     ");  
@@ -41,7 +46,7 @@ int run_test(){
 	
 	// try 600mhz
 	if(rc_set_cpu_freq(FREQ_600MHZ)<0){
-		printf("Failed to set CPU frequency to 600mhz\n");
+		fprintf(stderr,"Failed to set CPU frequency to 600mhz\n");
 		return -1;
 	}
 	printf("\nFrequency set to:     ");  
@@ -49,7 +54,7 @@ int run_test(){
 	
 	// try 800mhz
 	if(rc_set_cpu_freq(FREQ_800MHZ)<0){
-		printf("Failed to set CPU frequency to 800mhz\n");
+		fprintf(stderr,"Failed to set CPU frequency to 800mhz\n");
 		return -1;
 	}
 	printf("\nFrequency set to:     ");  
@@ -57,7 +62,7 @@ int run_test(){
 	
 	// try 1000mhz
 	if(rc_set_cpu_freq(FREQ_1000MHZ)<0){
-		printf("Failed to set CPU frequency to 1000mhz\n");
+		fprintf(stderr,"Failed to set CPU frequency to 1000mhz\n");
 		return -1;
 	}
 	printf("\nFrequency set to:     ");  
@@ -66,7 +71,7 @@ int run_test(){
 	
 	// try auto ondemand governor
 	if(rc_set_cpu_freq(FREQ_ONDEMAND)<0){
-		printf("Failed to set CPU frequency to ONDEMAND\n");
+		fprintf(stderr,"Failed to set CPU frequency to ONDEMAND\n");
 		return -1;
 	}
 	printf("\nFrequency set to scale automatically on demand\n\n");  
@@ -88,7 +93,7 @@ int main(int argc, char *argv[]){
 		switch (c){
 		case 's':
 			if(test_mode!=NOT_SET){
-				printf("ERROR: too many arguments\n");
+				fprintf(stderr,"ERROR: too many arguments\n");
 				return -1;
 			}
 			test_mode = SET_FREQ;
@@ -97,7 +102,7 @@ int main(int argc, char *argv[]){
 
 		case 'r':
 			if(test_mode!=NOT_SET){
-				printf("ERROR: too many arguments\n");
+				fprintf(stderr,"ERROR: too many arguments\n");
 				return -1;
 			}
 			test_mode = READ_FREQ;
@@ -105,7 +110,7 @@ int main(int argc, char *argv[]){
 
 		case 'a':
 			if(test_mode!=NOT_SET){
-				printf("ERROR: too many arguments\n");
+				fprintf(stderr,"ERROR: too many arguments\n");
 				return -1;
 			}
 			test_mode = SET_AUTO;
@@ -113,7 +118,7 @@ int main(int argc, char *argv[]){
 
 		case 't':
 			if(test_mode!=NOT_SET){
-				printf("ERROR: too many arguments\n");
+				fprintf(stderr,"ERROR: too many arguments\n");
 				return -1;
 			}
 			test_mode = TEST_FREQ;
@@ -124,7 +129,7 @@ int main(int argc, char *argv[]){
 			 return 0;
 
 		default:
-			printf("\nInvalid Argument \n");
+			fprintf(stderr,"Invalid Argument\n");
 			print_usage();
 			return -1;
 		}
@@ -159,15 +164,20 @@ int main(int argc, char *argv[]){
 			freq = FREQ_1000MHZ;
 			break;
 		default:
-			printf("Invalid frequency option\n");
-			printf("try: 300, 600, 800, or 1000\n");
+			fprintf(stderr,"Invalid frequency option\n");
+			fprintf(stderr,"try: 300, 600, 800, or 1000\n");
 			return -1;
 		}
 		break;
 	default:
-		printf("ERROR: Invalid mode\n");
+		fprintf(stderr,"ERROR: Invalid mode\n");
 		return -1;
 	}
 
+	// ensure root privaleges until we sort out udev rules
+	if(geteuid()!=0){
+		fprintf(stderr,"ERROR: must be root to set cpu frequency\n");
+		return -1;
+	}
 	return rc_set_cpu_freq(freq);
 }

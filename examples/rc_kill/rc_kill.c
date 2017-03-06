@@ -12,7 +12,6 @@
 
 int main(){
 	int ret = rc_kill();
-	
 	switch(ret){
 	case -2:
 		printf("WARNING: invalid contents in PID_FILE\n");
@@ -29,6 +28,5 @@ int main(){
 	default:
 		return 0;
 	}
-	
 	return 0;
 }

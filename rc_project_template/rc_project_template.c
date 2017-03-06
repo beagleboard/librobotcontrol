@@ -27,7 +27,10 @@ void on_pause_released();
 *******************************************************************************/
 int main(){
 	// always initialize cape library first
-	rc_initialize();
+	if(rc_initialize()){
+		fprintf(stderr,"ERROR: failed to initialize rc_initialize(), are you root?\n");
+		return -1;
+	}
 
 	// do your own initialization here
 	printf("\nHello BeagleBone\n");

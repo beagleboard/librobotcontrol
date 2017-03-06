@@ -20,7 +20,7 @@ int main(){
 	rc_filter_t integrator = rc_empty_filter();
 	rc_filter_t lp_butter = rc_empty_filter();
 	rc_filter_t hp_butter = rc_empty_filter();
-	
+
 	const float dt = 1.0/SAMPLE_RATE;
 	float lp,hp,i,u,lpb,hpb;
 	int counter = 0;
@@ -46,8 +46,6 @@ int main(){
 	rc_print_filter(hp_butter);
 	printf("\n\n");
 
-
-
 	// print header
 	printf("  input u |");
 	printf("  lowpass |");
@@ -68,7 +66,7 @@ int main(){
 		i  = rc_march_filter(&integrator, u);
 		lpb = rc_march_filter(&lp_butter, u);
 		hpb = rc_march_filter(&hp_butter, u);
-		
+
 		printf("\r");
 		printf("%8.3f  |", u);
 		printf("%8.3f  |", lp);
@@ -78,7 +76,7 @@ int main(){
 		printf("%8.3f  |", lpb);
 		printf("%8.3f  |", hpb);
 		fflush(stdout);
-		
+
 		// toggle u between 0 and 1 every 10 seconds
 		counter++;
 		if(counter >= SAMPLE_RATE*10){
@@ -86,10 +84,10 @@ int main(){
 			if(u>0.0) u = 0.0;
 			else u = 1.0;
 		}
-		
+
 		// sleep enough for a rough timed loop
 		rc_usleep(1000000/SAMPLE_RATE);
 	}
-	
+
 	return 0;
 }

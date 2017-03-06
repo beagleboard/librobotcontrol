@@ -10,18 +10,20 @@
 
 int main(){
 	int i;
-		
-	rc_initialize();
-	
+
+	// initialize hardware first
+	if(rc_initialize()){
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
+		return -1;
+	}
+
 	printf(" adc_0 |");
 	printf(" adc_1 |");
 	printf(" adc_2 |");
 	printf(" adc_3 |");
 	printf("DC_Jack|");
 	printf("Battery|");
-	
 	printf("\n");
-	
 
 	while(rc_get_state()!=EXITING){
 		printf("\r");

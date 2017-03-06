@@ -278,7 +278,7 @@ int main(int argc, char *argv[]){
 			return -1;
 			break;
 		}
-    }
+	}
 	// user didn't give an option to show anything. Print warning and return.
 	if(show_something==0){
 		print_usage();
@@ -289,10 +289,9 @@ int main(int argc, char *argv[]){
 	if(orientation_menu){
 		conf.orientation=orientation_prompt();
 	}
-	
-	// start by initializing cape as always
+	// initialize hardware first
 	if(rc_initialize()){
-		printf("ERROR: failed to initialize_cape\n");
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
 		return -1;
 	}
 	// now set up the imu for dmp interrupt operation
@@ -300,17 +299,14 @@ int main(int argc, char *argv[]){
 		printf("rc_initialize_imu_failed\n");
 		return -1;
 	}
-	
 	// write labels for what data will be printed and associate the interrupt
 	// function to print data immediately after the header.
 	print_header();
 	rc_set_imu_interrupt_func(&print_data);
-	
 	//now just wait, print_data() will be called by the interrupt
 	while (rc_get_state()!=EXITING) {
 		usleep(10000);
 	}
-	
 	// shut things down
 	rc_power_off_imu();
 	rc_cleanup();

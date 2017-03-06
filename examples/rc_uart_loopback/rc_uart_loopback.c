@@ -39,11 +39,11 @@ int main(int argc, char *argv[]){
 		return -1;
 	}
 	
-	// // Initialization
-	// if(rc_initialize()<0){
-	// 	printf("failed to initialze cape\n");
-	// 	return -1;
-	// }
+	// initialize hardware first
+	if(rc_initialize()){
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
+		return -1;
+	}
 	
 	printf("\ntesting UART bus %d\n\n", bus);
 	if(rc_uart_init(bus, BAUDRATE, TIMEOUT_S)){
@@ -66,6 +66,6 @@ int main(int argc, char *argv[]){
 	
 	// close up
 	rc_uart_close(bus);
-	// rc_cleanup();
+	rc_cleanup();
 	return 0;
 }

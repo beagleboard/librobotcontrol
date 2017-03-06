@@ -91,7 +91,7 @@ int main(int argc, char *argv[]){
 			return -1;
 			break;
 		}
-    }
+	}
 	
 	// if the user didn't give enough arguments, print usage
 	if(m_mode==DISABLED){
@@ -99,9 +99,9 @@ int main(int argc, char *argv[]){
 		return -1;
 	}
 	
-	// sanity check cape library initialized
+	// initialize hardware first
 	if(rc_initialize()){
-		printf("failed to initialize cape\n");
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
 		return -1;
 	}
 

@@ -11,11 +11,12 @@
 #include "../../libraries/roboticscape.h"
 
 int main(){
-	if(rc_initialize()<0){
-		printf("Failed to initialize cape, exiting\n");
+	// initialize hardware first
+	if(rc_initialize()){
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
 		return -1;
 	}
-	
+
 	printf("\nThis program will generate a new gyro calibration file\n");
 	printf("keep your beaglebone very still for this procedure.\n");
 	printf("Press ENTER to continue or anything else to quit\n");
@@ -23,16 +24,16 @@ int main(){
 		rc_cleanup();
 		return -1;
 	}
-	
+
 	printf("Starting calibration routine\n");
 	if(rc_calibrate_gyro_routine()<0){
 		printf("Failed to complete gyro calibration\n");
 		return -1;
 	}
-	
+
 	printf("\ngyro calibration file written\n");
 	printf("run rc_test_imu to check performance\n");
-		
+
 	rc_cleanup();
 	return 0;
 }

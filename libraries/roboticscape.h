@@ -1,5 +1,5 @@
 /*******************************************************************************
-* robotics_cape.h
+* roboticscape.h
 *
 * This contains the complete Robotics Cape API. All functions declared here can 
 * be executed by linking to /usr/lib/robotics_cape.so

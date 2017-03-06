@@ -18,17 +18,16 @@
 int main(){
 	int i;
 
+	// initialize hardware first
 	if(rc_initialize()){
-		printf("ERROR: failed to initialize cape\n");
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
 		return -1;
 	}
 	if(rc_initialize_dsm()){
-		// if init returns -1 if there was a problem 
-		// most likely no calibration file found
-		printf("run calibrate_dsm first\n");
+		fprintf(stderr,"ERROR: failed to run rc_initialize_dsm()\n");
 		return -1;
 	}
-	
+
 	printf("\n");
 	printf("Make sure transmitter and receiver are bound and on.\n");
 	printf("If data is received, the normalized values will be printed\n");
@@ -37,7 +36,6 @@ int main(){
 	printf("If connection is lost the number of seconds since last packet\n");
 	printf("will be displayed\n");
 	printf("\n");
-	
 
 	printf("Waiting for first packet");
 	fflush(stdout);
@@ -47,7 +45,7 @@ int main(){
 	}
 
 	while(rc_get_state()!=EXITING){
-		if(rc_is_new_dsm_data()){	
+		if(rc_is_new_dsm_data()){
 			printf("\r");// keep printing on same line
 			int channels = rc_num_dsm_channels();
 			// print framerate

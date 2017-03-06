@@ -28,13 +28,13 @@ int main(){
 	// initialize_cape, this should never fail unless software is not set up
 	// in which case a useful error message should be printed out.
 	if(rc_initialize()<0){
-		printf("rc_initialize() failed, this is a software issue,\n");
-		printf("not a hardware issue. Try running install.sh and restart\n");
+		fprintf(stderr,"rc_initialize() failed, this is a software issue,\n");
+		fprintf(stderr,"not a hardware issue. Try running install.sh and restart.\n");
+		fprintf(stderr,"Also make sure you are running as root\n");
 		return -1;
 	}
 
-	printf("Welcome to the Simplified Robotics Cape tester!\n\n");
-	
+	printf("Welcome to the Robotics Cape tester!\n\n");
 
 	rc_set_led(RED,OFF);
 	rc_set_led(GREEN,OFF);

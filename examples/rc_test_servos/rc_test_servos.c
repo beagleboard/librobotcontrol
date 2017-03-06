@@ -194,11 +194,12 @@ int main(int argc, char *argv[]){
 	}
 	
 	// okay, off we go!
-	printf("Initializing Cape\n");
+	// initialize hardware first
 	if(rc_initialize()){
-		printf("ERROR: failed to initialize_cape\n");
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
 		return -1;
 	}
+
 	// turn on power if option was given
 	if(power_en){
 		printf("Turning On 6V Servo Power Rail\n");

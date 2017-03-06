@@ -11,10 +11,12 @@
 #include "../../libraries/roboticscape.h"
 
 int main(){
-	if(rc_initialize()<0){
-		printf("Failed to initialize cape, exiting\n");
+	// initialize hardware first
+	if(rc_initialize()){
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
 		return -1;
 	}
+
 	printf("\n");
 	printf("This will sample the magnetometer for the next 15 seconds\n");
 	printf("Rotate the cape around in the air through as many orientations\n");
@@ -24,7 +26,7 @@ int main(){
 		rc_cleanup();
 		return -1;
 	}
-	
+
 	printf("spin spin spin!!!\n\n");
 	// wait for the user to actually start 
 	sleep(2);
@@ -34,10 +36,10 @@ int main(){
 		rc_cleanup();
 		return -1;
 	}
-	
+
 	printf("\nmagnetometer calibration file written\n");
 	printf("run rc_test_imu to check performance\n");
-		
+
 	rc_cleanup();
 	return 0;
 }

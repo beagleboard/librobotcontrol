@@ -32,6 +32,14 @@
 
 // just run the bind function
 int main(){
+	// initialize hardware first
+	if(rc_initialize()){
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
+		return -1;
+	}
+	// run the built-in bind routine
 	rc_bind_dsm();
+	// all done, cleanup
+	rc_cleanup();
 	return 0;
 }

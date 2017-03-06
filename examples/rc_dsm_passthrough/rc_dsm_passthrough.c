@@ -47,9 +47,8 @@ void print_usage(){
 	printf(" -e   Disable 6V power rail for ESCs.\n");
 	printf(" -h   Print this messege.\n\n");
 }
-			
-			
 
+// main routine
 int main(int argc, char *argv[]){
 	int c;
 	uint64_t ns;
@@ -74,32 +73,33 @@ int main(int argc, char *argv[]){
 			break;
 			
 		default:
-			printf("\nInvalid Argument \n");
+			fprintf(stderr,"Invalid Argument \n");
 			print_usage();
 			return -1;
 		}
 	}
-			
+
 	if(mode == NONE){
-		printf("You must select a power mode -s or -e\n");
+		fprintf(stderr,"You must select a power mode -s or -e\n");
 		print_usage();
 		return -1;
 	}
-	
+
+	// initialize hardware first
 	if(rc_initialize()){
-		printf("ERROR: failed to initialize_cape\n");
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
 		return -1;
 	}
-	
+
 	if(rc_initialize_dsm()){
-		printf("ERROR: failed to rc_initialize_dsm2\n");
+		fprintf(stderr,"ERROR: failed to rc_initialize_dsm2\n");
 		return -1;
 	}
-	
+
 	if(mode == POWERON){
 		rc_enable_servo_power_rail();
 	}
-	
+
 	// print header
 	printf("1:Thr   ");
 	printf("2:Roll  ");
