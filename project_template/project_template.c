@@ -5,7 +5,7 @@
 * Change this description and file name 
 *******************************************************************************/
 
-#include <roboticscape-usefulincludes.h>
+#include <rc_usefulincludes.h>
 #include <roboticscape.h>
 
 
@@ -24,12 +24,12 @@ void on_pause_released();
 *******************************************************************************/
 int main(){
 	// always initialize cape library first
-	initialize_roboticscape();
+	rc_initialize();
 
 	// do your own initialization here
 	printf("\nHello BeagleBone\n");
-	set_pause_pressed_func(&on_pause_pressed);
-	set_pause_released_func(&on_pause_released);
+	rc_set_pause_pressed_func(&on_pause_pressed);
+	rc_set_pause_released_func(&on_pause_released);
 
 	// done initializing so set state to RUNNING
 	rc_set_state(RUNNING); 
@@ -52,7 +52,7 @@ int main(){
 	}
 	
 	// exit cleanly
-	cleanup_roboticscape(); 
+	rc_cleanup(); 
 	return 0;
 }
 
@@ -83,7 +83,7 @@ void on_pause_pressed(){
 	// now keep checking to see if the button is still held down
 	for(i=0;i<samples;i++){
 		usleep(us_wait/samples);
-		if(get_pause_button() == RELEASED) return;
+		if(rc_get_pause_button() == RELEASED) return;
 	}
 	printf("long press detected, shutting down\n");
 	rc_set_state(EXITING);
