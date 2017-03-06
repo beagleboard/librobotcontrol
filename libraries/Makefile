@@ -30,7 +30,7 @@ $(TARGET): $(OBJECTS)
 	@echo " "
 
 $(OBJECTS): %.o : %.c
-	$(CC) $(CFLAGS) $(CWARNINGS) $(FFLAGS) $(ARCFLAGS) $(DEBUGFLAG) $(DEFS) -c $< -o $(@)
+	@$(CC) $(CFLAGS) $(CWARNINGS) $(FFLAGS) $(ARCFLAGS) $(DEBUGFLAG) $(DEFS) -c $< -o $(@)
 	@echo "Compiled: "$<
 
 all:
