@@ -11,7 +11,7 @@ OBJECTS		:= $(SOURCES:$%.c=$%.o)
 
 prefix		:= /usr
 RM			:= rm -f
-INSTALL		:= install -m 755 
+INSTALL		:= install -m 4755 
 INSTALLDIR	:= install -d -m 755
 
 LINK		:= ln -s -f
