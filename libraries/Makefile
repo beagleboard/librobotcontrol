@@ -1,7 +1,7 @@
 TARGET = libroboticscape.so
 
 
-SUBDIRS		:=	$(shell find * -type d -print)
+SUBDIRS		:= $(shell find * -type d -print)
 CC			:= gcc
 LINKER		:= gcc
 TOUCH		:= $(shell touch *)
@@ -29,7 +29,7 @@ $(TARGET): $(OBJECTS)
 	@echo " "
 	@echo "Linked $(TARGET)"
 	@echo " "
-	
+
 $(OBJECTS): %.o : %.c
 	@$(TOUCH) $(CC) $(CFLAGS) $(CWARNINGS) $(FFLAGS) $(ARCFLAGS) $(DEBUGFLAG) $(DEFS) -c $< -o $(@)
 	@echo "Compiled: "$<
@@ -56,7 +56,7 @@ install:
 	@echo " "
 	@echo "$(TARGET) Install Complete"
 	@echo " "
-	
+
 
 clean:
 	@$(RM) */*.o
@@ -75,8 +75,6 @@ uninstall:
 	@echo " "
 	@echo "$(TARGET) Uninstall Complete"
 	@echo " "
-
-	
 
 
 
