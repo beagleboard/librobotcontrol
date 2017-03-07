@@ -24,7 +24,7 @@ $(TARGET): $(OBJECTS)
 
 
 # compiling command
-$(OBJECTS): %.o : %.c
+$(OBJECTS): %.o : %.c $(INCLUDES)
 	@$(CC) $(CFLAGS) -c $< -o $(@)
 
 
