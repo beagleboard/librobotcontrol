@@ -2,7 +2,7 @@ TARGET = libroboticscape.so
 
 
 SUBDIRS		:= $(shell find * -type d -print)
-CC			:= gcc
+CC		:= gcc
 LINKER		:= gcc
 CWARNINGS	:= -Wall -Wextra
 # achitecture flags enables the NEON hardware SIMD floating point unit
@@ -17,7 +17,7 @@ INCLUDES	:= $(shell find ./ -name '*.h')
 OBJECTS		:= $(SOURCES:$%.c=$%.o)
 
 prefix		:= /usr
-RM			:= rm -f -r
+RM		:= rm -f -r
 INSTALL		:= install -m 755 
 INSTALLDIR	:= install -d -m 755
 
@@ -29,7 +29,7 @@ $(TARGET): $(OBJECTS)
 	@echo "Linked $(TARGET)"
 	@echo " "
 
-$(OBJECTS): %.o : %.c
+$(OBJECTS): %.o : %.c $(INCLUDES)
 	@$(CC) $(CFLAGS) $(CWARNINGS) $(FFLAGS) $(ARCFLAGS) $(DEBUGFLAG) $(DEFS) -c $< -o $(@)
 	@echo "Compiled: "$<
 

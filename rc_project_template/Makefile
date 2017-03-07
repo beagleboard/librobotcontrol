@@ -15,7 +15,7 @@ OBJECTS  := $(SOURCES:$%.c=$%.o)
 
 prefix := /usr/local
 RM := rm -f
-INSTALL := install -m 4755 -o root
+INSTALL := install -m 4755
 INSTALLDIR := install -d -m 755 
 
 LINK := ln -s -f
@@ -29,7 +29,7 @@ $(TARGET): $(OBJECTS)
 
 
 # compiling command
-$(OBJECTS): %.o : %.c
+$(OBJECTS): %.o : %.c $(INCLUDES)
 	@$(TOUCH) $(CC) $(CFLAGS) -c $< -o $(@)
 	@echo "Compiled: "$<
 
