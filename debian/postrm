@@ -5,8 +5,10 @@ systemctl daemon-reload
 . /usr/share/debconf/confmodule
 db_purge
 
-# just removed so library, so need to run ldconfig
-ldconfig
+if [ "$1" = "remove" ]; then
+	# just removed so library, so need to run ldconfig
+	ldconfig
+fi
 
 echo "Uninstallation Complete"
 

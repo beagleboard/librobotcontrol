@@ -39,6 +39,8 @@ clean:
 	@$(RM) debian/roboticscape.postrm.debhelper
 	@$(RM) debian/roboticscape.substvars
 	@$(RM) debian/files
+	@$(RM) debian/*.debhelper.log
+	@$(RM) debian/debhelper-build-stamp
 	@echo "All Directories Cleaned"
 
 
