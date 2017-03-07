@@ -15,7 +15,7 @@ OBJECTS  := $(SOURCES:$%.c=$%.o)
 
 prefix := /usr/local
 RM := rm -f
-INSTALL := install -m 4755 
+INSTALL := install -m 4755 -o root
 INSTALLDIR := install -d -m 755 
 
 LINK := ln -s -f

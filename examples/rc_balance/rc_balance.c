@@ -106,6 +106,13 @@ int main(){
 	rc_set_led(GREEN,0);
 	rc_set_state(UNINITIALIZED);
 
+	// if gyro isn't calibrated, run the calibration routine
+	if(!rc_is_gyro_calibrated()){
+		printf("Gyro not calibrated, automatically starting calibration routine\n");
+		printf("Let your MiP sit still on a firm surface\n");
+		rc_calibrate_gyro_routine();
+	}
+
 	// make sure setpoint starts at normal values
 	setpoint.arm_state = DISARMED;
 	setpoint.drive_mode = NOVICE;
