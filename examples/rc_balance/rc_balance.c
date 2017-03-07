@@ -93,7 +93,7 @@ rc_imu_data_t imu_data;
 /*******************************************************************************
 * main()
 *
-* Initialize the filters, IMU, threads, & wait untill shut down
+* Initialize the filters, IMU, threads, & wait until shut down
 *******************************************************************************/
 int main(){
 	// make sure everything initializes first
@@ -185,8 +185,8 @@ int main(){
 	// to make sure other setup functions don't interfere
 	rc_set_imu_interrupt_func(&balance_controller);
 	
-	// start in the RUNNING state, pressing the puase button will swap to 
-	// the PUASED state then back again.
+	// start in the RUNNING state, pressing the pause button will swap to
+	// the PAUSED state then back again.
 	printf("\nHold your MIP upright to begin balancing\n");
 	rc_set_state(RUNNING);
 	
@@ -308,7 +308,7 @@ void balance_controller(){
 								/(ENCODER_POLARITY_L * GEARBOX * ENCODER_RES);
 	
 	// Phi is average wheel rotation also add theta body angle to get absolute 
-	// wheel position in global frame since encoders are attachde to the body
+	// wheel position in global frame since encoders are attached to the body
 	cstate.phi = ((cstate.wheelAngleL+cstate.wheelAngleR)/2) + cstate.theta; 
 	
 	// steering angle gamma estimate 
