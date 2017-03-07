@@ -1,7 +1,9 @@
 roboticscape (0.3.4) unstable; urgency=low
 
     * add setuid on example install so 'sudo' is not needed
+    * rc_balance will calibrate gyro automatically if needed
+    * add ldconfig to deb package scripts
 
- -- James Strawson <james@strawsondesign.com>  Mon, 6 Mar 2017 18:13:00 +0000
+ -- James Strawson <james@strawsondesign.com>  Tue, 07 Mar 2017 02:47:00 +0000
 
 
