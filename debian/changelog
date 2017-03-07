@@ -1,9 +1,7 @@
-roboticscape (0.3.3) unstable; urgency=low
+roboticscape (0.3.4) unstable; urgency=low
 
-    * update project template for new api
-    * warn user if not running as root
-    * remove touch from makefiles
+    * add setuid on example install so 'sudo' is not needed
 
- -- James Strawson <james@strawsondesign.com>  Sun, 5 Mar 2017 21:11:00 +0000
+ -- James Strawson <james@strawsondesign.com>  Mon, 6 Mar 2017 18:13:00 +0000
 
 
