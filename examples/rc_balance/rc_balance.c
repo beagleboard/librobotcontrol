@@ -183,6 +183,11 @@ int main(){
 		rc_blink_led(RED, 5, 5);
 		return -1;
 	}
+
+	// set up DSM radio
+	if(rc_initialize_dsm()){
+		printf("ERROR: can't initialize DSM radio\n");
+	}
 	
 	// start balance stack to control setpoints
 	pthread_t  setpoint_thread;
