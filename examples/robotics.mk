@@ -1,7 +1,6 @@
 # shared makefile for all the examples
 
-TOUCH		:= $(shell touch *)
-CC			:= gcc
+CC		:= gcc
 LINKER		:= gcc -o
 CFLAGS		:= -c -Wall -O2
 LFLAGS		:= -L ../../libraries -lm -lrt -lpthread -lroboticscape
@@ -11,8 +10,8 @@ INCLUDES	:= $(wildcard *.h)
 OBJECTS		:= $(SOURCES:$%.c=$%.o)
 
 prefix		:= /usr
-RM			:= rm -f
-INSTALL		:= install -m 755 
+RM		:= rm -f
+INSTALL		:= install -o root -g root -m 4755 
 INSTALLDIR	:= install -d -m 755
 
 LINK		:= ln -s -f
@@ -25,8 +24,8 @@ $(TARGET): $(OBJECTS)
 
 
 # compiling command
-$(OBJECTS): %.o : %.c
-	@$(TOUCH) $(CC) $(CFLAGS) -c $< -o $(@)
+$(OBJECTS): %.o : %.c $(INCLUDES)
+	@$(CC) $(CFLAGS) -c $< -o $(@)
 
 
 

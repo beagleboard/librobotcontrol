@@ -1,5 +1,5 @@
 /*******************************************************************************
-* robotics_cape.h
+* roboticscape.h
 *
 * This contains the complete Robotics Cape API. All functions declared here can 
 * be executed by linking to /usr/lib/robotics_cape.so
@@ -14,8 +14,8 @@
 
 // library version, can also be printed from the command line with the included
 // example program rc_version
-#define RC_LIB_VERSION_FLOAT	0.32
-#define RC_LIB_VERSION_STRING	0.3.2
+#define RC_LIB_VERSION_FLOAT	0.34
+#define RC_LIB_VERSION_STRING	0.3.4
 
 // necessary types for function prototypes
 #include <stdint.h> // for uint8_t types etc

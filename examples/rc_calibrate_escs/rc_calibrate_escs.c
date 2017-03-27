@@ -25,14 +25,18 @@ float width; // global variable for normalized pulse width to send
 void *send_pulses(void *params){
 	while(rc_get_state()!=EXITING){
 		rc_send_esc_pulse_normalized_all(width);
-		usleep(20000);
+		rc_usleep(20000);
 	}
 	return 0;
 }
 
 int main(){
-	rc_initialize();
-	
+	// initialize hardware first
+	if(rc_initialize()){
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
+		return -1;
+	}
+
 	printf("\nDISCONNECT PROPELLERS FROM MOTORS\n");
 	printf("DISCONNECT POWER FROM ESCS\n");
 	printf("press enter to start sending max pulse width\n");
@@ -40,7 +44,7 @@ int main(){
 		printf("aborting calibrate_escs\n");
 		goto END;
 	}
-	
+
 	//Send full throttle until the user hits enter
 	width = 1;
 	pthread_t  send_pulse_thread;
@@ -53,7 +57,7 @@ int main(){
 		printf("aborting calibrate_escs\n");
 		goto END;
 	}
-	
+
 	// now set lower bound
 	printf("\n");
 	printf("Sending minimum width pulses\n");
@@ -70,7 +74,6 @@ int main(){
 END:
 	rc_set_state(EXITING); // this tells the send_pulses thread to stop
 	pthread_join(send_pulse_thread, NULL); // wait for it to stop
-	
 	rc_cleanup();
 	return 0;
 }

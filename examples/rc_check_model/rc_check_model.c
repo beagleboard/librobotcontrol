@@ -1,5 +1,5 @@
 /*******************************************************************************
-* check_model.c
+* rc_check_model.c
 *
 * James Strawson 2016
 * print to the screen a human-readable string version of the bb_board_t enum

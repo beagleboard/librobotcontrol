@@ -62,6 +62,12 @@ int main(int argc, char *argv[]){
 	rc_filter_t filterB = rc_empty_filter();
 	rc_filter_t filterJ = rc_empty_filter(); // battery and jack filters
 
+	// ensure root privaleges until we sort out udev rules
+	if(geteuid()!=0){
+		fprintf(stderr,"ERROR: rc_battery_monitor must be run as root\n");
+		return -1;
+	}
+
 	// parse arguments to check for kill mode
 	opterr = 0;
 	while ((c = getopt(argc, argv, "k")) != -1){
@@ -75,16 +81,16 @@ int main(int argc, char *argv[]){
 			return -1;
 			break;
 		}
-    }
-    
-    // whitelist blue, black, and black wireless only when RC device tree is in use
-    model = rc_get_bb_model();
-    if(model!=BB_BLACK_RC && model!=BB_BLACK_W_RC && model!=BB_BLUE){
-    	if(system("grep -q roboticscape /boot/uEnv.txt")!=0){
+	}
+
+	// whitelist blue, black, and black wireless only when RC device tree is in use
+	model = rc_get_bb_model();
+	if(model!=BB_BLACK_RC && model!=BB_BLACK_W_RC && model!=BB_BLUE){
+		if(system("grep -q roboticscape /boot/uEnv.txt")!=0){
 			fprintf(stderr,"rc_battery_monitor can only run on BB Blue, Black, and Black wireless when the roboticscape device tree is in use.\n");
 			return -1;
 		}
-    }
+	}
 
 	// we only want one instance running, so check is a pid file already exists
 	if(access(PID_FILE, F_OK ) == 0){
@@ -106,7 +112,7 @@ int main(int argc, char *argv[]){
 	fclose(fd);
 
 	// set up signal handler
-    signal(SIGINT, shutdown_signal_handler);	
+	signal(SIGINT, shutdown_signal_handler);	
 	signal(SIGTERM, shutdown_signal_handler);	
 
 	// set led 2 gpio designation depending on board
@@ -214,7 +220,7 @@ int main(int argc, char *argv[]){
 		
 		// done sensing, start outputting
 		if(printing){
-			printf("\r %0.2fV   %0.2fV     %d     %0.2fV   ", \
+			printf("\r %0.2fV   %0.2fV	 %d	 %0.2fV   ", \
 									v_pack, v_jack, num_cells, cell_voltage);
 			fflush(stdout);
 		}

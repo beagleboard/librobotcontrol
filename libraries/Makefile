@@ -1,10 +1,9 @@
 TARGET = libroboticscape.so
 
 
-SUBDIRS		:=	$(shell find * -type d -print)
-CC			:= gcc
+SUBDIRS		:= $(shell find * -type d -print)
+CC		:= gcc
 LINKER		:= gcc
-TOUCH		:= $(shell touch *)
 CWARNINGS	:= -Wall -Wextra
 # achitecture flags enables the NEON hardware SIMD floating point unit
 ARCFLAGS	:= -mfpu=neon -mfloat-abi=hard -march=armv7-a -mtune=cortex-a8 
@@ -18,7 +17,7 @@ INCLUDES	:= $(shell find ./ -name '*.h')
 OBJECTS		:= $(SOURCES:$%.c=$%.o)
 
 prefix		:= /usr
-RM			:= rm -f -r
+RM		:= rm -f -r
 INSTALL		:= install -m 755 
 INSTALLDIR	:= install -d -m 755
 
@@ -29,9 +28,9 @@ $(TARGET): $(OBJECTS)
 	@echo " "
 	@echo "Linked $(TARGET)"
 	@echo " "
-	
-$(OBJECTS): %.o : %.c
-	@$(TOUCH) $(CC) $(CFLAGS) $(CWARNINGS) $(FFLAGS) $(ARCFLAGS) $(DEBUGFLAG) $(DEFS) -c $< -o $(@)
+
+$(OBJECTS): %.o : %.c $(INCLUDES)
+	@$(CC) $(CFLAGS) $(CWARNINGS) $(FFLAGS) $(ARCFLAGS) $(DEBUGFLAG) $(DEFS) -c $< -o $(@)
 	@echo "Compiled: "$<
 
 all:
@@ -56,7 +55,7 @@ install:
 	@echo " "
 	@echo "$(TARGET) Install Complete"
 	@echo " "
-	
+
 
 clean:
 	@$(RM) */*.o
@@ -75,8 +74,6 @@ uninstall:
 	@echo " "
 	@echo "$(TARGET) Uninstall Complete"
 	@echo " "
-
-	
 
 
 

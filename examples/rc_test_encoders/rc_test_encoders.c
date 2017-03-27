@@ -11,8 +11,10 @@
 int main(){
 	int i;
 
-	if(rc_initialize()<0){
-		printf("ERROR: failed to initialize cape");
+	// initialize hardware first
+	if(rc_initialize()){
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
+		return -1;
 	}
 
 	printf("\nRaw encoder positions\n");
@@ -26,11 +28,11 @@ int main(){
 		printf("\r");
 		for(i=1;i<=4;i++){
 			printf("%6d  |", rc_get_encoder_pos(i));
-		}			
+		}
 		fflush(stdout);
 		rc_usleep(50000);
 	}
-	
+
 	rc_cleanup();
 	return 0;
 }

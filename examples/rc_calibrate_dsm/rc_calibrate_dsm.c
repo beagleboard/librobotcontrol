@@ -16,10 +16,12 @@
 #include "../../libraries/roboticscape.h"
 
 int main(){
-	if(rc_initialize()<0){
-		printf("ERROR: failed to initialize_cape\n");
+	// initialize hardware first
+	if(rc_initialize()){
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
+		return -1;
 	}
-	
+
 	printf("Please connect a DSM sattelite reciever to your Robotics Cape\n");
 	printf("and make sure your transmitter is on and paired to the receiver\n");
 	printf("\n");
@@ -28,10 +30,10 @@ int main(){
 		rc_cleanup();
 		return -1;
 	}
-	
+
 	// run the calibration routine
 	rc_calibrate_dsm_routine();
-	
+
 	// cleanup and close, calibration file already saved by the routine
 	rc_cleanup();
 	return 0;

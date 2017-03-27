@@ -1,26 +1,24 @@
 # This is a general use makefile for robotics cape projects written in C.
 # Just change the target name to match your main source code filename.
-TARGET = project_template
+TARGET = rc_project_template
 
+CC		:= gcc
+LINKER		:= gcc -o
+CFLAGS		:= -c -Wall -g
+LFLAGS		:= -lm -lrt -lpthread -lroboticscape
 
-TOUCH 	:= $(shell touch *)
-CC	:= gcc
-LINKER  := gcc -o
-CFLAGS	:= -c -Wall -g
-LFLAGS	:= -lm -lrt -lpthread -lroboticscape
+SOURCES		:= $(wildcard *.c)
+INCLUDES	:= $(wildcard *.h)
+OBJECTS		:= $(SOURCES:$%.c=$%.o)
 
-SOURCES  := $(wildcard *.c)
-INCLUDES := $(wildcard *.h)
-OBJECTS  := $(SOURCES:$%.c=$%.o)
+prefix		:= /usr/local
+RM		:= rm -f
+INSTALL		:= install -m 4755
+INSTALLDIR	:= install -d -m 755 
 
-prefix := /usr/local
-RM := rm -f
-INSTALL := install -m 755 
-INSTALLDIR := install -d -m 755 
-
-LINK := ln -s -f
-LINKDIR := /etc/roboticscape
-LINKNAME := link_to_startup_program
+LINK		:= ln -s -f
+LINKDIR		:= /etc/roboticscape
+LINKNAME	:= link_to_startup_program
 
 
 # linking Objects
@@ -29,8 +27,8 @@ $(TARGET): $(OBJECTS)
 
 
 # compiling command
-$(OBJECTS): %.o : %.c
-	@$(TOUCH) $(CC) $(CFLAGS) -c $< -o $(@)
+$(OBJECTS): %.o : %.c $(INCLUDES)
+	@$(CC) $(CFLAGS) -c $< -o $(@)
 	@echo "Compiled: "$<
 
 all:
@@ -42,12 +40,12 @@ debug:
 	@echo "$(TARGET) Make Debug Complete"
 	@echo " "
 
-install: 
+install:
 	@$(MAKE) --no-print-directory
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/bin
 	@$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/bin
 	@echo "$(TARGET) Install Complete"
-	
+
 clean:
 	@$(RM) $(OBJECTS)
 	@$(RM) $(TARGET)
@@ -61,4 +59,4 @@ runonboot:
 	@$(MAKE) install --no-print-directory
 	@$(LINK) $(DESTDIR)$(prefix)/bin/$(TARGET) $(LINKDIR)/$(LINKNAME)
 	@echo "$(TARGET) Set to Run on Boot"
-	
+

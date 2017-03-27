@@ -1,9 +1,9 @@
-roboticscape (0.3.2) unstable; urgency=low
+roboticscape (0.3.4) unstable; urgency=low
 
-    * Fix DSM driving in balance
-    * Update documentation source comments
-    * Smoother install with new debconf question
+    * add setuid on example install so 'sudo' is not needed
+    * rc_balance will calibrate gyro automatically if needed
+    * add ldconfig to deb package scripts
 
- -- James Strawson <james@strawsondesign.com>  Sun, 26 Feb 2017 21:11:00 +0000
+ -- James Strawson <james@strawsondesign.com>  Tue, 07 Mar 2017 02:47:00 +0000
 
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 * balance_config.h
 *
-* Contains the settings for configuration of balance.c
+* Contains the settings for configuration of rc_balance.c
 *******************************************************************************/
 
 #ifndef BALANCE_CONFIG

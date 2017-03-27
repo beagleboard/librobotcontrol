@@ -79,8 +79,9 @@ void on_mode_released(){
 * control the blink speed and program state
 *******************************************************************************/
 int main(){
+	// initialize hardware first
 	if(rc_initialize()){
-		printf("failed to initialize cape\n");
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
 		return -1;
 	}
 	

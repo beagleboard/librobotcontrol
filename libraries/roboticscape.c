@@ -43,23 +43,29 @@ void shutdown_signal_handler(int signo);
 int rc_initialize(){
 	FILE *fd; 
 	rc_bb_model_t model;
-	
+
+	// ensure root privaleges until we sort out udev rules
+	if(geteuid()!=0){
+		fprintf(stderr,"ERROR: Robotics Cape library must be run as root\n");
+		return -1;
+	}
+
 	// check if another project was using resources
 	// kill that process cleanly with sigint if so
 	#ifdef DEBUG
 		printf("checking for existing PID_FILE\n");
 	#endif
 	rc_kill();
-	
+
 	// whitelist blue, black, and black wireless only when RC device tree is in use
-    model = rc_get_bb_model();
-    if(model!=BB_BLACK_RC && model!=BB_BLACK_W_RC && model!=BB_BLUE){
-    	// also check uEnv.txt in case using older device tree
-    	if(system("grep -q roboticscape /boot/uEnv.txt")!=0){
+	model = rc_get_bb_model();
+	if(model!=BB_BLACK_RC && model!=BB_BLACK_W_RC && model!=BB_BLUE){
+		// also check uEnv.txt in case using older device tree
+		if(system("grep -q roboticscape /boot/uEnv.txt")!=0){
 			fprintf(stderr,"WARNING: RoboticsCape library should only be run on BB Blue, Black, and Black wireless when the roboticscape device tree is in use.\n");
 			fprintf(stderr,"If you are on a BB Black or Black Wireless, please execute \"configure_robotics_dt.sh\" and reboot to enable the device tree\n");
-    	}
-    }
+		}
+	}
 
 	// start state as Uninitialized
 	rc_set_state(UNINITIALIZED);
@@ -94,13 +100,13 @@ int rc_initialize(){
 		printf("mmap_gpio_adc.c failed to initialize gpio\n");
 		return -1;
 	}
-	
+
 	// now adc
 	#ifdef DEBUG
 	printf("Initializing: ADC\n");
 	#endif
 	if(initialize_mmap_adc()){
-		printf("mmap_gpio_adc.c failed to initialize adc\n");
+		fprintf(stderr,"mmap_gpio_adc.c failed to initialize adc\n");
 		return -1;
 	}
 
@@ -110,13 +116,13 @@ int rc_initialize(){
 	#endif
 	// this also zero's out the encoder counters
 	if(init_eqep(0)){
-		printf("WARNING: failed to initialize eQEP0\n");
+		fprintf(stderr,"WARNING: failed to initialize eQEP0\n");
 	}
 	if(init_eqep(1)){
-		printf("WARNING: failed to initialize eQEP1\n");
+		fprintf(stderr,"WARNING: failed to initialize eQEP1\n");
 	}
 	if(init_eqep(2)){
-		printf("WARNING: failed to initialize eQEP2\n");
+		fprintf(stderr,"WARNING: failed to initialize eQEP2\n");
 	}
 
 	// motors
@@ -124,7 +130,7 @@ int rc_initialize(){
 	printf("Initializing: Motors\n");
 	#endif
 	if(initialize_motors()){
-		printf("WARNING: Failed to initialize motors\n");
+		fprintf(stderr,"WARNING: Failed to initialize motors\n");
 	}
 
 	//set up function pointers for button press events
@@ -132,7 +138,7 @@ int rc_initialize(){
 	printf("Initializing: Buttons\n");
 	#endif
 	if(initialize_button_handlers()<0){
-		printf("ERROR: failed to start button threads\n");
+		fprintf(stderr,"ERROR: failed to start button threads\n");
 		return -1;
 	}
 
@@ -148,7 +154,7 @@ int rc_initialize(){
 	#endif
 	fd = fopen(PID_FILE, "ab+");
 	if (fd == NULL) {
-		printf("\n error opening PID_FILE for writing\n");
+		fprintf(stderr,"error opening PID_FILE for writing\n");
 		return -1;
 	}
 	pid_t current_pid = getpid();
@@ -269,7 +275,7 @@ int rc_print_state(){
 		printf("EXITING");
 		break;
 	default:
-		printf("ERROR: invalid state\n");
+		fprintf(stderr,"ERROR: invalid state\n");
 		return -1;
 	}
 	return 0;
@@ -295,7 +301,7 @@ int rc_set_led(rc_led_t led, int state){
 		return rc_gpio_set_value_mmap(RED_LED, val);
 		break;
 	default:
-		printf("LED must be GREEN or RED\n");
+		fprintf(stderr,"LED must be GREEN or RED\n");
 		break;
 	}
 	return -1;
@@ -314,7 +320,7 @@ int rc_get_led(rc_led_t led){
 	case RED:
 		return rc_gpio_get_value(RED_LED);
 	default:
-		printf("LED must be GREEN or RED\n");
+		fprintf(stderr,"LED must be GREEN or RED\n");
 	}
 	return -1;
 }
@@ -350,7 +356,7 @@ int rc_blink_led(rc_led_t led, float hz, float period){
 *******************************************************************************/
 int rc_get_encoder_pos(int ch){
 	if(ch<1 || ch>4){
-		printf("Encoder Channel must be from 1 to 4\n");
+		fprintf(stderr,"Encoder Channel must be from 1 to 4\n");
 		return -1;
 	}
 	// 4th channel is counted by the PRU not eQEP
@@ -366,7 +372,7 @@ int rc_get_encoder_pos(int ch){
 *******************************************************************************/
 int rc_set_encoder_pos(int ch, int val){
 	if(ch<1 || ch>4){
-		printf("Encoder Channel must be from 1 to 4\n");
+		fprintf(stderr,"Encoder Channel must be from 1 to 4\n");
 		return -1;
 	}
 	// 4th channel is counted by the PRU not eQEP
@@ -406,7 +412,7 @@ float rc_dc_jack_voltage(){
 *******************************************************************************/
 int rc_adc_raw(int ch){
 	if(ch<0 || ch>6){
-		printf("analog pin must be in 0-6\n");
+		fprintf(stderr,"ERROR: analog pin must be in 0-6\n");
 		return -1;
 	}
 	return mmap_adc_read_raw((uint8_t)ch);
@@ -419,7 +425,7 @@ int rc_adc_raw(int ch){
 *******************************************************************************/
 float rc_adc_volt(int ch){
 	if(ch<0 || ch>6){
-		printf("analog pin must be in 0-6\n");
+		fprintf(stderr,"ERROR: analog pin must be in 0-6\n");
 		return -1;
 	}
 	int raw_adc = mmap_adc_read_raw((uint8_t)ch);
@@ -495,7 +501,7 @@ int rc_kill(){
 	// if the file didn't open, no project is runnning in the background
 	// so return 0
 	fd = fopen(PID_FILE, "r");
-	if (fd == NULL) return 0;
+	if(fd==NULL) return 0;
 	// try to read the current process ID
 	fscanf(fd,"%d", &old_pid);
 	fclose(fd);

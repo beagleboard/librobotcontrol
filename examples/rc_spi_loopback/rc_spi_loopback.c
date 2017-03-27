@@ -19,11 +19,15 @@ int main(){
 	char test_char = 0x42;
 	char test_str[] = "Hello World";
 	int bytes = strlen(test_str); // get number of bytes in test string
-	char buf[bytes]; 	// read buffer
-	int ret; 			// return value
-	
-	// Initialization
-	rc_initialize();
+	char buf[bytes];	// read buffer
+	int ret;			// return value
+
+	// initialize hardware first
+	if(rc_initialize()){
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
+		return -1;
+	}
+
 	printf("Testing SPI \n\n");
 	if(rc_spi_init(SS_MODE_AUTO, SPI_MODE, SPI_SPEED, SLAVE)){
 		printf("Failed to rc_spi_init1\n");

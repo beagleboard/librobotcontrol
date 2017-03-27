@@ -15,28 +15,29 @@
 #define INTERNAL_FILTER	BMP_FILTER_OFF
 
 // our own low pass filter
-#define ORDER 			2
+#define ORDER			2
 #define CUTOFF_FREQ		2.0f	// 2rad/s, about 0.3hz
 #define BMP_CHECK_HZ	25
-#define	DT 				1.0f/BMP_CHECK_HZ
+#define	DT				1.0f/BMP_CHECK_HZ
 
 int main(){
 	double temp, pressure, altitude, filtered_alt;
 	rc_filter_t lowpass = rc_empty_filter();
 
-	// set up cape and barometer
+	// initialize hardware first
 	if(rc_initialize()){
-		printf("ERROR: failed to initialize_cape\n");
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
 		return -1;
 	}
+
 	if(rc_initialize_barometer(OVERSAMPLE, INTERNAL_FILTER)<0){
-		printf("rc_initialize_barometer failed\n");
+		fprintf(stderr,"ERROR: rc_initialize_barometer failed\n");
 		return -1;
 	}
 	
 	// create the lowpass filter and prefill with current altitude
 	if(rc_butterworth_lowpass(&lowpass,ORDER, DT, CUTOFF_FREQ)){
-		printf("ERROR: failed to make butterworth filter\n");
+		fprintf(stderr,"ERROR: failed to make butterworth filter\n");
 		return -1;
 	}
 	altitude = rc_bmp_get_altitude_m();
@@ -57,7 +58,7 @@ int main(){
 		
 		// perform the i2c reads to the sensor, this takes a bit of time
 		if(rc_read_barometer()<0){
-			printf("\rERROR: Can't read Barometer");
+			fprintf(stderr,"\rERROR: Can't read Barometer");
 			fflush(stdout);
 			continue;
 		}
@@ -74,9 +75,7 @@ int main(){
 		printf("%7.2fkpa |", pressure/1000.0);
 		printf("%8.2fm |", altitude);
 		printf("%8.2fm |", filtered_alt);
-														
 		fflush(stdout);
-		
 	}
 
 	rc_power_off_barometer();

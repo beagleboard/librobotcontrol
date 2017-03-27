@@ -93,17 +93,25 @@ rc_imu_data_t imu_data;
 /*******************************************************************************
 * main()
 *
-* Initialize the filters, IMU, threads, & wait untill shut down
+* Initialize the filters, IMU, threads, & wait until shut down
 *******************************************************************************/
 int main(){
-
-	if(rc_initialize()<0){
-		printf("ERROR: failed to initialize cape\n");
+	// make sure everything initializes first
+	if(rc_initialize()){
+		fprintf(stderr,"ERROR: failed to run rc_initialize(), are you root?\n");
 		return -1;
 	}
+
 	rc_set_led(RED,1);
 	rc_set_led(GREEN,0);
 	rc_set_state(UNINITIALIZED);
+
+	// if gyro isn't calibrated, run the calibration routine
+	if(!rc_is_gyro_calibrated()){
+		printf("Gyro not calibrated, automatically starting calibration routine\n");
+		printf("Let your MiP sit still on a firm surface\n");
+		rc_calibrate_gyro_routine();
+	}
 
 	// make sure setpoint starts at normal values
 	setpoint.arm_state = DISARMED;
@@ -117,7 +125,7 @@ int main(){
 	float D1_num[] = D1_NUM;
 	float D1_den[] = D1_DEN;
 	if(rc_alloc_filter_from_arrays(&D1,D1_ORDER, DT, D1_num, D1_den)){
-		printf("ERROR in rc_balance, failed to make filter D1\n");
+		fprintf(stderr,"ERROR in rc_balance, failed to make filter D1\n");
 		return -1;
 	}
 	D1.gain = D1_GAIN;
@@ -128,7 +136,7 @@ int main(){
 	float D2_num[] = D2_NUM;
 	float D2_den[] = D2_DEN;
 	if(rc_alloc_filter_from_arrays(&D2, D2_ORDER, DT, D2_num, D2_den)){
-		printf("ERROR in rc_balance, failed to make filter D2\n");
+		fprintf(stderr,"ERROR in rc_balance, failed to make filter D2\n");
 		return -1;
 	}
 	D2.gain = D2_GAIN;
@@ -142,7 +150,7 @@ int main(){
 	
 	// set up D3 gamma (steering) controller
 	if(rc_pid_filter(&D3, D3_KP, D3_KI, D3_KD, 4*DT, DT)){
-		printf("ERROR in rc_balance, failed to make steering controller\n");
+		fprintf(stderr,"ERROR in rc_balance, failed to make steering controller\n");
 		return -1;
 	}
 	rc_enable_saturation(&D3, -STEERING_INPUT_MAX, STEERING_INPUT_MAX);
@@ -171,7 +179,7 @@ int main(){
 
 	// start imu
 	if(rc_initialize_imu_dmp(&imu_data, imu_config)){
-		printf("ERROR: can't talk to IMU, all hope is lost\n");
+		fprintf(stderr,"ERROR: can't talk to IMU, all hope is lost\n");
 		rc_blink_led(RED, 5, 5);
 		return -1;
 	}
@@ -184,8 +192,8 @@ int main(){
 	// to make sure other setup functions don't interfere
 	rc_set_imu_interrupt_func(&balance_controller);
 	
-	// start in the RUNNING state, pressing the puase button will swap to 
-	// the PUASED state then back again.
+	// start in the RUNNING state, pressing the pause button will swap to
+	// the PAUSED state then back again.
 	printf("\nHold your MIP upright to begin balancing\n");
 	rc_set_state(RUNNING);
 	
@@ -307,7 +315,7 @@ void balance_controller(){
 								/(ENCODER_POLARITY_L * GEARBOX * ENCODER_RES);
 	
 	// Phi is average wheel rotation also add theta body angle to get absolute 
-	// wheel position in global frame since encoders are attachde to the body
+	// wheel position in global frame since encoders are attached to the body
 	cstate.phi = ((cstate.wheelAngleL+cstate.wheelAngleR)/2) + cstate.theta; 
 	
 	// steering angle gamma estimate 

@@ -1,3 +1,11 @@
+0.3.4
+	* add setuid on example install so 'sudo' is not needed
+	* rc_balance will calibrate gyro automatically if needed
+	* add ldconfig to deb package scripts
+0.3.3
+	* update project template for new api
+	* warn user if not running as root
+	* remove touch from makefiles
 0.3.2
 	* Fix DSM driving in balance
 	* Update documentation source comments

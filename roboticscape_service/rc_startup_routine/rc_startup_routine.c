@@ -36,7 +36,13 @@ int main(){
 	char buf[128];
 	float time;
 	rc_bb_model_t model;
-	
+
+	// ensure root privaleges until we sort out udev rules
+	if(geteuid()!=0){
+		fprintf(stderr,"ERROR: Robotics Cape library must be run as root\n");
+		return -1;
+	}
+
 	// log start time 
 	start_us = rc_nanos_since_epoch()/1000 ;
 	system("echo start > " START_LOG);
@@ -46,13 +52,13 @@ int main(){
 	rc_kill();
 	
 	// whitelist blue, black, and black wireless only when RC device tree is in use
-    model = rc_get_bb_model();
-    if(model!=BB_BLACK_RC && model!=BB_BLACK_W_RC && model!=BB_BLUE){
-    	if(system("grep -q roboticscape /boot/uEnv.txt")!=0){
+	model = rc_get_bb_model();
+	if(model!=BB_BLACK_RC && model!=BB_BLACK_W_RC && model!=BB_BLUE){
+		if(system("grep -q roboticscape /boot/uEnv.txt")!=0){
 			fprintf(stderr,"roboticscape service can only run on BB Blue, Black, and Black wireless when the roboticscape device tree is in use.\n");
 			return -1;
 		}
-    }
+	}
 
 	// export gpio pins
 	while(configure_gpio_pins()!=0){
@@ -95,6 +101,18 @@ int main(){
 	sprintf(buf, "echo 'time (s): %4.1f PWM loaded' >> %s",time,START_LOG);
 	system(buf);
 
+	//wait for pinmux
+	while(rc_set_default_pinmux()!=0){
+		if(check_timeout()){
+			system("echo 'timeout reached while waiting for pinmux' >> " START_LOG);
+			printf("timeout reached while waiting for pinmux\n");
+		 	return 0;
+		}
+		rc_usleep(500000);
+	}
+	time = (rc_nanos_since_epoch()/1000-start_us)/1000000;
+	sprintf(buf, "echo 'time (s): %4.1f pinmux driver loaded' >> %s",time,START_LOG);
+	system(buf);
 
 	//wait for pru
 	while(restart_pru()!=0){
@@ -107,20 +125,6 @@ int main(){
 	}
 	time = (rc_nanos_since_epoch()/1000-start_us)/1000000;
 	sprintf(buf, "echo 'time (s): %4.1f PRU rproc loaded' >> %s",time,START_LOG);
-	system(buf);
-
-
-	//wait for pinmux
-	while(rc_set_default_pinmux()!=0){
-		if(check_timeout()){
-			system("echo 'timeout reached while waiting for pinmux' >> " START_LOG);
-			printf("timeout reached while waiting for pinmux\n");
-		 	return 0;
-		}
-		rc_usleep(500000);
-	}
-	time = (rc_nanos_since_epoch()/1000-start_us)/1000000;
-	sprintf(buf, "echo 'time (s): %4.1f pinmux driver loaded' >> %s",time,START_LOG);
 	system(buf);
 
 	printf("roboticscape startup routine complete\n");
