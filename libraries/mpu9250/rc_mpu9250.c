@@ -44,6 +44,10 @@
 #define GYRO_CAL_THRESH			50
 #define GYRO_OFFSET_THRESH		500
 
+// Thread control
+pthread_mutex_t rc_imu_read_mutex     = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t  rc_imu_read_condition = PTHREAD_COND_INITIALIZER;
+
 /*******************************************************************************
 *	Local variables
 *******************************************************************************/
@@ -93,8 +97,8 @@ int dmp_enable_feature(unsigned short mask);
 int mpu_set_dmp_state(unsigned char enable);
 int set_int_enable(unsigned char enable);
 int dmp_set_interrupt_mode(unsigned char mode);
-int read_dmp_fifo();
-int data_fusion();
+int read_dmp_fifo(rc_imu_data_t* data);
+int data_fusion(rc_imu_data_t* data);
 int load_gyro_offets();
 int load_mag_calibration();
 int write_mag_cal_to_disk(float offsets[3], float scale[3]);
@@ -1495,8 +1499,27 @@ void* imu_interrupt_handler( __unused void* ptr){
 				printf("WARNING: Something has claimed the I2C bus when an\n");
 				printf("IMU interrupt was received. Reading IMU anyway.\n");
 			}
+
+			// aquires bus
 			rc_i2c_claim_bus(IMU_BUS);
-			ret = read_dmp_fifo();
+
+			// aquires mutex
+			pthread_mutex_lock( &rc_imu_read_mutex );
+
+			// read data
+			ret = read_dmp_fifo(data_ptr);
+
+			if(last_read_successful) {
+			  
+			  // signals that a measurement is available
+			  pthread_cond_broadcast( &rc_imu_read_condition );
+			  
+			}
+  
+			// releases mutex
+			pthread_mutex_unlock( &rc_imu_read_mutex );
+
+			// releases bus
 			rc_i2c_release_bus(IMU_BUS);
 			
 			// record if it was successful or not
@@ -1512,6 +1535,14 @@ void* imu_interrupt_handler( __unused void* ptr){
 			}
 		}
 	}
+	
+	// aquires mutex
+	pthread_mutex_lock( &rc_imu_read_mutex );
+	// /releases other threads
+	pthread_cond_broadcast( &rc_imu_read_condition );
+	// releases mutex
+	pthread_mutex_unlock( &rc_imu_read_mutex );
+
 	rc_gpio_fd_close(imu_gpio_fd);
 	thread_running_flag = 0;
 	return 0;
@@ -1543,7 +1574,7 @@ int rc_stop_imu_interrupt_func(){
 }
 
 /*******************************************************************************
-* int read_dmp_fifo()
+* int read_dmp_fifo(rc_imu_data_t* data)
 *
 * Reads the FIFO buffer and populates the data struct. Here is where we see 
 * bad/empty/double packets due to i2c bus errors and the IMU failing to have
@@ -1551,7 +1582,7 @@ int rc_stop_imu_interrupt_func(){
 * function print out warnings when these conditions are detected. If write
 * errors are detected then this function tries some i2c transfers a second time.
 *******************************************************************************/
-int read_dmp_fifo(){
+int read_dmp_fifo(rc_imu_data_t* data){
 	unsigned char raw[MAX_FIFO_BUFFER];
 	long quat[4];
 	int16_t mag_adc[3];
@@ -1748,34 +1779,34 @@ READ_FIFO:
 		qlen=sqrt(sum);
 		for(i=0;i<4;i++) q_tmp[i]/=qlen;
 		// make floating point and put in output
-		for(i=0;i<4;i++) data_ptr->dmp_quat[i]=(float)q_tmp[i];
+		for(i=0;i<4;i++) data->dmp_quat[i]=(float)q_tmp[i];
 
 		// fill in tait-bryan angles to the data struct
-		rc_quaternion_to_tb_array(data_ptr->dmp_quat, data_ptr->dmp_TaitBryan);
+		rc_quaternion_to_tb_array(data->dmp_quat, data->dmp_TaitBryan);
 		
 		j+=16; // increase offset by 16 which was the quaternion size
 		
 		// Read Accel values and load into imu_data struct
 		// Turn the MSB and LSB into a signed 16-bit value
-		data_ptr->raw_accel[0] = (int16_t)(((uint16_t)raw[j+0]<<8)|raw[j+1]);
-		data_ptr->raw_accel[1] = (int16_t)(((uint16_t)raw[j+2]<<8)|raw[j+3]);
-		data_ptr->raw_accel[2] = (int16_t)(((uint16_t)raw[j+4]<<8)|raw[j+5]);
+		data->raw_accel[0] = (int16_t)(((uint16_t)raw[j+0]<<8)|raw[j+1]);
+		data->raw_accel[1] = (int16_t)(((uint16_t)raw[j+2]<<8)|raw[j+3]);
+		data->raw_accel[2] = (int16_t)(((uint16_t)raw[j+4]<<8)|raw[j+5]);
 		
 		// Fill in real unit values
-		data_ptr->accel[0] = data_ptr->raw_accel[0] * data_ptr->accel_to_ms2;
-		data_ptr->accel[1] = data_ptr->raw_accel[1] * data_ptr->accel_to_ms2;
-		data_ptr->accel[2] = data_ptr->raw_accel[2] * data_ptr->accel_to_ms2;
+		data->accel[0] = data->raw_accel[0] * data->accel_to_ms2;
+		data->accel[1] = data->raw_accel[1] * data->accel_to_ms2;
+		data->accel[2] = data->raw_accel[2] * data->accel_to_ms2;
 		j+=6;
 		
 		// Read gyro values and load into imu_data struct
 		// Turn the MSB and LSB into a signed 16-bit value
-		data_ptr->raw_gyro[0] = (int16_t)(((int16_t)raw[0+j]<<8)|raw[1+j]);
-		data_ptr->raw_gyro[1] = (int16_t)(((int16_t)raw[2+j]<<8)|raw[3+j]);
-		data_ptr->raw_gyro[2] = (int16_t)(((int16_t)raw[4+j]<<8)|raw[5+j]);
+		data->raw_gyro[0] = (int16_t)(((int16_t)raw[0+j]<<8)|raw[1+j]);
+		data->raw_gyro[1] = (int16_t)(((int16_t)raw[2+j]<<8)|raw[3+j]);
+		data->raw_gyro[2] = (int16_t)(((int16_t)raw[4+j]<<8)|raw[5+j]);
 		// Fill in real unit values
-		data_ptr->gyro[0] = data_ptr->raw_gyro[0] * data_ptr->gyro_to_degs;
-		data_ptr->gyro[1] = data_ptr->raw_gyro[1] * data_ptr->gyro_to_degs;
-		data_ptr->gyro[2] = data_ptr->raw_gyro[2] * data_ptr->gyro_to_degs;
+		data->gyro[0] = data->raw_gyro[0] * data->gyro_to_degs;
+		data->gyro[1] = data->raw_gyro[1] * data->gyro_to_degs;
+		data->gyro[2] = data->raw_gyro[2] * data->gyro_to_degs;
 
 		is_new_dmp_data = 1;
 	}
@@ -1808,9 +1839,9 @@ READ_FIFO:
 			if(mag_scales[0]==0.0) mag_scales[0]=1.0;
 			if(mag_scales[1]==0.0) mag_scales[1]=1.0;
 			if(mag_scales[2]==0.0) mag_scales[2]=1.0;
-			data_ptr->mag[0] = (factory_cal_data[0]-mag_offsets[0])*mag_scales[0];
-			data_ptr->mag[1] = (factory_cal_data[1]-mag_offsets[1])*mag_scales[1];
-			data_ptr->mag[2] = (factory_cal_data[2]-mag_offsets[2])*mag_scales[2];
+			data->mag[0] = (factory_cal_data[0]-mag_offsets[0])*mag_scales[0];
+			data->mag[1] = (factory_cal_data[1]-mag_offsets[1])*mag_scales[1];
+			data->mag[2] = (factory_cal_data[2]-mag_offsets[2])*mag_scales[2];
 		}
 	}
 
@@ -1821,7 +1852,7 @@ READ_FIFO:
 		#ifdef DEBUG
 		printf("running data_fusion\n");
 		#endif
-		data_fusion();
+		data_fusion(data);
 	}
 
 	// if we finally got dmp data, turn off the first run flag
@@ -1872,7 +1903,7 @@ int check_quaternion_validity(unsigned char* raw, int i){
 }
 
 /*******************************************************************************
-* int data_fusion()
+* int data_fusion(rc_imu_data_t* data)
 *
 * This fuses the magnetometer data with the quaternion straight from the DMP
 * to correct the yaw heading to a compass heading. Much thanks to Pansenti for
@@ -1882,7 +1913,7 @@ int check_quaternion_validity(unsigned char* raw, int i){
 * with the sample rate so the filter rise time remains constant with different
 * sample rates.
 *******************************************************************************/
-int data_fusion(){
+int data_fusion(rc_imu_data_t* data){
 	float tilt_tb[3], tilt_q[4], mag_vec[3];
 	static float newMagYaw = 0;
 	static float newDMPYaw = 0;
@@ -1895,8 +1926,8 @@ int data_fusion(){
 	// start by filling in the roll/pitch components of the fused euler
 	// angles from the DMP generated angles. Ignore yaw for now, we have to
 	// filter that later. 
-	tilt_tb[0] = data_ptr->dmp_TaitBryan[TB_PITCH_X];
-	tilt_tb[1] = data_ptr->dmp_TaitBryan[TB_ROLL_Y];
+	tilt_tb[0] = data->dmp_TaitBryan[TB_PITCH_X];
+	tilt_tb[1] = data->dmp_TaitBryan[TB_ROLL_Y];
 	tilt_tb[2] = 0.0f;
 
 	// generate a quaternion rotation of just roll/pitch
@@ -1908,44 +1939,44 @@ int data_fusion(){
 	// data to match.
 	switch(config.orientation){
 	case ORIENTATION_Z_UP:
-		mag_vec[0] = data_ptr->mag[TB_PITCH_X];
-		mag_vec[1] = data_ptr->mag[TB_ROLL_Y];
-		mag_vec[2] = data_ptr->mag[TB_YAW_Z];
+		mag_vec[0] = data->mag[TB_PITCH_X];
+		mag_vec[1] = data->mag[TB_ROLL_Y];
+		mag_vec[2] = data->mag[TB_YAW_Z];
 		break;
 	case ORIENTATION_Z_DOWN:
-		mag_vec[0] = -data_ptr->mag[TB_PITCH_X];
-		mag_vec[1] = data_ptr->mag[TB_ROLL_Y];
-		mag_vec[2] = -data_ptr->mag[TB_YAW_Z];
+		mag_vec[0] = -data->mag[TB_PITCH_X];
+		mag_vec[1] = data->mag[TB_ROLL_Y];
+		mag_vec[2] = -data->mag[TB_YAW_Z];
 		break;
 	case ORIENTATION_X_UP:
-		mag_vec[0] = data_ptr->mag[TB_YAW_Z];
-		mag_vec[1] = data_ptr->mag[TB_ROLL_Y];
-		mag_vec[2] = data_ptr->mag[TB_PITCH_X];
+		mag_vec[0] = data->mag[TB_YAW_Z];
+		mag_vec[1] = data->mag[TB_ROLL_Y];
+		mag_vec[2] = data->mag[TB_PITCH_X];
 		break;
 	case ORIENTATION_X_DOWN:
-		mag_vec[0] = -data_ptr->mag[TB_YAW_Z];
-		mag_vec[1] = data_ptr->mag[TB_ROLL_Y];
-		mag_vec[2] = -data_ptr->mag[TB_PITCH_X];
+		mag_vec[0] = -data->mag[TB_YAW_Z];
+		mag_vec[1] = data->mag[TB_ROLL_Y];
+		mag_vec[2] = -data->mag[TB_PITCH_X];
 		break;
 	case ORIENTATION_Y_UP:
-		mag_vec[0] = data_ptr->mag[TB_PITCH_X];
-		mag_vec[1] = -data_ptr->mag[TB_YAW_Z];
-		mag_vec[2] = data_ptr->mag[TB_ROLL_Y];
+		mag_vec[0] = data->mag[TB_PITCH_X];
+		mag_vec[1] = -data->mag[TB_YAW_Z];
+		mag_vec[2] = data->mag[TB_ROLL_Y];
 		break;
 	case ORIENTATION_Y_DOWN:
-		mag_vec[0] = data_ptr->mag[TB_PITCH_X];
-		mag_vec[1] = data_ptr->mag[TB_YAW_Z];
-		mag_vec[2] = -data_ptr->mag[TB_ROLL_Y];
+		mag_vec[0] = data->mag[TB_PITCH_X];
+		mag_vec[1] = data->mag[TB_YAW_Z];
+		mag_vec[2] = -data->mag[TB_ROLL_Y];
 		break;
 	case ORIENTATION_X_FORWARD:
-		mag_vec[0] = data_ptr->mag[TB_ROLL_Y];
-		mag_vec[1] = -data_ptr->mag[TB_PITCH_X];
-		mag_vec[2] = data_ptr->mag[TB_YAW_Z];
+		mag_vec[0] = data->mag[TB_ROLL_Y];
+		mag_vec[1] = -data->mag[TB_PITCH_X];
+		mag_vec[2] = data->mag[TB_YAW_Z];
 		break;
 	case ORIENTATION_X_BACK:
-		mag_vec[0] = -data_ptr->mag[TB_ROLL_Y];
-		mag_vec[1] = data_ptr->mag[TB_PITCH_X];
-		mag_vec[2] = data_ptr->mag[TB_YAW_Z];
+		mag_vec[0] = -data->mag[TB_ROLL_Y];
+		mag_vec[1] = data->mag[TB_PITCH_X];
+		mag_vec[2] = data->mag[TB_YAW_Z];
 		break;
 	default:
 		fprintf(stderr,"ERROR: invalid orientation\n");
@@ -1964,10 +1995,10 @@ int data_fusion(){
 		#endif
 		return -1;
 	}
-	data_ptr->compass_heading_raw = newMagYaw;
+	data->compass_heading_raw = newMagYaw;
 	// save DMP last from time and record newDMPYaw for this time
 	lastDMPYaw = newDMPYaw;
-	newDMPYaw = data_ptr->dmp_TaitBryan[TB_YAW_Z];
+	newDMPYaw = data->dmp_TaitBryan[TB_YAW_Z];
 	
 	// the outputs from atan2 and dmp are between -PI and PI.
 	// for our filters to run smoothly, we can't have them jump between -PI
@@ -2005,13 +2036,13 @@ int data_fusion(){
 
 	// TB angles expect a yaw between -pi to pi so slide it again and
 	// store in the user-accessible fused tb angle
-	data_ptr->compass_heading = newYaw;
-	data_ptr->fused_TaitBryan[2] = newYaw;
-	data_ptr->fused_TaitBryan[0] = data_ptr->dmp_TaitBryan[0];
-	data_ptr->fused_TaitBryan[1] = data_ptr->dmp_TaitBryan[1];
+	data->compass_heading = newYaw;
+	data->fused_TaitBryan[2] = newYaw;
+	data->fused_TaitBryan[0] = data->dmp_TaitBryan[0];
+	data->fused_TaitBryan[1] = data->dmp_TaitBryan[1];
 
 	// Also generate a new quaternion from the filtered tb angles
-	rc_tb_to_quaternion_array(data_ptr->fused_TaitBryan, data_ptr->fused_quat);
+	rc_tb_to_quaternion_array(data->fused_TaitBryan, data->fused_quat);
 	return 0;
 }
 
