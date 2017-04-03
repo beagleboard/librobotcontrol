@@ -1435,21 +1435,21 @@ void* imu_interrupt_handler( __unused void* ptr){
 			// read data
 			ret = read_dmp_fifo(data_ptr);
 
-			if(last_read_successful) {
-			  
+			// record if it was successful or not
+			if (ret==0) {
+			  last_read_successful=1;
 			  // signals that a measurement is available
 			  pthread_cond_broadcast( &rc_imu_read_condition );
-			  
 			}
+			else
+			  last_read_successful=0;
   
 			// releases mutex
 			pthread_mutex_unlock( &rc_imu_read_mutex );
 
 			// releases bus
 			rc_i2c_release_bus(IMU_BUS);
-			// record if it was successful or not
-			if (ret==0) last_read_successful=1;
-			else last_read_successful=0;
+			
 			// call the user function if not the first run
 			if(first_run == 1){
 				first_run = 0;
