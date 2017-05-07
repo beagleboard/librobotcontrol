@@ -69,7 +69,7 @@ int main(){
 * Make the Pause button toggle between paused and running states.
 *******************************************************************************/
 void on_pause_released(){
-	// toggle betewen paused and running modes
+	// toggle between paused and running modes
 	if(rc_get_state()==RUNNING)		rc_set_state(PAUSED);
 	else if(rc_get_state()==PAUSED)	rc_set_state(RUNNING);
 	return;
