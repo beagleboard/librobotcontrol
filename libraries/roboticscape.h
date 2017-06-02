@@ -692,6 +692,11 @@ typedef struct rc_imu_data_t{
 	float compass_heading_raw;	// heading in radians from magnetometer
 } rc_imu_data_t;
 
+// Thread control
+#include <pthread.h>
+extern pthread_mutex_t rc_imu_read_mutex;
+extern pthread_cond_t  rc_imu_read_condition;
+
 // General functions
 rc_imu_config_t rc_default_imu_config();
 int rc_set_imu_config_to_defaults(rc_imu_config_t* conf);
