@@ -3,7 +3,7 @@
 CC		:= gcc
 LINKER		:= gcc -o
 CFLAGS		:= -c -Wall -O2
-LFLAGS		:= -L ../../libraries -lm -lrt -lpthread -lroboticscape
+LFLAGS		:= -L ../../libraries -lroboticscape -lm -lrt -lpthread 
 
 SOURCES		:= $(wildcard *.c)
 INCLUDES	:= $(wildcard *.h)
