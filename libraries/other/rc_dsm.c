@@ -38,6 +38,7 @@ uint64_t last_time;
 pthread_t serial_parser_thread;
 int listening; // for calibration routine only
 void (*dsm_ready_func)();
+void* dsm_ready_func_data;
 int rc_is_dsm_active_flag; 
 
 /*******************************************************************************
@@ -91,7 +92,7 @@ int rc_initialize_dsm(){
 	num_channels = 0;
 	last_time = 0;
 	rc_is_dsm_active_flag = 0;
-	rc_set_dsm_data_func(&rc_null_func);
+	rc_set_dsm_data_func(&rc_null_func_with_arg, NULL);
 	
 	if(rc_uart_init(DSM_UART_BUS, DSM_BAUD_RATE, 0.1)){
 		printf("Error, failed to initialize UART%d for dsm\n", DSM_UART_BUS);
@@ -196,12 +197,13 @@ int rc_is_new_dsm_data(){
 * 
 * sets the 
 *******************************************************************************/
-int rc_set_dsm_data_func(void (*func)(void)){
+int rc_set_dsm_data_func(void (*func)(void*), void* user_data){
 	if(func==NULL){
 		printf("ERROR: trying to assign NULL pointer to new_dsm_data_func\n");
 		return -1;
 	}
 	dsm_ready_func = func;
+	dsm_ready_func_data = user_data;
 	return 0;
 }
 
@@ -531,7 +533,7 @@ START_NORMAL_LOOP:
 			}
 			// run the dsm ready function.
 			// this is null unless user changed it
-			dsm_ready_func();
+			dsm_ready_func(dsm_ready_func_data);
 		}
 		
 		#ifdef DEBUG
@@ -772,7 +774,7 @@ int rc_calibrate_dsm_routine(){
 	num_channels = 0;
 	last_time = 0;
 	rc_is_dsm_active_flag = 0;
-	rc_set_dsm_data_func(&rc_null_func);
+	rc_set_dsm_data_func(&rc_null_func_with_arg, NULL);
 	
 	if(rc_uart_init(DSM_UART_BUS, DSM_BAUD_RATE, 0.1)){
 		printf("Error, failed to initialize UART%d for dsm\n", DSM_UART_BUS);

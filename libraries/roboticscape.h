@@ -12,6 +12,10 @@
 #ifndef ROBOTICS_CAPE
 #define ROBOTICS_CAPE
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 // library version, can also be printed from the command line with the included
 // example program rc_version
 #define RC_LIB_VERSION_FLOAT	0.34
@@ -465,7 +469,7 @@ int rc_send_oneshot_pulse_normalized_all(float input);
 * Returns 1 if packets are arriving in good health without timeouts.
 * Returns 0 otherwise.
 *
-* @ int rc_set_dsm_data_func(int (*func)(void));
+* @ int rc_set_dsm_data_func(void (*func)(void*), void*);
 *
 * Much like the button handlers, this assigns a user function to be called when
 * new data arrives. Be careful as you should still check for radio disconnects 
@@ -511,7 +515,7 @@ int   rc_stop_dsm_service();
 int   rc_get_dsm_ch_raw(int channel);
 float rc_get_dsm_ch_normalized(int channel);
 int   rc_is_new_dsm_data();
-int   rc_set_dsm_data_func(void (*func)(void));
+int   rc_set_dsm_data_func(void (*func)(void*), void* user_data);
 int   rc_is_dsm_active();
 uint64_t rc_nanos_since_last_dsm_packet();
 int   rc_get_dsm_resolution();
@@ -669,7 +673,7 @@ typedef struct rc_imu_data_t{
 	float accel[3];	// units of m/s^2
 	float gyro[3];	// units of degrees/s
 	float mag[3];	// units of uT
-	float temp;		// units of degrees Celsius
+	float temp;	// units of degrees Celsius
 	
 	// 16 bit raw adc readings from each sensor
 	int16_t raw_gyro[3];	
@@ -1266,6 +1270,7 @@ void rc_timespec_add(timespec* start, double seconds);
 * Returns a string of the roboticscape package version for printing.
 *******************************************************************************/
 void rc_null_func();
+void rc_null_func_with_arg(void*);
 float rc_get_random_float();
 double rc_get_random_double();
 int rc_saturate_float(float* val, float min, float max);
@@ -2357,7 +2362,9 @@ int   rc_integrator(rc_filter_t *f, float dt);
 int   rc_double_integrator(rc_filter_t* f, float dt);
 int   rc_pid_filter(rc_filter_t* f,float kp,float ki,float kd,float Tf,float dt);
 
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif //ROBOTICS_CAPE
 
