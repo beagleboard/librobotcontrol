@@ -1,4 +1,46 @@
 #################
+## Binaries
+#################
+
+battery_monitor_service/rc_battery_monitor/rc_battery_monitor
+examples/rc_balance/rc_balance
+examples/rc_benchmark_algebra/rc_benchmark_algebra
+examples/rc_bind_dsm/rc_bind_dsm
+examples/rc_blink/rc_blink
+examples/rc_calibrate_dsm/rc_calibrate_dsm
+examples/rc_calibrate_escs/rc_calibrate_escs
+examples/rc_calibrate_gyro/rc_calibrate_gyro
+examples/rc_calibrate_mag/rc_calibrate_mag
+examples/rc_check_battery/rc_check_battery
+examples/rc_check_model/rc_check_model
+examples/rc_cpu_freq/rc_cpu_freq
+examples/rc_dsm_passthrough/rc_dsm_passthrough
+examples/rc_kill/rc_kill
+examples/rc_spi_loopback/rc_spi_loopback
+examples/rc_test_adc/rc_test_adc
+examples/rc_test_algebra/rc_test_algebra
+examples/rc_test_barometer/rc_test_barometer
+examples/rc_test_buttons/rc_test_buttons
+examples/rc_test_cape/rc_test_cape
+examples/rc_test_dmp/rc_test_dmp
+examples/rc_test_drivers/rc_test_drivers
+examples/rc_test_dsm/rc_test_dsm
+examples/rc_test_encoders/rc_test_encoders
+examples/rc_test_filters/rc_test_filters
+examples/rc_test_imu/rc_test_imu
+examples/rc_test_motors/rc_test_motors
+examples/rc_test_polynomial/rc_test_polynomial
+examples/rc_test_servos/rc_test_servos
+examples/rc_test_time/rc_test_time
+examples/rc_test_vector/rc_test_vector
+examples/rc_uart_loopback/rc_uart_loopback
+examples/rc_version/rc_version
+pru_firmware/file.map
+pru_firmware/main_pru0.asm
+pru_firmware/main_pru1.asm
+roboticscape_service/rc_startup_routine/rc_startup_routine
+
+#################
 ## Eclipse
 #################
 
