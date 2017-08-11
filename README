@@ -1,12 +1,4 @@
-Robotics Cape Library Installer 
+This is a version of Robotics Cape Library Installer modified to suit ROSMIP ( https://github.com/poine/rosmip )
 
-For BeagleBone Black and BeagleBone Blue running Debian Jessie.
-
-Installation instructions and user manual can be found here:
-http://strawsondesign.com/#!manual-install
-
-
-
-
-
+For the original version, see: https://github.com/StrawsonDesign/Robotics_Cape_Installer
 

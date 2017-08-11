@@ -5,7 +5,7 @@ TARGET = rc_battery_monitor
 CC	:= gcc
 LINKER   := gcc -o
 CFLAGS	:= -c -Wall -g
-LFLAGS	:= -L ../../libraries -lm -lrt -lpthread -lroboticscape
+LFLAGS	:= -L ../../libraries -lroboticscape -lm -lrt -lpthread 
 
 SOURCES  := $(wildcard *.c)
 INCLUDES := $(wildcard *.h)
