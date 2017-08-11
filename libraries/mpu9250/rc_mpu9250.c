@@ -38,7 +38,7 @@
 
 // error threshold checks
 #define QUAT_ERROR_THRESH		(1L<<16) // very precise threshold
-#define QUAT_MAG_SQ_NORMALIZED	(1L<<28)
+#define QUAT_MAG_SQ_NORMALIZED	        (1L<<28)
 #define QUAT_MAG_SQ_MIN			(QUAT_MAG_SQ_NORMALIZED - QUAT_ERROR_THRESH)
 #define QUAT_MAG_SQ_MAX			(QUAT_MAG_SQ_NORMALIZED + QUAT_ERROR_THRESH)
 #define GYRO_CAL_THRESH			50
@@ -58,7 +58,8 @@ int packet_len;
 pthread_t imu_interrupt_thread;
 int thread_running_flag;
 struct sched_param params;
-void (*imu_interrupt_func)(); // pointer to user's interrupt function
+void (*imu_interrupt_func)();  // pointer to user's interrupt function
+void* imu_interrupt_func_data; // user supplied data passed to interrupt function
 int interrupt_func_set;
 float mag_factory_adjust[3];
 float mag_offsets[3];
@@ -684,7 +685,7 @@ int rc_initialize_imu_dmp(rc_imu_data_t *data, rc_imu_config_t conf){
 	// range check
 	if(conf.dmp_sample_rate>DMP_MAX_RATE || conf.dmp_sample_rate<DMP_MIN_RATE){
 		fprintf(stderr,"ERROR:dmp_sample_rate must be between %d & %d\n", \
-												DMP_MIN_RATE, DMP_MAX_RATE);
+			DMP_MIN_RATE, DMP_MAX_RATE);
 		return -1;
 	}
 	// make sure the sample rate is a divisor so we can find a neat rate divider
@@ -834,7 +835,7 @@ int rc_initialize_imu_dmp(rc_imu_data_t *data, rc_imu_config_t conf){
 	// start the interrupt handler thread
 	interrupt_func_set = 1;
 	shutdown_interrupt_thread = 0;
-	rc_set_imu_interrupt_func(&rc_null_func);
+	rc_set_imu_interrupt_func(&rc_null_func_with_arg, NULL);
 	pthread_create(&imu_interrupt_thread, NULL, \
 					imu_interrupt_handler, (void*) NULL);
 	params.sched_priority = config.dmp_interrupt_priority;
@@ -860,7 +861,7 @@ int rc_initialize_imu_dmp(rc_imu_data_t *data, rc_imu_config_t conf){
  *  @return     0 if successful.
 *******************************************************************************/
 int mpu_write_mem(unsigned short mem_addr, unsigned short length,\
-												unsigned char *data){
+		  unsigned char *data){
 	unsigned char tmp[2];
 	if (!data){
 		fprintf(stderr,"ERROR: in mpu_write_mem, NULL pointer\n");
@@ -1455,7 +1456,7 @@ void* imu_interrupt_handler( __unused void* ptr){
 				first_run = 0;
 			}
 			else if(interrupt_func_set && last_read_successful){
-				imu_interrupt_func(); 
+				imu_interrupt_func(imu_interrupt_func_data); 
 			}
 		}
 	}
@@ -1477,12 +1478,13 @@ void* imu_interrupt_handler( __unused void* ptr){
 *
 * sets a user function to be called when new data is read
 *******************************************************************************/
-int rc_set_imu_interrupt_func(void (*func)(void)){
+int rc_set_imu_interrupt_func(void (*func)(void*), void* data){
 	if(func==NULL){
 		fprintf(stderr,"ERROR: trying to assign NULL pointer to imu_interrupt_func\n");
 		return -1;
 	}
 	imu_interrupt_func = func;
+	imu_interrupt_func_data = data;
 	interrupt_func_set = 1;
 	return 0;
 }

@@ -56,7 +56,7 @@ void print_usage(){
 *
 * This is the IMU interrupt function.  
 *******************************************************************************/
-void print_data(){
+void print_data(void* _data){
 	printf("\r");
 	printf(" ");
 	
@@ -302,7 +302,7 @@ int main(int argc, char *argv[]){
 	// write labels for what data will be printed and associate the interrupt
 	// function to print data immediately after the header.
 	print_header();
-	rc_set_imu_interrupt_func(&print_data);
+	rc_set_imu_interrupt_func(&print_data, NULL);
 	//now just wait, print_data() will be called by the interrupt
 	while (rc_get_state()!=EXITING) {
 		usleep(10000);

@@ -67,7 +67,7 @@ typedef struct core_state_t{
 * Local Function declarations	
 *******************************************************************************/
 // IMU interrupt routine
-void balance_controller(); 
+void balance_controller(void* data);
 // threads
 void* setpoint_manager(void* ptr);
 void* battery_checker(void* ptr);
@@ -190,7 +190,7 @@ int main(){
 
 	// this should be the last step in initialization 
 	// to make sure other setup functions don't interfere
-	rc_set_imu_interrupt_func(&balance_controller);
+	rc_set_imu_interrupt_func(&balance_controller, NULL);
 	
 	// start in the RUNNING state, pressing the pause button will swap to
 	// the PAUSED state then back again.
@@ -298,7 +298,7 @@ void* setpoint_manager(void* ptr){
 * discrete-time balance controller operated off IMU interrupt
 * Called at SAMPLE_RATE_HZ
 *******************************************************************************/
-void balance_controller(){
+void balance_controller(void* data){
 	static int inner_saturation_counter = 0; 
 	float dutyL, dutyR;
 	/******************************************************************

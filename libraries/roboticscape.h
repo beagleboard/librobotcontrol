@@ -715,7 +715,7 @@ int rc_read_imu_temp(rc_imu_data_t* data);
 
 // interrupt-driven sampling mode functions
 int rc_initialize_imu_dmp(rc_imu_data_t* data, rc_imu_config_t conf);
-int rc_set_imu_interrupt_func(void (*func)(void));
+int rc_set_imu_interrupt_func(void (*func)(void*), void* user_data);
 int rc_stop_imu_interrupt_func();
 int rc_was_last_imu_read_successful();
 uint64_t rc_nanos_since_last_imu_interrupt();
