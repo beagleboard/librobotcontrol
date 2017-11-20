@@ -19,6 +19,11 @@
 
 // necessary types for function prototypes
 #include <stdint.h> // for uint8_t types etc
+
+#ifdef __cplusplus
+  extern "C" {
+#endif
+
 typedef struct timespec	timespec;
 typedef struct timeval timeval;
 
@@ -692,8 +697,17 @@ typedef struct rc_imu_data_t{
 	float compass_heading_raw;	// heading in radians from magnetometer
 } rc_imu_data_t;
 
+#ifdef __cplusplus
+} //end of extern "C"
+#endif
+
 // Thread control
 #include <pthread.h>
+
+#ifdef __cplusplus
+  extern "C" {
+#endif
+
 extern pthread_mutex_t rc_imu_read_mutex;
 extern pthread_cond_t  rc_imu_read_condition;
 
@@ -2357,7 +2371,9 @@ int   rc_integrator(rc_filter_t *f, float dt);
 int   rc_double_integrator(rc_filter_t* f, float dt);
 int   rc_pid_filter(rc_filter_t* f,float kp,float ki,float kd,float Tf,float dt);
 
-
+#ifdef __cplusplus
+} //end of extern "C"
+#endif
 
 #endif //ROBOTICS_CAPE
 
