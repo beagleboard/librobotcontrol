@@ -7,12 +7,6 @@ if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
 	db_purge
 fi
 
-# no need to run ldconfig anymore, 
-# using triggers instead 
-# if [ "$1" = "remove" ]; then
-	# ldconfig
-# fi
-
 echo "Uninstallation Complete"
 
 exit 0
