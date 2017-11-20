@@ -24,9 +24,9 @@ if [ `whoami` != 'root' ]; then
 fi
 
 # make sure the release is really jessie
-if ! grep -q "8." /etc/debian_version ; then
-	echo "ERROR: This is not Debian Jessie."
-	echo "Flash the latest Jessie image to your BBB"
+if ! grep -q "8.\|9." /etc/debian_version ; then
+	echo "ERROR: This is not Debian Jessie, nor Stretch."
+	echo "Flash the latest Jessie or Stretch image to your BBB"
 	echo "or use the Wheezy branch of this installer."
 	exit 1
 fi
