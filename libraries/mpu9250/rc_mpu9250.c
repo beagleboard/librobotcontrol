@@ -1739,9 +1739,9 @@ READ_FIFO:
 	if(mag_data_available){
 		// Turn the MSB and LSB into a signed 16-bit value
 		// Data stored as little Endian
-		mag_adc[0] = (int16_t)(((int16_t)raw[i+1]<<8) | raw[i+0]);  
-		mag_adc[1] = (int16_t)(((int16_t)raw[i+3]<<8) | raw[i+2]);  
-		mag_adc[2] = (int16_t)(((int16_t)raw[i+5]<<8) | raw[i+4]); 
+		mag_adc[0] = (int16_t)(((int16_t)raw[i+1-4]<<8) | raw[i+0-4]);
+		mag_adc[1] = (int16_t)(((int16_t)raw[i+3-4]<<8) | raw[i+2-4]);
+		mag_adc[2] = (int16_t)(((int16_t)raw[i+5-4]<<8) | raw[i+4-4]);
 		
 		// if the data is non-zero, save it
 		// multiply by the sensitivity adjustment and convert to units of 
