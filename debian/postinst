@@ -6,7 +6,8 @@ set -e	# exit on error
 . /usr/share/debconf/confmodule # Source debconf library.
 
 # just installed so library, so run ldconfig
-ldconfig
+# no need anymore: usign triggers file instead
+# ldconfig
 
 if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
 
