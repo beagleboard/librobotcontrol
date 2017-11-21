@@ -1514,6 +1514,7 @@ int read_dmp_fifo(rc_imu_data_t* data){
 	int ret, mag_data_available, dmp_data_available;
 	int i = 0; // position of beginning of mag data
 	int j = 0; // position of beginning of dmp data
+	int k = 0; // index used on small loops
 	static int first_run = 1; // set to 0 after first call
 	float factory_cal_data[3]; // just temp holder for mag data
 	double q_tmp[4];
@@ -1697,13 +1698,13 @@ READ_FIFO:
 		
 		// do double-precision quaternion normalization since the numbers
 		// in raw format are huge
-		for(i=0;i<4;i++) q_tmp[i]=(double)quat[i];
+		for(k=0;k<4;k++) q_tmp[k]=(double)quat[k];
 		sum = 0.0;
-		for(i=0;i<4;i++) sum+=q_tmp[i]*q_tmp[i];
+		for(k=0;k<4;k++) sum+=q_tmp[k]*q_tmp[k];
 		qlen=sqrt(sum);
-		for(i=0;i<4;i++) q_tmp[i]/=qlen;
+		for(k=0;k<4;k++) q_tmp[k]/=qlen;
 		// make floating point and put in output
-		for(i=0;i<4;i++) data->dmp_quat[i]=(float)q_tmp[i];
+		for(k=0;k<4;k++) data->dmp_quat[k]=(float)q_tmp[k];
 
 		// fill in tait-bryan angles to the data struct
 		rc_quaternion_to_tb_array(data->dmp_quat, data->dmp_TaitBryan);
@@ -1739,12 +1740,9 @@ READ_FIFO:
 	if(mag_data_available){
 		// Turn the MSB and LSB into a signed 16-bit value
 		// Data stored as little Endian
-
-		// Do i always need to apply -4 to the index
-		// or does this depend also on dmp_data_available?
-		mag_adc[0] = (int16_t)(((int16_t)raw[i+1-4]<<8) | raw[i+0-4]);
-		mag_adc[1] = (int16_t)(((int16_t)raw[i+3-4]<<8) | raw[i+2-4]);
-		mag_adc[2] = (int16_t)(((int16_t)raw[i+5-4]<<8) | raw[i+4-4]);
+		mag_adc[0] = (int16_t)(((int16_t)raw[i+1]<<8) | raw[i+0]);
+		mag_adc[1] = (int16_t)(((int16_t)raw[i+3]<<8) | raw[i+2]);
+		mag_adc[2] = (int16_t)(((int16_t)raw[i+5]<<8) | raw[i+4]);
 		
 		// if the data is non-zero, save it
 		// multiply by the sensitivity adjustment and convert to units of 
