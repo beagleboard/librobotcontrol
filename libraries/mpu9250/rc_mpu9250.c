@@ -1739,6 +1739,9 @@ READ_FIFO:
 	if(mag_data_available){
 		// Turn the MSB and LSB into a signed 16-bit value
 		// Data stored as little Endian
+
+		// Do i always need to apply -4 to the index
+		// or does this depend also on dmp_data_available?
 		mag_adc[0] = (int16_t)(((int16_t)raw[i+1-4]<<8) | raw[i+0-4]);
 		mag_adc[1] = (int16_t)(((int16_t)raw[i+3-4]<<8) | raw[i+2-4]);
 		mag_adc[2] = (int16_t)(((int16_t)raw[i+5-4]<<8) | raw[i+4-4]);
