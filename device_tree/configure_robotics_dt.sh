@@ -23,15 +23,6 @@ if [ `whoami` != 'root' ]; then
 	exit 1
 fi
 
-# make sure the release is really jessie
-if ! grep -q "8." /etc/debian_version ; then
-	echo "ERROR: This is not Debian Jessie."
-	echo "Flash the latest Jessie image to your BBB"
-	echo "or use the Wheezy branch of this installer."
-	exit 1
-fi
-
-
 ################################################################################
 # check for the -f force flag
 ################################################################################
