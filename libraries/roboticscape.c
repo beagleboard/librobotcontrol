@@ -16,9 +16,15 @@
 #include "other/rc_pru.h"
 #include "gpio/rc_buttons.h"
 #include "pwm/rc_motors.h"
+#include <sys/capability.h>		//used for testing capabilities
 
 #define CAPE_NAME	"RoboticsCape"
 #define MAX_BUF		512
+
+#define CAPABILITIES_OK 0
+#define CAPABILITIES_FAILED_SYSCALL -1
+#define CAPABILITIES_MISSING_CAP_SYS_RAWIO -2
+#define CAPABILITIES_MISSING_CAP_DAC_OVERRIDE -3
 
 /*******************************************************************************
 * Global Variables
@@ -33,6 +39,7 @@ enum rc_state_t rc_state = UNINITIALIZED;
 *******************************************************************************/
 int is_cape_loaded();
 void shutdown_signal_handler(int signo);
+int has_required_capabilities();
 
 
 /*******************************************************************************
@@ -45,8 +52,9 @@ int rc_initialize(){
 	rc_bb_model_t model;
 
 	// ensure root privaleges until we sort out udev rules
-	if(geteuid()!=0){
-		fprintf(stderr,"ERROR: Robotics Cape library must be run as root\n");
+	// or has enough capabilities to run.
+	if(geteuid()!=0 && (has_required_capabilities()!=CAPABILITIES_OK)){
+		fprintf(stderr,"ERROR: Robotics Cape library must be run as root or with capabilities\n");
 		return -1;
 	}
 
@@ -566,3 +574,49 @@ void rc_enable_signal_handler(){
 	return;
 }
 
+/*******************************************************************************
+* @ int has_required_capabilities()
+*
+* checks that it the current process has enough capabilities to run.
+* This is checked in rc_initialize()
+*******************************************************************************/
+int has_required_capabilities(){
+	cap_t caps = cap_get_proc();  // all current capabilities.
+	cap_flag_value_t rawio_permitted, rawio_effective;
+	cap_flag_value_t override_permitted, override_effective;
+	if(!caps){
+	#ifdef DEBUG
+		printf("failed to get capabilities.\n");
+	#endif
+		return CAPABILITIES_FAILED_SYSCALL;
+	}
+
+	// effective and permitted flags should be set for CAP_SYS_RAWIO.
+	cap_get_flag(caps, CAP_SYS_RAWIO, CAP_PERMITTED, &rawio_permitted);
+	cap_get_flag(caps, CAP_SYS_RAWIO, CAP_EFFECTIVE, &rawio_effective);
+	if((rawio_permitted!=CAP_SET) || (rawio_effective!=CAP_SET)){
+	#ifdef DEBUG
+		printf("missing CAP_SYS_RAWIO.\n");
+	#endif
+		return CAPABILITIES_MISSING_CAP_SYS_RAWIO;
+	}
+	#ifdef DEBUG
+	printf("has capability CAP_SYS_RAWIO.\n" );
+	#endif
+
+	// effective and permitted flags should be set for CAP_DAC_OVERRIDE.
+	cap_get_flag(caps, CAP_DAC_OVERRIDE, CAP_PERMITTED, &override_permitted);
+	cap_get_flag(caps, CAP_DAC_OVERRIDE, CAP_EFFECTIVE, &override_effective);
+	if(override_permitted != CAP_SET || override_effective != CAP_SET){
+	#ifdef DEBUG
+		printf("missing CAP_DAC_OVERRIDE.\n");
+	#endif
+		return CAPABILITIES_MISSING_CAP_DAC_OVERRIDE;
+	}
+
+	#ifdef DEBUG
+	fprintf(stderr, "has capability CAP_DAC_OVERRIDE.\n");
+	#endif
+	cap_free(caps);
+	return CAPABILITIES_OK;
+}

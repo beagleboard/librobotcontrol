@@ -10,7 +10,7 @@ ARCFLAGS	:= -mfpu=neon -mfloat-abi=hard -march=armv7-a -mtune=cortex-a8
 # enable O3 optimization and vectorized math
 FFLAGS		:= -O3 -ffast-math -ftree-vectorize
 CFLAGS		:= -c -fPIC
-LFLAGS		:= -lm -lrt -lpthread -shared -Wl,-soname,$(TARGET)
+LFLAGS		:= -lm -lrt -lpthread -lcap -shared -Wl,-soname,$(TARGET)
 
 SOURCES		:= $(shell find ./ -name '*.c')
 INCLUDES	:= $(shell find ./ -name '*.h')
