@@ -23,7 +23,7 @@ void print_usage(){
 	printf("\n");
 	printf(" Options\n");
 	printf(" -s {mhz}   set the frequency in mhz\n");
-	printf(" -a 	    set auto freuqnecy scaling\n");
+	printf(" -a 	    set auto frequency scaling\n");
 	printf(" -r         read the frequency in mhz\n");
 	printf(" -t         run a test through all frequencies\n");
 	printf(" -h         print this help message\n\n");
