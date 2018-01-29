@@ -244,6 +244,9 @@ int rc_read_barometer(){
 		return -1;
 	}
 	
+	// we got the data, so we release the bus
+	rc_i2c_release_bus(BMP_BUS);
+	
 	// run the numbers, thanks to Bosch for putting this code in their datasheet
 	adc_P = (raw[0] << 12)|
 			(raw[1] << 4)|(raw[2] >> 4);
@@ -284,7 +287,6 @@ int rc_read_barometer(){
 
 	data.alt = 44330.0*(1.0 - pow((data.pressure/cal.sea_level_pa), 0.1903));
 
-	rc_i2c_release_bus(BMP_BUS);
 	return 0;
 }
 
