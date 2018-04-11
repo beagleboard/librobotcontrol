@@ -34,7 +34,7 @@ INSTALL		:= install -m 755
 INSTALLDIR	:= install -d -m 755
 
 # prefix variable for making debian package
-prefix		?= /usr/local
+prefix		?= /usr
 
 
 

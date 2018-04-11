@@ -30,7 +30,7 @@ LINKDIR		:= /etc/roboticscape
 LINKNAME	:= link_to_startup_program
 
 # prefix variable in case this is used to make a deb package
-prefix		:= /usr
+prefix		?= /usr
 
 
 
@@ -49,11 +49,11 @@ clean :
 
 install:
 	$(MAKE)
-	@$(INSTALL) $(TARGETS) $(prefix)/bin/
+	@for f in $(TARGETS); do $(INSTALL) $$f $(prefix)/bin; echo $$f; done
 	@echo "Examples Install complete"
 
 uninstall:
-	@for f in $(TARGETS); do $(RM) $(prefix)/$$f; done
+	@for f in $(TARGETS); do $(RM) $(prefix)/$$f;echo $$f; done
 	@echo "Examples Uninstall complete"
 
 
