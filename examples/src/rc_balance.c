@@ -79,11 +79,11 @@ setpoint_t setpoint;
 rc_filter_t D1, D2, D3;
 rc_mpu_data_t mpu_data;
 
-/*******************************************************************************
-* main()
-*
-* Initialize the filters, mpu, threads, & wait until shut down
-*******************************************************************************/
+/**
+ * Initialize the filters, mpu, threads, & wait until shut down
+ *
+ * @return     0 on success, -1 on failure
+ */
 int main()
 {
 	pthread_t setpoint_thread = 0;
@@ -117,14 +117,25 @@ int main()
 
 	// initialize enocders
 	if(rc_encoder_eqep_init()==-1){
-		fprintf(stderr,"ERROR: failed to run rc_encoder_eqep_init\n");
+		fprintf(stderr,"ERROR: failed to initialize eqep encoders\n");
 		return -1;
 	}
 
 	// initialize motors
 	if(rc_motor_init()==-1){
-		fprintf(stderr,"ERROR: failed to run rc_motor_init\n");
+		fprintf(stderr,"ERROR: failed to initialize motors\n");
 		return -1;
+	}
+
+	// start dsm listener
+	if(rc_dsm_init()==-1){
+		fprintf(stderr,"failed to start initialize DSM\n");
+		return -1;
+	}
+
+	// initialize adc
+	if(rc_adc_init()==-1){
+		fprintf(stderr, "failed to initialize adc\n");
 	}
 
 	// make PID file to indicate project is running
@@ -229,9 +240,6 @@ int main()
 	// the PAUSED state then back again.
 	printf("\nHold your MIP upright to begin balancing\n");
 	rc_set_state(RUNNING);
-
-	// start dsm listener
-	rc_dsm_init();
 
 	// chill until something exits the program
 	rc_set_state(RUNNING);
