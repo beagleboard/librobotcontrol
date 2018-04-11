@@ -1,28 +1,31 @@
-# 
+#
 # Copyright (c) 2016 Zubeen Tolani <ZeekHuge - zeekhuge@gmail.com>
 #
-# much thanks to Zubeen Tolani and Mark Yoder for porting this pru code 
-# to remoteproc. 
+# much thanks to Zubeen Tolani and Mark Yoder for porting this pru code
+# to remoteproc.
 
 
-BIN_DIR := bin
+BIN_DIR		:= bin
+SRC_DIR		:= src
 
-PRU1_FW		=$(BIN_DIR)/main-pru1-fw.out
-PRU0_FW		=$(BIN_DIR)/main-pru0-fw.out
+PRU0_FW		:= am335x-pru0-rc-encoder-fw
+PRU1_FW		:= am335x-pru1-rc-servo-fw
 
-TARGETS		=$(PRU1_FW) $(PRU0_FW)
-LINK_PRU1_FW=$(BIN_DIR)/pru1-servo.object
-LINK_PRU0_FW=$(BIN_DIR)/pru0-encoder.object
+TARGET0		:= $(BIN_DIR)/$(PRU0_FW)
+TARGET1		:= $(BIN_DIR)/$(PRU1_FW)
+TARGETS		:= $(TARGET0) $(TARGET1)
+LINK_PRU1_FW	:= $(BIN_DIR)/pru1-servo.object
+LINK_PRU0_FW	:= $(BIN_DIR)/pru0-encoder.object
 
-RM := rm -f -r 
-INSTALL := install -m 755 
-INSTALLDIR := install -d -m 755
-INSTALLNONEXEC := install -m 644 
+RM		:= rm -f -r
+INSTALL		:= install -m 755
+INSTALLDIR	:= install -d -m 755
+INSTALLNONEXEC	:= install -m 644
 
 
-PRU_CGT=/usr/share/ti/cgt-pru
-LNKPRU=/usr/bin/lnkpru
-CLPRU=/usr/bin/clpru
+PRU_CGT		:= /usr/share/ti/cgt-pru
+LNKPRU		:= /usr/bin/lnkpru
+CLPRU		:= /usr/bin/clpru
 
 # if the pru-software-support-package is installed to /opt/ use that
 # otherwise look in /usr/lib/ti/ which is where the BBB images puts it
@@ -53,33 +56,33 @@ all: $(TARGETS)
 	@echo "Generated: $^"
 
 
-$(PRU0_FW): $(BIN_DIR)/main_pru0.object $(LINK_PRU0_FW)
-	@echo 'LD	$^' 
+$(TARGET0): $(BIN_DIR)/main_pru0.object $(LINK_PRU0_FW)
+	@echo 'LD	$^'
 	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
 
-$(PRU1_FW): $(BIN_DIR)/main_pru1.object $(LINK_PRU1_FW)
+$(TARGET1): $(BIN_DIR)/main_pru1.object $(LINK_PRU1_FW)
 	@echo 'LD	$^'
 	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
 
 
-$(BIN_DIR)/main_pru0.object: main_pru0.c 
+$(BIN_DIR)/main_pru0.object: $(SRC_DIR)/main_pru0.c
 	@mkdir -p $(BIN_DIR)
 	@echo 'CC	$<'
 	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
 
 
-$(BIN_DIR)/main_pru1.object: main_pru1.c
+$(BIN_DIR)/main_pru1.object: $(SRC_DIR)/main_pru1.c
 	@mkdir -p $(BIN_DIR)
 	@echo 'CC	$<'
 	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
 
 
-$(BIN_DIR)/pru1-servo.object: pru1-servo.asm
+$(BIN_DIR)/pru1-servo.object: $(SRC_DIR)/pru1-servo.asm
 	@mkdir -p $(BIN_DIR)
 	@echo 'CC	$<'
 	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
 
-$(BIN_DIR)/pru0-encoder.object: pru0-encoder.asm
+$(BIN_DIR)/pru0-encoder.object: $(SRC_DIR)/pru0-encoder.asm
 	@mkdir -p $(BIN_DIR)
 	@echo 'CC	$<'
 	@$(CLPRU) $(INCLUDE) $(CFLAGS) -fe $@ $<
@@ -90,8 +93,8 @@ install:
 	$(MAKE)
 	@$(INSTALLDIR) $(DESTDIR)/lib/firmware
 	@$(INSTALLDIR) $(DESTDIR)/etc/modprobe.d
-	@$(INSTALLNONEXEC) $(PRU0_FW) $(DESTDIR)/lib/firmware/am335x-pru0-fw
-	@$(INSTALLNONEXEC) $(PRU1_FW) $(DESTDIR)/lib/firmware/am335x-pru1-fw
+	@$(INSTALLNONEXEC) $(TARGET0) $(DESTDIR)/lib/firmware/
+	@$(INSTALLNONEXEC) $(TARGET1) $(DESTDIR)/lib/firmware/
 	@$(INSTALLNONEXEC) pruss-blacklist.conf $(DESTDIR)/etc/modprobe.d/
 	@echo 'PRU Firmware Install Complete'
 
@@ -102,7 +105,7 @@ clean:
 	@echo 'PRU Firmware Cleanup Complete'
 
 uninstall:
-	@$(RM) /lib/firmware/am335x-pru0-fw
-	@$(RM) /lib/firmware/am335x-pru1-fw
+	@$(RM) /lib/firmware/$(PRU0_FW)
+	@$(RM) /lib/firmware/$(PRU1_FW)
 	@$(RM) /etc/modprobe.d/pruss-blacklist.conf
 	@echo "PRU Firmware Uninstall Complete"

@@ -3,9 +3,9 @@
 TARGET = rc_project_template
 
 CC		:= gcc
-LINKER		:= gcc -o
-CFLAGS		:= -c -Wall -g
-LFLAGS		:= -lm -lrt -lpthread -lroboticscape
+LINKER		:= gcc
+CFLAGS		:= -c -Wall
+LFLAGS		:= -pthread -lm -lrt -lroboticscape
 
 SOURCES		:= $(wildcard *.c)
 INCLUDES	:= $(wildcard *.h)
@@ -14,22 +14,23 @@ OBJECTS		:= $(SOURCES:$%.c=$%.o)
 prefix		:= /usr/local
 RM		:= rm -f
 INSTALL		:= install -m 4755
-INSTALLDIR	:= install -d -m 755 
+INSTALLDIR	:= install -d -m 755
 
-LINK		:= ln -s -f
-LINKDIR		:= /etc/roboticscape
-LINKNAME	:= link_to_startup_program
+SYMLINK		:= ln -s -f
+SYMLINKDIR	:= /etc/roboticscape
+SYMLINKNAME	:= link_to_startup_program
 
 
 # linking Objects
 $(TARGET): $(OBJECTS)
-	@$(LINKER) $(@) $(OBJECTS) $(LFLAGS)
+	@$(LINKER) -o $@ $(OBJECTS) $(LFLAGS)
+	@echo "Made: $@"
 
 
 # compiling command
 $(OBJECTS): %.o : %.c $(INCLUDES)
-	@$(CC) $(CFLAGS) -c $< -o $(@)
-	@echo "Compiled: "$<
+	@$(CC) $(CFLAGS) $(DEBUGFLAG) $< -o $@
+	@echo "Compiled: $@"
 
 all:
 	$(TARGET)
@@ -57,6 +58,6 @@ uninstall:
 
 runonboot:
 	@$(MAKE) install --no-print-directory
-	@$(LINK) $(DESTDIR)$(prefix)/bin/$(TARGET) $(LINKDIR)/$(LINKNAME)
+	@$(SYMLINK) $(DESTDIR)$(prefix)/bin/$(TARGET) $(SYMLINKDIR)/$(SYMLINKNAME)
 	@echo "$(TARGET) Set to Run on Boot"
 

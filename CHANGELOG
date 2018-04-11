@@ -1,18 +1,53 @@
+0.4.0
+    * complete rewrite and overhaul
+    * move all docs to doxygen
+    * all subsystems are now in independent headers
+    * move gpio to new device driver
+    * move ADC from mmap to iio
+    * deprecate rc_initialize(), new functions for handling PID files/signals
+    * most examples no longer require root
+    * all examples are dependent on single subsystems for portability
+    * pwm through driver instead of mmap
+    * mpu9250 IMU config allows custom gpio pin and address
+    * mpu9250 DMP tap detection allowed
+    * mpu9250 dmp mode can now run slower than 200hz
+    * button interface allows custom buttons
+    * uart interface allows config on initialization
+    * add mavlink interface over udp
+    * add PRU interface for custom PRU binary loading
+    * split encoder counting on eqep and pru to avoid conflicts
+    * cpu frequency interface now controls scheduler
+    * LED interface controls battery LEDs, USR, and WIFI leds
+    * various renaming and fixes in math lib
+    * single include for all math sub-libs
+    * new pthread helpers
+    * servo interface now has same function to handle one and all channels
+    * battery monitor has startup and power-change flash patterns
+    * roboticscape systemd service helps set permissions of device drivers
+    * project template demonstrates PID file and signal handling
+    * new rc_test_esc example
+    * new makefile for examples means all src files can be in same folder
+    * all makefiles keep src/bin folders separate
+
 0.3.4
-	* add setuid on example install so 'sudo' is not needed
-	* rc_balance will calibrate gyro automatically if needed
-	* add ldconfig to deb package scripts
+    * add setuid on example install so 'sudo' is not needed
+    * rc_balance will calibrate gyro automatically if needed
+    * add ldconfig to deb package scripts
+
 0.3.3
-	* update project template for new api
-	* warn user if not running as root
-	* remove touch from makefiles
+    * update project template for new api
+    * warn user if not running as root
+    * remove touch from makefiles
+
 0.3.2
-	* Fix DSM driving in balance
-	* Update documentation source comments
-	* Smoother install with new debconf question
+    * Fix DSM driving in balance
+    * Update documentation source comments
+    * Smoother install with new debconf question
+
 0.3.1
-	* Safely handle old and new device trees with and without postfix
-	* stricter whitelisting of supported boards and device trees
+    * Safely handle old and new device trees with and without postfix
+    * stricter whitelisting of supported boards and device trees
+
 0.3.0
     * add noninteractive mode to deb package installer
     * add rc_ prefix to all functions and examples for uniqueness requirement
@@ -49,7 +84,6 @@
     * startup log moved to /var/log/roboticscape
     * PRU bins compile with pru-software-support-package
 
-
 0.1.5
     * add userspace pinmux configuration for some headers
 
@@ -66,3 +100,5 @@
 
 0.1.0
     * installs on Blue as well and Black
+
+// indentation is with spaces to allow copy/paste into debian/changelog

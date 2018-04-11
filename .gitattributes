@@ -29,3 +29,7 @@
 *.PDF	 diff=astextplain
 *.rtf	 diff=astextplain
 *.RTF	 diff=astextplain
+
+# my edits, stop git from messing with picture files
+*.png binary
+*.jpg binary

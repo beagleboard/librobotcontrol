@@ -1,0 +1,662 @@
+/**
+* @example rc_balance
+*
+* Reference solution for balancing EduMiP
+**/
+
+#include <stdio.h>
+#include <unistd.h> // for isatty()
+#include <math.h> // for M_PI
+#include <roboticscape.h>
+
+#include "rc_balance_defs.h"
+
+/**
+ * NOVICE: Drive rate and turn rate are limited to make driving easier.
+ * ADVANCED: Faster drive and turn rate for more fun.
+ */
+typedef enum drive_mode_t{
+	NOVICE,
+	ADVANCED
+}drive_mode_t;
+
+/**
+ * ARMED or DISARMED to indicate if the controller is running
+ */
+typedef enum arm_state_t{
+	ARMED,
+	DISARMED
+}arm_state_t;
+
+/**
+ * Feedback controller setpoint written to by setpoint_manager and read by the
+ * controller.
+ */
+typedef struct setpoint_t{
+	arm_state_t arm_state;	///< see arm_state_t declaration
+	drive_mode_t drive_mode;///< NOVICE or ADVANCED
+	float theta;		///< body lean angle (rad)
+	float phi;		///< wheel position (rad)
+	float phi_dot;		///< rate at which phi reference updates (rad/s)
+	float gamma;		///< body turn angle (rad)
+	float gamma_dot;	///< rate at which gamma setpoint updates (rad/s)
+}setpoint_t;
+
+/**
+ * This is the system state written to by the balance controller.
+ */
+typedef struct core_state_t{
+	float wheelAngleR;	///< wheel rotation relative to body
+	float wheelAngleL;
+	float theta;		///< body angle radians
+	float phi;		///< average wheel angle in global frame
+	float gamma;		///< body turn (yaw) angle radians
+	float vBatt;		///< battery voltage
+	float d1_u;		///< output of balance controller D1 to motors
+	float d2_u;		///< output of position controller D2 (theta_ref)
+	float d3_u;		///< output of steering controller D3 to motors
+	float mot_drive;	///< u compensated for battery voltage
+} core_state_t;
+
+
+
+void balance_controller();		///< mpu interrupt routine
+void* setpoint_manager(void* ptr);	///< background thread
+void* battery_checker(void* ptr);	///< background thread
+void* printf_loop(void* ptr);		///< background thread
+int zero_out_controller();
+int disarm_controller();
+int arm_controller();
+int wait_for_starting_condition();
+void on_pause_press();
+void on_mode_release();
+int blink_green();
+int blink_red();
+
+// global variables
+core_state_t cstate;
+setpoint_t setpoint;
+rc_filter_t D1, D2, D3;
+rc_mpu_data_t mpu_data;
+
+/*******************************************************************************
+* main()
+*
+* Initialize the filters, mpu, threads, & wait until shut down
+*******************************************************************************/
+int main()
+{
+	pthread_t setpoint_thread = 0;
+	pthread_t battery_thread = 0;
+	pthread_t printf_thread = 0;
+
+	// make sure another instance isn't running
+	rc_kill_existing_process(2.0);
+
+	// start signal handler so we can exit cleanly
+	if(rc_enable_signal_handler()==-1){
+		fprintf(stderr,"ERROR: failed to start signal handler\n");
+		return -1;
+	}
+
+	// initialize buttons
+	if(rc_button_init(RC_BTN_PIN_PAUSE, RC_BTN_POLARITY_NORM_HIGH,
+						RC_BTN_DEBOUNCE_DEFAULT_US)){
+		fprintf(stderr,"ERROR: failed to initialize pause button\n");
+		return -1;
+	}
+	if(rc_button_init(RC_BTN_PIN_MODE, RC_BTN_POLARITY_NORM_HIGH,
+						RC_BTN_DEBOUNCE_DEFAULT_US)){
+		fprintf(stderr,"ERROR: failed to initialize mode button\n");
+		return -1;
+	}
+
+	// Assign functions to be called when button events occur
+	rc_button_set_callbacks(RC_BTN_PIN_PAUSE,on_pause_press,NULL);
+	rc_button_set_callbacks(RC_BTN_PIN_MODE,NULL,on_mode_release);
+
+	// initialize enocders
+	if(rc_encoder_eqep_init()==-1){
+		fprintf(stderr,"ERROR: failed to run rc_encoder_eqep_init\n");
+		return -1;
+	}
+
+	// initialize motors
+	if(rc_motor_init()==-1){
+		fprintf(stderr,"ERROR: failed to run rc_motor_init\n");
+		return -1;
+	}
+
+	// make PID file to indicate project is running
+	rc_make_pid_file();
+
+	printf("\nPress and release MODE button to toggle DSM drive mode\n");
+	printf("Press and release PAUSE button to pause/start the motors\n");
+	printf("hold pause button down for 2 seconds to exit\n");
+
+	rc_led_set(RC_LED_RED,1);
+	rc_led_set(RC_LED_GREEN,0);
+
+	// set up mpu configuration
+	rc_mpu_config_t mpu_config = rc_mpu_default_config();
+	mpu_config.dmp_sample_rate = SAMPLE_RATE_HZ;
+	mpu_config.orient = ORIENTATION_Y_UP;
+
+	// if gyro isn't calibrated, run the calibration routine
+	if(!rc_mpu_is_gyro_calibrated()){
+		printf("Gyro not calibrated, automatically starting calibration routine\n");
+		printf("Let your MiP sit still on a firm surface\n");
+		rc_mpu_calibrate_gyro_routine(mpu_config);
+	}
+
+	// make sure setpoint starts at normal values
+	setpoint.arm_state = DISARMED;
+	setpoint.drive_mode = NOVICE;
+
+	D1=rc_filter_empty();
+	D2=rc_filter_empty();
+	D3=rc_filter_empty();
+
+	// set up D1 Theta controller
+	float D1_num[] = D1_NUM;
+	float D1_den[] = D1_DEN;
+	if(rc_filter_alloc_from_arrays(&D1, DT, D1_num, D1_NUM_LEN, D1_den, D1_DEN_LEN)){
+		fprintf(stderr,"ERROR in rc_balance, failed to make filter D1\n");
+		return -1;
+	}
+	D1.gain = D1_GAIN;
+	rc_filter_enable_saturation(&D1, -1.0, 1.0);
+	rc_filter_enable_soft_start(&D1, SOFT_START_SEC);
+
+	// set up D2 Phi controller
+	float D2_num[] = D2_NUM;
+	float D2_den[] = D2_DEN;
+	if(rc_filter_alloc_from_arrays(&D2, DT, D2_num, D2_NUM_LEN, D2_den, D2_DEN_LEN)){
+		fprintf(stderr,"ERROR in rc_balance, failed to make filter D2\n");
+		return -1;
+	}
+	D2.gain = D2_GAIN;
+	rc_filter_enable_saturation(&D2, -THETA_REF_MAX, THETA_REF_MAX);
+	rc_filter_enable_soft_start(&D2, SOFT_START_SEC);
+
+	printf("Inner Loop controller D1:\n");
+	rc_filter_print(D1);
+	printf("\nOuter Loop controller D2:\n");
+	rc_filter_print(D2);
+
+	// set up D3 gamma (steering) controller
+	if(rc_filter_pid(&D3, D3_KP, D3_KI, D3_KD, 4*DT, DT)){
+		fprintf(stderr,"ERROR in rc_balance, failed to make steering controller\n");
+		return -1;
+	}
+	rc_filter_enable_saturation(&D3, -STEERING_INPUT_MAX, STEERING_INPUT_MAX);
+
+	// start a thread to slowly sample battery
+	if(rc_pthread_create(&battery_thread, battery_checker, (void*) NULL, SCHED_OTHER, 0)){
+		fprintf(stderr, "failed to start battery thread\n");
+		return -1;
+	}
+	// wait for the battery thread to make the first read
+	while(cstate.vBatt==0 && rc_get_state()!=EXITING) rc_usleep(1000);
+
+	// start printf_thread if running from a terminal
+	// if it was started as a background process then don't bother
+	if(isatty(fileno(stdout))){
+		if(rc_pthread_create(&printf_thread, printf_loop, (void*) NULL, SCHED_OTHER, 0)){
+			fprintf(stderr, "failed to start battery thread\n");
+			return -1;
+		}
+	}
+
+	// start mpu
+	if(rc_mpu_initialize_dmp(&mpu_data, mpu_config)){
+		fprintf(stderr,"ERROR: can't talk to IMU, all hope is lost\n");
+		rc_led_blink(RC_LED_RED, 5, 5);
+		return -1;
+	}
+
+	// start balance stack to control setpoints
+	if(rc_pthread_create(&setpoint_thread, setpoint_manager, (void*) NULL, SCHED_OTHER, 0)){
+		fprintf(stderr, "failed to start battery thread\n");
+		return -1;
+	}
+
+	// this should be the last step in initialization
+	// to make sure other setup functions don't interfere
+	rc_mpu_set_dmp_callback(&balance_controller);
+
+	// start in the RUNNING state, pressing the pause button will swap to
+	// the PAUSED state then back again.
+	printf("\nHold your MIP upright to begin balancing\n");
+	rc_set_state(RUNNING);
+
+	// start dsm listener
+	rc_dsm_init();
+
+	// chill until something exits the program
+	rc_set_state(RUNNING);
+	while(rc_get_state()!=EXITING){
+		rc_usleep(200000);
+	}
+
+	// join threads
+	rc_pthread_timed_join(setpoint_thread, NULL, 1.5);
+	rc_pthread_timed_join(battery_thread, NULL, 1.5);
+	rc_pthread_timed_join(printf_thread, NULL, 1.5);
+
+	// cleanup
+	rc_filter_free(&D1);
+	rc_filter_free(&D2);
+	rc_filter_free(&D3);
+	rc_mpu_power_off();
+	rc_led_set(RC_LED_GREEN, 0);
+	rc_led_set(RC_LED_RED, 0);
+	rc_led_cleanup();
+	rc_encoder_eqep_cleanup();
+	rc_button_cleanup();	// stop button handlers
+	rc_remove_pid_file();	// remove pid file LAST
+	return 0;
+}
+
+/**
+ * This thread is in charge of adjusting the controller setpoint based on user
+ * inputs from dsm radio control. Also detects pickup to control arming the
+ * controller.
+ *
+ * @param      ptr   The pointer
+ *
+ * @return     { description_of_the_return_value }
+ */
+void* setpoint_manager(__attribute__ ((unused)) void* ptr)
+{
+	float drive_stick, turn_stick; // dsm input sticks
+
+	// wait for mpu to settle
+	disarm_controller();
+	rc_usleep(2500000);
+	rc_set_state(RUNNING);
+	rc_led_set(RC_LED_RED,0);
+	rc_led_set(RC_LED_GREEN,1);
+
+	while(rc_get_state()!=EXITING){
+		// sleep at beginning of loop so we can use the 'continue' statement
+		rc_usleep(1000000/SETPOINT_MANAGER_HZ);
+
+		// nothing to do if paused, go back to beginning of loop
+		if(rc_get_state() != RUNNING) continue;
+
+		// if we got here the state is RUNNING, but controller is not
+		// necessarily armed. If DISARMED, wait for the user to pick MIP up
+		// which will we detected by wait_for_starting_condition()
+		if(setpoint.arm_state == DISARMED){
+			if(wait_for_starting_condition()==0){
+				zero_out_controller();
+				arm_controller();
+			}
+			else continue;
+		}
+
+		// if dsm is active, update the setpoint rates
+		if(rc_dsm_is_new_data()){
+			// Read normalized (+-1) inputs from RC radio stick and multiply by
+			// polarity setting so positive stick means positive setpoint
+			turn_stick  = rc_dsm_ch_normalized(DSM_TURN_CH) * DSM_TURN_POL;
+			drive_stick = rc_dsm_ch_normalized(DSM_DRIVE_CH)* DSM_DRIVE_POL;
+
+			// saturate the inputs to avoid possible erratic behavior
+			rc_saturate_float(&drive_stick,-1,1);
+			rc_saturate_float(&turn_stick,-1,1);
+
+			// use a small deadzone to prevent slow drifts in position
+			if(fabs(drive_stick)<DSM_DEAD_ZONE) drive_stick = 0.0;
+			if(fabs(turn_stick)<DSM_DEAD_ZONE)  turn_stick  = 0.0;
+
+			// translate normalized user input to real setpoint values
+			switch(setpoint.drive_mode){
+			case NOVICE:
+				setpoint.phi_dot   = DRIVE_RATE_NOVICE * drive_stick;
+				setpoint.gamma_dot =  TURN_RATE_NOVICE * turn_stick;
+				break;
+			case ADVANCED:
+				setpoint.phi_dot   = DRIVE_RATE_ADVANCED * drive_stick;
+				setpoint.gamma_dot = TURN_RATE_ADVANCED  * turn_stick;
+				break;
+			default: break;
+			}
+		}
+		// if dsm had timed out, put setpoint rates back to 0
+		else if(rc_dsm_is_connection_active()==0){
+			setpoint.theta = 0;
+			setpoint.phi_dot = 0;
+			setpoint.gamma_dot = 0;
+			continue;
+		}
+	}
+
+	// if state becomes EXITING the above loop exists and we disarm here
+	disarm_controller();
+	return NULL;
+}
+
+/**
+ * discrete-time balance controller operated off mpu interrupt Called at
+ * SAMPLE_RATE_HZ
+ */
+void balance_controller()
+{
+	static int inner_saturation_counter = 0;
+	float dutyL, dutyR;
+	/******************************************************************
+	* STATE_ESTIMATION
+	* read sensors and compute the state when either ARMED or DISARMED
+	******************************************************************/
+	// angle theta is positive in the direction of forward tip around X axis
+	cstate.theta = mpu_data.dmp_TaitBryan[TB_PITCH_X] + CAPE_MOUNT_ANGLE;
+
+	// collect encoder positions, right wheel is reversed
+	cstate.wheelAngleR = (rc_encoder_eqep_read(ENCODER_CHANNEL_R) * 2.0 * M_PI) \
+				/(ENCODER_POLARITY_R * GEARBOX * ENCODER_RES);
+	cstate.wheelAngleL = (rc_encoder_eqep_read(ENCODER_CHANNEL_L) * 2.0 * M_PI) \
+				/(ENCODER_POLARITY_L * GEARBOX * ENCODER_RES);
+
+	// Phi is average wheel rotation also add theta body angle to get absolute
+	// wheel position in global frame since encoders are attached to the body
+	cstate.phi = ((cstate.wheelAngleL+cstate.wheelAngleR)/2) + cstate.theta;
+
+	// steering angle gamma estimate
+	cstate.gamma = (cstate.wheelAngleR-cstate.wheelAngleL) \
+					* (WHEEL_RADIUS_M/TRACK_WIDTH_M);
+
+	/*************************************************************
+	* check for various exit conditions AFTER state estimate
+	***************************************************************/
+	if(rc_get_state()==EXITING){
+		rc_motor_set_all(0.0);
+		return;
+	}
+	// if controller is still ARMED while state is PAUSED, disarm it
+	if(rc_get_state()!=RUNNING && setpoint.arm_state==ARMED){
+		disarm_controller();
+		return;
+	}
+	// exit if the controller is disarmed
+	if(setpoint.arm_state==DISARMED){
+		return;
+	}
+
+	// check for a tipover
+	if(fabs(cstate.theta) > TIP_ANGLE){
+		disarm_controller();
+		printf("tip detected \n");
+		return;
+	}
+
+	/************************************************************
+	* OUTER LOOP PHI controller D2
+	* Move the position setpoint based on phi_dot.
+	* Input to the controller is phi error (setpoint-state).
+	*************************************************************/
+	if(ENABLE_POSITION_HOLD){
+		if(setpoint.phi_dot != 0.0) setpoint.phi += setpoint.phi_dot*DT;
+		cstate.d2_u = rc_filter_march(&D2,setpoint.phi-cstate.phi);
+		setpoint.theta = cstate.d2_u;
+	}
+	else setpoint.theta = 0.0;
+
+	/************************************************************
+	* INNER LOOP ANGLE Theta controller D1
+	* Input to D1 is theta error (setpoint-state). Then scale the
+	* output u to compensate for changing battery voltage.
+	*************************************************************/
+	D1.gain = D1_GAIN * V_NOMINAL/cstate.vBatt;
+	cstate.d1_u = rc_filter_march(&D1,(setpoint.theta-cstate.theta));
+
+	/*************************************************************
+	* Check if the inner loop saturated. If it saturates for over
+	* a second disarm the controller to prevent stalling motors.
+	*************************************************************/
+	if(fabs(cstate.d1_u)>0.95) inner_saturation_counter++;
+	else inner_saturation_counter = 0;
+ 	// if saturate for a second, disarm for safety
+	if(inner_saturation_counter > (SAMPLE_RATE_HZ*D1_SATURATION_TIMEOUT)){
+		printf("inner loop controller saturated\n");
+		disarm_controller();
+		inner_saturation_counter = 0;
+		return;
+	}
+
+	/**********************************************************
+	* gama (steering) controller D3
+	* move the setpoint gamma based on user input like phi
+	***********************************************************/
+	if(fabs(setpoint.gamma_dot)>0.0001) setpoint.gamma += setpoint.gamma_dot * DT;
+	cstate.d3_u = rc_filter_march(&D3,setpoint.gamma - cstate.gamma);
+
+	/**********************************************************
+	* Send signal to motors
+	* add D1 balance control u and D3 steering control also
+	* multiply by polarity to make sure direction is correct.
+	***********************************************************/
+	dutyL = cstate.d1_u - cstate.d3_u;
+	dutyR = cstate.d1_u + cstate.d3_u;
+	rc_motor_set(MOTOR_CHANNEL_L, MOTOR_POLARITY_L * dutyL);
+	rc_motor_set(MOTOR_CHANNEL_R, MOTOR_POLARITY_R * dutyR);
+
+	return;
+}
+
+/**
+ * Clear the controller's memory and zero out setpoints.
+ *
+ * @return     { description_of_the_return_value }
+ */
+int zero_out_controller()
+{
+	rc_filter_reset(&D1);
+	rc_filter_reset(&D2);
+	rc_filter_reset(&D3);
+	setpoint.theta = 0.0f;
+	setpoint.phi   = 0.0f;
+	setpoint.gamma = 0.0f;
+	rc_motor_set_all(0.0f);
+	return 0;
+}
+
+/**
+ * disable motors & set the setpoint.core_mode to DISARMED
+ *
+ * @return     { description_of_the_return_value }
+ */
+int disarm_controller()
+{
+	rc_motor_set_all(0.0);
+	setpoint.arm_state = DISARMED;
+	return 0;
+}
+
+/**
+ * zero out the controller & encoders. Enable motors & arm the controller.
+ *
+ * @return     0 on success, -1 on failure
+ */
+int arm_controller()
+{
+	zero_out_controller();
+	rc_encoder_eqep_write(ENCODER_CHANNEL_L,0);
+	rc_encoder_eqep_write(ENCODER_CHANNEL_R,0);
+	// prefill_filter_inputs(&D1,cstate.theta);
+	setpoint.arm_state = ARMED;
+	return 0;
+}
+
+/**
+ * Wait for MiP to be held upright long enough to begin. Returns
+ *
+ * @return     0 if successful, -1 if the wait process was interrupted by pause
+ *             button or shutdown signal.
+ */
+int wait_for_starting_condition()
+{
+	int checks = 0;
+	const int check_hz = 20;	// check 20 times per second
+	int checks_needed = round(START_DELAY*check_hz);
+	int wait_us = 1000000/check_hz;
+
+	// wait for MiP to be tipped back or forward first
+	// exit if state becomes paused or exiting
+	while(rc_get_state()==RUNNING){
+		// if within range, start counting
+		if(fabs(cstate.theta) > START_ANGLE) checks++;
+		// fell out of range, restart counter
+		else checks = 0;
+		// waited long enough, return
+		if(checks >= checks_needed) break;
+		rc_usleep(wait_us);
+	}
+	// now wait for MiP to be upright
+	checks = 0;
+	// exit if state becomes paused or exiting
+	while(rc_get_state()==RUNNING){
+		// if within range, start counting
+		if(fabs(cstate.theta) < START_ANGLE) checks++;
+		// fell out of range, restart counter
+		else checks = 0;
+		// waited long enough, return
+		if(checks >= checks_needed) return 0;
+		rc_usleep(wait_us);
+	}
+	return -1;
+}
+
+/**
+ * Slow loop checking battery voltage. Also changes the D1 saturation limit
+ * since that is dependent on the battery voltage.
+ *
+ * @return     nothing, NULL poitner
+ */
+void* battery_checker(__attribute__ ((unused)) void* ptr){
+	float new_v;
+	while(rc_get_state()!=EXITING){
+		new_v = rc_adc_batt();
+		// if the value doesn't make sense, use nominal voltage
+		if (new_v>9.0 || new_v<5.0) new_v = V_NOMINAL;
+		cstate.vBatt = new_v;
+		rc_usleep(1000000 / BATTERY_CHECK_HZ);
+	}
+	return NULL;
+}
+
+/**
+ * prints diagnostics to console this only gets started if executing from
+ * terminal
+ *
+ * @return     nothing, NULL pointer
+ */
+void* printf_loop(__attribute__ ((unused)) void* ptr){
+	rc_state_t last_rc_state, new_rc_state; // keep track of last state
+	last_rc_state = rc_get_state();
+	while(rc_get_state()!=EXITING){
+		new_rc_state = rc_get_state();
+		// check if this is the first time since being paused
+		if(new_rc_state==RUNNING && last_rc_state!=RUNNING){
+			printf("\nRUNNING: Hold upright to balance.\n");
+			printf("    θ    |");
+			printf("  θ_ref  |");
+			printf("    φ    |");
+			printf("  φ_ref  |");
+			printf("    γ    |");
+			printf("  D1_u   |");
+			printf("  D3_u   |");
+			printf("  vBatt  |");
+			printf("arm_state|");
+			printf("\n");
+		}
+		else if(new_rc_state==PAUSED && last_rc_state!=PAUSED){
+			printf("\nPAUSED: press pause again to start.\n");
+		}
+		last_rc_state = new_rc_state;
+
+		// decide what to print or exit
+		if(new_rc_state == RUNNING){
+			printf("\r");
+			printf("%7.3f  |", cstate.theta);
+			printf("%7.3f  |", setpoint.theta);
+			printf("%7.3f  |", cstate.phi);
+			printf("%7.3f  |", setpoint.phi);
+			printf("%7.3f  |", cstate.gamma);
+			printf("%7.3f  |", cstate.d1_u);
+			printf("%7.3f  |", cstate.d3_u);
+			printf("%7.3f  |", cstate.vBatt);
+
+			if(setpoint.arm_state == ARMED) printf("  ARMED  |");
+			else printf("DISARMED |");
+			fflush(stdout);
+		}
+		rc_usleep(1000000 / PRINTF_HZ);
+	}
+	return NULL;
+}
+
+/**
+ * Disarm the controller and set system state to paused. If the user holds the
+ * pause button for 2 seconds, exit cleanly
+ */
+void on_pause_press()
+{
+	int i=0;
+	const int samples = 100;	// check for release 100 times in this period
+	const int us_wait = 2000000; // 2 seconds
+
+	switch(rc_get_state()){
+	// pause if running
+	case EXITING:
+		return;
+	case RUNNING:
+		rc_set_state(PAUSED);
+		disarm_controller();
+		rc_led_set(RC_LED_RED,1);
+		rc_led_set(RC_LED_GREEN,0);
+		break;
+	case PAUSED:
+		rc_set_state(RUNNING);
+		disarm_controller();
+		rc_led_set(RC_LED_GREEN,1);
+		rc_led_set(RC_LED_RED,0);
+		break;
+	default:
+		break;
+	}
+
+	// now wait to see if the user want to shut down the program
+	while(i<samples){
+		rc_usleep(us_wait/samples);
+		if(rc_button_get_state(RC_BTN_PIN_PAUSE)==RC_BTN_STATE_RELEASED){
+			return; //user let go before time-out
+		}
+		i++;
+	}
+	printf("long press detected, shutting down\n");
+	//user held the button down long enough, blink and exit cleanly
+	rc_led_blink(RC_LED_RED,5,2);
+	rc_set_state(EXITING);
+	return;
+}
+
+/**
+ * toggle between position and angle modes if MiP is paused
+ */
+void on_mode_release()
+{
+	// toggle between position and angle modes
+	if(setpoint.drive_mode == NOVICE){
+		setpoint.drive_mode = ADVANCED;
+		printf("using drive_mode = ADVANCED\n");
+	}
+	else {
+		setpoint.drive_mode = NOVICE;
+		printf("using drive_mode = NOVICE\n");
+	}
+
+	rc_led_blink(RC_LED_GREEN,5,1);
+	return;
+}

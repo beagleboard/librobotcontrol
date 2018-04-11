@@ -1,33 +1,63 @@
-# makefile to make all example programs
+# makefile for rc_mpu, builds example programs
 
-CWD = $(PWD)
-SUBDIRS = $(shell find * -type d -print)
-PREFIX := /usr
+# directories
+SRCDIR		:= src
+BINDIR		:= bin
+INCLUDEDIR	:= ../library/include
+LIBDIR		:= ../library/lib
 
-all:
-	@for dir in $(SUBDIRS) ; do \
-		echo "Making Example: $$dir" ; \
-		$(MAKE) -C $$dir -s --no-print-directory; \
-	done
-	
-clean:
-	@for dir in $(SUBDIRS) ; do \
-		echo "Cleaning Example: $$dir" ; \
-		$(MAKE) -C $$dir -s clean; \
-	done
-	
+# basic definitions for rules
+EXAMPLES	:= $(shell find $(SRCDIR) -type f -name *.c)
+TARGETS		:= $(EXAMPLES:$(SRCDIR)/%.c=$(BINDIR)/%)
+INCLUDES	:= $(shell find $(INCLUDEDIR) -name '*.h')
+SOURCES		:= $(shell find $(SRCDIR) -type f -name *.c)
+
+# compiler and linker programs
+CC		:= gcc
+LINKER		:= gcc
+
+# compile flags
+WFLAGS		:= -Wall -Wextra
+CFLAGS		:= -pthread -I $(INCLUDEDIR)
+LFLAGS		:= -lm -lrt -pthread -L $(LIBDIR) -lroboticscape
+
+# commands
+RM		:= rm -rf
+INSTALL		:= install -m 755
+INSTALLDIR	:= install -d -m 755
+LINK		:= ln -s -f
+LINKDIR		:= /etc/roboticscape
+LINKNAME	:= link_to_startup_program
+
+# prefix variable in case this is used to make a deb package
+prefix		:= /usr
+
+
+
+
+all : $(TARGETS)
+
+debug :
+	$(MAKE) $(MAKEFILE) DEBUGFLAG="-g -D DEBUG"
+	@echo " "
+	@echo "Make Debug Complete"
+	@echo " "
+
+clean :
+	@$(RM) $(BINDIR)
+	@echo "Examples Clean Complete"
+
 install:
-	@install -d -m 755 $(DESTDIR)$(PREFIX)/bin
-	@for dir in $(SUBDIRS) ; do \
-		echo "Installing Example: $$dir" ; \
-		$(MAKE) -C $$dir -s install ;\
-	done
+	$(MAKE)
+	@$(INSTALL) $(TARGETS) $(prefix)/bin/
+	@echo "Examples Install complete"
 
 uninstall:
-	@for dir in $(SUBDIRS) ; do \
-		echo "Uninstalling Example: $$dir" ; \
-		$(MAKE) -C $$dir -s uninstall ;\
-	done
+	@for f in $(TARGETS); do $(RM) $(prefix)/$$f; done
+	@echo "Examples Uninstall complete"
 
 
-
+$(BINDIR)/% : $(SRCDIR)/%.c
+	@mkdir -p $(BINDIR)
+	@$(CC) -o $@ $< $(CFLAGS) $(WFLAGS)  $(DEBUGFLAG)  $(LFLAGS)
+	@echo "made: $@"

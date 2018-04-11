@@ -1,95 +1,106 @@
-/*******************************************************************************
-* rc_project_template.c
-*
-* This is meant to be a skeleton program for robotics cape projects. 
-* Change this description and file name 
-*******************************************************************************/
+/**
+ * @file rc_project_template.c
+ *
+ * This is meant to be a skeleton program for robotics cape projects. Change
+ * this description and file name before starting your own.
+ */
 
-// usefulincludes is a collection of common system includes for the lazy
-// This is not necessary for roboticscape projects but here for convenience
-#include <rc_usefulincludes.h> 
-// main roboticscape API header
-#include <roboticscape.h>
-
+#include <stdio.h>
+#include <roboticscape.h> // includes ALL robotics cape subsystems
 
 // function declarations
-void on_pause_pressed();
-void on_pause_released();
+void on_pause_press();
+void on_pause_release();
 
 
-/*******************************************************************************
-* int main() 
-*
-* This template main function contains these critical components
-* - call to rc_initialize() at the beginning
-* - main while loop that checks for EXITING condition
-* - rc_cleanup() at the end
-*******************************************************************************/
-int main(){
-	// always initialize cape library first
-	if(rc_initialize()){
-		fprintf(stderr,"ERROR: failed to initialize rc_initialize(), are you root?\n");
+/**
+ * This template contains these critical components
+ * - ensure no existing instances are running and make new PID file
+ * - start the signal handler
+ * - initialize subsystems you wish to use
+ * - while loop that checks for EXITING condition
+ * - cleanup subsystems at the end
+ *
+ * @return     0 during normal operation, -1 on error
+ */
+int main()
+{
+	// make sure another instance isn't running
+	rc_kill_existing_process(2.0);
+
+	// start signal handler so we can exit cleanly
+	if(rc_enable_signal_handler()==-1){
+		fprintf(stderr,"ERROR: failed to start signal handler\n");
 		return -1;
 	}
 
-	// do your own initialization here
-	printf("\nHello BeagleBone\n");
-	rc_set_pause_pressed_func(&on_pause_pressed);
-	rc_set_pause_released_func(&on_pause_released);
+	// initialize pause button
+	if(rc_button_init(RC_BTN_PIN_PAUSE, RC_BTN_POLARITY_NORM_HIGH,
+						RC_BTN_DEBOUNCE_DEFAULT_US)){
+		fprintf(stderr,"ERROR: failed to initialize pause button\n");
+		return -1;
+	}
 
-	// done initializing so set state to RUNNING
-	rc_set_state(RUNNING); 
+	// Assign functions to be called when button events occur
+	rc_button_set_callbacks(RC_BTN_PIN_PAUSE,on_pause_press,on_pause_release);
+
+	// make PID file to indicate your project is running
+	rc_make_pid_file();
+
+
+	printf("\nPress and release pause button to turn green LED on and off\n");
+	printf("hold pause button down for 2 seconds to exit\n");
 
 	// Keep looping until state changes to EXITING
+	rc_set_state(RUNNING);
 	while(rc_get_state()!=EXITING){
-		// handle other states
+		// do things based on the state
 		if(rc_get_state()==RUNNING){
-			// do things
-			rc_set_led(GREEN, ON);
-			rc_set_led(RED, OFF);
+			rc_led_set(RC_LED_GREEN, 1);
+			rc_led_set(RC_LED_RED, 0);
 		}
-		else if(rc_get_state()==PAUSED){
-			// do other things
-			rc_set_led(GREEN, OFF);
-			rc_set_led(RED, ON);
+		else{
+			rc_led_set(RC_LED_GREEN, 0);
+			rc_led_set(RC_LED_RED, 1);
 		}
 		// always sleep at some point
-		usleep(100000);
+		rc_usleep(100000);
 	}
-	
-	// exit cleanly
-	rc_cleanup(); 
+
+	// turn off LEDs and close file descriptors
+	rc_led_set(RC_LED_GREEN, 0);
+	rc_led_set(RC_LED_RED, 0);
+	rc_led_cleanup();
+	rc_button_cleanup();	// stop button handlers
+	rc_remove_pid_file();	// remove pid file LAST
 	return 0;
 }
 
 
-/*******************************************************************************
-* void on_pause_released() 
-*	
-* Make the Pause button toggle between paused and running states.
-*******************************************************************************/
-void on_pause_released(){
-	// toggle betewen paused and running modes
-	if(rc_get_state()==RUNNING)		rc_set_state(PAUSED);
+/**
+ * Make the Pause button toggle between paused and running states.
+ */
+void on_pause_release()
+{
+	if(rc_get_state()==RUNNING)	rc_set_state(PAUSED);
 	else if(rc_get_state()==PAUSED)	rc_set_state(RUNNING);
 	return;
 }
 
-/*******************************************************************************
-* void on_pause_pressed() 
-*
-* If the user holds the pause button for 2 seconds, set state to exiting which 
+/**
+* If the user holds the pause button for 2 seconds, set state to EXITING which
 * triggers the rest of the program to exit cleanly.
-*******************************************************************************/
-void on_pause_pressed(){
-	int i=0;
-	const int samples = 100;	// check for release 100 times in this period
+**/
+void on_pause_press()
+{
+	int i;
+	const int samples = 100; // check for release 100 times in this period
 	const int us_wait = 2000000; // 2 seconds
-	
+
 	// now keep checking to see if the button is still held down
 	for(i=0;i<samples;i++){
 		rc_usleep(us_wait/samples);
-		if(rc_get_pause_button() == RELEASED) return;
+		if(rc_button_get_state(RC_BTN_PIN_PAUSE)==RC_BTN_STATE_RELEASED) return;
 	}
 	printf("long press detected, shutting down\n");
 	rc_set_state(EXITING);

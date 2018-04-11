@@ -1,0 +1,13 @@
+[Unit]
+Description=roboticscape
+Requires=systemd-modules-load.service
+
+[Service]
+User=root
+PIDFile=/var/run/roboticscape/roboticscape.pid
+ExecStartPre=/usr/bin/rc_startup_routine
+ExecStart=/etc/roboticscape/link_to_startup_program
+ExecStop=/usr/bin/rc_kill
+
+[Install]
+WantedBy=multi-user.target
