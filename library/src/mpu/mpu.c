@@ -2424,11 +2424,11 @@ int __load_accel_calibration()
 	raw[4] = (bias[2] >> 8) & 0xFF;
 	raw[5] = (bias[2])      & 0xFF;
 
-	// Push accel biases to hardware registers
-	if(rc_i2c_write_bytes(config.i2c_bus, XA_OFFSET_H, 6, &raw[0])){
-		fprintf(stderr,"ERROR: failed to write accel offsets into IMU register\n");
-		return -1;
-	}
+	// // Push accel biases to hardware registers
+	// if(rc_i2c_write_bytes(config.i2c_bus, XA_OFFSET_H, 6, &raw[0])){
+	// 	fprintf(stderr,"ERROR: failed to write accel offsets into IMU register\n");
+	// 	return -1;
+	// }
 	return 0;
 }
 
