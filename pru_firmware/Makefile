@@ -105,7 +105,7 @@ clean:
 	@echo 'PRU Firmware Cleanup Complete'
 
 uninstall:
-	@$(RM) /lib/firmware/$(PRU0_FW)
-	@$(RM) /lib/firmware/$(PRU1_FW)
-	@$(RM) /etc/modprobe.d/pruss-blacklist.conf
+	@$(RM) $(DESTDIR)/lib/firmware/$(PRU0_FW)
+	@$(RM) $(DESTDIR)$(DESTDIR)/lib/firmware/$(PRU1_FW)
+	@$(RM) $(DESTDIR)/etc/modprobe.d/pruss-blacklist.conf
 	@echo "PRU Firmware Uninstall Complete"

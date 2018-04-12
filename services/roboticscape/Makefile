@@ -20,29 +20,32 @@ LINKER		:= gcc
 # compiler and linker flags
 WFLAGS		:= -Wall -Wextra
 CFLAGS		:= -pthread -I $(INCLUDEDIR)
-LFLAGS		:= -lm -lrt -pthread -L $(LIBDIR) -lroboticscape
+LDFLAGS		:= -lm -lrt -pthread -L $(LIBDIR) -lroboticscape
 
 # commands
 RM		:= rm -rf
-INSTALL		:= install -m 4755
+INSTALL		:= install -m 755
 INSTALLNONEXEC	:= install -m 644
 INSTALLDIR	:= install -d -m 755
 
 # prefix variable for making debian package
-prefix		?= /usr/
+prefix		?= /usr
 
 
 all: $(TARGET)
 
 install:
 	@$(MAKE)
-	@$(INSTALL) $(TARGET) $(prefix)/bin/
+	@$(INSTALLDIR) $(DESTDIR)$(prefix)/bin
+	@$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/bin/
 	@$(INSTALLDIR) $(DESTDIR)/lib/systemd/system
 	@$(INSTALLNONEXEC) $(SERVICE).service $(DESTDIR)/lib/systemd/system/
 	@$(INSTALLDIR) $(DESTDIR)/etc/modules-load.d/
 	@$(INSTALLNONEXEC) roboticscape_modules.conf $(DESTDIR)/etc/modules-load.d/
-	@systemctl daemon-reload
 	@echo "roboticscape Service Install Complete"
+	@echo "run the following to manually enable:"
+	@echo "sudo systemctl daemon-reload"
+	@echo "sudo systemctl enable roboticscape"
 
 clean:
 	@$(RM) $(BINDIR)
@@ -51,10 +54,11 @@ clean:
 uninstall:
 	@$(RM) $(DESTDIR)/lib/systemd/system/$(SERVICE).service
 	@$(RM) $(DESTDIR)/etc/modules-load.d/roboticscape_modules.conf
+	@$(RM) $(DESTDIR)$(prefix)/$(TARGET)
 	@echo "roboticscape Service Uninstall Complete"
 
 
 $(BINDIR)/% : $(SRCDIR)/%.c
 	@mkdir -p $(BINDIR)
-	@$(CC) -o $@ $< $(CFLAGS) $(WFLAGS) $(DEBUGFLAG) $(LFLAGS)
+	@$(CC) -o $@ $< $(CFLAGS) $(WFLAGS) $(DEBUGFLAG) $(LDFLAGS)
 	@echo "made: $@"

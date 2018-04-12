@@ -12,7 +12,7 @@ if [ "$1" = "remove" ]; then
 	ldconfig
 fi
 
-echo "Uninstallation Complete"
+echo "Roboticscape Package Uninstallation Complete"
 
 exit 0
 

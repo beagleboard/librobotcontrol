@@ -19,7 +19,7 @@ LINKER		:= gcc
 # compile flags
 WFLAGS		:= -Wall -Wextra
 CFLAGS		:= -pthread -I $(INCLUDEDIR)
-LFLAGS		:= -lm -lrt -pthread -L $(LIBDIR) -lroboticscape
+LDFLAGS		:= -lm -lrt -pthread -L $(LIBDIR) -lroboticscape
 
 # commands
 RM		:= rm -rf
@@ -49,15 +49,16 @@ clean :
 
 install:
 	$(MAKE)
-	@for f in $(TARGETS); do $(INSTALL) $$f $(prefix)/bin; echo $$f; done
+	@$(INSTALLDIR) $(DESTDIR)$(prefix)/bin
+	@for f in $(TARGETS); do $(INSTALL) $$f $(DESTDIR)$(prefix)/bin/; done
 	@echo "Examples Install complete"
 
 uninstall:
-	@for f in $(TARGETS); do $(RM) $(prefix)/$$f;echo $$f; done
+	@for f in $(TARGETS); do $(RM) $(DESTDIR)$(prefix)/$$f; done
 	@echo "Examples Uninstall complete"
 
 
 $(BINDIR)/% : $(SRCDIR)/%.c
 	@mkdir -p $(BINDIR)
-	@$(CC) -o $@ $< $(CFLAGS) $(WFLAGS)  $(DEBUGFLAG)  $(LFLAGS)
+	@$(CC) -o $@ $< $(CFLAGS) $(WFLAGS)  $(DEBUGFLAG) $(LDFLAGS)
 	@echo "made: $@"

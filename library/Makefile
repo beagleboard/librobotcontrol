@@ -21,7 +21,7 @@ LINKER		:= gcc
 WFLAGS		:= -Wall -Wextra
 CFLAGS		:= -fPIC -I $(INCLUDEDIR)
 OPT_FLAGS	:= -O1
-LFLAGS		:= -lm -lrt -pthread -shared -Wl,-soname,$(SONAME)
+LDFLAGS		:= -lm -lrt -pthread -shared -Wl,-soname,$(SONAME)
 
 # different compile flags for math libs
 MATH_OPT_FLAGS	:= -O3 -ffast-math -ftree-vectorize
@@ -41,13 +41,13 @@ prefix		?= /usr
 # linking rules
 $(TARGET): $(OBJECTS)
 	@mkdir -p $(LIBDIR)
-	@$(LINKER) -o $(TARGET) $(OBJECTS) $(LFLAGS)
+	@$(LINKER) -o $(TARGET) $(OBJECTS) $(LDFLAGS)
 	@echo "Done making $(TARGET)"
 
 # rule for math libs
 $(BUILDDIR)/math/%.o : $(SRCDIR)/math/%.c $(INCLUDES)
 	@mkdir -p $(dir $(@))
-	@$(CC) -c $(CFLAGS) $(ARCFLAGS) $(MATH_OPT_FLAGS) $(FLOAT_FLAG)  $(DEBUGFLAG) $< -o $(@)
+	@$(CC) -c $(CFLAGS) $(ARCFLAGS) $(MATH_OPT_FLAGS) $(FLOAT_FLAG) $(DEBUGFLAG) $< -o $(@)
 	@echo "made: $(@)"
 
 # rule for all other objects
