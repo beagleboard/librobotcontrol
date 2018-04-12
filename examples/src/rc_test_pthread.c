@@ -23,7 +23,7 @@
 #include <unistd.h> // for sleep
 #include <signal.h>
 #include <stdlib.h> // for strtol
-#include <rc/pthread_helpers.h>
+#include <rc/pthread.h>
 
 
 int running = 1;
