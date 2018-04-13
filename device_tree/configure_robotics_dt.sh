@@ -23,14 +23,6 @@ if [ `whoami` != 'root' ]; then
 	exit 1
 fi
 
-# make sure the release is really jessie
-if ! grep -q "8." /etc/debian_version ; then
-	echo "ERROR: This is not Debian Jessie."
-	echo "Flash the latest Jessie image to your BBB"
-	echo "or use the Wheezy branch of this installer."
-	exit 1
-fi
-
 
 ################################################################################
 # check for the -f force flag
@@ -61,13 +53,13 @@ done
 if [ "$MODEL" == "TI AM335x BeagleBone Blue" ]; then
 	echo "No overlay needed on the Blue!"
 	exit 0
-	
+
 # if black and black wireless already have the DT installed, nothing to do
 elif   [ "$MODEL" == "TI AM335x BeagleBone Black RoboticsCape" ]; then
 	echo "Detected BB Black with RoboticsCape device tree already installed\n"
 	echo "No changes required\n"
 	exit 0
-	
+
 elif   [ "$MODEL" == "TI AM335x BeagleBone Black Wireless RoboticsCape" ]; then
 	echo "Detected BB Black Wireless with RoboticsCape device tree already installed\n"
 	echo "No changes required\n"
@@ -95,10 +87,10 @@ elif   [ "$MODEL" == "TI AM335x BeagleBone Black" ]; then
 		echo "ERROR, can't find $TREE_BLACK_RC for this kernel."
 		echo "no changes made to uEnv.txt"
 	fi
-	
-# for all others (green, etc) make sure the force argument was given, 
+
+# for all others (green, etc) make sure the force argument was given,
 # otherwise use the black_rc_overlay
-else  
+else
 	if [ "$FORCE" == "NO" ]; then
 		echo " "
 		echo "RoboticsCape library only designed to work with Black, Black wireless, and Blue"
