@@ -32,8 +32,7 @@ $(OBJECTS): %.o : %.c $(INCLUDES)
 	@$(CC) $(CFLAGS) $(DEBUGFLAG) $< -o $@
 	@echo "Compiled: $@"
 
-all:
-	$(TARGET)
+all:	$(TARGET)
 
 debug:
 	$(MAKE) $(MAKEFILE) DEBUGFLAG="-g -D DEBUG"

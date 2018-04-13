@@ -60,8 +60,7 @@ $(BUILDDIR)/%.o : $(SRCDIR)/%.c $(INCLUDES)
 
 
 # rule for target
-all:
-	$(TARGET)
+all:	$(TARGET)
 
 # compile with soft floating point math for labview
 softfloat:
