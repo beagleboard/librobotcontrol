@@ -430,9 +430,9 @@ int __check_who_am_i(){
 		return -1;
 	}
 	// check which chip we are looking at
-	// 0x71 for mpu9250, 0x75 for mpu9255, or 0x68 for mpu9150
+	// 0x71 for mpu9250, ox73 or 0x75 for mpu9255, or 0x68 for mpu9150
 	// 0x70 for mpu6500,  0x68 or 0x69 for mpu6050
-	if(c!=0x68 && c!=0x69 && c!=0x70 && c!=0x71 && c!=75){
+	if(c!=0x68 && c!=0x69 && c!=0x70 && c!=0x71 && c!=0x73 && c!=75){
 		fprintf(stderr,"invalid who_am_i register: 0x%x\n", c);
 		fprintf(stderr,"expected 0x68 or 0x69 for mpu6050/9150, 0x70 for mpu6500, 0x71 for mpu9250, 0x75 for mpu9255,\n");
 		return -1;
