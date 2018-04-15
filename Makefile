@@ -15,13 +15,10 @@ all:
 	@make -C services/roboticscape --no-print-directory
 
 install:
-	@$(INSTALLDIR) $(DESTDIR)$(prefix)/bin
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/share/roboticscape
-	@$(INSTALLDIRWRITE) $(DESTDIR)/var/lib/roboticscape
-	@$(INSTALLDIR) $(DESTDIR)/var/log/roboticscape
-	@$(INSTALLDIR) $(DESTDIR)/etc/roboticscape
-	@$(INSTALL) device_tree/$(CONFIG_SH) $(DESTDIR)$(prefix)/bin
 	@cp -r -f  rc_project_template $(DESTDIR)$(prefix)/share/roboticscape/
+	@$(INSTALLDIR) $(DESTDIR)$(prefix)/bin
+	@$(INSTALL) device_tree/$(CONFIG_SH) $(DESTDIR)$(prefix)/bin
 	@make -C pru_firmware -s install
 	@make -C library -s install
 	@make -C examples -s install

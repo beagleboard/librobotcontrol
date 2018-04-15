@@ -97,6 +97,7 @@ static uint64_t last_tap_timestamp_nanos;
 static rc_mpu_data_t* data_ptr;
 static int imu_shutdown_flag = 0;
 static rc_filter_t low_pass, high_pass; // for magnetometer Yaw filtering
+static int was_last_steady = 0;
 
 /**
 * functions for internal use only
@@ -2373,20 +2374,19 @@ int __load_accel_calibration()
 		accel_lengths[2]=1.0;
 		return 0;
 	}
-	else{
-		// read in data
-		if(fscanf(fd,"%f\n%f\n%f\n%f\n%f\n%f\n", &x,&y,&z,&sx,&sy,&sz)!=6){
-			fprintf(stderr,"ERROR loading accel offsets, calibration file empty or malformed\n");
-			fprintf(stderr,"please run rc_calibrate_accel to make a new calibration file\n");
-			fprintf(stderr,"using default offsets for now\n");
-			// use zero offsets
-			accel_lengths[0]=1.0;
-			accel_lengths[1]=1.0;
-			accel_lengths[2]=1.0;
-			return 0;
-		}
-		fclose(fd);
+	// read in data
+	if(fscanf(fd,"%f\n%f\n%f\n%f\n%f\n%f\n", &x,&y,&z,&sx,&sy,&sz)!=6){
+		fprintf(stderr,"ERROR loading accel offsets, calibration file empty or malformed\n");
+		fprintf(stderr,"please run rc_calibrate_accel to make a new calibration file\n");
+		fprintf(stderr,"using default offsets for now\n");
+		// use zero offsets
+		accel_lengths[0]=1.0;
+		accel_lengths[1]=1.0;
+		accel_lengths[2]=1.0;
+		return 0;
 	}
+	fclose(fd);
+
 
 	#ifdef DEBUG
 	printf("accel offsets: %f %f %f\n", x, y, z);
@@ -2399,36 +2399,49 @@ int __load_accel_calibration()
 	accel_lengths[2]=sz;
 
 	// read factory bias
-	if(rc_i2c_read_bytes(config.i2c_bus, XA_OFFSET_H, 6, raw)<0){
+	if(rc_i2c_read_bytes(config.i2c_bus, XA_OFFSET_H, 2, &raw[0])<0){
+		return -1;
+	}
+	if(rc_i2c_read_bytes(config.i2c_bus, YA_OFFSET_H, 2, &raw[2])<0){
+		return -1;
+	}
+	if(rc_i2c_read_bytes(config.i2c_bus, ZA_OFFSET_H, 2, &raw[4])<0){
 		return -1;
 	}
 	// Turn the MSB and LSB into a signed 16-bit value
-	factory[0] = (int16_t)(((uint16_t)raw[0]<<8)|raw[1]);
-	factory[1] = (int16_t)(((uint16_t)raw[2]<<8)|raw[3]);
-	factory[2] = (int16_t)(((uint16_t)raw[4]<<8)|raw[5]);
+	factory[0] = (int16_t)(((uint16_t)raw[0]<<7)|(raw[1]>>1));
+	factory[1] = (int16_t)(((uint16_t)raw[2]<<7)|(raw[3]>>1));
+	factory[2] = (int16_t)(((uint16_t)raw[4]<<7)|(raw[5]>>1));
 	printf("%d %d %d\n", factory[0],factory[1],factory[2]);
 
-	// convert offset in g to bias register which is in 0.98-mg/bit
-	bias[0] = factory[0]+round(x/0.00098);
-	bias[1] = factory[1]+round(y/0.00098);
-	bias[2] = factory[2]+round(z/0.00098);
+	// convert offset in g to bias register which is 15-bits, 16G FSR
+	bias[0] = factory[0]-round(x/0.0009765615);
+	bias[1] = factory[1]-round(y/0.0009765615);
+	bias[2] = factory[2]-round(z/0.0009765615);
 	printf("%d %d %d\n", bias[0],bias[1],bias[2]);
 
-	bias[0]=0;
-
 	// convert 16-bit bias to characters to write
-	raw[0] = (bias[0] >> 8) & 0xFF;
-	raw[1] = (bias[0])      & 0xFF;
-	raw[2] = (bias[1] >> 8) & 0xFF;
-	raw[3] = (bias[1])      & 0xFF;
-	raw[4] = (bias[2] >> 8) & 0xFF;
-	raw[5] = (bias[2])      & 0xFF;
+	raw[0] = (bias[0] >> 7) & 0xFF;
+	raw[1] = (bias[0] << 1) & 0xFF;
+	raw[2] = (bias[1] >> 7) & 0xFF;
+	raw[3] = (bias[1] << 1) & 0xFF;
+	raw[4] = (bias[2] >> 7) & 0xFF;
+	raw[5] = (bias[2] << 1) & 0xFF;
 
-	// // Push accel biases to hardware registers
-	// if(rc_i2c_write_bytes(config.i2c_bus, XA_OFFSET_H, 6, &raw[0])){
-	// 	fprintf(stderr,"ERROR: failed to write accel offsets into IMU register\n");
-	// 	return -1;
-	// }
+	// Push accel biases to hardware registers
+	if(rc_i2c_write_bytes(config.i2c_bus, XA_OFFSET_H, 2, &raw[0])<0){
+		fprintf(stderr,"ERROR: failed to write X accel offsets into IMU register\n");
+		return -1;
+	}
+	if(rc_i2c_write_bytes(config.i2c_bus, YA_OFFSET_H, 2, &raw[2])<0){
+		fprintf(stderr,"ERROR: failed to write Y accel offsets into IMU register\n");
+		return -1;
+	}
+	if(rc_i2c_write_bytes(config.i2c_bus, ZA_OFFSET_H, 2, &raw[4])<0){
+		fprintf(stderr,"ERROR: failed to write Z accel offsets into IMU register\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -2897,7 +2910,6 @@ int __collect_accel_samples(int* avg_raw)
 	int i, samples, fifo_count;
 	int16_t x,y,z;
 	float dev_x, dev_y, dev_z;
-	static int was_last_steady = 0;
 	rc_vector_t vx = rc_vector_empty();
 	rc_vector_t vy = rc_vector_empty();
 	rc_vector_t vz = rc_vector_empty();
@@ -3037,6 +3049,7 @@ int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf)
 	printf("When ready, press any key to sample accelerometer\n");
 	getchar();
 	ret = 1;
+	was_last_steady=0;
 	while(ret){
 		ret=__collect_accel_samples(avg_raw[0]);
 		if(ret==-1) return -1;
@@ -3046,6 +3059,7 @@ int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf)
 	printf("When ready, press any key to sample accelerometer\n");
 	getchar();
 	ret = 1;
+	was_last_steady=0;
 	while(ret){
 		ret=__collect_accel_samples(avg_raw[1]);
 		if(ret==-1) return -1;
@@ -3055,6 +3069,7 @@ int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf)
 	printf("When ready, press any key to sample accelerometer\n");
 	getchar();
 	ret = 1;
+	was_last_steady=0;
 	while(ret){
 		ret=__collect_accel_samples(avg_raw[2]);
 		if(ret==-1) return -1;
@@ -3064,6 +3079,7 @@ int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf)
 	printf("When ready, press any key to sample accelerometer\n");
 	getchar();
 	ret = 1;
+	was_last_steady=0;
 	while(ret){
 		ret=__collect_accel_samples(avg_raw[3]);
 		if(ret==-1) return -1;
@@ -3073,6 +3089,7 @@ int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf)
 	printf("When ready, press any key to sample accelerometer\n");
 	getchar();
 	ret = 1;
+	was_last_steady=0;
 	while(ret){
 		ret=__collect_accel_samples(avg_raw[4]);
 		if(ret==-1) return -1;
@@ -3082,6 +3099,7 @@ int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf)
 	printf("When ready, press any key to sample accelerometer\n");
 	getchar();
 	ret = 1;
+	was_last_steady=0;
 	while(ret){
 		ret=__collect_accel_samples(avg_raw[5]);
 		if(ret==-1) return -1;

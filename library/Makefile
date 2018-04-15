@@ -32,6 +32,7 @@ MATH_OPT_FLAGS	:= -O3 -ffast-math -ftree-vectorize
 RM		:= rm -rf
 INSTALL		:= install -m 755
 INSTALLDIR	:= install -d -m 755
+INSTALLDIRWRITE	:= install -d -m 777
 
 # prefix variable for making debian package
 prefix		?= /usr
@@ -75,10 +76,11 @@ debug:
 # make and install everything
 install:
 	$(MAKE)
-	$(INSTALLDIR) $(DESTDIR)$(prefix)/include
+	@$(INSTALLDIRWRITE) $(DESTDIR)/var/lib/roboticscape
+	@$(INSTALLDIR) $(DESTDIR)$(prefix)/include
 	@cp -r include/* $(DESTDIR)$(prefix)/include
-	$(INSTALLDIR) $(DESTDIR)$(prefix)/lib
-	$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/lib
+	@$(INSTALLDIR) $(DESTDIR)$(prefix)/lib
+	@$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/lib
 	@echo "Library Install Complete"
 
 # cleanup local binaries

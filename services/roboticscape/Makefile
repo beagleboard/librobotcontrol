@@ -36,6 +36,8 @@ all: $(TARGET)
 
 install:
 	@$(MAKE)
+	@$(INSTALLDIR) $(DESTDIR)/etc/roboticscape
+	@$(INSTALLDIR) $(DESTDIR)/var/log/roboticscape
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/bin
 	@$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/bin/
 	@$(INSTALLDIR) $(DESTDIR)/lib/systemd/system

@@ -19,12 +19,10 @@
 #define likely(x)	__builtin_expect (!!(x), 1)
 
 
-/*******************************************************************************
-* struct rc_i2c_t
-* contains the current state of a bus.
-* you don't need to create your own instance of this,
-* one for each bus is allocated here
-*******************************************************************************/
+/**
+ * contains the current state of a bus. you don't need to create your own
+ * instance of this, one for each bus is allocated here
+ */
 typedef struct rc_i2c_t {
 	/* data */
 	uint8_t devAddr;
@@ -37,7 +35,8 @@ static rc_i2c_t i2c[I2C_MAX_BUS+1];
 
 
 // local function
-int __check_bus_range(int bus){
+int __check_bus_range(int bus)
+{
 	if(unlikely(bus<0 || bus>I2C_MAX_BUS)){
 		fprintf(stderr,"ERROR: i2c bus must be between 0 & %d\n", I2C_MAX_BUS);
 		return -1;
