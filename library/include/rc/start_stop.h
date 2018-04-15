@@ -114,10 +114,12 @@ int rc_make_pid_file();
  *                        must be >=0.1
  *
  * @return     return values:
+ *             * -4: invalid argument or other error
+ *             * -3: insufficient privileges to kill existing process
  *             * -2: unreadable or invalid contents in RC_PID_FILE
  *             * -1: existing process failed to close cleanly and had to be
  *               killed
- *             * 0: No existing prcess was running
+ *             * 0: No existing process was running
  *             * 1: An existing process was running but it shut down cleanly.
  */
 int rc_kill_existing_process(float timeout_s);
@@ -129,7 +131,7 @@ int rc_kill_existing_process(float timeout_s);
  *             it's not left behind.
  *
  * @return     Returns 0 whether or not the file was actually there. Returns -1
- *             if there was a filesystem error.
+ *             if there was a file system error.
  */
 int rc_remove_pid_file();
 

@@ -25,8 +25,7 @@ LDFLAGS		:= -lm -lrt -pthread -shared -Wl,-soname,$(SONAME)
 
 # different compile flags for math libs
 MATH_OPT_FLAGS	:= -O3 -ffast-math -ftree-vectorize
-#ARCFLAGS	:= -mfpu=neon -march=armv7-a -mtune=cortex-a8
-#FLOAT_FLAG	:= -mfloat-abi=hard
+ARCFLAGS	:= -mfpu=neon -march=armv7-a -mtune=cortex-a8
 
 # commands
 RM		:= rm -rf
@@ -48,13 +47,13 @@ $(TARGET): $(OBJECTS)
 # rule for math libs
 $(BUILDDIR)/math/%.o : $(SRCDIR)/math/%.c $(INCLUDES)
 	@mkdir -p $(dir $(@))
-	@$(CC) -c $(CFLAGS) $(ARCFLAGS) $(MATH_OPT_FLAGS) $(FLOAT_FLAG) $(DEBUGFLAG) $< -o $(@)
+	@$(CC) -c $(CFLAGS) $(ARCFLAGS) $(MATH_OPT_FLAGS) $(DEBUGFLAG) $< -o $(@)
 	@echo "made: $(@)"
 
 # rule for all other objects
 $(BUILDDIR)/%.o : $(SRCDIR)/%.c $(INCLUDES)
 	@mkdir -p $(dir $(@))
-	@$(CC) -c $(CFLAGS) $(ARCFLAGS) $(OPT_FLAGS) $(FLOAT_FLAG) $(DEBUGFLAG) $< -o $(@)
+	@$(CC) -c $(CFLAGS) $(ARCFLAGS) $(OPT_FLAGS) $(DEBUGFLAG) $< -o $(@)
 	@echo "made: $(@)"
 
 
@@ -62,11 +61,6 @@ $(BUILDDIR)/%.o : $(SRCDIR)/%.c $(INCLUDES)
 
 # rule for target
 all:	$(TARGET)
-
-# compile with soft floating point math for labview
-softfloat:
-	$(MAKE) $(MAKEFILE) FLOAT_FLAG="-mfloat-abi=soft"
-	@echo "$(TARGET) Make softfloat Complete"
 
 # compile with debug symbols and DEBUG defined
 debug:

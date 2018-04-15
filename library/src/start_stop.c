@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <stdlib.h> // for system()
 #include <unistd.h> // for access()
+#include <errno.h>
 #include <sys/stat.h> // for mkdir and chmod
 #include <sys/types.h> // for mkdir and chmod
 
@@ -78,11 +79,6 @@ int rc_make_pid_file()
 	fprintf(fd,"%d",(int)current_pid);
 	fflush(fd);
 	fclose(fd);
-	// now set the correct permissions
-	if(chmod(RC_PID_FILE, 0777)==-1){
-		perror("ERROR setting permissions of PID directory");
-		return -1;
-	}
 	return 0;
 }
 
@@ -95,13 +91,19 @@ int rc_kill_existing_process(float timeout_s)
 	// sanity checks
 	if(timeout_s<0.1f){
 		fprintf(stderr, "ERROR in rc_kill_existing_process, timeout_s must be >= 0.1f\n");
-		return -2;
+		return -4;
 	}
 
 	// start by checking if a pid file exists
 	if(access(RC_PID_FILE, F_OK)){
 		// PID file missing, nothing is running
 		return 0;
+	}
+	if(access(RC_PID_FILE, W_OK)){
+		fprintf(stderr, "ERROR, don't have write access to PID file\n");
+		fprintf(stderr, "existing process is probably running as root\n");
+		fprintf(stderr, "try running sudo rc_kill instead\n");
+		return -3;
 	}
 	// attempt to open PID file if it fails something very wrong with it
 	fd = fopen(RC_PID_FILE, "r");
@@ -111,10 +113,12 @@ int rc_kill_existing_process(float timeout_s)
 	}
 	// try to read the current process ID
 	ret=fscanf(fd,"%d", &old_pid);
-	if(ret!=1){
-		fprintf(stderr,"WARNING in rc_kill_existing_process, read invalid contents in PID file\n");
-	}
 	fclose(fd);
+	if(ret!=1){
+		// invalid contents, just delete pid file
+		remove(RC_PID_FILE);
+		return -2;
+	}
 
 	// if the file didn't contain a PID number, remove it and
 	// return -2 indicating weird behavior
@@ -134,7 +138,16 @@ int rc_kill_existing_process(float timeout_s)
 	}
 
 	// process must be running, attempt a clean shutdown
-	kill((pid_t)old_pid, SIGINT);
+	if(kill((pid_t)old_pid, SIGINT)==-1){
+		if(errno==EPERM){
+			fprintf(stderr, "ERROR in rc_kill, insufficient permissions to kill process\n");
+			fprintf(stderr, "existing process is probably running as root\n");
+			fprintf(stderr, "try running sudo rc_kill instead\n");
+			return -3;
+		}
+		remove(RC_PID_FILE);
+		return -2;
+	}
 
 	// check every 0.1 seconds to see if it closed
 	num_checks=timeout_s/0.1f;
