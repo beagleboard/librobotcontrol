@@ -87,8 +87,9 @@ void on_mode_release()
 int main()
 {
 	// make sure another instance isn't running
-	rc_kill_existing_process(2.0);
-
+	// return value -3 means a root process is running and we need more
+	// privileges to stop it.
+	if(rc_kill_existing_process(2.0)==-3) return -1;
 
 	// start signal handler so we can exit cleanly
 	if(rc_enable_signal_handler()<0){
@@ -113,8 +114,14 @@ int main()
 	rc_button_set_callbacks(RC_BTN_PIN_MODE,NULL,on_mode_release);
 
 	// start with both LEDs off
-	rc_led_set(RC_LED_GREEN, 0);
-	rc_led_set(RC_LED_RED, 0);
+	if(rc_led_set(RC_LED_GREEN, 0)==-1){
+		fprintf(stderr, "ERROR in rc_blink, failed to set RC_LED_GREEN\n");
+		return -1;
+	}
+	if(rc_led_set(RC_LED_RED, 0)==-1){
+		fprintf(stderr, "ERROR in rc_blink, failed to set RC_LED_RED\n");
+		return -1;
+	}
 
 	// final setup
 	rc_make_pid_file();

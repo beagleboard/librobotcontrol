@@ -91,7 +91,9 @@ int main()
 	pthread_t printf_thread = 0;
 
 	// make sure another instance isn't running
-	rc_kill_existing_process(2.0);
+	// return value -3 means a root process is running and we need more
+	// privileges to stop it.
+	if(rc_kill_existing_process(2.0)==-3) return -1;
 
 	// start signal handler so we can exit cleanly
 	if(rc_enable_signal_handler()==-1){
@@ -145,8 +147,14 @@ int main()
 	printf("Press and release PAUSE button to pause/start the motors\n");
 	printf("hold pause button down for 2 seconds to exit\n");
 
-	rc_led_set(RC_LED_RED,1);
-	rc_led_set(RC_LED_GREEN,0);
+	if(rc_led_set(RC_LED_GREEN, 0)==-1){
+		fprintf(stderr, "ERROR in rc_balance, failed to set RC_LED_GREEN\n");
+		return -1;
+	}
+	if(rc_led_set(RC_LED_RED, 1)==-1){
+		fprintf(stderr, "ERROR in rc_balance, failed to set RC_LED_RED\n");
+		return -1;
+	}
 
 	// set up mpu configuration
 	rc_mpu_config_t mpu_config = rc_mpu_default_config();
