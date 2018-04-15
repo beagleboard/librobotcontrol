@@ -20,7 +20,7 @@
 #include <rc/start_stop.h>
 
 #define MAXBUF 128
-#define TIMEOUT_S 5
+#define TIMEOUT_S 15
 #define START_LOG "/var/log/roboticscape/startup_log.txt"
 
 static int make_pid_directory();
@@ -69,22 +69,8 @@ int main()
 		}
 		rc_usleep(500000);
 	}
-	time = (rc_nanos_since_epoch()/1000-start_us)/1000000;
-	sprintf(buf, "echo 'time (s): %4.1f GPIO loaded' >> %s",time,START_LOG);
-	system(buf);
-
-
-	// wait for eQEP to load
-	while(check_eqep()!=0){
-		if(check_timeout()){
-			system("echo 'timeout reached while waiting for eQEP driver' >> " START_LOG);
-			fprintf(stderr,"timeout reached while waiting for eQEP driver\n");
-		 	return -1;
-		}
-		rc_usleep(500000);
-	}
-	time = (rc_nanos_since_epoch()/1000-start_us)/1000000;
-	sprintf(buf, "echo 'time (s): %4.1f eQEP loaded' >> %s",time,START_LOG);
+	time = (rc_nanos_since_epoch()/1000-start_us)/1000000.0;
+	sprintf(buf, "echo 'time (s): %4.2f GPIO loaded' >> %s",time,START_LOG);
 	system(buf);
 
 
@@ -97,10 +83,24 @@ int main()
 		}
 		rc_usleep(500000);
 	}
-	time = (rc_nanos_since_epoch()/1000-start_us)/1000000;
-	sprintf(buf, "echo 'time (s): %4.1f PWM loaded' >> %s",time,START_LOG);
+	time = (rc_nanos_since_epoch()/1000-start_us)/1000000.0;
+	sprintf(buf, "echo 'time (s): %4.2f PWM loaded' >> %s",time,START_LOG);
 	system(buf);
 
+	// wait for eQEP to load
+	while(check_eqep()!=0){
+		if(check_timeout()){
+			system("echo 'timeout reached while waiting for eQEP driver' >> " START_LOG);
+			fprintf(stderr,"timeout reached while waiting for eQEP driver\n");
+		 	return -1;
+		}
+		rc_usleep(500000);
+	}
+	time = (rc_nanos_since_epoch()/1000-start_us)/1000000.0;
+	sprintf(buf, "echo 'time (s): %4.2f eQEP loaded' >> %s",time,START_LOG);
+	system(buf);
+
+	set_gpio_permissions();
 
 	printf("roboticscape startup routine complete\n");
 	system("echo 'startup routine complete' >> " START_LOG);
@@ -214,9 +214,18 @@ int setup_pwm()
  */
 int check_eqep()
 {
-	if(access("/sys/devices/platform/ocp/48300000.epwmss/48300180.eqep/enabled", F_OK)) return -1;
-	if(access("/sys/devices/platform/ocp/48302000.epwmss/48302180.eqep/enabled", F_OK)) return -1;
-	if(access("/sys/devices/platform/ocp/48304000.epwmss/48304180.eqep/enabled", F_OK)) return -1;
+	if(access("/sys/devices/platform/ocp/48300000.epwmss/48300180.eqep/enabled", F_OK)){
+		fprintf(stderr,"missing eqep0\n");
+		return -1;
+	}
+	if(access("/sys/devices/platform/ocp/48302000.epwmss/48302180.eqep/enabled", F_OK)){
+		fprintf(stderr,"missing eqep0\n");
+		return -1;
+	}
+	if(access("/sys/devices/platform/ocp/48304000.epwmss/48304180.eqep/enabled", F_OK)){
+		fprintf(stderr,"missing eqep0\n");
+		return -1;
+	}
 	return 0;
 }
 
