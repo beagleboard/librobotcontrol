@@ -63,8 +63,7 @@ int rc_pru_start(int ch, const char* fw_name)
 	else		fd=open(PRU1_FW, O_WRONLY);
 	if(fd==-1){
 		perror("ERROR in rc_pru_start opening remoteproc driver");
-		if(errno==EPERM) fprintf(stderr,"need to be root to use the pru\n");
-		else fprintf(stderr,"kernel is probably too old\n");
+		fprintf(stderr,"need to be root to use the pru\n");
 		return -1;
 	}
 	ret = write(fd, fw_name, strlen(fw_name));
