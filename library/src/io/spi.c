@@ -11,8 +11,8 @@
 #include <string.h>	// for memset
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/ioctl.h>
-#include <linux/spi/spidev.h> // for xfer and ioctl calls
 
 #include <rc/model.h>
 #include <rc/gpio.h>
@@ -64,7 +64,7 @@ int rc_spi_init(int slave, int slave_mode, int bus_mode, int speed_hz)
 		fd[0]=open(SPI10_PATH, O_RDWR);
 		if(fd[0]==-1){
 			perror("ERROR in rc_spi_init");
-			fprintf(stderr,"likely SPI is not enabled in the device tree or you don't have sufficient privaledges\n");
+			if(errno!=EPERM) fprintf(stderr,"likely SPI is not enabled in the device tree or kernel\n");
 			return -1;
 		}
 	}
@@ -72,7 +72,7 @@ int rc_spi_init(int slave, int slave_mode, int bus_mode, int speed_hz)
 		fd[1]=open(SPI11_PATH, O_RDWR);
 		if(fd[1]==-1){
 			perror("ERROR in rc_spi_init");
-			fprintf(stderr,"likely SPI is not enabled in the device tree or you don't have sufficient privaledges\n");
+			if(errno!=EPERM) fprintf(stderr,"likely SPI is not enabled in the device tree or kernel\n");
 			return -1;
 		}
 	}

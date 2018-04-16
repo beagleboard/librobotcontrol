@@ -29,6 +29,7 @@
 extern "C" {
 #endif
 
+#include <linux/spi/spidev.h> // for xfer and ioctl calls
 
 #define SPI_SLAVE_MODE_AUTO	0
 #define SPI_SLAVE_MODE_MANUAL	1
@@ -40,12 +41,10 @@ extern "C" {
  *             https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Mode_numbers
  *             for SPI modes
  *
+ * @param[in]  slave       The slave 1 or 2
  * @param[in]  slave_mode  SPI_SLAVE_MODE_AUTO or SPI_SLAVE_MODE_MANUAL
- * @param[in]  polarity    The polarity
- * @param[in]  phase       The phase
- * @param[in]  slave       The slave
- * @param[in]  bus_mode  The bus mode
- * @param[in]  speed_hz  The speed hz
+ * @param[in]  bus_mode    SPI_MODE_0, SPI_MODE_1, SPI_MODE_2, or SPI_MODE_3
+ * @param[in]  speed_hz    The speed hz
  *
  * @return     0 on succcess or -1 on failure
  */
