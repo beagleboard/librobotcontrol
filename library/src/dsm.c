@@ -413,7 +413,7 @@ void* __calibration_listen_func(__attribute__ ((unused)) void *ptr)
 	int j, raw;
 	//wait for data to start
 	printf("waiting for dsm connection");
-	rc_dsm_ch_raw(1); // flush the data ready flag with a read
+	new_dsm_flag =0; // flush the data ready flag with a read
 	while(!rc_dsm_is_new_data()){
 		if(listening==0) return NULL;
 		rc_usleep(5000);
@@ -421,8 +421,8 @@ void* __calibration_listen_func(__attribute__ ((unused)) void *ptr)
 
 	//start limits at first value
 	for(j=0;j<RC_MAX_DSM_CHANNELS;j++){
-		rc_mins[j]=rc_dsm_ch_raw(j+1);
-		rc_maxes[j]=rc_dsm_ch_raw(j+1);
+		rc_mins[j]=rc_channels[j];
+		rc_maxes[j]=rc_channels[j];
 	}
 
 	// record limits until user presses enter
@@ -430,7 +430,7 @@ void* __calibration_listen_func(__attribute__ ((unused)) void *ptr)
 		printf("\r");
 		if(rc_dsm_is_new_data()){
 			for(j=0;j<RC_MAX_DSM_CHANNELS;j++){
-				raw = rc_dsm_ch_raw(j+1);
+				raw = rc_channels[j];
 				//record only non-zero channels
 				if(raw > 0){
 					if(raw>rc_maxes[j]){
