@@ -493,7 +493,8 @@ int rc_dsm_init()
 	num_channels = 0;
 	last_time = 0;
 	rc_is_dsm_active_flag = 0;
-	rc_dsm_set_callback(NULL);
+	new_data_callback==NULL;
+
 
 	// 0.5s timeout disable canonical (0), 1 stop bit (1), disable parity (0)
 	if(rc_uart_init(DSM_UART_BUS, DSM_BAUD_RATE, 0.5, 0, 1, 0)){
