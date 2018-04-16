@@ -197,13 +197,14 @@ int main(int argc, char *argv[])
 
 	// read adc to make sure battery is connected
 	if(rc_adc_init()){
-		fprintf(stderr,"ERROR: failed to run rc_init_adc()\n");
+		fprintf(stderr,"ERROR: failed to run rc_adc_init()\n");
 		return -1;
 	}
 	if(rc_adc_batt()<6.0){
 		fprintf(stderr,"ERROR: battery disconnected or insufficiently charged to drive servos\n");
 		return -1;
 	}
+	rc_adc_cleanup();
 
 	// initialize PRU
 	if(rc_servo_init()) return -1;

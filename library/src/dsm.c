@@ -471,16 +471,27 @@ int rc_dsm_init()
 	else{
 		for(i=0;i<RC_MAX_DSM_CHANNELS;i++){
 			if(fscanf(fd,"%d %d", &rc_mins[i],&rc_maxes[i])!=2){
-				perror("ERROR in rc_dsm_init reading calibration data");
-				return -1;
+				fprintf(stderr, "ERROR in rc_dsm_init reading calibration data\n");
+				fprintf(stderr, "Malformed calibration file, deleting and using defaults\n");
+				fclose(fd);
+				remove(RC_DSM_CALIBRATION_FILE);
+				for(i=0;i<RC_MAX_DSM_CHANNELS;i++){
+					rc_mins[i]=DEFAULT_MIN;
+					rc_maxes[i]=DEFAULT_MAX;
+				}
+				break;
 			}
-			range[i] = rc_maxes[i]-rc_mins[i];
-			center[i] = (rc_maxes[i]+rc_mins[i])/2.0;
 		}
 		#ifdef DEBUG
 		printf("DSM Calibration Loaded\n");
 		#endif
 		fclose(fd);
+	}
+
+	// configure range and center for future use
+	for(i=0;i<RC_MAX_DSM_CHANNELS;i++){
+		range[i] = rc_maxes[i]-rc_mins[i];
+		center[i] = (rc_maxes[i]+rc_mins[i])/2.0;
 	}
 
 	if(rc_pinmux_set(DSM_PIN, PINMUX_UART)){
@@ -792,13 +803,6 @@ int rc_dsm_calibrate_routine()
 		perror("ERROR in rc_dsm_calibration_routine making calibration file directory");
 		return -1;
 	}
-	fd = fopen(RC_DSM_CALIBRATION_FILE, "w+");
-	if(fd == NULL){
-		perror("ERROR in rc_dsm_calibration_routine opening calibration file for writing");
-		return -1;
-	}
-	fclose(fd);
-
 
 	// 0.5s timeout disable canonical (0), 1 stop bit (1), disable parity (0)
 	if(rc_uart_init(DSM_UART_BUS, DSM_BAUD_RATE, 0.5, 0, 1, 0)){
