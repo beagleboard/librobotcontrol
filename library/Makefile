@@ -67,6 +67,10 @@ debug:
 	$(MAKE) $(MAKEFILE) DEBUGFLAG="-g -D DEBUG"
 	@echo "$(TARGET) Make Debug Complete"
 
+# compile with no specific architecture flags so it can run on unsupported platforms
+native:
+	$(MAKE) $(MAKEFILE) ARCFLAGS=""
+
 # make and install everything
 install:
 	$(MAKE)
