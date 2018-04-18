@@ -2,7 +2,7 @@ Template: roboticscape/q_enable_dt
 Type: boolean
 Default: false
 Description: Enable the Robotics Cape device tree?
- For full support on BeagleBone Black and Black Wireless boards, '/boot/uEnv.txt' must be modified to load the Robotics Cape device tree on boot. A backup of the original file will me made as '/boot/uEnv.txt.backup'. If you are not using the Robotics Cape then select 'No'.
+ For full support on BeagleBone Black and Black Wireless boards, '/boot/uEnv.txt' must be modified to load the Robotics Cape device tree on boot. A backup of the original file will be made as '/boot/uEnv.txt.backup'. If you are not using the Robotics Cape then select 'No'.
 
 Template: roboticscape/q_runonboot
 Type: select
