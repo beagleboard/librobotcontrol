@@ -36,7 +36,7 @@ static int running;
 static int rc_channels[RC_MAX_DSM_CHANNELS];
 static int rc_maxes[RC_MAX_DSM_CHANNELS];
 static int rc_mins[RC_MAX_DSM_CHANNELS];
-static int range[RC_MAX_DSM_CHANNELS];
+static float range[RC_MAX_DSM_CHANNELS];
 static int center[RC_MAX_DSM_CHANNELS];
 static int num_channels; // actual number of channels being sent
 static int resolution; // 10 or 11
@@ -46,7 +46,7 @@ static uint64_t last_time;
 static pthread_t parse_thread;
 static int listening; // for calibration routine only
 static void (*new_data_callback)();
-static int rc_is_dsm_active_flag;
+static int active_flag=0;
 static int init_flag=0;
 
 
@@ -143,6 +143,7 @@ DETECTION_START:
 	detection_packets_left = 4;
 	init_flag=1;
 	while(detection_packets_left>0 && running){
+		/*
 		rc_usleep(5000);
 		available = rc_uart_bytes_available(DSM_UART_BUS);
 
@@ -169,7 +170,15 @@ DETECTION_START:
 			rc_uart_flush(DSM_UART_BUS); // flush
 			continue;
 		}
-
+		*/
+		ret = rc_uart_read_bytes(DSM_UART_BUS, buf, DSM_PACKET_SIZE);
+		if(ret!=DSM_PACKET_SIZE){
+			#ifdef DEBUG
+				printf("WARNING: read the wrong number of bytes: %d\n", ret);
+			#endif
+			rc_uart_flush(DSM_UART_BUS); // flush
+			continue;
+		}
 		// first check each channel id assuming 1024/22ms mode
 		// where the channel id lives in 0b01111000 mask
 		// if one doesn't make sense, must be using 2048/11ms mode
@@ -278,6 +287,7 @@ DETECTION_START:
 	***************************************************************************/
 START_NORMAL_LOOP:
 	while(running){
+		/*
 		rc_usleep(5000);
 		available = rc_uart_bytes_available(DSM_UART_BUS);
 
@@ -300,7 +310,7 @@ START_NORMAL_LOOP:
 				#ifdef DEBUG
 					fprintf(stderr,"WARNING: read the wrong number of bytes: %d\n", ret);
 				#endif
-				rc_is_dsm_active_flag=0;
+				active_flag=0;
 				rc_uart_flush(DSM_UART_BUS); // flush
 				continue;
 			}
@@ -310,10 +320,20 @@ START_NORMAL_LOOP:
 			rc_uart_flush(DSM_UART_BUS); // flush
 			continue;
 		}
+		*/
+		ret = rc_uart_read_bytes(DSM_UART_BUS, buf, DSM_PACKET_SIZE);
+		if(ret!=DSM_PACKET_SIZE){
+			#ifdef DEBUG
+				fprintf(stderr,"WARNING: read the wrong number of bytes: %d\n", ret);
+			#endif
+			active_flag=0;
+			rc_uart_flush(DSM_UART_BUS); // flush
+			continue;
+		}
 
 		// raw debug mode spits out all ones and zeros
 		#ifdef DEBUG
-		pfprintf(stderr,"ret=%d : ", ret);
+		fprintf(stderr,"ret=%d : ", ret);
 		for(i=0; i<(DSM_PACKET_SIZE/2); i++){
 			fprintf(stderr,__byte_to_binary(buf[2*i]));
 			fprintf(stderr," ");
@@ -384,7 +404,7 @@ START_NORMAL_LOOP:
 			fprintf(stderr,"all data complete now\n");
 			#endif
 			new_dsm_flag=1;
-			rc_is_dsm_active_flag=1;
+			active_flag=1;
 			last_time = rc_nanos_since_boot();
 			for(i=0;i<num_channels;i++){
 				rc_channels[i]=new_values[i];
@@ -491,7 +511,10 @@ int rc_dsm_init()
 	// configure range and center for future use
 	for(i=0;i<RC_MAX_DSM_CHANNELS;i++){
 		range[i] = rc_maxes[i]-rc_mins[i];
-		center[i] = (rc_maxes[i]+rc_mins[i])/2.0;
+		center[i] = (rc_maxes[i]+rc_mins[i])/2;
+		#ifdef DEBUG
+		printf("channel %d range %f center %d\n", i, range[i],center[i]);
+		#endif
 	}
 
 	if(rc_pinmux_set(DSM_PIN, PINMUX_UART)){
@@ -503,12 +526,11 @@ int rc_dsm_init()
 	running = 1; // lets uarts 4 thread know it can run
 	num_channels = 0;
 	last_time = 0;
-	rc_is_dsm_active_flag = 0;
+	active_flag = 0;
 	new_data_callback==NULL;
 
-
-	// 0.5s timeout disable canonical (0), 1 stop bit (1), disable parity (0)
-	if(rc_uart_init(DSM_UART_BUS, DSM_BAUD_RATE, 0.5, 0, 1, 0)){
+	// 0.2s timeout, disable canonical (0), 1 stop bit (1), disable parity (0)
+	if(rc_uart_init(DSM_UART_BUS, DSM_BAUD_RATE, 0.2, 0, 1, 0)){
 		fprintf(stderr,"ERROR in rc_dsm_init, failed to init uart bus\n");
 		return -1;
 	}
@@ -578,7 +600,7 @@ float rc_dsm_ch_normalized(int ch)
 	}
 	if(range!=0 && rc_channels[ch-1]!=0) {
 		new_dsm_flag = 0;
-		return 2*(rc_channels[ch-1]-center[ch-1])/range[ch-1];
+		return 2.0*(rc_channels[ch-1]-center[ch-1])/range[ch-1];
 	}
 	return 0;
 }
@@ -610,7 +632,7 @@ int rc_dsm_is_connection_active()
 		fprintf(stderr,"ERROR in rc_dsm_is_connection_active, call rc_dsm_init first\n");
 		return 0;
 	}
-	return rc_is_dsm_active_flag;
+	return active_flag;
 }
 
 
@@ -793,7 +815,7 @@ int rc_dsm_calibrate_routine()
 	running = 1; // lets uarts 4 thread know it can run
 	num_channels = 0;
 	last_time = 0;
-	rc_is_dsm_active_flag = 0;
+	active_flag = 0;
 	new_data_callback=NULL;
 
 	// make sure directory and calibration file exist and are writable first

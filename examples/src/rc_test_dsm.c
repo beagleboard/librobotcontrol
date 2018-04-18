@@ -14,10 +14,29 @@
 
 #include <stdio.h>
 #include <signal.h>
+#include <getopt.h>
 #include <rc/dsm.h>
 #include <rc/time.h>
 
+// possible printing modes, user selected with command line arguments
+typedef enum p_mode_t{
+	P_MODE_NONE,
+	P_MODE_RAW,
+	P_MODE_NORM
+} p_mode_t;
+
 int running;
+p_mode_t print_mode;
+
+// printed if some invalid argument was given
+void print_usage()
+{
+	printf("\n");
+	printf("-r	print raw channel values in microseconds\n");
+	printf("-n	print normalized channel values/s\n");
+	printf("-h	print this help message\n");
+	printf("\n");
+}
 
 // interrupt handler to catch ctrl-c
 void signal_handler(__attribute__ ((unused)) int dummy)
@@ -35,15 +54,63 @@ void new_dsm_data_callback()
 	printf("%d/", rc_dsm_resolution());
 	// print num channels in use
 	printf("%d-ch ", channels);
-	//print all channels
-	for(i=0;i<channels;i++){
-		printf("%d:% 0.2f ", i+1, rc_dsm_ch_normalized(i+1));
+	// print all channels
+	if(print_mode==P_MODE_NORM){
+		for(i=0;i<channels;i++){
+			printf("%d:% 0.2f ", i+1, rc_dsm_ch_normalized(i+1));
+		}
+	}
+	else{
+		for(i=0;i<channels;i++){
+			printf("%d:% 4d ", i+1, rc_dsm_ch_raw(i+1));
+		}
 	}
 	fflush(stdout);
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+	int c;
+	print_mode = P_MODE_NONE;
+
+	// parse arguments
+	opterr = 0;
+	while ((c = getopt(argc, argv, "rnh")) != -1){
+		switch (c){
+		case 'r':
+			if(print_mode!=P_MODE_NONE){
+				printf("\ntoo many arguments given\n");
+				print_usage();
+				return -1;
+			}
+			print_mode = P_MODE_RAW;
+			break;
+		case 'n':
+			if(print_mode!=P_MODE_NONE){
+				printf("\ntoo many arguments given\n");
+				print_usage();
+				return -1;
+			}
+			print_mode = P_MODE_NORM;
+			break;
+			break;
+		case 'h':
+			print_usage();
+			return 0;
+		default:
+			fprintf(stderr,"Invalid Argument\n");
+			print_usage();
+			return -1;
+		}
+	}
+
+	if(print_mode==P_MODE_NONE){
+		fprintf(stderr, "Please select raw or normalized mode\n");
+		print_usage();
+		return -1;
+	}
+
+
 	if(rc_dsm_init()) return -1;
 
 	printf("\n");
@@ -80,9 +147,10 @@ int main()
 			printf("                             ");
 			fflush(stdout);
 		}
-		rc_usleep(25000);
+		rc_usleep(500000);
 	}
 
 	rc_dsm_cleanup();
+	printf("\n");
 	return 0;
 }

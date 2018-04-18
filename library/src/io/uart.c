@@ -137,8 +137,8 @@ int rc_uart_init(int bus, int baudrate, float timeout_s, int canonical_en, int s
 	// the following lines technically do nothing since we just wiped config
 	// but they exist to allow easy fiddling and be more explicit about
 	// which settings are in use
-	if(canonical_en) config.c_lflag &= ~ICANON;
-	else config.c_lflag |= ICANON;
+	if(canonical_en) config.c_lflag |= ICANON;
+	else config.c_lflag &= ~ICANON;
 	if(parity_en) config.c_cflag |= PARENB;
 	else config.c_cflag &= ~PARENB;
 	if(stop_bits==1) config.c_cflag &= ~CSTOPB;	// disable 2 stop bits (use just 1)

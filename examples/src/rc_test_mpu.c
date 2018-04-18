@@ -41,7 +41,8 @@ int enable_warnings=0;
 int running;
 
 // printed if some invalid argument was given
-void print_usage(){
+void print_usage()
+{
 	printf("\n");
 	printf("-a	print raw adc values instead of radians\n");
 	printf("-r	print gyro in radians/s instead of degrees/s\n");
@@ -60,7 +61,8 @@ void signal_handler(__attribute__ ((unused)) int dummy)
 	return;
 }
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[])
+{
 	rc_mpu_data_t data; //struct to hold new data
 	int c;
 	g_mode_t g_mode = G_MODE_DEG; // gyro default to degree mode.
