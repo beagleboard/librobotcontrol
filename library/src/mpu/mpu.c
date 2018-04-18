@@ -2412,13 +2412,11 @@ int __load_accel_calibration()
 	factory[0] = (int16_t)(((uint16_t)raw[0]<<7)|(raw[1]>>1));
 	factory[1] = (int16_t)(((uint16_t)raw[2]<<7)|(raw[3]>>1));
 	factory[2] = (int16_t)(((uint16_t)raw[4]<<7)|(raw[5]>>1));
-	printf("%d %d %d\n", factory[0],factory[1],factory[2]);
 
 	// convert offset in g to bias register which is 15-bits, 16G FSR
 	bias[0] = factory[0]-round(x/0.0009765615);
 	bias[1] = factory[1]-round(y/0.0009765615);
 	bias[2] = factory[2]-round(z/0.0009765615);
-	printf("%d %d %d\n", bias[0],bias[1],bias[2]);
 
 	// convert 16-bit bias to characters to write
 	raw[0] = (bias[0] >> 7) & 0xFF;

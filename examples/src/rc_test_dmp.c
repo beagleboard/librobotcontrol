@@ -56,6 +56,7 @@ void print_usage()
 	printf("-c		Show raw compass angle\n");
 	printf("-a		Print Accelerometer Data\n");
 	printf("-g		Print Gyro Data\n");
+	printf("-T		Print Temperature\n");
 	printf("-t		Print TaitBryan Angles\n");
 	printf("-q		Print Quaternion Vector\n");
 	printf("-p {prio}	Set Interrupt Priority and FIFO scheduling policy (requires root)\n");
@@ -83,7 +84,7 @@ void print_data()
 		printf(" %4.1f %4.1f %4.1f %4.1f |",	data.fused_quat[QUAT_W], \
 							data.fused_quat[QUAT_X], \
 							data.fused_quat[QUAT_Y], \
-												data.fused_quat[QUAT_Z]);
+							data.fused_quat[QUAT_Z]);
 	}
 	else if(show_quat){
 		// print quaternion
@@ -114,6 +115,10 @@ void print_data()
 						data.gyro[1],\
 						data.gyro[2]);
 	}
+	if(show_temp){
+		rc_mpu_read_temp(&data);
+		printf(" %6.2f |", data.temp);
+	}
 	fflush(stdout);
 	return;
 }
@@ -137,7 +142,7 @@ void print_header(){
 	}
 	if(show_accel) printf(" Accel XYZ (m/s^2) |");
 	if(show_gyro)  printf("  Gyro XYZ (deg/s) |");
-	if(show_temp)  printf(" Temp(C)");
+	if(show_temp)  printf(" Temp(C)|");
 
 	printf("\n");
 }
@@ -236,7 +241,7 @@ int main(int argc, char *argv[])
 
 	// parse arguments
 	opterr = 0;
-	while ((c=getopt(argc, argv, "sr:mbagrqtcp:hwo"))!=-1 && argc>1){
+	while ((c=getopt(argc, argv, "sr:mbagrqTtcp:hwo"))!=-1 && argc>1){
 		switch (c){
 		case 's':
 			silent_mode = 1;
