@@ -6,11 +6,11 @@
  * published by the Free Software Foundation.
  */
 
- /******************************************************************************
- * This device tree serves to replace the need for an overlay when using
- * the RoboticsCape. It is similar to the boneblue tree but preserves
- * pin config for the black.
- ******************************************************************************/
+/**
+ * This device tree serves to replace the need for an overlay when using the
+ * RoboticsCape. It is similar to the boneblue tree but preserves pin config for
+ * the black.
+ */
 
 
 /dts-v1/;
@@ -18,7 +18,6 @@
 #include "am33xx.dtsi"
 #include "am335x-bone-common-no-capemgr.dtsi"
 #include "am335x-bone-common-universal-pins.dtsi"
-#include "am33xx-pruss-rproc.dtsi"
 #include "am335x-roboticscape.dtsi"
 
 / {

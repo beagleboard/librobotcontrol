@@ -7,3 +7,6 @@ They live here for completeness.
 The configure_robotics_dt.sh script does get installed to /usr/bin
 and sets up uEnv.txt to load either the overlay or the full device tree based
 on which is present as some may be using older images without the device tree.
+
+To modify and install manually when experimenting, run the install_dt_manually.sh 
+script.
