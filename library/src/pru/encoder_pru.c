@@ -13,7 +13,7 @@
 
 #define ENCODER_PRU_CH		0 // PRU0
 #define ENCODER_PRU_FW		"am335x-pru0-rc-encoder-fw"
-#define ENCODER_MEM_OFFSET	8
+#define ENCODER_MEM_OFFSET	16
 
 // pru shared memory pointer
 static volatile unsigned int* shared_mem_32bit_ptr = NULL;
