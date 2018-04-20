@@ -1,6 +1,6 @@
 /**
- * @file rc_test_led.c
- * @example    rc_test_led
+ * @file rc_test_leds.c
+ * @example    rc_test_leds
  *
  * tests all LEDs on Robotics Cape & BeagleBone Blue
  *

@@ -1,6 +1,6 @@
 /**
- * @file rc_test_servo.c
- * @example    rc_test_servo
+ * @file rc_test_servos.c
+ * @example    rc_test_servos
  *
  *
  * Demonstrates use of pru to control servos. This program
