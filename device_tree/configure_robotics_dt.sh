@@ -56,13 +56,13 @@ if [ "$MODEL" == "TI AM335x BeagleBone Blue" ]; then
 
 # if black and black wireless already have the DT installed, nothing to do
 elif   [ "$MODEL" == "TI AM335x BeagleBone Black RoboticsCape" ]; then
-	echo "Detected BB Black with RoboticsCape device tree already installed\n"
-	echo "No changes required\n"
+	echo "Detected BB Black with RoboticsCape device tree already installed"
+	echo "No changes required"
 	exit 0
 
 elif   [ "$MODEL" == "TI AM335x BeagleBone Black Wireless RoboticsCape" ]; then
-	echo "Detected BB Black Wireless with RoboticsCape device tree already installed\n"
-	echo "No changes required\n"
+	echo "Detected BB Black Wireless with RoboticsCape device tree already installed"
+	echo "No changes required"
 	exit 0
 
 

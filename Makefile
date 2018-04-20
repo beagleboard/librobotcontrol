@@ -5,8 +5,6 @@ INSTALLDIR	:= install -d -m 755
 INSTALLDIRWRITE	:= install -d -m 777
 INSTALLNONEXEC	:= install -m 644
 
-CONFIG_SH	:= configure_robotics_dt.sh
-
 all:
 	@make -C pru_firmware --no-print-directory
 	@make -C library --no-print-directory
@@ -18,7 +16,7 @@ install:
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/share/roboticscape
 	@cp -r -f  rc_project_template $(DESTDIR)$(prefix)/share/roboticscape/
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/bin
-	@$(INSTALL) device_tree/$(CONFIG_SH) $(DESTDIR)$(prefix)/bin
+	@$(INSTALL) device_tree/configure_robotics_dt.sh $(DESTDIR)$(prefix)/bin/configure_robotics_dt
 	@make -C pru_firmware -s install
 	@make -C library -s install
 	@make -C examples -s install

@@ -218,3 +218,4 @@ pip-log.txt
 *.o
 *.so
 .debhelper/
+debian/roboticscape/

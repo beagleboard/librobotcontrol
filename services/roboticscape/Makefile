@@ -44,10 +44,12 @@ install:
 	@$(INSTALLNONEXEC) $(SERVICE).service $(DESTDIR)/lib/systemd/system/
 	@$(INSTALLDIR) $(DESTDIR)/etc/modules-load.d/
 	@$(INSTALLNONEXEC) roboticscape_modules.conf $(DESTDIR)/etc/modules-load.d/
+	@echo ""
 	@echo "roboticscape Service Install Complete"
 	@echo "run the following to manually enable:"
 	@echo "sudo systemctl daemon-reload"
 	@echo "sudo systemctl enable roboticscape"
+	@echo ""
 
 clean:
 	@$(RM) $(BINDIR)
