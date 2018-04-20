@@ -35,6 +35,13 @@ sudo apt update && sudo apt upgrade roboticscape
 
 To help beta-test and to stay with the latest library version you can either clone this repo and run 'make && sudo make install', or download and install the latest debian package from the [releases](https://github.com/StrawsonDesign/Robotics_Cape_Installer/releases) page. A debian package is the safer option.
 
+The debian package installation also enables the systemd services which you will have to do manually if installing from source:
+
+```
+sudo systemctl enable roboticscape
+sudo systemctl enable rc_battery_monitor
+```
+
 If installing from source, BeagleBone Black and Black Wireless users will need to enable the Robotics Cape device tree to enable all features of the roboticscape package. This is not necessary for the BeagleBone Blue or when installing a debian package.
 
 ```
@@ -50,7 +57,7 @@ sudo reboot
 ```
 
 ## Version
-V0.3.4 is the current stable release. V0.4 is in beta testing and can be installed from source as described above.
+V0.3.4 is the current stable release. V0.4 is in beta testing and can be installed from source as described above or from the github releases page.
 
 You can check which version of the package is currently installed with the rc_version program.
 
