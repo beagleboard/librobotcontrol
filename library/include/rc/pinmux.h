@@ -1,14 +1,47 @@
 /**
  * <rc/pinmux.h>
  *
- * @brief C interface for the Sitara pinmux helper driver
+ * @brief      C interface for the Sitara pinmux helper driver
  *
- * On the Robotics Cape, we allow changing the pinmux on the SPI, GPS, and UART1
- * headers in case you wish to expose GPIO, CAN, or PWM functionality. We use
- * the GPIO number to identify the pins even though they may be used for things
- * other than GPIO as this provides consistency with the GPIO functions which
- * will likely be used. A list of defines are also given here to make your code
- * easier to read and to indicate which pins are available for pinmuxing.
+ *             On the Robotics Cape, we allow changing the pinmux on the SPI,
+ *             GPS, and UART1 headers in case you wish to expose GPIO, CAN, or
+ *             PWM functionality. We use the GPIO number to identify the pins
+ *             even though they may be used for things other than GPIO as this
+ *             provides consistency with the GPIO functions which will likely be
+ *             used. A list of defines are also given here to make your code
+ *             easier to read and to indicate which pins are available for
+ *             pinmuxing.
+ *
+ *             Not all pinmux modes are available on each pin. However, every
+ *             pin can be configured as a GPIO output, or input with either an
+ *             internal pullup (PU) or pulldown (PD) resistor.
+ *
+ *             The GPS header pins 3 and 4 can be configured to PWM mode which
+ *             breaks out channels A and B of PWM subsystem 0 which are not used
+ *             by the motor drivers and so are free for the user to do with as
+ *             they please. They default to UART mode for communicating with GPS
+ *             receivers and can also be used in any GPIO mode.
+ *
+ *             The UART1 header pins 3 and 4 also default to UART mode and can
+ *             be used in any GPIO mode. However, they also break out the CAN
+ *             bus RX and TX lines. However, to use CAN bus you also need to set
+ *             up a CAN-PHY IC yourself.
+ *
+ *             All SPI pins can be used for SPI or GPIO. If you intend to use
+ *             these pins for pure GPIO use then use the set_pinmux_mode()
+ *             function described here. Note that when configuring the SPI slave
+ *             select lines for manual or automatic mode as described in the SPI
+ *             section of this manual, the rc_spi_init function uses this pinmux
+ *             mode in the backend to set up the pin for you.
+ *
+ *             The beaglebone Blue additionally has 2 GPIO headers, GP0 & GP1,
+ *             with 3.3v, ground, and 4 GPIO signals broken out on each. All 4
+ *             signal pins on GP0 can be configured as one of the 3 different
+ *             GPIO modes, and so can pins 3 and 4 of GP1. Pins 5 and 6 of the
+ *             GP1 header are fixed in output mode and are tied to the Red and
+ *             Green LED signals in case those signals wish to be extended to
+ *             lights outside of a robot's case.
+ *
  *
  * @addtogroup Pinmux
  * @ingroup    IO

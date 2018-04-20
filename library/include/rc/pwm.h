@@ -7,7 +7,7 @@
  * which have two available channels A and B. PWM subsystems 1 and 2 are used
  * for controlling the 4 motor drivers on the Robotics Cape, however they may be
  * controlled by the user directly instead of using the motor API. PWM subsystem
- * 0 channels A and B can be accessed on the UART1 header if set up with the
+ * 0 channels A and B can be accessed on the GPS header if set up with the
  * Pinmux API to do so. The user may have exclusive use of that subsystem.
  *
  *
