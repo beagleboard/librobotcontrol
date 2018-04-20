@@ -47,7 +47,7 @@ uninstall:
 	@make -C examples -s uninstall
 	@make -C services/rc_battery_monitor -s uninstall
 	@make -C services/roboticscape -s uninstall
-	@$(RM) $(DESTDIR)$(prefix)/bin/$(CONFIG_SH)
+	@$(RM) $(DESTDIR)$(prefix)/bin/configure_robotics_dt
 	@$(RM) $(DESTDIR)$(prefix)/share/roboticscape
 	@$(RM) $(DESTDIR)/var/lib/roboticscape
 	@$(RM) $(DESTDIR)/var/log/roboticscape
