@@ -4,30 +4,36 @@
  * \example rc_bind_dsm.c
  * \example rc_blink.c
  * \example rc_calibrate_accel.c
+ * \example rc_calibrate_dsm.c
+ * \example rc_calibrate_escs.c
  * \example rc_calibrate_gyro.c
  * \example rc_calibrate_mag.c
+ * \example rc_check_battery.c
  * \example rc_cpu.c
+ * \example rc_dsm_passthrough.c
  * \example rc_kill.c
  * \example rc_model.c
+ * \example rc_spi_loopback.c
  * \example rc_test_adc.c
  * \example rc_test_algebra.c
  * \example rc_test_bmp.c
  * \example rc_test_buttons.c
  * \example rc_test_dmp.c
  * \example rc_test_dmp_tap.c
+ * \example rc_test_drivers.c
+ * \example rc_test_dsm.c
  * \example rc_test_encoders_eqep.c
  * \example rc_test_encoders_pru.c
  * \example rc_test_escs.c
  * \example rc_test_filters.c
- * \example rc_test_led.c
+ * \example rc_test_leds.c
  * \example rc_test_matrix.c
  * \example rc_test_mavlink.c
  * \example rc_test_motors.c
  * \example rc_test_mpu.c
- * \example rc_test_matrix.c
  * \example rc_test_polynomial.c
  * \example rc_test_pthread.c
- * \example rc_test_servo.c
+ * \example rc_test_servos.c
  * \example rc_test_time.c
  * \example rc_test_vector.c
  * \example rc_uart_loopback.c
