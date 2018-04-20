@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 #include <rc/pwm.h>
 
 #define MIN_HZ 1
@@ -25,12 +26,72 @@ static int dutyA_fd[3];			// pointers to duty cycle file descriptor
 static int dutyB_fd[3];			// pointers to duty cycle file descriptor
 static unsigned int period_ns[3];	// one period per subsystem
 static int init_flag[3] = {0,0,0};
+static int mode; // 0 for "pwmx", 1 for "pwmx:y" versions of driver
 
+/**
+ * @brief      exports A and B pwm channels
+ *
+ * @param[in]  ss    subsystem, to export
+ *
+ * @return     0 on succcess, -1 on failure
+ */
+int __export_channels(int ss)
+{
+	int export_fd=0;
+	char buf[MAXBUF];
+	int len;
 
+	// open export file for that subsystem
+	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/export", ss*2);
+	export_fd = open(buf, O_WRONLY);
+	if(unlikely(export_fd<0)){
+		perror("ERROR in rc_pwm_init, can't open pwm export file for writing");
+		fprintf(stderr,"Probably kernel or BeagleBone image is too old\n");
+		return -1;
+	}
+	len=write(export_fd, "0", 2);
+	if(unlikely(len<0 && errno!=EBUSY)){
+		perror("ERROR: in rc_pwm_init, failed to write 0 to export file");
+		return -1;
+	}
+	len=write(export_fd, "1", 2);
+	if(unlikely(len<0 && errno!=EBUSY)){
+		perror("ERROR: in rc_pwm_init, failed to write 1 to export file");
+		return -1;
+	}
+	close(export_fd);
+
+	// determine mode
+	// start with channel A and also check both versions of driver
+	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/enable", ss*2); // mode 0
+	// if it exists, mode is 0
+	if(access(buf,F_OK)==0) mode=0;
+	else{
+		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:0/enable", ss*2, ss*2); // mode 1
+		// if it exists, mode is 1
+		if(access(buf,F_OK)==0) mode=1;
+		else{
+			fprintf(stderr, "ERROR in rc_pwm_init, export failed for subsystem %d channel %d\n", ss, 0);
+			return -1;
+		}
+	}
+
+	// check channel B
+	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/enable", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:1/enable", ss*2, ss*2); // mode 1
+	// if it exists, mode is 0
+	if(access(buf,F_OK)!=0){
+		fprintf(stderr, "ERROR in rc_pwm_init, export failed for subsystem %d channel %d\n", ss, 0);
+		return -1;
+	}
+	#ifdef DEBUG
+	printf("pwm ss:%d mode:%d\n",ss,mode);
+	#endif
+	return 0;
+}
 
 int rc_pwm_init(int ss, int frequency)
 {
-	int export_fd=0;
 	int periodA_fd; // pointers to frequency file descriptor
 	int periodB_fd;
 	int enableA_fd;  // run (enable) file pointers
@@ -50,96 +111,78 @@ int rc_pwm_init(int ss, int frequency)
 		return -1;
 	}
 
-	// check if subsystem needs exporting first. Shouldn't need to if the
-	// roboticscape service is running which should have done this and then
-	// set the correct permissions on boot
-	// start with channel A
-	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/enable", ss*2);
-	if(access(buf,F_OK)){
-		// open export file for that subsystem
-		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/export", ss*2);
-		export_fd = open(buf, O_WRONLY);
-		if(unlikely(export_fd<0)){
-			perror("ERROR in rc_pwm_init, can't open pwm export file for writing");
-			fprintf(stderr,"Probably kernel or BeagleBone image is too old\n");
-			return -1;
-		}
-		len=write(export_fd, "0", 2);
-		if(unlikely(len<0)){
-			perror("ERROR: in rc_pwm_init, failed to write to export file");
-			return -1;
-		}
-		close(export_fd);
-	}
+	// export channels first
+	if(__export_channels(ss)==-1) return -1;
 
-	// now export channel B if necessary
-	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/enable", ss*2);
-	if(access(buf,F_OK)){
-		// open export file for that subsystem
-		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/export", ss*2);
-		export_fd = open(buf, O_WRONLY);
-		if(unlikely(export_fd<0)){
-			perror("ERROR in rc_pwm_init, can't open pwm export file for writing");
-			fprintf(stderr,"Probably kernel or BeagleBone image is too old\n");
-			return -1;
-		}
-		len=write(export_fd, "1", 2);
-		if(unlikely(len<0)){
-			perror("ERROR: in rc_pwm_init, failed to write to export file");
-			return -1;
-		}
-		close(export_fd);
-	}
+	#ifdef DEBUG
+	printf("pwm ss:%d mode:%d\n",ss,mode);
+	#endif
 
 	// open file descriptors for duty cycles
-	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/duty_cycle", ss*2);
+	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/duty_cycle", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:0/duty_cycle", ss*2, ss*2); // mode 1
 	dutyA_fd[ss] = open(buf,O_WRONLY);
 	if(unlikely(dutyA_fd[ss]==-1)){
-		perror("ERROR in rc_pwm_init, failed to open duty_cycle FD");
+		perror("ERROR in rc_pwm_init, failed to open duty_cycle channel A FD");
+		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
-	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/duty_cycle", ss*2);
+	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/duty_cycle", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:1/duty_cycle", ss*2, ss*2); // mode 1
 	dutyB_fd[ss] = open(buf,O_WRONLY);
 	if(unlikely(dutyB_fd[ss]==-1)){
-		perror("ERROR in rc_pwm_init, failed to open duty_cycle FD");
+		perror("ERROR in rc_pwm_init, failed to open duty_cycle channel B FD");
+		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
 
 	// now open enable, polarity, and period FDs for setup
-	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/enable", ss*2);
+	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/enable", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:0/enable", ss*2, ss*2); // mode 1
 	enableA_fd = open(buf,O_WRONLY);
 	if(unlikely(enableA_fd==-1)){
 		perror("ERROR in rc_pwm_init, failed to open pwm A enable fd");
+		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
-	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/enable", ss*2);
+	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/enable", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:1/enable", ss*2, ss*2); // mode 1
 	enableB_fd = open(buf,O_WRONLY);
 	if(unlikely(enableB_fd==-1)){
 		perror("ERROR in rc_pwm_init, failed to open pwm B enable fd");
+		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
-	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/period", ss*2);
+	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/period", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:0/period", ss*2, ss*2); // mode 1
 	periodA_fd = open(buf,O_WRONLY);
 	if(unlikely(periodA_fd==-1)){
 		perror("ERROR in rc_pwm_init, failed to open pwm A period fd");
+		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
-	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/period", ss*2);
+	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/period", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:1/period", ss*2, ss*2); // mode 1
 	periodB_fd = open(buf,O_WRONLY);
 	if(unlikely(periodB_fd==-1)){
 		perror("ERROR in rc_pwm_init, failed to open pwm B period fd");
+		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
-	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/polarity", ss*2);
+	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/polarity", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:0/polarity", ss*2, ss*2); // mode 1
 	polarityA_fd = open(buf,O_WRONLY);
 	if(unlikely(polarityA_fd==-1)){
 		perror("ERROR in rc_pwm_init, failed to open pwm A polarity fd");
+		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
-	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/polarity", ss*2);
+	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/polarity", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:1/polarity", ss*2, ss*2); // mode 1
 	polarityB_fd = open(buf,O_WRONLY);
 	if(unlikely(polarityB_fd==-1)){
 		perror("ERROR in rc_pwm_init, failed to open pwm B polarity fd");
+		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
 
@@ -200,6 +243,7 @@ int rc_pwm_init(int ss, int frequency)
 
 int rc_pwm_cleanup(int ss)
 {
+	int len;
 	int enableA_fd;
 	int enableB_fd;
 	char buf[MAXBUF];
@@ -214,13 +258,15 @@ int rc_pwm_cleanup(int ss)
 	}
 
 	// now open enable FDs
-	snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/enable", ss*2);
+	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/enable", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:0/enable", ss*2, ss*2); // mode 1
 	enableA_fd = open(buf,O_WRONLY);
 	if(unlikely(enableA_fd==-1)){
 		perror("ERROR in rc_pwm_cleanup, failed to open pwm A enable fd");
 		return -1;
 	}
-	snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/enable", ss*2);
+	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/enable", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:1/enable", ss*2, ss*2); // mode 1
 	enableB_fd = open(buf,O_WRONLY);
 	if(unlikely(enableB_fd==-1)){
 		perror("ERROR in rc_pwm_cleanup, failed to open pwm B enable fd");
