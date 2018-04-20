@@ -7,8 +7,6 @@ UENV=/boot/uEnv.txt
 
 KERNEL="$(uname -r)"
 UNAME="$(sed -n -e '/uname_r=/ s/.*\= *//p' /boot/uEnv.txt)"
-DEBIAN="$(cat /etc/debian_version)"
-UUID="$(blkid -c /dev/null -s UUID -o value /dev/mmcblk*)"
 # get the model number so we can set the right device tree
 MODEL="$(cat /proc/device-tree/model)"
 
@@ -125,7 +123,7 @@ fi
 
 # wipe the file clean with an echo
 echo " " > $UENV
-echo "# this uEnv.txt created by configure_robotics_dt.sh" >> $UENV
+echo "# this uEnv.txt created by configure_robotics_dt" >> $UENV
 echo " " >> $UENV
 
 # write in kernel name from last UENV file
@@ -144,17 +142,7 @@ echo dtb=$DTB >> $UENV
 # standard entry
 echo cmdline=coherent_pool=1M >> $UENV
 
-# if not using custom device tree, load the overlay
-if [ "$DTB" != "$TREE_BLACK_RC" ] && [ "$DTB" != "$TREE_BW_RC" ]; then
-	echo cape_enable=bone_capemgr.enable_partno=$OVERLAY >> $UENV
-	# modify default cape to load in case missing from initramfs
-	echo CAPE=$OVERLAY > /etc/default/capemgr
-	echo "enabling overlay"
-fi
 
-#uuid of emmc to boot from
-echo uuid=$UUID >> $UENV
-echo " " >> $UENV
 
 
 echo "Robotics Cape Device Tree Configured and Installed"
