@@ -1,3 +1,17 @@
+0.4.1
+    * Simplify configure_robotics_dt.sh by removing unnecessary UUID line
+    * update Black and Black wireless device trees to have new LED driver and IIO adc
+    * add Jason's STDIN mode to rc_balance
+    * add ycdtosa's fixed to deb package
+    * fix pru encoder counter
+    * make PWM work with old and new driver
+    * rc_test_dmp prints temp when requested
+    * add library make options for native architecture
+    * add DSM examples and improve DSM performance
+    * add rc_disable_noncritical_services.sh to source
+    * add accelerometer calibration
+    * add rc_test_drivers.c
+
 0.4.0
     * complete rewrite and overhaul
     * move all docs to doxygen
