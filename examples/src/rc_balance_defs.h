@@ -81,7 +81,7 @@
 
 // DSM channel config
 #define DSM_DRIVE_POL		1
-#define DSM_TURN_POL		-1
+#define DSM_TURN_POL		1
 #define DSM_DRIVE_CH		3
 #define DSM_TURN_CH		2
 #define DSM_DEAD_ZONE		0.04

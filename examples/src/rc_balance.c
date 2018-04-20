@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <unistd.h> // for isatty()
+#include <stdlib.h> // for strtof()
 #include <math.h> // for M_PI
 #include <roboticscape.h>
 
@@ -58,6 +59,12 @@ typedef struct core_state_t{
 	float mot_drive;	///< u compensated for battery voltage
 } core_state_t;
 
+// possible modes, user selected with command line arguments
+typedef enum m_input_mode_t{
+	NONE,
+	DSM,
+	STDIN
+} m_input_mode_t;
 
 
 void balance_controller();		///< mpu interrupt routine
@@ -78,17 +85,56 @@ core_state_t cstate;
 setpoint_t setpoint;
 rc_filter_t D1, D2, D3;
 rc_mpu_data_t mpu_data;
+m_input_mode_t m_input_mode = DSM;
+
+/*
+ * printed if some invalid argument was given
+ */
+void print_usage(){
+	printf("\n");
+	printf("-i {dsm|stdin|none}     specify input\n");
+	printf("-h                      print this help message\n");
+	printf("\n");
+}
 
 /**
  * Initialize the filters, mpu, threads, & wait until shut down
  *
  * @return     0 on success, -1 on failure
  */
-int main()
+int main(int argc, char *argv[])
 {
+	int c;
 	pthread_t setpoint_thread = 0;
 	pthread_t battery_thread = 0;
 	pthread_t printf_thread = 0;
+
+	// parse arguments
+	opterr = 0;
+	while ((c = getopt(argc, argv, "i:")) != -1){
+		switch (c){
+		case 'i': // input option
+			if(!strcmp("dsm", optarg)) {
+				m_input_mode = DSM;
+			} else if(!strcmp("stdin", optarg)) {
+				m_input_mode = STDIN;
+			} else if(!strcmp("none", optarg)){
+				m_input_mode = NONE;
+			} else {
+				print_usage();
+				return -1;
+			}
+			break;
+		case 'h':
+			print_usage();
+			return -1;
+			break;
+		default:
+			print_usage();
+			return -1;
+			break;
+		}
+	}
 
 	// make sure another instance isn't running
 	// return value -3 means a root process is running and we need more
@@ -128,11 +174,14 @@ int main()
 		fprintf(stderr,"ERROR: failed to initialize motors\n");
 		return -1;
 	}
+	rc_motor_standby(1); // start with motors in standby
 
 	// start dsm listener
-	if(rc_dsm_init()==-1){
-		fprintf(stderr,"failed to start initialize DSM\n");
-		return -1;
+	if(m_input_mode == DSM){
+		if(rc_dsm_init()==-1){
+			fprintf(stderr,"failed to start initialize DSM\n");
+			return -1;
+		}
 	}
 
 	// initialize adc
@@ -285,7 +334,9 @@ int main()
  */
 void* setpoint_manager(__attribute__ ((unused)) void* ptr)
 {
-	float drive_stick, turn_stick; // dsm input sticks
+	float drive_stick, turn_stick; // input sticks
+	int i, ch, chan, stdin_timeout = 0; // for stdin input
+	char in_str[11];
 
 	// wait for mpu to settle
 	disarm_controller();
@@ -295,11 +346,14 @@ void* setpoint_manager(__attribute__ ((unused)) void* ptr)
 	rc_led_set(RC_LED_GREEN,1);
 
 	while(rc_get_state()!=EXITING){
+		// clear out input of old data before waiting for new data
+		if(m_input_mode == STDIN) fseek(stdin,0,SEEK_END);
+
 		// sleep at beginning of loop so we can use the 'continue' statement
 		rc_usleep(1000000/SETPOINT_MANAGER_HZ);
 
 		// nothing to do if paused, go back to beginning of loop
-		if(rc_get_state() != RUNNING) continue;
+		if(rc_get_state() != RUNNING || m_input_mode == NONE) continue;
 
 		// if we got here the state is RUNNING, but controller is not
 		// necessarily armed. If DISARMED, wait for the user to pick MIP up
@@ -313,39 +367,87 @@ void* setpoint_manager(__attribute__ ((unused)) void* ptr)
 		}
 
 		// if dsm is active, update the setpoint rates
-		if(rc_dsm_is_new_data()){
-			// Read normalized (+-1) inputs from RC radio stick and multiply by
-			// polarity setting so positive stick means positive setpoint
-			turn_stick  = rc_dsm_ch_normalized(DSM_TURN_CH) * DSM_TURN_POL;
-			drive_stick = rc_dsm_ch_normalized(DSM_DRIVE_CH)* DSM_DRIVE_POL;
-
-			// saturate the inputs to avoid possible erratic behavior
-			rc_saturate_float(&drive_stick,-1,1);
-			rc_saturate_float(&turn_stick,-1,1);
-
-			// use a small deadzone to prevent slow drifts in position
-			if(fabs(drive_stick)<DSM_DEAD_ZONE) drive_stick = 0.0;
-			if(fabs(turn_stick)<DSM_DEAD_ZONE)  turn_stick  = 0.0;
-
-			// translate normalized user input to real setpoint values
-			switch(setpoint.drive_mode){
-			case NOVICE:
-				setpoint.phi_dot   = DRIVE_RATE_NOVICE * drive_stick;
-				setpoint.gamma_dot =  TURN_RATE_NOVICE * turn_stick;
-				break;
-			case ADVANCED:
-				setpoint.phi_dot   = DRIVE_RATE_ADVANCED * drive_stick;
-				setpoint.gamma_dot = TURN_RATE_ADVANCED  * turn_stick;
-				break;
-			default: break;
-			}
-		}
-		// if dsm had timed out, put setpoint rates back to 0
-		else if(rc_dsm_is_connection_active()==0){
-			setpoint.theta = 0;
-			setpoint.phi_dot = 0;
-			setpoint.gamma_dot = 0;
+		switch(m_input_mode){
+		case NONE:
 			continue;
+		case DSM:
+			if(rc_dsm_is_new_data()){
+				// Read normalized (+-1) inputs from RC radio stick and multiply by
+				// polarity setting so positive stick means positive setpoint
+				turn_stick  = rc_dsm_ch_normalized(DSM_TURN_CH) * DSM_TURN_POL;
+				drive_stick = rc_dsm_ch_normalized(DSM_DRIVE_CH)* DSM_DRIVE_POL;
+
+				// saturate the inputs to avoid possible erratic behavior
+				rc_saturate_float(&drive_stick,-1,1);
+				rc_saturate_float(&turn_stick,-1,1);
+
+				// use a small deadzone to prevent slow drifts in position
+				if(fabs(drive_stick)<DSM_DEAD_ZONE) drive_stick = 0.0;
+				if(fabs(turn_stick)<DSM_DEAD_ZONE)  turn_stick  = 0.0;
+
+				// translate normalized user input to real setpoint values
+				switch(setpoint.drive_mode){
+				case NOVICE:
+					setpoint.phi_dot   = DRIVE_RATE_NOVICE * drive_stick;
+					setpoint.gamma_dot =  TURN_RATE_NOVICE * turn_stick;
+					break;
+				case ADVANCED:
+					setpoint.phi_dot   = DRIVE_RATE_ADVANCED * drive_stick;
+					setpoint.gamma_dot = TURN_RATE_ADVANCED  * turn_stick;
+					break;
+				default: break;
+				}
+			}
+			// if dsm had timed out, put setpoint rates back to 0
+			else if(rc_dsm_is_connection_active()==0){
+				setpoint.theta = 0;
+				setpoint.phi_dot = 0;
+				setpoint.gamma_dot = 0;
+				continue;
+			}
+			break;
+		case STDIN:
+			i = 0;
+
+			while ((ch = getchar()) != EOF && i < 10){
+				stdin_timeout = 0;
+				if(ch == 'n' || ch == '\n'){
+					if(i > 2){
+						if(chan == DSM_TURN_CH){
+							turn_stick = strtof(in_str, NULL)* DSM_TURN_POL;
+							setpoint.phi_dot = drive_stick;
+						}
+						else if(chan == DSM_TURN_CH){
+							drive_stick = strtof(in_str, NULL)* DSM_DRIVE_POL;
+							setpoint.gamma_dot = turn_stick;
+						}
+					}
+					if(ch == 'n') i = 1;
+					else i = 0;
+				}
+				else if(i == 1){
+					chan = ch - 0x30;
+					i = 2;
+				}
+				else{
+					in_str[i-2] = ch;
+				}
+			}
+
+			// if it has been more than 1 second since getting data
+			if(stdin_timeout >= SETPOINT_MANAGER_HZ){
+				setpoint.theta = 0;
+				setpoint.phi_dot = 0;
+				setpoint.gamma_dot = 0;
+			}
+			else{
+				stdin_timeout++;
+			}
+			continue;
+			break;
+		default:
+			fprintf(stderr,"ERROR in setpoint manager, invalid input mode\n");
+			break;
 		}
 	}
 
@@ -485,6 +587,7 @@ int zero_out_controller()
  */
 int disarm_controller()
 {
+	rc_motor_standby(1);
 	rc_motor_set_all(0.0);
 	setpoint.arm_state = DISARMED;
 	return 0;
@@ -501,6 +604,7 @@ int arm_controller()
 	rc_encoder_eqep_write(ENCODER_CHANNEL_L,0);
 	rc_encoder_eqep_write(ENCODER_CHANNEL_R,0);
 	// prefill_filter_inputs(&D1,cstate.theta);
+	rc_motor_standby(0);
 	setpoint.arm_state = ARMED;
 	return 0;
 }
