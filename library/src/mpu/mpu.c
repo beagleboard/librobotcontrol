@@ -846,6 +846,11 @@ int rc_mpu_initialize_dmp(rc_mpu_data_t *data, rc_mpu_config_t conf)
 			rc_i2c_unlock_bus(config.i2c_bus);
 			return -1;
 		}
+		if(rc_mpu_read_mag(data)==-1){
+			fprintf(stderr,"ERROR: failed to initialize_magnetometer\n");
+			rc_i2c_unlock_bus(config.i2c_bus);
+			return -1;
+		}
 	}
 	else __power_off_magnetometer();
 
@@ -2216,8 +2221,9 @@ int __data_fusion(rc_mpu_data_t* data)
 	}
 
 	// new Yaw is the sum of low and high pass complementary filters.
-	newYaw = rc_filter_march(&low_pass,newMagYaw+(TWO_PI*mag_spin_counter)) \
-			+ rc_filter_march(&high_pass,newDMPYaw+(TWO_PI*dmp_spin_counter));
+	float lp = rc_filter_march(&low_pass,newMagYaw+(TWO_PI*mag_spin_counter));
+	float hp = rc_filter_march(&high_pass,newDMPYaw+(TWO_PI*dmp_spin_counter));
+	newYaw =  lp+hp;
 
 	newYaw = fmod(newYaw,TWO_PI); // remove the effect of the spins
 	if (newYaw > PI) newYaw -= TWO_PI; // bound between +- PI
