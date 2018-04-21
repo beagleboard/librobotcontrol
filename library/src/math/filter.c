@@ -728,3 +728,63 @@ int rc_filter_pid(rc_filter_t* f,float kp,float ki,float kd,float Tf,float dt)
 	rc_vector_free(&den);
 	return 0;
 }
+
+int rc_filter_third_order_complement(rc_filter_t* lp, rc_filter_t* hp, float freq, float damp, float dt)
+{
+	float a,b,c;
+	rc_vector_t den = rc_vector_empty();
+	rc_vector_t numlp = rc_vector_empty();
+	rc_vector_t numhp = rc_vector_empty();
+
+	// sanity checks
+	if(unlikely(freq<=0.0f)){
+		fprintf(stderr, "ERROR in rc_filter_third_order_complement, freq must be >0\n");
+		return -1;
+	}
+	if(unlikely(damp<=0.0f)){
+		fprintf(stderr, "ERROR in rc_filter_third_order_complement, damp must be >0\n");
+		return -1;
+	}
+	if(unlikely(dt<=0.0f)){
+		fprintf(stderr, "ERROR in rc_filter_third_order_complement, dt must be >0\n");
+		return -1;
+	}
+
+	a = (1.0 + 2.0*damp) * freq*freq;
+	b = freq + 2*damp*freq;
+	c = freq*freq*freq;
+
+	rc_vector_alloc(&den, 4);
+	den.d[0]=1.0;
+	den.d[1]=b;
+	den.d[2]=a;
+	den.d[3]=c;
+	rc_vector_alloc(&numlp, 2);
+	numlp.d[0]=a;
+	numlp.d[1]=c;
+	rc_vector_alloc(&numhp, 4);
+	numhp.d[0]=1.0;
+	numhp.d[1]=b;
+	numhp.d[2]=0.0;
+	numhp.d[3]=0.0;
+
+	if(unlikely(rc_filter_c2d_tustin(lp, numlp, den, dt, freq)==-1)){
+		fprintf(stderr, "ERROR in rc_filter_third_order_complement, failed to c2d\n");
+		rc_vector_free(&den);
+		rc_vector_free(&numlp);
+		rc_vector_free(&numhp);
+		return -1;
+	}
+	if(unlikely(rc_filter_c2d_tustin(hp, numhp, den, dt, freq)==-1)){
+		fprintf(stderr, "ERROR in rc_filter_third_order_complement, failed to c2d\n");
+		rc_vector_free(&den);
+		rc_vector_free(&numlp);
+		rc_vector_free(&numhp);
+		return -1;
+	}
+
+	rc_vector_free(&den);
+	rc_vector_free(&numlp);
+	rc_vector_free(&numhp);
+	return 0;
+}

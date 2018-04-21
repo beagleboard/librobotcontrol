@@ -18,6 +18,7 @@
  * \example rc_test_algebra.c
  * \example rc_test_bmp.c
  * \example rc_test_buttons.c
+ * \example rc_test_complementary_filters.c
  * \example rc_test_dmp.c
  * \example rc_test_dmp_tap.c
  * \example rc_test_drivers.c

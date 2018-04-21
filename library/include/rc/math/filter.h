@@ -123,7 +123,7 @@ rc_filter_t rc_filter_empty();
  *
  * @return     0 on success or -1 on failure.
  */
-int   rc_filter_alloc(rc_filter_t* f, rc_vector_t num, rc_vector_t den, float dt);
+int rc_filter_alloc(rc_filter_t* f, rc_vector_t num, rc_vector_t den, float dt);
 
 /**
  * @brief      Like rc_filter_alloc(), but takes arrays for the numerator and
@@ -141,7 +141,7 @@ int   rc_filter_alloc(rc_filter_t* f, rc_vector_t num, rc_vector_t den, float dt
  *
  * @return     0 on success or -1 on failure.
  */
-int   rc_filter_alloc_from_arrays(rc_filter_t* f,float dt,float* num,int numlen,\
+int rc_filter_alloc_from_arrays(rc_filter_t* f,float dt,float* num,int numlen,\
 							float* den,int denlen);
 
 /**
@@ -152,7 +152,7 @@ int   rc_filter_alloc_from_arrays(rc_filter_t* f,float dt,float* num,int numlen,
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_filter_free(rc_filter_t* f);
+int rc_filter_free(rc_filter_t* f);
 
 /**
  * @brief      Prints the transfer function and other statistic of a filter to
@@ -164,7 +164,7 @@ int   rc_filter_free(rc_filter_t* f);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_filter_print(rc_filter_t f);
+int rc_filter_print(rc_filter_t f);
 
 /**
  * @brief      March a filter forward one step with new input provided as an
@@ -195,7 +195,7 @@ float rc_filter_march(rc_filter_t* f, float new_input);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_filter_reset(rc_filter_t* f);
+int rc_filter_reset(rc_filter_t* f);
 
 /**
  * @brief      Enables saturation between bounds min and max.
@@ -212,7 +212,7 @@ int   rc_filter_reset(rc_filter_t* f);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_filter_enable_saturation(rc_filter_t* f, float min, float max);
+int rc_filter_enable_saturation(rc_filter_t* f, float min, float max);
 
 /**
  * @brief      Checks if the filter saturated the last time step.
@@ -225,7 +225,7 @@ int   rc_filter_enable_saturation(rc_filter_t* f, float min, float max);
  * @return     Returns 1 if the filter saturated the last time step. Returns 0
  *             otherwise.
  */
-int   rc_filter_get_saturation_flag(rc_filter_t* f);
+int rc_filter_get_saturation_flag(rc_filter_t* f);
 
 /**
  * @brief      Enables soft start functionality where the output bound is
@@ -249,7 +249,7 @@ int   rc_filter_get_saturation_flag(rc_filter_t* f);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_filter_enable_soft_start(rc_filter_t* f, float seconds);
+int rc_filter_enable_soft_start(rc_filter_t* f, float seconds);
 
 /**
  * @brief      Returns the input 'steps' back in time. Steps=0 returns most
@@ -298,7 +298,7 @@ float rc_filter_previous_output(rc_filter_t* f, int steps);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_filter_prefill_inputs(rc_filter_t* f, float in);
+int rc_filter_prefill_inputs(rc_filter_t* f, float in);
 
 /**
  * @brief      Fills all previous outputs of the filter as if they had been
@@ -312,7 +312,7 @@ int   rc_filter_prefill_inputs(rc_filter_t* f, float in);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_filter_prefill_outputs(rc_filter_t* f, float out);
+int rc_filter_prefill_outputs(rc_filter_t* f, float out);
 
 /**
  * @brief      Creates a new filter f3 by multiplying f1*f2.
@@ -326,7 +326,7 @@ int   rc_filter_prefill_outputs(rc_filter_t* f, float out);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_filter_multiply(rc_filter_t f1, rc_filter_t f2, rc_filter_t* f3);
+int rc_filter_multiply(rc_filter_t f1, rc_filter_t f2, rc_filter_t* f3);
 
 /**
  * @brief      Creates a discrete time filter with similar dynamics to a
@@ -345,7 +345,7 @@ int   rc_filter_multiply(rc_filter_t f1, rc_filter_t f2, rc_filter_t* f3);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_filter_c2d_tustin(rc_filter_t* f,rc_vector_t num,rc_vector_t den,float dt,float w);
+int rc_filter_c2d_tustin(rc_filter_t* f,rc_vector_t num,rc_vector_t den,float dt,float w);
 
 /**
  * @brief      Creates a first order low pass filter.
@@ -364,7 +364,7 @@ int   rc_filter_c2d_tustin(rc_filter_t* f,rc_vector_t num,rc_vector_t den,float 
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_filter_first_order_lowpass(rc_filter_t* f, float dt, float tc);
+int rc_filter_first_order_lowpass(rc_filter_t* f, float dt, float tc);
 
 /**
  * @brief      Creates a first order high pass filter.
@@ -383,7 +383,7 @@ int   rc_filter_first_order_lowpass(rc_filter_t* f, float dt, float tc);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_filter_first_order_highpass(rc_filter_t* f, float dt, float tc);
+int rc_filter_first_order_highpass(rc_filter_t* f, float dt, float tc);
 
 /**
  * @brief      Creates a Butterworth low pass filter of specified order and
@@ -399,7 +399,7 @@ int   rc_filter_first_order_highpass(rc_filter_t* f, float dt, float tc);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_filter_butterworth_lowpass(rc_filter_t* f, int order, float dt, float wc);
+int rc_filter_butterworth_lowpass(rc_filter_t* f, int order, float dt, float wc);
 
 /**
  * @brief      Creates a Butterworth high pass filter of specified order and
@@ -415,7 +415,7 @@ int   rc_filter_butterworth_lowpass(rc_filter_t* f, int order, float dt, float w
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_filter_butterworth_highpass(rc_filter_t* f, int order, float dt, float wc);
+int rc_filter_butterworth_highpass(rc_filter_t* f, int order, float dt, float wc);
 
 /**
  * @brief      Makes a FIR moving average filter that averages over specified
@@ -430,7 +430,7 @@ int   rc_filter_butterworth_highpass(rc_filter_t* f, int order, float dt, float 
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_filter_moving_average(rc_filter_t* f, int samples, int dt);
+int rc_filter_moving_average(rc_filter_t* f, int samples, int dt);
 
 /**
  * @brief      Creates a first order integrator.
@@ -445,7 +445,7 @@ int   rc_filter_moving_average(rc_filter_t* f, int samples, int dt);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_filter_integrator(rc_filter_t *f, float dt);
+int rc_filter_integrator(rc_filter_t *f, float dt);
 
 /**
  * @brief      Creates a second order double integrator.
@@ -460,7 +460,7 @@ int   rc_filter_integrator(rc_filter_t *f, float dt);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_filter_double_integrator(rc_filter_t* f, float dt);
+int rc_filter_double_integrator(rc_filter_t* f, float dt);
 
 /**
  * @brief      Creates a discrete-time implementation of a parallel PID
@@ -484,7 +484,21 @@ int   rc_filter_double_integrator(rc_filter_t* f, float dt);
  *
  * @return      Returns 0 on success or -1 on failure.
  */
-int   rc_filter_pid(rc_filter_t* f,float kp,float ki,float kd,float Tf,float dt);
+int rc_filter_pid(rc_filter_t* f,float kp,float ki,float kd,float Tf,float dt);
+
+
+/**
+ * @brief      Creates a third order symmetric complementary pair of high/low pass filters
+ *
+ * @param      lp    lowpass filter to be populated
+ * @param      hp    highpass filter to be populated
+ * @param[in]  freq  crossover frequency in rad/s
+ * @param[in]  damp  Damping ratio >0, 1 is critically damped, lower than that gets wobbly
+ * @param[in]  dt    desired timestep of discrete filter in seconds
+ *
+ * @return     0 on success or -1 on failure.
+ */
+int rc_filter_third_order_complement(rc_filter_t* lp, rc_filter_t* hp, float freq, float damp, float dt);
 
 
 #ifdef  __cplusplus
