@@ -34,7 +34,7 @@ extern "C" {
 typedef struct rc_matrix_t{
 	int rows; ///< number of rows in the matrix
 	int cols; /// number of columns in the matrix
-	float** d; //
+	double** d; //
 	int initialized;
 } rc_matrix_t;
 
@@ -206,7 +206,7 @@ int rc_matrix_print_sci(rc_matrix_t A);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int rc_matrix_times_scalar(rc_matrix_t* A, float s);
+int rc_matrix_times_scalar(rc_matrix_t* A, double s);
 
 /**
  * @brief      Multiplies A*B=C.
@@ -359,7 +359,7 @@ int rc_matrix_outer_product(rc_vector_t v1, rc_vector_t v2, rc_matrix_t* A);
  * @return     Returns the determinant or prints error message and returns -1.0f
  *             of error.
  */
-float rc_matrix_determinant(rc_matrix_t A);
+double rc_matrix_determinant(rc_matrix_t A);
 
 
 #ifdef  __cplusplus

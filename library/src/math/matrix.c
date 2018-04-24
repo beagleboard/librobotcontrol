@@ -50,20 +50,20 @@ int rc_matrix_alloc(rc_matrix_t* A, int rows, int cols)
 	// free any old memory
 	rc_matrix_free(A);
 	// allocate contiguous memory for the major(row) pointers
-	A->d = (float**)malloc(rows*sizeof(float*));
+	A->d = (double**)malloc(rows*sizeof(double*));
 	if(unlikely(A->d==NULL)){
 		fprintf(stderr,"ERROR in rc_matrix_alloc, not enough memory\n");
 		return -1;
 	}
 	// allocate contiguous memory for the actual data
-	void* ptr = malloc(rows*cols*sizeof(float));
+	void* ptr = malloc(rows*cols*sizeof(double));
 	if(unlikely(ptr==NULL)){
 		fprintf(stderr,"ERROR in rc_matrix_alloc, not enough memory\n");
 		free(A->d);
 		return -1;
 	}
 	// manually fill in the pointer to each row
-	for(i=0;i<rows;i++) A->d[i]=(float*)(ptr+i*cols*sizeof(float));
+	for(i=0;i<rows;i++) A->d[i]=(double*)(ptr+i*cols*sizeof(double));
 	A->rows = rows;
 	A->cols = cols;
 	A->initialized = 1;
@@ -101,20 +101,20 @@ int rc_matrix_zeros(rc_matrix_t* A, int rows, int cols)
 	// make sure A is freed before allocating new memory
 	rc_matrix_free(A);
 	// allocate contiguous memory for the major(row) pointers
-	A->d = (float**)malloc(rows*sizeof(float*));
+	A->d = (double**)malloc(rows*sizeof(double*));
 	if(unlikely(A->d==NULL)){
 		fprintf(stderr,"ERROR in rc_create_matrix_zeros, not enough memory\n");
 		return -1;
 	}
 	// allocate contiguous memory for the actual data
-	void* ptr = calloc(rows*cols,sizeof(float));
+	void* ptr = calloc(rows*cols,sizeof(double));
 	if(unlikely(ptr==NULL)){
 		fprintf(stderr,"ERROR in rc_create_matrix_zeros, not enough memory\n");
 		free(A->d);
 		return -1;
 	}
 	// manually fill in the pointer to each row
-	for(i=0;i<rows;i++) A->d[i]=(float*)(ptr+i*cols*sizeof(float));
+	for(i=0;i<rows;i++) A->d[i]=(double*)(ptr+i*cols*sizeof(double));
 	A->rows = rows;
 	A->cols = cols;
 	A->initialized = 1;
@@ -130,7 +130,7 @@ int rc_matrix_identity(rc_matrix_t* A, int dim)
 		return -1;
 	}
 	// fill in diagonal of ones
-	for(i=0;i<dim;i++) A->d[i][i]=1.0f;
+	for(i=0;i<dim;i++) A->d[i][i]=1.0;
 	return 0;
 }
 
@@ -142,7 +142,7 @@ int rc_matrix_random(rc_matrix_t* A, int rows, int cols)
 		fprintf(stderr,"ERROR in rc_matrix_random, failed to allocate matrix\n");
 		return -1;
 	}
-	for(i=0;i<(A->rows*A->cols);i++) A->d[0][i]=rc_get_random_float();
+	for(i=0;i<(A->rows*A->cols);i++) A->d[0][i]=rc_get_random_double();
 	return 0;
 }
 
@@ -178,7 +178,7 @@ int rc_matrix_duplicate(rc_matrix_t A, rc_matrix_t* B)
 		return -1;
 	}
 	// all matrix data is stored contiguously so one memcpy is sufficient
-	memcpy(B->d[0],A.d[0],A.rows*A.cols*sizeof(float));
+	memcpy(B->d[0],A.d[0],A.rows*A.cols*sizeof(double));
 	return 0;
 }
 
@@ -216,7 +216,7 @@ int rc_matrix_print_sci(rc_matrix_t A)
 	return 0;
 }
 
-int rc_matrix_times_scalar(rc_matrix_t* A, float s)
+int rc_matrix_times_scalar(rc_matrix_t* A, double s)
 {
 	int i;
 	if(unlikely(!A->initialized)){
@@ -232,7 +232,7 @@ int rc_matrix_times_scalar(rc_matrix_t* A, float s)
 int rc_matrix_multiply(rc_matrix_t A, rc_matrix_t B, rc_matrix_t* C)
 {
 	int i,j;
-	float* tmp;
+	double* tmp;
 	if(unlikely(!A.initialized||!B.initialized)){
 		fprintf(stderr,"ERROR in rc_matrix_multiply, matrix not initialized\n");
 		return -1;
@@ -249,7 +249,7 @@ int rc_matrix_multiply(rc_matrix_t A, rc_matrix_t B, rc_matrix_t* C)
 	// allocate memory for a column of B from the stack, this is faster than
 	// malloc and the memory is freed automatically when this function returns
 	// it is faster to put a column in contiguous memory before multiplying
-	tmp = alloca(B.rows*sizeof(float));
+	tmp = alloca(B.rows*sizeof(double));
 	if(unlikely(tmp==NULL)){
 		fprintf(stderr,"ERROR in rc_matrix_multiply, alloca failed, stack overflow\n");
 		return -1;
@@ -426,7 +426,7 @@ int rc_matrix_times_col_vec(rc_matrix_t A, rc_vector_t v, rc_vector_t* c)
 int rc_matrix_row_vec_times_matrix(rc_vector_t v, rc_matrix_t A, rc_vector_t* c)
 {
 	int i,j;
-	float* tmp;
+	double* tmp;
 	// sanity checks
 	if(unlikely(!A.initialized || !v.initialized)){
 		fprintf(stderr,"ERROR in rc_matrix_row_vec_times_matrix, matrix or vector uninitialized\n");
@@ -439,7 +439,7 @@ int rc_matrix_row_vec_times_matrix(rc_vector_t v, rc_matrix_t A, rc_vector_t* c)
 	// allocate memory for a column of A from the stack, this is faster than
 	// malloc and the memory is freed automatically when this function returns
 	// it is faster to put a column of A in contiguous memory then multiply
-	tmp = alloca(A.rows*sizeof(float));
+	tmp = alloca(A.rows*sizeof(double));
 	if(unlikely(tmp==NULL)){
 		fprintf(stderr,"ERROR in rc_matrix_row_vec_times_matrix, alloca failed, stack overflow\n");
 		return -1;
@@ -478,19 +478,19 @@ int rc_matrix_outer_product(rc_vector_t v1, rc_vector_t v2, rc_matrix_t* A)
 	return 0;
 }
 
-float rc_matrix_determinant(rc_matrix_t A)
+double rc_matrix_determinant(rc_matrix_t A)
 {
 	int i,j,k;
-	float ratio, det;
+	double ratio, det;
 	rc_matrix_t tmp = rc_matrix_empty();
 	// sanity checks
 	if(unlikely(!A.initialized)){
 		fprintf(stderr,"ERROR in rc_matrix_determinant, received uninitialized matrix\n");
-		return -1.0f;
+		return -1.0;
 	}
 	if(unlikely(A.rows!=A.cols)){
 		fprintf(stderr,"ERROR in rc_matrix_determinant, expected square matrix\n");
-		return -1.0f;
+		return -1.0;
 	}
 	// shortcut for 1x1 matrix
 	if(A.rows==1) return A.d[0][0];
@@ -499,7 +499,7 @@ float rc_matrix_determinant(rc_matrix_t A)
 	// allocate a duplicate to shuffle around
 	if(unlikely(rc_matrix_duplicate(A,&tmp))){
 		fprintf(stderr,"ERROR in rc_matrix_determinant, failed to allocate duplicate\n");
-		return -1.0f;
+		return -1.0;
 	}
 	for(i=0;i<(A.rows-1);i++){
 		for(j=i+1;j<A.rows;j++){
@@ -508,7 +508,7 @@ float rc_matrix_determinant(rc_matrix_t A)
 		}
 	}
 	// multiply along the main diagonal
-	det = 1.0f;
+	det = 1.0;
 	for(i=0;i<A.rows;i++) det *= tmp.d[i][i];
 	// free memory and return
 	rc_matrix_free(&tmp);

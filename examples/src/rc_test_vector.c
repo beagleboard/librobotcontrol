@@ -53,7 +53,7 @@ int main()
 	rc_vector_print(b);
 
 	// vector from array
-	float fib[] = {1,1,2,3,5,8};
+	double fib[] = {1,1,2,3,5,8};
 	rc_vector_from_array(&a,fib,6);
 	printf("\nFibonacci vector from array:\n");
 	rc_vector_print(a);

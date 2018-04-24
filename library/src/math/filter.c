@@ -44,26 +44,26 @@ rc_filter_t rc_filter_empty()
 {
 	rc_filter_t f;
 	f.order		= 0;
-	f.dt		= 0.0f;
-	f.gain		= 1.0f;
+	f.dt		= 0.0;
+	f.gain		= 1.0;
 	f.num		= rc_vector_empty();
 	f.den		= rc_vector_empty();
 	f.sat_en	= 0;
-	f.sat_min	= 0.0f;
-	f.sat_max	= 0.0f;
+	f.sat_min	= 0.0;
+	f.sat_max	= 0.0;
 	f.sat_flag	= 0;
 	f.ss_en		= 0;
 	f.ss_steps	= 0;
 	f.in_buf	= rc_ringbuf_empty();
 	f.out_buf	= rc_ringbuf_empty();
-	f.newest_input	= 0.0f;
-	f.newest_output = 0.0f;
+	f.newest_input	= 0.0;
+	f.newest_output = 0.0;
 	f.step		= 0;
 	f.initialized	= 0;
 	return f;
 }
 
-int rc_filter_alloc(rc_filter_t* f, rc_vector_t num, rc_vector_t den, float dt)
+int rc_filter_alloc(rc_filter_t* f, rc_vector_t num, rc_vector_t den, double dt)
 {
 	// sanity checks
 	if(unlikely(dt<=0.0)){
@@ -78,7 +78,7 @@ int rc_filter_alloc(rc_filter_t* f, rc_vector_t num, rc_vector_t den, float dt)
 		fprintf(stderr,"ERROR in rc_filter_alloc, improper transfer function\n");
 		return -1;
 	}
-	if(unlikely(den.d[0]==0.0f)){
+	if(unlikely(den.d[0]==0.0)){
 		fprintf(stderr,"ERROR in rc_filter_alloc, first coefficient in denominator is 0\n");
 		return -1;
 	}
@@ -115,8 +115,8 @@ int rc_filter_alloc(rc_filter_t* f, rc_vector_t num, rc_vector_t den, float dt)
 	return 0;
 }
 
-int rc_filter_alloc_from_arrays(rc_filter_t* f,float dt,float* num,int numlen,\
-							float* den,int denlen)
+int rc_filter_alloc_from_arrays(rc_filter_t* f,double dt,double* num,int numlen,\
+							double* den,int denlen)
 {
 	// sanity checks
 	if(unlikely(numlen<1 || denlen<1)){
@@ -131,11 +131,11 @@ int rc_filter_alloc_from_arrays(rc_filter_t* f,float dt,float* num,int numlen,\
 		fprintf(stderr,"ERROR in rc_filter_alloc_from_arrays, received null pointer\n");
 		return -1;
 	}
-	if(unlikely(dt<0.0f)){
+	if(unlikely(dt<0.0)){
 		fprintf(stderr,"ERROR in rc_filter_alloc_from_arrays, dt must be >0\n");
 		return -1;
 	}
-	if(unlikely(den[0]==0.0f)){
+	if(unlikely(den[0]==0.0)){
 		fprintf(stderr,"ERROR in rc_filter_alloc_from_arrays, first coefficient in denominator is 0\n");
 		return -1;
 	}
@@ -188,14 +188,14 @@ int rc_filter_free(rc_filter_t* f)
 }
 
 
-float rc_filter_march(rc_filter_t* f, float new_input)
+double rc_filter_march(rc_filter_t* f, double new_input)
 {
 	int i, rel_deg;
-	float new_out = 0.0f;
+	double new_out = 0.0;
 	// sanity checks
 	if(unlikely(!f->initialized)){
 		printf("ERROR in rc_filter_march, filter uninitialized\n");
-		return -1.0f;
+		return -1.0;
 	}
 	// log new input
 	rc_ringbuf_insert(&f->in_buf, new_input);
@@ -214,8 +214,8 @@ float rc_filter_march(rc_filter_t* f, float new_input)
 	new_out /= f->den.d[0];
 	// soft start limits
 	if(f->ss_en && f->step<f->ss_steps){
-		float a=f->sat_max*(f->step/f->ss_steps);
-		float b=f->sat_min*(f->step/f->ss_steps);
+		double a=f->sat_max*(f->step/f->ss_steps);
+		double b=f->sat_min*(f->step/f->ss_steps);
 		if(new_out>a) new_out=a;
 		if(new_out<b) new_out=b;
 	}
@@ -248,8 +248,8 @@ int rc_filter_reset(rc_filter_t* f)
 	}
 	rc_ringbuf_reset(&f->in_buf);
 	rc_ringbuf_reset(&f->out_buf);
-	f->newest_input	= 0.0f;
-	f->newest_output = 0.0f;
+	f->newest_input	= 0.0;
+	f->newest_output = 0.0;
 	f->sat_flag = 0;
 	f->step = 0;
 	return 0;
@@ -283,7 +283,7 @@ int rc_filter_print(rc_filter_t f)
 }
 
 
-int rc_filter_enable_saturation(rc_filter_t* f, float min, float max)
+int rc_filter_enable_saturation(rc_filter_t* f, double min, double max)
 {
 	if(unlikely(!f->initialized)){
 		fprintf(stderr, "ERROR in rc_filter_enable_saturation, filter uninitialized\n");
@@ -310,13 +310,13 @@ int rc_filter_get_saturation_flag(rc_filter_t* f)
 }
 
 
-int rc_filter_enable_soft_start(rc_filter_t* f, float seconds)
+int rc_filter_enable_soft_start(rc_filter_t* f, double seconds)
 {
 	if(unlikely(!f->initialized)){
 		fprintf(stderr,"ERROR in rc_filter_enable_soft_start, filter uninitialized\n");
 		return -1;
 	}
-	if(unlikely(seconds<=0.0f)){
+	if(unlikely(seconds<=0.0)){
 		fprintf(stderr,"ERROR in rc_filter_enable_soft_start, seconds must be >=0\n");
 		return -1;
 	}
@@ -330,28 +330,28 @@ int rc_filter_enable_soft_start(rc_filter_t* f, float seconds)
 }
 
 
-float rc_filter_previous_input(rc_filter_t* f, int steps)
+double rc_filter_previous_input(rc_filter_t* f, int steps)
 {
 	if(unlikely(!f->initialized)){
 		fprintf(stderr,"ERROR in rc_filter_previous_input, filter uninitialized\n");
-		return -1.0f;
+		return -1.0;
 	}
 	return rc_ringbuf_get_value(&f->in_buf, steps);
 }
 
 
-float rc_filter_previous_output(rc_filter_t* f, int steps)
+double rc_filter_previous_output(rc_filter_t* f, int steps)
 {
 	if(unlikely(!f->initialized)){
 		fprintf(stderr,"ERROR in rc_filter_previous_output, filter uninitialized\n");
-		return -1.0f;
+		return -1.0;
 	}
 	return rc_ringbuf_get_value(&f->out_buf, steps);
 }
 
 
 
-int rc_filter_prefill_inputs(rc_filter_t* f, float in)
+int rc_filter_prefill_inputs(rc_filter_t* f, double in)
 {
 	int i;
 	if(unlikely(!f->initialized)){
@@ -366,7 +366,7 @@ int rc_filter_prefill_inputs(rc_filter_t* f, float in)
 }
 
 
-int rc_filter_prefill_outputs(rc_filter_t* f, float out)
+int rc_filter_prefill_outputs(rc_filter_t* f, double out)
 {
 	int i;
 	if(unlikely(!f->initialized)){
@@ -416,7 +416,7 @@ int rc_filter_multiply(rc_filter_t f1, rc_filter_t f2, rc_filter_t* f3)
 }
 
 
-int rc_filter_c2d_tustin(rc_filter_t* f,rc_vector_t num,rc_vector_t den,float dt,float w)
+int rc_filter_c2d_tustin(rc_filter_t* f,rc_vector_t num,rc_vector_t den,double dt,double w)
 {
 	int i,j,m,n;
 	double a,c, A0;
@@ -432,7 +432,7 @@ int rc_filter_c2d_tustin(rc_filter_t* f,rc_vector_t num,rc_vector_t den,float dt
 		fprintf(stderr,"ERROR in rc_filter_c2d_tustin, vector uninitialized\n");
 		return -1;
 	}
-	if(unlikely(dt<=0.0f)){
+	if(unlikely(dt<=0.0)){
 		fprintf(stderr,"ERROR in rc_filter_c2d_tustin, dt must be positive\n");
 		return -1;
 	}
@@ -447,11 +447,11 @@ int rc_filter_c2d_tustin(rc_filter_t* f,rc_vector_t num,rc_vector_t den,float dt
 	rc_vector_zeros(&numZ,n+1);
 	rc_vector_zeros(&denZ,n+1);
 	rc_vector_alloc(&p1,2);	// (z - 1)
-	p1.d[0]		= 1.0f;
-	p1.d[1]		= -1.0f;
+	p1.d[0]		= 1.0;
+	p1.d[1]		= -1.0;
 	rc_vector_alloc(&p2,2);	// (z + 1)
-	p2.d[0]		= 1.0f;
-	p2.d[1]		= 1.0f;
+	p2.d[0]		= 1.0;
+	p2.d[1]		= 1.0;
 
 	// from zeroth up to and including mth
 	for(i=0;i<=m;i++){
@@ -492,23 +492,23 @@ int rc_filter_c2d_tustin(rc_filter_t* f,rc_vector_t num,rc_vector_t den,float dt
 }
 
 
-int rc_filter_first_order_lowpass(rc_filter_t* f, float dt, float time_constant)
+int rc_filter_first_order_lowpass(rc_filter_t* f, double dt, double time_constant)
 {
-	float lp_const;
-	float num[1], den[2];
+	double lp_const;
+	double num[1], den[2];
 	// sanity checks
-	if(unlikely(time_constant<=0.0f)){
+	if(unlikely(time_constant<=0.0)){
 		fprintf(stderr, "ERROR in rc_filter_first_order_lowpass, time constant must be >0\n");
 		return -1;
 	}
-	if(unlikely(dt<=0.0f)){
+	if(unlikely(dt<=0.0)){
 		fprintf(stderr, "ERROR in rc_filter_first_order_lowpass, dt must be >0\n");
 		return -1;
 	}
 	lp_const = dt/time_constant;
 	num[0] = lp_const;
-	den[0] = 1.0f;
-	den[1] = lp_const -1.0f;
+	den[0] = 1.0;
+	den[1] = lp_const -1.0;
 	// make the filter
 	if(unlikely(rc_filter_alloc_from_arrays(f,dt,num,1,den,2))){
 		fprintf(stderr, "ERROR in rc_filter_first_order_lowpass, failed to alloc filter\n");
@@ -518,24 +518,24 @@ int rc_filter_first_order_lowpass(rc_filter_t* f, float dt, float time_constant)
 }
 
 
-int rc_filter_first_order_highpass(rc_filter_t* f, float dt, float time_constant)
+int rc_filter_first_order_highpass(rc_filter_t* f, double dt, double time_constant)
 {
-	float hp_const;
-	float num[2], den[2];
+	double hp_const;
+	double num[2], den[2];
 	// sanity checks
-	if(unlikely(time_constant<=0.0f)){
+	if(unlikely(time_constant<=0.0)){
 		fprintf(stderr, "ERROR in rc_filter_first_order_highpass, time constant must be >0\n");
 		return -1;
 	}
-	if(unlikely(dt<=0.0f)){
+	if(unlikely(dt<=0.0)){
 		fprintf(stderr, "ERROR in rc_filter_first_order_highpass, dt must be >0\n");
 		return -1;
 	}
 	hp_const = dt/time_constant;
-	num[0] = 1.0f-hp_const;
-	num[1] = hp_const-1.0f;
-	den[0] = 1.0f;
-	den[1] = hp_const-1.0f;
+	num[0] = 1.0-hp_const;
+	num[1] = hp_const-1.0;
+	den[0] = 1.0;
+	den[1] = hp_const-1.0;
 	// make the filter
 	if(unlikely(rc_filter_alloc_from_arrays(f,dt,num,2,den,2))){
 		fprintf(stderr, "ERROR in rc_filter_first_order_highpass, failed to alloc filter\n");
@@ -545,7 +545,7 @@ int rc_filter_first_order_highpass(rc_filter_t* f, float dt, float time_constant
 }
 
 
-int rc_filter_butterworth_lowpass(rc_filter_t* f, int order, float dt, float wc)
+int rc_filter_butterworth_lowpass(rc_filter_t* f, int order, double dt, double wc)
 {
 	rc_vector_t num = rc_vector_empty();
 	rc_vector_t den = rc_vector_empty();
@@ -558,7 +558,7 @@ int rc_filter_butterworth_lowpass(rc_filter_t* f, int order, float dt, float wc)
 		return -1;
 	}
 	rc_vector_alloc(&num,1);
-	num.d[0] = 1.0f;
+	num.d[0] = 1.0;
 	if(unlikely(rc_filter_c2d_tustin(f,num,den,dt,wc))){
 		fprintf(stderr, "ERROR in rc_filter_butterworth_lowpass, failed to c2d_tustin\n");
 		rc_vector_free(&num);
@@ -571,7 +571,7 @@ int rc_filter_butterworth_lowpass(rc_filter_t* f, int order, float dt, float wc)
 }
 
 
-int rc_filter_butterworth_highpass(rc_filter_t* f, int order, float dt, float wc)
+int rc_filter_butterworth_highpass(rc_filter_t* f, int order, double dt, double wc)
 {
 	rc_vector_t num = rc_vector_empty();
 	rc_vector_t den = rc_vector_empty();
@@ -585,7 +585,7 @@ int rc_filter_butterworth_highpass(rc_filter_t* f, int order, float dt, float wc
 	}
 	// numerator consists of all zeros at the origin
 	rc_vector_zeros(&num,order+1);
-	num.d[0] = 1.0f;
+	num.d[0] = 1.0;
 
 	if(unlikely(rc_filter_c2d_tustin(f,num,den,dt,wc))){
 		fprintf(stderr, "ERROR in rc_filter_butterworth_highpass, failed to c2d_tustin\n");
@@ -613,7 +613,7 @@ int rc_filter_moving_average(rc_filter_t* f, int samples, int dt)
 	rc_vector_alloc(&den,samples);
 	// fill in coefficients
 	for(i=0;i<samples;i++){
-		num.d[i] = 1.0f/samples;
+		num.d[i] = 1.0/samples;
 		den.d[i] = 0.0;
 	}
 	den.d[0] = 1.0;
@@ -630,12 +630,12 @@ int rc_filter_moving_average(rc_filter_t* f, int samples, int dt)
 }
 
 
-int rc_filter_integrator(rc_filter_t *f, float dt)
+int rc_filter_integrator(rc_filter_t *f, double dt)
 {
 	rc_vector_t num = rc_vector_empty();
 	rc_vector_t den = rc_vector_empty();
 	// sanity checks
-	if(unlikely(dt<=0.0f)){
+	if(unlikely(dt<=0.0)){
 		fprintf(stderr, "ERROR in rc_filter_integrator, dt must be >0\n");
 		return -1;
 	}
@@ -657,12 +657,12 @@ int rc_filter_integrator(rc_filter_t *f, float dt)
 }
 
 
-int rc_filter_double_integrator(rc_filter_t* f, float dt)
+int rc_filter_double_integrator(rc_filter_t* f, double dt)
 {
 	rc_vector_t num = rc_vector_empty();
 	rc_vector_t den = rc_vector_empty();
 	// sanity checks
-	if(unlikely(dt<=0.0f)){
+	if(unlikely(dt<=0.0)){
 		fprintf(stderr, "ERROR in rc_filter_double_integrator, dt must be >0\n");
 		return -1;
 	}
@@ -684,12 +684,12 @@ int rc_filter_double_integrator(rc_filter_t* f, float dt)
 	return 0;
 }
 
-int rc_filter_pid(rc_filter_t* f,float kp,float ki,float kd,float Tf,float dt)
+int rc_filter_pid(rc_filter_t* f,double kp,double ki,double kd,double Tf,double dt)
 {
 	rc_vector_t num = rc_vector_empty();
 	rc_vector_t den = rc_vector_empty();
 	// sanity checks
-	if(unlikely(dt<0.0f)){
+	if(unlikely(dt<0.0)){
 		fprintf(stderr,"ERROR in rc_filter_pid, dt must be >0\n");
 		return -1;
 	}
@@ -698,12 +698,12 @@ int rc_filter_pid(rc_filter_t* f,float kp,float ki,float kd,float Tf,float dt)
 		return -1;
 	}
 	// if ki==0, return a 1st order PD filter with rolloff
-	if(ki==0.0f){
+	if(ki==0.0){
 		rc_vector_alloc(&num,2);
 		rc_vector_alloc(&den,2);
 		num.d[0] = (kp*Tf+kd)/Tf;
 		num.d[1] = -(((ki*dt-kp)*(dt-Tf))+kd)/Tf;
-		den.d[0] = 1.0f;
+		den.d[0] = 1.0;
 		den.d[1] = -(Tf-dt)/Tf;
 	}
 	//otherwise 2nd order PID with roll off
@@ -713,7 +713,7 @@ int rc_filter_pid(rc_filter_t* f,float kp,float ki,float kd,float Tf,float dt)
 		num.d[0] = (kp*Tf+kd)/Tf;
 		num.d[1] = (ki*dt*Tf + kp*(dt-Tf) - kp*Tf - 2.0*kd)/Tf;
 		num.d[2] = (((ki*dt-kp)*(dt-Tf))+kd)/Tf;
-		den.d[0] = 1.0f;
+		den.d[0] = 1.0;
 		den.d[1] = (dt-(2.0*Tf))/Tf;
 		den.d[2] = (Tf-dt)/Tf;
 	}
@@ -729,23 +729,23 @@ int rc_filter_pid(rc_filter_t* f,float kp,float ki,float kd,float Tf,float dt)
 	return 0;
 }
 
-int rc_filter_third_order_complement(rc_filter_t* lp, rc_filter_t* hp, float freq, float damp, float dt)
+int rc_filter_third_order_complement(rc_filter_t* lp, rc_filter_t* hp, double freq, double damp, double dt)
 {
-	float a,b,c;
+	double a,b,c;
 	rc_vector_t den = rc_vector_empty();
 	rc_vector_t numlp = rc_vector_empty();
 	rc_vector_t numhp = rc_vector_empty();
 
 	// sanity checks
-	if(unlikely(freq<=0.0f)){
+	if(unlikely(freq<=0.0)){
 		fprintf(stderr, "ERROR in rc_filter_third_order_complement, freq must be >0\n");
 		return -1;
 	}
-	if(unlikely(damp<=0.0f)){
+	if(unlikely(damp<=0.0)){
 		fprintf(stderr, "ERROR in rc_filter_third_order_complement, damp must be >0\n");
 		return -1;
 	}
-	if(unlikely(dt<=0.0f)){
+	if(unlikely(dt<=0.0)){
 		fprintf(stderr, "ERROR in rc_filter_third_order_complement, dt must be >0\n");
 		return -1;
 	}

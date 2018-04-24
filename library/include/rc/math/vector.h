@@ -39,7 +39,7 @@ extern "C" {
  */
 typedef struct rc_vector_t{
 	int len;	///< number of elements in the vector
-	float* d;	///< pointer to dynamically allocated data
+	double* d;	///< pointer to dynamically allocated data
 	int initialized;///< initialization flag
 } rc_vector_t;
 
@@ -171,7 +171,7 @@ int   rc_vector_fibonnaci(rc_vector_t* v, int length);
  *
  * @return     Returns 0 if successful, otherwise returns -1.
  */
-int   rc_vector_from_array(rc_vector_t* v, float* ptr, int length);
+int   rc_vector_from_array(rc_vector_t* v, double* ptr, int length);
 
 /**
  * @brief      Duplicates the contents of vector a and into a new vector b.
@@ -233,7 +233,7 @@ int   rc_vector_print_sci(rc_vector_t v);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_vector_times_scalar(rc_vector_t* v, float s);
+int   rc_vector_times_scalar(rc_vector_t* v, double s);
 
 /**
  * @brief      Returns the vector norm defined by sum(abs(v)^p)^(1/p), where p
@@ -251,7 +251,7 @@ int   rc_vector_times_scalar(rc_vector_t* v, float s);
  *
  * @return     vector norm. Prints error message and returns -1.0f on error.
  */
-float rc_vector_norm(rc_vector_t v, float p);
+double rc_vector_norm(rc_vector_t v, double p);
 
 /**
  * @brief      Returns the index of the maximum value in v.
@@ -287,7 +287,7 @@ int   rc_vector_min(rc_vector_t v);
  * @return     Returns the standard deviation or prints and error message and
  *             return -1.0f on error.
  */
-float rc_vector_std_dev(rc_vector_t v);
+double rc_vector_std_dev(rc_vector_t v);
 
 /**
  * @brief      Returns the mean (average) of all values in vector v or -1.0f on
@@ -298,7 +298,7 @@ float rc_vector_std_dev(rc_vector_t v);
  * @return     Returns the mean (average) of all values in vector v or -1.0f on
  *             error.
  */
-float rc_vector_mean(rc_vector_t v);
+double rc_vector_mean(rc_vector_t v);
 
 /**
  * @brief      Populates vector p with the projection of vector v onto e.
@@ -323,7 +323,7 @@ int   rc_vector_projection(rc_vector_t v, rc_vector_t e, rc_vector_t* p);
  * @return     Returns the dot product, or prints and error message and returns
  *             -1.0f on error.
  */
-float rc_vector_dot_product(rc_vector_t v1, rc_vector_t v2);
+double rc_vector_dot_product(rc_vector_t v1, rc_vector_t v2);
 
 /**
  * @brief      Computes the cross-product of two vectors, each of length 3.

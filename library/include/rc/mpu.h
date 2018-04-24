@@ -181,7 +181,7 @@ typedef struct rc_mpu_config_t{
 	int dmp_fetch_accel_gyro;	///< set to 1 to optionally raw accel/gyro when reading DMP quaternion, default: 0 (off)
 	int dmp_auto_calibrate_gyro;	///< set to 1 to let DMP auto calibrate the gyro while in use, default: 0 (off)
 	rc_mpu_orientation_t orient;	///< DMP orientation matrix, see rc_mpu_orientation_t
-	float compass_time_constant;	///< time constant (seconds) for filtering compass with gyroscope yaw value, default 25
+	double compass_time_constant;	///< time constant (seconds) for filtering compass with gyroscope yaw value, default 25
 	int dmp_interrupt_sched_policy;	///< Scheduler policy for DMP interrupt handler and user callback, default SCHED_OTHER
 	int dmp_interrupt_priority;	///< scheduler priority for DMP interrupt handler and user callback, default 0
 	int read_mag_after_callback;	///< reads magnetometer after DMP callback function to improve latency, default 1 (true)
@@ -202,24 +202,24 @@ typedef struct rc_mpu_config_t{
 typedef struct rc_mpu_data_t{
 	/** @name base sensor readings in real units */
 	///@{
-	float accel[3];		///< accelerometer (XYZ) in units of m/s^2
-	float gyro[3];		///< gyroscope (XYZ) in units of degrees/s
-	float mag[3];		///< magnetometer (XYZ) in units of uT
-	float temp;		///< thermometer, in units of degrees Celsius
+	double accel[3];	///< accelerometer (XYZ) in units of m/s^2
+	double gyro[3];		///< gyroscope (XYZ) in units of degrees/s
+	double mag[3];		///< magnetometer (XYZ) in units of uT
+	double temp;		///< thermometer, in units of degrees Celsius
 	///@}
 
 	/** @name 16 bit raw adc readings and conversion rates*/
 	///@{
 	int16_t raw_gyro[3];	///< raw gyroscope (XYZ)from 16-bit ADC
 	int16_t raw_accel[3];	///< raw accelerometer (XYZ) from 16-bit ADC
-	float accel_to_ms2;	///< conversion rate from raw accelerometer to m/s^2
-	float gyro_to_degs;	///< conversion rate from raw gyroscope to degrees/s
+	double accel_to_ms2;	///< conversion rate from raw accelerometer to m/s^2
+	double gyro_to_degs;	///< conversion rate from raw gyroscope to degrees/s
 	///@}
 
 	/** @name DMP data */
 	///@{
-	float dmp_quat[4];	///< normalized quaternion from DMP based on ONLY Accel/Gyro
-	float dmp_TaitBryan[3];	///< Tait-Bryan angles (roll pitch yaw) in radians from DMP based on ONLY Accel/Gyro
+	double dmp_quat[4];	///< normalized quaternion from DMP based on ONLY Accel/Gyro
+	double dmp_TaitBryan[3];///< Tait-Bryan angles (roll pitch yaw) in radians from DMP based on ONLY Accel/Gyro
 	int tap_detected;	///< set to 1 if there was a tap detect on the last dmp sample, reset to 0 on next sample
 	int last_tap_direction;	///< direction of last tap, 1-6 corresponding to X+ X- Y+ Y- Z+ Z-
 	int last_tap_count;	///< current counter of rapid consecutive taps
@@ -227,10 +227,10 @@ typedef struct rc_mpu_data_t{
 
 	/** @name fused DMP data filtered with magnetometer */
 	///@{
-	float fused_quat[4];		///< fused and normalized quaternion
-	float fused_TaitBryan[3];	///< fused Tait-Bryan angles (roll pitch yaw) in radians
-	float compass_heading;		///< fused heading filtered with gyro and accel data, same as Tait-Bryan yaw
-	float compass_heading_raw;	///< unfiltered heading from magnetometer
+	double fused_quat[4];		///< fused and normalized quaternion
+	double fused_TaitBryan[3];	///< fused Tait-Bryan angles (roll pitch yaw) in radians
+	double compass_heading;		///< fused heading filtered with gyro and accel data, same as Tait-Bryan yaw
+	double compass_heading_raw;	///< unfiltered heading from magnetometer
 	///@}
 } rc_mpu_data_t;
 

@@ -36,7 +36,7 @@ extern "C" {
  * @return     Returns the norm, or prints an error message and returns -1.0f on
  *             error.
  */
-float rc_quaternion_norm(rc_vector_t q);
+double rc_quaternion_norm(rc_vector_t q);
 
 /**
  * @brief      Returns the length of a quaternion vector by finding its 2-norm.
@@ -46,7 +46,7 @@ float rc_quaternion_norm(rc_vector_t q);
  * @return     Returns the norm, or prints an error message and returns -1.0f on
  *             error.
  */
-float rc_quaternion_norm_array(float q[4]);
+double rc_quaternion_norm_array(double q[4]);
 
 /**
  * @brief      Normalizes a quaternion in-place to have length 1.0
@@ -64,7 +64,7 @@ int   rc_normalize_quaternion(rc_vector_t* q);
  *
  * @return     Returns 0 on success or -1 on failure
  */
-int   rc_normalize_quaternion_array(float q[4]);
+int   rc_normalize_quaternion_array(double q[4]);
 
 /**
  * @brief      Calculates 321 Tait Bryan angles in array order XYZ with
@@ -90,7 +90,7 @@ int   rc_quaternion_to_tb(rc_vector_t q, rc_vector_t* tb);
  *
  * @return     Returns 0 on success or -1 on failure
  */
-int  rc_quaternion_to_tb_array(float q[4], float tb[3]);
+int  rc_quaternion_to_tb_array(double q[4], double tb[3]);
 
 /**
  * @brief      Calculates quaternion vector q from tait-bryan angles tb.
@@ -119,7 +119,7 @@ int   rc_quaternion_from_tb(rc_vector_t tb, rc_vector_t* q);
  *
  * @return     Returns 0 on success or -1 on failure
  */
-int  rc_quaternion_from_tb_array(float tb[3], float q[4]);
+int  rc_quaternion_from_tb_array(double tb[3], double q[4]);
 
 /**
  * @brief      Calculates conjugate of quaternion q.
@@ -160,7 +160,7 @@ int   rc_quaternion_conjugate_inplace(rc_vector_t* q);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int  rc_quaternion_conjugate_array(float q[4], float c[4]);
+int  rc_quaternion_conjugate_array(double q[4], double c[4]);
 
 /**
  * @brief      Calculates conjugate of quaternion q and overwrites the old q.
@@ -172,7 +172,7 @@ int  rc_quaternion_conjugate_array(float q[4], float c[4]);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int  rc_quaternion_conjugate_array_inplace(float q[4]);
+int  rc_quaternion_conjugate_array_inplace(double q[4]);
 
 /**
  * @brief      Populates vector i with the imaginary components ijk of of
@@ -216,7 +216,7 @@ int   rc_quaternion_multiply(rc_vector_t a, rc_vector_t b, rc_vector_t* c);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int  rc_quaternion_multiply_array(float a[4], float b[4], float c[4]);
+int  rc_quaternion_multiply_array(double a[4], double b[4], double c[4]);
 
 /**
  * @brief      Rotates the quaternion p by quaternion q with the operation
@@ -242,7 +242,7 @@ int   rc_quaternion_rotate(rc_vector_t* p, rc_vector_t q);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int  rc_quaternion_rotate_array(float p[4], float q[4]);
+int  rc_quaternion_rotate_array(double p[4], double q[4]);
 
 /**
  * @brief      Rotate a 3D vector v in-place about the origin by quaternion q by
@@ -268,7 +268,7 @@ int   rc_quaternion_rotate_vector(rc_vector_t* v, rc_vector_t q);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int  rc_quaternion_rotate_vector_array(float v[3], float q[4]);
+int  rc_quaternion_rotate_vector_array(double v[3], double q[4]);
 
 /**
  * @brief      Converts a normalized quaternion to a 3x3 orthogonal rotation

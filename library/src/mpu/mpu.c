@@ -87,10 +87,10 @@ static pthread_t imu_interrupt_thread;
 static int thread_running_flag;
 static void (*dmp_callback_func)()=NULL;
 static void (*tap_callback_func)(int dir, int cnt)=NULL;
-static float mag_factory_adjust[3];
-static float mag_offsets[3];
-static float mag_scales[3];
-static float accel_lengths[3];
+static double mag_factory_adjust[3];
+static double mag_offsets[3];
+static double mag_scales[3];
+static double accel_lengths[3];
 static int last_read_successful;
 static uint64_t last_interrupt_timestamp_nanos;
 static uint64_t last_tap_timestamp_nanos;
@@ -129,8 +129,8 @@ static int __load_gyro_calibration();
 static int __load_mag_calibration();
 static int __load_accel_calibration();
 static int __write_gyro_cal_to_disk(int16_t offsets[3]);
-static int __write_mag_cal_to_disk(float offsets[3], float scale[3]);
-static int __write_accel_cal_to_disk(float* center, float* lengths);
+static int __write_mag_cal_to_disk(double offsets[3], double scale[3]);
+static int __write_accel_cal_to_disk(double* center, double* lengths);
 static void* __dmp_interrupt_handler(void* ptr);
 static int __read_dmp_fifo(rc_mpu_data_t* data);
 static int __data_fusion(rc_mpu_data_t* data);
@@ -316,7 +316,7 @@ int rc_mpu_read_mag(rc_mpu_data_t* data)
 {
 	uint8_t raw[7];
 	int16_t adc[3];
-	float factory_cal_data[3];
+	double factory_cal_data[3];
 	if(!config.enable_magnetometer){
 		fprintf(stderr,"ERROR: can't read magnetometer unless it is enabled in \n");
 		fprintf(stderr,"rc_mpu_config_t struct before calling rc_mpu_initialize\n");
@@ -1315,12 +1315,12 @@ int __dmp_set_interrupt_mode(unsigned char mode)
 int __dmp_set_tap_thresh(unsigned char axis, unsigned short thresh)
 {
 	unsigned char tmp[4];
-	float scaled_thresh;
+	double scaled_thresh;
 	unsigned short dmp_thresh, dmp_thresh_2;
 	if (!(axis & TAP_XYZ) || thresh > 1600)
 		return -1;
 
-	scaled_thresh = (float)thresh / DMP_SAMPLE_RATE;
+	scaled_thresh = (double)thresh / DMP_SAMPLE_RATE;
 
 	switch (config.accel_fsr) {
 	case ACCEL_FSR_2G:
@@ -2028,7 +2028,7 @@ int __read_dmp_fifo(rc_mpu_data_t* data)
 	qlen=sqrt(sum);
 	for(j=0;j<4;j++) q_tmp[j]/=qlen;
 	// make floating point and put in output
-	for(j=0;j<4;j++) data->dmp_quat[j]=(float)q_tmp[j];
+	for(j=0;j<4;j++) data->dmp_quat[j]=(double)q_tmp[j];
 
 	// fill in tait-bryan angles to the data struct
 	rc_quaternion_to_tb_array(data->dmp_quat, data->dmp_TaitBryan);
@@ -2108,10 +2108,10 @@ int __read_dmp_fifo(rc_mpu_data_t* data)
  */
 int __data_fusion(rc_mpu_data_t* data)
 {
-	float tilt_tb[3], tilt_q[4], mag_vec[3];
-	static float newMagYaw = 0;
-	static float newDMPYaw = 0;
-	float lastDMPYaw, lastMagYaw, newYaw;
+	double tilt_tb[3], tilt_q[4], mag_vec[3];
+	static double newMagYaw = 0;
+	static double newDMPYaw = 0;
+	double lastDMPYaw, lastMagYaw, newYaw;
 	static int dmp_spin_counter = 0;
 	static int mag_spin_counter = 0;
 	static int first_run = 1; // set to 0 after first call to this function
@@ -2210,7 +2210,7 @@ int __data_fusion(rc_mpu_data_t* data)
 		mag_spin_counter = 0;
 		dmp_spin_counter = 0;
 		// generate complementary filters
-		float dt = 1.0/config.dmp_sample_rate;
+		double dt = 1.0/config.dmp_sample_rate;
 		rc_filter_first_order_lowpass(&low_pass,dt,config.compass_time_constant);
 		rc_filter_first_order_highpass(&high_pass,dt,config.compass_time_constant);
 		rc_filter_prefill_inputs(&low_pass,newMagYaw);
@@ -2221,8 +2221,8 @@ int __data_fusion(rc_mpu_data_t* data)
 	}
 
 	// new Yaw is the sum of low and high pass complementary filters.
-	float lp = rc_filter_march(&low_pass,newMagYaw+(TWO_PI*mag_spin_counter));
-	float hp = rc_filter_march(&high_pass,newDMPYaw+(TWO_PI*dmp_spin_counter));
+	double lp = rc_filter_march(&low_pass,newMagYaw+(TWO_PI*mag_spin_counter));
+	double hp = rc_filter_march(&high_pass,newDMPYaw+(TWO_PI*dmp_spin_counter));
 	newYaw =  lp+hp;
 
 	newYaw = fmod(newYaw,TWO_PI); // remove the effect of the spins
@@ -2311,7 +2311,7 @@ int __load_gyro_calibration()
 int __load_mag_calibration()
 {
 	FILE *fd;
-	float x,y,z,sx,sy,sz;
+	double x,y,z,sx,sy,sz;
 
 	fd = fopen(MAG_CAL_FILE, "r");
 	if(fd==NULL){
@@ -2326,7 +2326,7 @@ int __load_mag_calibration()
 		sz=1.0;
 	}
 	else{ // read in data
-		if(fscanf(fd,"%f\n%f\n%f\n%f\n%f\n%f\n", &x,&y,&z,&sx,&sy,&sz)!=6){
+		if(fscanf(fd,"%lf\n%lf\n%lf\n%lf\n%lf\n%lf\n", &x,&y,&z,&sx,&sy,&sz)!=6){
 			fprintf(stderr,"ERROR loading magnetometer calibration file, empty or malformed\n");
 			fprintf(stderr,"please run rc_calibrate_mag to make a new calibration file\n");
 			fprintf(stderr,"using default offsets for now\n");
@@ -2341,7 +2341,7 @@ int __load_mag_calibration()
 	}
 
 	#ifdef DEBUG
-	printf("magcal: %f %f %f %f %f %f\n", x,y,z,sx,sy,sz);
+	printf("magcal: %lf %lf %lf %lf %lf %lf\n", x,y,z,sx,sy,sz);
 	#endif
 
 	// write to global variables for use by rc_mpu_read_mag
@@ -2365,7 +2365,7 @@ int __load_accel_calibration()
 {
 	FILE* fd;
 	uint8_t raw[6] = {0,0,0,0,0,0};
-	float x,y,z,sx,sy,sz; // offsets and scales in xyz
+	double x,y,z,sx,sy,sz; // offsets and scales in xyz
 	int16_t bias[3], factory[3];
 
 	fd = fopen(ACCEL_CAL_FILE, "r");
@@ -2381,7 +2381,7 @@ int __load_accel_calibration()
 		return 0;
 	}
 	// read in data
-	if(fscanf(fd,"%f\n%f\n%f\n%f\n%f\n%f\n", &x,&y,&z,&sx,&sy,&sz)!=6){
+	if(fscanf(fd,"%lf\n%lf\n%lf\n%lf\n%lf\n%lf\n", &x,&y,&z,&sx,&sy,&sz)!=6){
 		fprintf(stderr,"ERROR loading accel offsets, calibration file empty or malformed\n");
 		fprintf(stderr,"please run rc_calibrate_accel to make a new calibration file\n");
 		fprintf(stderr,"using default offsets for now\n");
@@ -2395,8 +2395,8 @@ int __load_accel_calibration()
 
 
 	#ifdef DEBUG
-	printf("accel offsets: %f %f %f\n", x, y, z);
-	printf("accel scales:  %f %f %f\n", sx, sy, sz);
+	printf("accel offsets: %lf %lf %lf\n", x, y, z);
+	printf("accel scales:  %lf %lf %lf\n", sx, sy, sz);
 	#endif
 
 	// save scales globally
@@ -2496,7 +2496,7 @@ int __write_gyro_cal_to_disk(int16_t offsets[3])
  *
  * @return     0 on success, -1 on failure
  */
-int __write_mag_cal_to_disk(float offsets[3], float scale[3])
+int __write_mag_cal_to_disk(double offsets[3], double scale[3])
 {
 	FILE* fd;
 	int ret;
@@ -2541,7 +2541,7 @@ int __write_mag_cal_to_disk(float offsets[3], float scale[3])
  *
  * @return     0 on success, -1 on failure
  */
-int __write_accel_cal_to_disk(float* center, float* lengths)
+int __write_accel_cal_to_disk(double* center, double* lengths)
 {
 	FILE* fd;
 	int ret;
@@ -2673,7 +2673,7 @@ COLLECT_DATA:
 	rc_vector_alloc(&vx,samples);
 	rc_vector_alloc(&vy,samples);
 	rc_vector_alloc(&vz,samples);
-	float dev_x, dev_y, dev_z;
+	double dev_x, dev_y, dev_z;
 	gyro_sum[0] = 0;
 	gyro_sum[1] = 0;
 	gyro_sum[2] = 0;
@@ -2689,9 +2689,9 @@ COLLECT_DATA:
 		gyro_sum[0]  += (int32_t) x;
 		gyro_sum[1]  += (int32_t) y;
 		gyro_sum[2]  += (int32_t) z;
-		vx.d[i] = (float)x;
-		vy.d[i] = (float)y;
-		vz.d[i] = (float)z;
+		vx.d[i] = (double)x;
+		vy.d[i] = (double)y;
+		vz.d[i] = (double)z;
 	}
 	dev_x = rc_vector_std_dev(vx);
 	dev_y = rc_vector_std_dev(vy);
@@ -2746,7 +2746,7 @@ COLLECT_DATA:
 int rc_mpu_calibrate_mag_routine(rc_mpu_config_t conf)
 {
 	int i;
-	float new_scale[3];
+	double new_scale[3];
 	const int samples = 200;
 	const int sample_time_us = 12000000; // 12 seconds ()
 	const int loop_wait_us = sample_time_us/samples;
@@ -2913,7 +2913,7 @@ int __collect_accel_samples(int* avg_raw)
 	int32_t sum[3];
 	int i, samples, fifo_count;
 	int16_t x,y,z;
-	float dev_x, dev_y, dev_z;
+	double dev_x, dev_y, dev_z;
 	rc_vector_t vx = rc_vector_empty();
 	rc_vector_t vy = rc_vector_empty();
 	rc_vector_t vz = rc_vector_empty();
@@ -2955,9 +2955,9 @@ int __collect_accel_samples(int* avg_raw)
 		sum[0]  += (int32_t) x;
 		sum[1]  += (int32_t) y;
 		sum[2]  += (int32_t) z;
-		vx.d[i] = (float)x;
-		vy.d[i] = (float)y;
-		vz.d[i] = (float)z;
+		vx.d[i] = (double)x;
+		vy.d[i] = (double)y;
+		vz.d[i] = (double)z;
 	}
 	dev_x = rc_vector_std_dev(vx);
 	dev_y = rc_vector_std_dev(vy);

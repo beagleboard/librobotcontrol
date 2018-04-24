@@ -1,7 +1,7 @@
 /**
  * @file math/ring_buffer.c
  *
- * @brief      Ring buffer implementation for single-precision floats
+ * @brief      Ring buffer implementation for double-precision doubles
  *
  *             Ring buffers are FIFO (first in first out) buffers of fixed
  *             length which efficiently boot out the oldest value when full.
@@ -59,7 +59,7 @@ int rc_ringbuf_alloc(rc_ringbuf_t* buf, int size)
 	buf->initialized = 0;
 	// free memory and allocate fresh
 	free(buf->d);
-	buf->d = (float*)calloc(size,sizeof(float));
+	buf->d = (double*)calloc(size,sizeof(double));
 	if(buf->d==NULL){
 		fprintf(stderr,"ERROR in rc_ringbuf_alloc, failed to allocate memory\n");
 		return -1;
@@ -95,13 +95,13 @@ int rc_ringbuf_reset(rc_ringbuf_t* buf)
 		return -1;
 	}
 	// wipe the data and index
-	memset(buf->d,0,buf->size*sizeof(float));
+	memset(buf->d,0,buf->size*sizeof(double));
 	buf->index=0;
 	return 0;
 }
 
 
-int rc_ringbuf_insert(rc_ringbuf_t* buf, float val)
+int rc_ringbuf_insert(rc_ringbuf_t* buf, double val)
 {
 	int new_index;
 	// sanity checks
@@ -123,7 +123,7 @@ int rc_ringbuf_insert(rc_ringbuf_t* buf, float val)
 }
 
 
-float rc_ringbuf_get_value(rc_ringbuf_t* buf, int pos)
+double rc_ringbuf_get_value(rc_ringbuf_t* buf, int pos)
 {
 	int return_index;
 	// sanity checks
@@ -146,10 +146,10 @@ float rc_ringbuf_get_value(rc_ringbuf_t* buf, int pos)
 }
 
 
-float rc_ringbuf_std_dev(rc_ringbuf_t buf)
+double rc_ringbuf_std_dev(rc_ringbuf_t buf)
 {
 	int i;
-	float mean, mean_sqr, diff;
+	double mean, mean_sqr, diff;
 	// sanity checks
 	if(unlikely(!buf.initialized)){
 		fprintf(stderr,"ERROR in rc_ringbuf_std_dev, ringbuf not initialized yet\n");
@@ -160,14 +160,14 @@ float rc_ringbuf_std_dev(rc_ringbuf_t buf)
 	// calculate mean
 	mean = 0.0f;
 	for(i=0;i<buf.size;i++) mean+=buf.d[i];
-	mean = mean/(float)buf.size;
+	mean = mean/(double)buf.size;
 	// calculate mean square
 	mean_sqr = 0.0f;
 	for(i=0;i<buf.size;i++){
 		diff = buf.d[i]-mean;
 		mean_sqr += diff*diff;
 	}
-	return sqrt(mean_sqr/(float)(buf.size-1));
+	return sqrt(mean_sqr/(double)(buf.size-1));
 }
 
 

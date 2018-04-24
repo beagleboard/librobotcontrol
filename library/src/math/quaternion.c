@@ -14,23 +14,23 @@
 
 #define unlikely(x)	__builtin_expect (!!(x), 0)
 
-float rc_quaternion_norm(rc_vector_t q)
+double rc_quaternion_norm(rc_vector_t q)
 {
 	if(unlikely(q.len!=4)){
 		fprintf(stderr, "ERROR in rc_quaternion_norm, expected vector of length 4\n");
-		return -1.0f;
+		return -1.0;
 	}
 	return rc_vector_norm(q,2);
 }
 
 
-float rc_quaternion_norm_array(float q[4])
+double rc_quaternion_norm_array(double q[4])
 {
 	double sum = 0.0;
 	int i;
 	if(unlikely(q==NULL)){
 		fprintf(stderr, "ERROR in rc_quaternion_norm_array, received NULL pointer\n");
-		return -1.0f;
+		return -1.0;
 	}
 	for(i=0;i<4;i++) sum+=q[i]*q[i];
 	return sqrt(sum);
@@ -40,14 +40,14 @@ float rc_quaternion_norm_array(float q[4])
 int rc_normalize_quaternion(rc_vector_t* q)
 {
 	int i;
-	float len;
+	double len;
 	// sanity checks
 	if(unlikely(q->len!=4)){
 		fprintf(stderr, "ERROR in rc_normalize_quaternion, expected vector of length 4\n");
 		return -1;
 	}
 	len = rc_vector_norm(*q,2);
-	if(unlikely(len<=0.0f)){
+	if(unlikely(len<=0.0)){
 		fprintf(stderr, "ERROR in rc_normalize_quaternion, unable to calculate norm\n");
 		return -1;
 	}
@@ -56,17 +56,17 @@ int rc_normalize_quaternion(rc_vector_t* q)
 }
 
 
-int rc_normalize_quaternion_array(float q[4])
+int rc_normalize_quaternion_array(double q[4])
 {
 	int i;
-	float len;
-	float sum=0.0f;
+	double len;
+	double sum=0.0;
 	for(i=0;i<4;i++) sum+=q[i]*q[i];
 	len = sqrtf(sum);
 
 	// can't check if length is below a constant value as q may be filled
-	// with extremely small but valid floats
-	if(unlikely(len==0.0f)){
+	// with extremely small but valid doubles
+	if(unlikely(len==0.0)){
 		fprintf(stderr, "ERROR in quaternion has 0 length\n");
 		return -1;
 	}
@@ -94,7 +94,7 @@ int rc_quaternion_to_tb(rc_vector_t q, rc_vector_t* tb)
 }
 
 
-int rc_quaternion_to_tb_array(float q[4], float tb[3])
+int rc_quaternion_to_tb_array(double q[4], double tb[3])
 {
 	if(unlikely(q==NULL||tb==NULL)){
 		fprintf(stderr,"ERROR: in rc_quaternion_to_tb_array, received NULL pointer\n");
@@ -102,7 +102,7 @@ int rc_quaternion_to_tb_array(float q[4], float tb[3])
 	}
 	// these functions are done with double precision since they cannot be
 	// accelerated by the NEON unit and the VFP computes doubles at the same
-	// speed as single-precision floats
+	// speed as single-precision doubles
 	tb[1] = asin(2.0*(q[0]*q[2] - q[1]*q[3]));
 	tb[0] = atan2(2.0*(q[2]*q[3] + q[0]*q[1]),
 		1.0 - 2.0*(q[1]*q[1] + q[2]*q[2]));
@@ -131,7 +131,7 @@ int rc_quaternion_from_tb(rc_vector_t tb, rc_vector_t* q)
 }
 
 
-int rc_quaternion_from_tb_array(float tb[3], float q[4])
+int rc_quaternion_from_tb_array(double tb[3], double q[4])
 {
 	if(unlikely(q==NULL||q==NULL)){
 		fprintf(stderr,"ERROR: in rc_quaternion_from_tb_array, received NULL pointer\n");
@@ -200,7 +200,7 @@ int rc_quaternion_conjugate_inplace(rc_vector_t* q)
 }
 
 
-int rc_quaternion_conjugate_array(float q[4], float c[4])
+int rc_quaternion_conjugate_array(double q[4], double c[4])
 {
 	if(unlikely(q==NULL||c==NULL)){
 		fprintf(stderr,"ERROR: in rc_quaternion_conjugate_array, received NULL pointer\n");
@@ -214,7 +214,7 @@ int rc_quaternion_conjugate_array(float q[4], float c[4])
 }
 
 
-int rc_quaternion_conjugate_array_inplace(float q[4])
+int rc_quaternion_conjugate_array_inplace(double q[4])
 {
 	if(unlikely(q==NULL)){
 		fprintf(stderr,"ERROR: in rc_quaternion_conjugate_array_inplace, received NULL pointer\n");
@@ -292,7 +292,7 @@ int rc_quaternion_multiply(rc_vector_t a, rc_vector_t b, rc_vector_t* c)
 }
 
 
-int rc_quaternion_multiply_array(float a[4], float b[4], float c[4])
+int rc_quaternion_multiply_array(double a[4], double b[4], double c[4])
 {
 	if(unlikely(a==NULL||b==NULL||c==NULL)){
 		fprintf(stderr,"ERROR: in rc_quaternion_multiply_array, received NULL pointer\n");
@@ -300,7 +300,7 @@ int rc_quaternion_multiply_array(float a[4], float b[4], float c[4])
 	}
 
 	int i,j;
-	float tmp[4][4];
+	double tmp[4][4];
 	// construct tmp matrix
 	tmp[0][0] =  a[0];
 	tmp[0][1] = -a[1];
@@ -320,7 +320,7 @@ int rc_quaternion_multiply_array(float a[4], float b[4], float c[4])
 	tmp[3][3] =  a[0];
 	// multiply
 	for(i=0;i<4;i++){
-		c[i]=0.0f;
+		c[i]=0.0;
 		for(j=0;j<4;j++) c[i]+=tmp[i][j]*b[j];
 	}
 	return 0;
@@ -363,9 +363,9 @@ int rc_quaternion_rotate(rc_vector_t* p, rc_vector_t q)
 }
 
 
-int rc_quaternion_rotate_array(float p[4], float q[4])
+int rc_quaternion_rotate_array(double p[4], double q[4])
 {
-	float conj[4], tmp[4];
+	double conj[4], tmp[4];
 	if(unlikely(p==NULL||q==NULL)){
 		fprintf(stderr,"ERROR: in rc_quaternion_rotate_array, received NULL pointer\n");
 		return -1;
@@ -400,7 +400,7 @@ int rc_quaternion_rotate_vector(rc_vector_t* v, rc_vector_t q)
 		fprintf(stderr, "ERROR in rc_quaternion_rotate_vector, failed to alloc vector\n");
 		return -1;
 	}
-	vq.d[0]=0.0f;
+	vq.d[0]=0.0;
 	vq.d[1]=v->d[0];
 	vq.d[2]=v->d[1];
 	vq.d[3]=v->d[2];
@@ -420,15 +420,15 @@ int rc_quaternion_rotate_vector(rc_vector_t* v, rc_vector_t q)
 }
 
 
-int rc_quaternion_rotate_vector_array(float v[3], float q[4])
+int rc_quaternion_rotate_vector_array(double v[3], double q[4])
 {
-	float vq[4];
+	double vq[4];
 	if(unlikely(v==NULL||q==NULL)){
 		fprintf(stderr,"ERROR: in rc_quaternion_rotate_vector_array, received NULL pointer\n");
 		return -1;
 	}
 	// duplicate v into a quaternion with 0 real part
-	vq[0]=0.0f;
+	vq[0]=0.0;
 	vq[1]=v[0];
 	vq[2]=v[1];
 	vq[3]=v[2];
@@ -445,7 +445,7 @@ int rc_quaternion_rotate_vector_array(float v[3], float q[4])
 
 int rc_quaternion_to_rotation_matrix(rc_vector_t q, rc_matrix_t* m)
 {
-	float q0s, q1s, q2s, q3s;
+	double q0s, q1s, q2s, q3s;
 	// sanity checks
 	if(unlikely(!q.initialized)){
 		fprintf(stderr, "ERROR in rc_quaternion_to_rotation_matrix, vector uninitialized\n");
@@ -469,12 +469,12 @@ int rc_quaternion_to_rotation_matrix(rc_vector_t q, rc_matrix_t* m)
 	m->d[1][1] = q0s-q1s+q2s-q3s;
 	m->d[2][2] = q0s-q1s-q2s+q3s;
 	// upper triangle
-	m->d[0][1] = 2.0f * (q.d[1]*q.d[2] - q.d[0]*q.d[3]);
-	m->d[0][2] = 2.0f * (q.d[1]*q.d[3] + q.d[0]*q.d[2]);
-	m->d[1][2] = 2.0f * (q.d[2]*q.d[3] - q.d[0]*q.d[1]);
+	m->d[0][1] = 2.0 * (q.d[1]*q.d[2] - q.d[0]*q.d[3]);
+	m->d[0][2] = 2.0 * (q.d[1]*q.d[3] + q.d[0]*q.d[2]);
+	m->d[1][2] = 2.0 * (q.d[2]*q.d[3] - q.d[0]*q.d[1]);
 	// lower triangle
-	m->d[1][0] = 2.0f * (q.d[1]*q.d[2] + q.d[0]*q.d[3]);
-	m->d[2][0] = 2.0f * (q.d[1]*q.d[3] - q.d[0]*q.d[2]);
-	m->d[2][1] = 2.0f * (q.d[2]*q.d[3] + q.d[0]*q.d[1]);
+	m->d[1][0] = 2.0 * (q.d[1]*q.d[2] + q.d[0]*q.d[3]);
+	m->d[2][0] = 2.0 * (q.d[1]*q.d[3] - q.d[0]*q.d[2]);
+	m->d[2][1] = 2.0 * (q.d[2]*q.d[3] + q.d[0]*q.d[1]);
 	return 0;
 }
