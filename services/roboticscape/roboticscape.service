@@ -6,7 +6,7 @@ Requires=systemd-modules-load.service
 User=root
 PIDFile=/var/run/roboticscape/roboticscape.pid
 ExecStartPre=/usr/bin/rc_startup_routine
-ExecStart=/etc/roboticscape/link_to_startup_program
+ExecStart=-/etc/roboticscape/link_to_startup_program
 ExecStop=/usr/bin/rc_kill
 
 [Install]
