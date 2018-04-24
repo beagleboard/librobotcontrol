@@ -164,7 +164,7 @@ int rc_poly_divide(rc_vector_t n, rc_vector_t d, rc_vector_t* div, rc_vector_t* 
  *
  * @return     Returns 0 on success and -1 on failure.
  */
-int rc_poly_butter(int N, float wc, rc_vector_t* b);
+int rc_poly_butter(int N, double wc, rc_vector_t* b);
 
 
 

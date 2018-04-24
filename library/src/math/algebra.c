@@ -23,22 +23,18 @@
 #define DEFAULT_ZERO_TOLERANCE 1e-8 // consider v to be zero if fabs(v)<ZERO_TOLERANCE
 
 // current tolerance, can be changed with rc_algebra_set_zero_tolerance.
-float zero_tolerance=DEFAULT_ZERO_TOLERANCE;
+double zero_tolerance=DEFAULT_ZERO_TOLERANCE;
 
-
-// local functions
-/*******************************************************************************
-* int __qr_multiply_q_right(rc_matrix_t* A, rc_matrix_t x)
-*
-* performs a right matrix multiplication of x on the bottom right minor of A
-* where x is smaller than or equal to the size of A. Only used here in the
-* backend, not for user access.
-*******************************************************************************/
+/**
+ * performs a right matrix multiplication of x on the bottom right minor of A
+ * where x is smaller than or equal to the size of A. Only used here in the
+ * backend, not for user access.
+ */
 int __qr_multiply_q_right(rc_matrix_t* A, rc_matrix_t x)
 {
 	int i,j,k,q;
 	rc_matrix_t tmp = rc_matrix_empty();
-	float* col;
+	double* col;
 	if(unlikely(!A->initialized || !x.initialized)){
 		fprintf(stderr,"ERROR in __qr_multiply_q_right, uninitialized matrix\n");
 		return -1;
@@ -62,7 +58,7 @@ int __qr_multiply_q_right(rc_matrix_t* A, rc_matrix_t x)
 	// allocate memory for a column of tmp from the stack, this is faster than
 	// malloc and the memory is freed automatically when this function returns
 	// it is faster to put a column in contiguous memory before multiplying
-	col = alloca(x.rows*sizeof(float));
+	col = alloca(x.rows*sizeof(double));
 	if(unlikely(col==NULL)){
 		fprintf(stderr,"ERROR in __qr_multiply_q_right, alloca failed, stack overflow\n");
 		rc_matrix_free(&tmp);
@@ -83,14 +79,12 @@ int __qr_multiply_q_right(rc_matrix_t* A, rc_matrix_t x)
 	return 0;
 }
 
-/*******************************************************************************
-* int __qr_multiply_r_left(rc_matrix_t x, rc_matrix_t* Am, float norm)
-*
-* performs a left matrix multiplication of x on the bottom right minor of A
-* where x is smaller than or equal to the size of A. Only used here in the
-* backend, not for user access.
-*******************************************************************************/
-int __qr_multiply_r_left(rc_matrix_t H, rc_matrix_t* R, float norm)
+/**
+ * performs a left matrix multiplication of x on the bottom right minor of A
+ * where x is smaller than or equal to the size of A. Only used here in the
+ * backend, not for user access.
+ */
+int __qr_multiply_r_left(rc_matrix_t H, rc_matrix_t* R, double norm)
 {
 	int i,j,p;
 	rc_matrix_t tmp = rc_matrix_empty();
@@ -125,7 +119,7 @@ int __qr_multiply_r_left(rc_matrix_t H, rc_matrix_t* R, float norm)
 		// we know first column of R will be mostly zeros, so fill in zeros
 		// or known norm where possible. we use p to
 		if(i==0)	R->d[i+p][p]=norm;
-		else		R->d[i+p][p]=0.0f;
+		else		R->d[i+p][p]=0.0;
 		// do multiplication for the rest of the columns
 		// A has already been transposed so don't transpose each column
 		for(j=1;j<(R->cols-p);j++){
@@ -137,17 +131,15 @@ int __qr_multiply_r_left(rc_matrix_t H, rc_matrix_t* R, float norm)
 	return 0;
 }
 
-/*******************************************************************************
-* rc_matrix_t __qr_householder_matrix(rc_vector_t x, float* new_norm)
-*
-* returns the householder reflection matrix for a given vector
-* where u=x-ae1, v=u/norm(u), H=I-(2/norm(x))vv'
-* warning! modifies x!, only for use by qr decomposition below
-*******************************************************************************/
-rc_matrix_t __qr_householder_matrix(rc_vector_t x, float* new_norm)
+/**
+ * returns the householder reflection matrix for a given vector
+ * where u=x-ae1, v=u/norm(u), H=I-(2/norm(x))vv'
+ * warning! modifies x!, only for use by qr decomposition below
+ **/
+rc_matrix_t __qr_householder_matrix(rc_vector_t x, double* new_norm)
 {
 	int i, j;
-	float norm, tau, taui, dot;
+	double norm, tau, taui, dot;
 	rc_matrix_t out = rc_matrix_empty();
 	rc_vector_t v = rc_vector_empty();
 
@@ -204,7 +196,7 @@ rc_matrix_t __qr_householder_matrix(rc_vector_t x, float* new_norm)
 int rc_algebra_lup_decomp(rc_matrix_t A, rc_matrix_t* L, rc_matrix_t* U, rc_matrix_t* P)
 {
 	int i,j,k,m,index,tmpint;
-	float s1, s2;
+	double s1, s2;
 	int* ptmp;
 	void* rowtmp;
 	rc_matrix_t Adup = rc_matrix_empty();
@@ -244,7 +236,7 @@ int rc_algebra_lup_decomp(rc_matrix_t A, rc_matrix_t* L, rc_matrix_t* U, rc_matr
 	// represent P as an array of positions 0 through (m-1) for fast pivoting
 	// also alloc memory for a row of A as tmp holder while pivoting
 	ptmp = alloca(m*sizeof(int));
-	rowtmp = alloca(m*sizeof(float));
+	rowtmp = alloca(m*sizeof(double));
 	if(unlikely(ptmp==NULL || rowtmp==NULL)){
 		fprintf(stderr,"ERROR in rc_algebra_lup_decomp, alloca failed, stack overflow\n");
 		rc_matrix_free(&Adup);
@@ -268,18 +260,18 @@ int rc_algebra_lup_decomp(rc_matrix_t A, rc_matrix_t* L, rc_matrix_t* U, rc_matr
 			ptmp[index]=ptmp[i];
 			ptmp[i]=tmpint;
 			// swap rows of A
-			memcpy(rowtmp,Adup.d[index],m*sizeof(float));
-			memcpy(Adup.d[index],Adup.d[i],m*sizeof(float));
-			memcpy(Adup.d[i],rowtmp,m*sizeof(float));
+			memcpy(rowtmp,Adup.d[index],m*sizeof(double));
+			memcpy(Adup.d[index],Adup.d[i],m*sizeof(double));
+			memcpy(Adup.d[i],rowtmp,m*sizeof(double));
 		}
 	}
 	// construct P from ptmp
-	for(i=0;i<m;i++) P->d[i][ptmp[i]]=1.0f;
+	for(i=0;i<m;i++) P->d[i][ptmp[i]]=1.0;
 	// now do normal LU
 	for(i=0;i<m;i++){
 		for(j=0;j<m;j++){
-			s1 = 0.0f;
-			s2 = 0.0f;
+			s1 = 0.0;
+			s2 = 0.0;
 			for(k=0;k<i;k++) s1 += U->d[k][j] * L->d[i][k];
 			for(k=0;k<j;k++) s2 += U->d[k][j] * L->d[i][k];
 			if(j>=i) U->d[i][j] = (Adup.d[i][j]-s1);
@@ -293,7 +285,7 @@ int rc_algebra_lup_decomp(rc_matrix_t A, rc_matrix_t* L, rc_matrix_t* U, rc_matr
 int rc_algebra_qr_decomp(rc_matrix_t A, rc_matrix_t* Q, rc_matrix_t* R)
 {
 	int i,j,steps;
-	float norm;
+	double norm;
 	rc_vector_t x = rc_vector_empty();
 	rc_matrix_t H = rc_matrix_empty();
 	// Sanity Checks
@@ -422,7 +414,7 @@ int rc_algebra_lin_system_solve(rc_matrix_t A, rc_vector_t b, rc_vector_t* x)
 	/*Thank you to Henry Guennadi Levkin for open sourcing this routine, it's
 	* adapted here and includes better detection of unsolvable systems.
 	*/
-	float fMaxElem, fAcc;
+	double fMaxElem, fAcc;
 	int nDim,i,j,k,m;
 	rc_matrix_t Atemp = rc_matrix_empty();
 	rc_vector_t btemp = rc_vector_empty();
@@ -505,7 +497,7 @@ int rc_algebra_lin_system_solve(rc_matrix_t A, rc_vector_t b, rc_vector_t* x)
 	return 0;
 }
 
-void rc_algebra_set_zero_tolerance(float tol){
+void rc_algebra_set_zero_tolerance(double tol){
 	zero_tolerance=tol;
 	return;
 }
@@ -616,9 +608,9 @@ int rc_algebra_fit_ellipsoid(rc_matrix_t pts, rc_vector_t* ctr, rc_vector_t* len
 		rc_vector_free(&f);
 		return -1;
 	}
-	ctr->d[0] = -f.d[1]/(2.0f*f.d[0]);
-	ctr->d[1] = -f.d[3]/(2.0f*f.d[2]);
-	ctr->d[2] = -f.d[5]/(2.0f*f.d[4]);
+	ctr->d[0] = -f.d[1]/(2.0*f.d[0]);
+	ctr->d[1] = -f.d[3]/(2.0*f.d[2]);
+	ctr->d[2] = -f.d[5]/(2.0*f.d[4]);
 
 	// Solve for lengths
 	if(unlikely(rc_vector_alloc(&b,3))){
@@ -631,15 +623,15 @@ int rc_algebra_fit_ellipsoid(rc_matrix_t pts, rc_vector_t* ctr, rc_vector_t* len
 		return -1;
 	}
 	// fill in A
-	A.d[0][0] = (f.d[0] * ctr->d[0] * ctr->d[0]) + 1.0f;
+	A.d[0][0] = (f.d[0] * ctr->d[0] * ctr->d[0]) + 1.0;
 	A.d[0][1] = (f.d[0] * ctr->d[1] * ctr->d[1]);
 	A.d[0][2] = (f.d[0] * ctr->d[2] * ctr->d[2]);
 	A.d[1][0] = (f.d[2] * ctr->d[0] * ctr->d[0]);
-	A.d[1][1] = (f.d[2] * ctr->d[1] * ctr->d[1]) + 1.0f;
+	A.d[1][1] = (f.d[2] * ctr->d[1] * ctr->d[1]) + 1.0;
 	A.d[1][2] = (f.d[2] * ctr->d[2] * ctr->d[2]);
 	A.d[2][0] = (f.d[4] * ctr->d[0] * ctr->d[0]);
 	A.d[2][1] = (f.d[4] * ctr->d[1] * ctr->d[1]);
-	A.d[2][2] = (f.d[4] * ctr->d[2] * ctr->d[2]) + 1.0f;
+	A.d[2][2] = (f.d[4] * ctr->d[2] * ctr->d[2]) + 1.0;
 	// fill in b
 	b.d[0] = f.d[0];
 	b.d[1] = f.d[2];
@@ -652,9 +644,9 @@ int rc_algebra_fit_ellipsoid(rc_matrix_t pts, rc_vector_t* ctr, rc_vector_t* len
 		rc_vector_free(&f);
 		return -1;
 	}
-	lens->d[0] = 1.0f/sqrt(lens->d[0]);
-	lens->d[1] = 1.0f/sqrt(lens->d[1]);
-	lens->d[2] = 1.0f/sqrt(lens->d[2]);
+	lens->d[0] = 1.0/sqrt(lens->d[0]);
+	lens->d[1] = 1.0/sqrt(lens->d[1]);
+	lens->d[2] = 1.0/sqrt(lens->d[2]);
 	// cleanup
 	rc_matrix_free(&A);
 	rc_vector_free(&b);

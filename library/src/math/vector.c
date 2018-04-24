@@ -20,7 +20,7 @@
 #include <stdlib.h>	// for malloc,calloc,free
 #include <string.h>	// for memcpy
 #include <math.h>	// for sqrt, pow, etc
-#include <float.h>	// for FLT_MAX
+#include <float.h>	// for FLT_MAX DBL_MAX
 
 #include <rc/math/other.h>
 #include <rc/math/vector.h>
@@ -44,7 +44,7 @@ int rc_vector_alloc(rc_vector_t* v, int length)
 	// free any old memory
 	rc_vector_free(v);
 	// allocate contiguous memory for the vector
-	v->d = (float*)malloc(length*sizeof(float));
+	v->d = (double*)malloc(length*sizeof(double));
 	if(unlikely(v->d==NULL)){
 		fprintf(stderr,"ERROR in rc_vector_alloc, not enough memory\n");
 		return -1;
@@ -91,7 +91,7 @@ int rc_vector_zeros(rc_vector_t* v, int length)
 	// free any old memory
 	rc_vector_free(v);
 	// allocate contiguous zeroed-out memory for the vector
-	v->d = (float*)calloc(length,sizeof(float));
+	v->d = (double*)calloc(length,sizeof(double));
 	if(unlikely(v->d==NULL)){
 		fprintf(stderr,"ERROR in rc_vector_zeros, not enough memory\n");
 		return -1;
@@ -121,7 +121,7 @@ int rc_vector_random(rc_vector_t* v, int length)
 		fprintf(stderr,"ERROR rc_vector_random, failed to allocate vector\n");
 		return -1;
 	}
-	for(i=0;i<length;i++) v->d[i]=rc_get_random_float();
+	for(i=0;i<length;i++) v->d[i]=rc_get_random_double();
 	return 0;
 }
 
@@ -139,7 +139,7 @@ int rc_vector_fibonnaci(rc_vector_t* v, int length)
 }
 
 
-int rc_vector_from_array(rc_vector_t* v, float* ptr, int length)
+int rc_vector_from_array(rc_vector_t* v, double* ptr, int length)
 {
 	// sanity check pointer
 	if(unlikely(ptr==NULL)){
@@ -152,7 +152,7 @@ int rc_vector_from_array(rc_vector_t* v, float* ptr, int length)
 		return -1;
 	}
 	// duplicate memory over
-	memcpy(v->d, ptr, length*sizeof(float));
+	memcpy(v->d, ptr, length*sizeof(double));
 	return 0;
 }
 
@@ -170,7 +170,7 @@ int rc_vector_duplicate(rc_vector_t a, rc_vector_t* b)
 		return -1;
 	}
 	// copy memory over
-	memcpy(b->d, a.d, a.len*sizeof(float));
+	memcpy(b->d, a.d, a.len*sizeof(double));
 	return 0;
 }
 
@@ -200,7 +200,7 @@ int rc_vector_print_sci(rc_vector_t v)
 }
 
 
-int rc_vector_times_scalar(rc_vector_t* v, float s)
+int rc_vector_times_scalar(rc_vector_t* v, double s)
 {
 	int i;
 	if(unlikely(!v->initialized)){
@@ -212,9 +212,9 @@ int rc_vector_times_scalar(rc_vector_t* v, float s)
 }
 
 
-float rc_vector_norm(rc_vector_t v, float p)
+double rc_vector_norm(rc_vector_t v, double p)
 {
-	float norm = 0.0f;
+	double norm = 0.0f;
 	int i;
 	if(unlikely(!v.initialized)){
 		fprintf(stderr,"ERROR in rc_vector_norm, vector not initialized yet\n");
@@ -245,7 +245,7 @@ int rc_vector_max(rc_vector_t v)
 {
 	int i;
 	int index = 0;
-	float tmp = -FLT_MAX;
+	double tmp = -DBL_MAX;
 	if(unlikely(!v.initialized)){
 		fprintf(stderr,"ERROR in rc_vector_max, vector not initialized yet\n");
 		return -1;
@@ -264,7 +264,7 @@ int rc_vector_min(rc_vector_t v)
 {
 	int i;
 	int index = 0;
-	float tmp = FLT_MAX;
+	double tmp = DBL_MAX;
 	if(unlikely(!v.initialized)){
 		fprintf(stderr,"ERROR in rc_vector_min, vector not initialized yet\n");
 		return -1;
@@ -279,10 +279,10 @@ int rc_vector_min(rc_vector_t v)
 }
 
 
-float rc_vector_std_dev(rc_vector_t v)
+double rc_vector_std_dev(rc_vector_t v)
 {
 	int i;
-	float mean, mean_sqr, diff;
+	double mean, mean_sqr, diff;
 	if(unlikely(!v.initialized)){
 		fprintf(stderr,"ERROR in rc_vector_std_dev, vector not initialized yet\n");
 		return -1.0f;
@@ -292,35 +292,35 @@ float rc_vector_std_dev(rc_vector_t v)
 	// calculate mean
 	mean = 0.0f;
 	for(i=0;i<v.len;i++) mean+=v.d[i];
-	mean = mean/(float)v.len;
+	mean = mean/(double)v.len;
 	// calculate mean square
 	mean_sqr = 0.0f;
 	for(i=0;i<v.len;i++){
 		diff = v.d[i]-mean;
 		mean_sqr += diff*diff;
 	}
-	return sqrt(mean_sqr/(float)(v.len-1));
+	return sqrt(mean_sqr/(double)(v.len-1));
 }
 
 
-float rc_vector_mean(rc_vector_t v)
+double rc_vector_mean(rc_vector_t v)
 {
 	int i;
-	float sum = 0.0f;
+	double sum = 0.0f;
 	if(unlikely(!v.initialized)){
 		fprintf(stderr,"ERROR in rc_vector_mean, vector not initialized yet\n");
 		return -1.0f;
 	}
 	// calculate mean
 	for(i=0;i<v.len;i++) sum+=v.d[i];
-	return sum/(float)v.len;
+	return sum/(double)v.len;
 }
 
 
 int rc_vector_projection(rc_vector_t v, rc_vector_t e, rc_vector_t* p)
 {
 	int i;
-	float factor;
+	double factor;
 	// sanity checks
 	if(unlikely(!v.initialized || !e.initialized)){
 		fprintf(stderr,"ERROR in rc_vector_projection, received uninitialized vector\n");
@@ -340,7 +340,7 @@ int rc_vector_projection(rc_vector_t v, rc_vector_t e, rc_vector_t* p)
 }
 
 
-float rc_vector_dot_product(rc_vector_t v1, rc_vector_t v2)
+double rc_vector_dot_product(rc_vector_t v1, rc_vector_t v2)
 {
 	if(unlikely(!v1.initialized || !v2.initialized)){
 		fprintf(stderr,"ERROR in rc_vector_dot_product, vector uninitialized\n");

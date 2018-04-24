@@ -1,7 +1,7 @@
 /**
  * <rc/math/ring_buffer.h>
  *
- * @brief      ring buffer implementation for single-precision floats
+ * @brief      ring buffer implementation for double-precision floats
  *
  *             Ring buffers are FIFO (first in first out) buffers of fixed
  *             length which efficiently boot out the oldest value when full.
@@ -34,7 +34,7 @@ extern "C" {
  *             dynamically allocated memory.
  */
 typedef struct rc_ringbuf_t {
-	float* d;	///< pointer to dynamically allocated data
+	double* d;	///< pointer to dynamically allocated data
 	int size;	///< number of elements the buffer can hold
 	int index;	///< index of the most recently added value
 	int initialized;///< flag indicating if memory has been allocated for the buffer
@@ -103,7 +103,7 @@ int   rc_ringbuf_reset(rc_ringbuf_t* buf);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_ringbuf_insert(rc_ringbuf_t* buf, float val);
+int   rc_ringbuf_insert(rc_ringbuf_t* buf, double val);
 
 /**
  * @brief      Fetches the float which is 'position' steps behind the last value
@@ -119,7 +119,7 @@ int   rc_ringbuf_insert(rc_ringbuf_t* buf, float val);
  * @return     Returns the requested float. Prints an error message and returns
  *             -1.0f on error.
  */
-float rc_ringbuf_get_value(rc_ringbuf_t* buf, int position);
+double rc_ringbuf_get_value(rc_ringbuf_t* buf, int position);
 
 /**
  * @brief      Returns the standard deviation of all values in the ring buffer.
@@ -132,7 +132,7 @@ float rc_ringbuf_get_value(rc_ringbuf_t* buf, int position);
  *
  * @return     Returns the standard deviation of all values in the ring buffer.
  */
-float rc_ringbuf_std_dev(rc_ringbuf_t buf);
+double rc_ringbuf_std_dev(rc_ringbuf_t buf);
 
 
 #ifdef  __cplusplus

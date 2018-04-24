@@ -109,7 +109,7 @@ int   rc_algebra_lin_system_solve(rc_matrix_t A, rc_vector_t b, rc_vector_t* x);
  *
  * @param[in]  tol   The zero-tolerance
  */
-void rc_algebra_set_zero_tolerance(float tol);
+void rc_algebra_set_zero_tolerance(double tol);
 
 /**
  * @brief      Finds a least-squares solution to the system Ax=b for non-square

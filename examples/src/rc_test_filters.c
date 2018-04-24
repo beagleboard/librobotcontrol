@@ -39,8 +39,8 @@ int main()
 	rc_filter_t lp_butter = rc_filter_empty();
 	rc_filter_t hp_butter = rc_filter_empty();
 
-	const float dt = 1.0/SAMPLE_RATE;
-	float lp,hp,i,u,lpb,hpb;
+	const double dt = 1.0/SAMPLE_RATE;
+	double lp,hp,i,u,lpb,hpb;
 	int counter = 0;
 
 	printf("\nSample Rate: %dhz\n", SAMPLE_RATE);
