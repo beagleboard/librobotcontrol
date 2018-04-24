@@ -494,8 +494,7 @@ int rc_filter_c2d_tustin(rc_filter_t* f,rc_vector_t num,rc_vector_t den,float dt
 
 int rc_filter_first_order_lowpass(rc_filter_t* f, float dt, float time_constant)
 {
-	float lp_const;
-	float num[1], den[2];
+	float c, num[2], den[2];
 	// sanity checks
 	if(unlikely(time_constant<=0.0f)){
 		fprintf(stderr, "ERROR in rc_filter_first_order_lowpass, time constant must be >0\n");
@@ -505,12 +504,13 @@ int rc_filter_first_order_lowpass(rc_filter_t* f, float dt, float time_constant)
 		fprintf(stderr, "ERROR in rc_filter_first_order_lowpass, dt must be >0\n");
 		return -1;
 	}
-	lp_const = dt/time_constant;
-	num[0] = lp_const;
+	c = dt/time_constant;
+	num[0] = c;
+	num[1] = 0.0f;
 	den[0] = 1.0f;
-	den[1] = lp_const -1.0f;
+	den[1] = c -1.0f;
 	// make the filter
-	if(unlikely(rc_filter_alloc_from_arrays(f,dt,num,1,den,2))){
+	if(unlikely(rc_filter_alloc_from_arrays(f,dt,num,2,den,2))){
 		fprintf(stderr, "ERROR in rc_filter_first_order_lowpass, failed to alloc filter\n");
 		return -1;
 	}
@@ -520,8 +520,7 @@ int rc_filter_first_order_lowpass(rc_filter_t* f, float dt, float time_constant)
 
 int rc_filter_first_order_highpass(rc_filter_t* f, float dt, float time_constant)
 {
-	float hp_const;
-	float num[2], den[2];
+	float c, num[2], den[2];
 	// sanity checks
 	if(unlikely(time_constant<=0.0f)){
 		fprintf(stderr, "ERROR in rc_filter_first_order_highpass, time constant must be >0\n");
@@ -531,11 +530,11 @@ int rc_filter_first_order_highpass(rc_filter_t* f, float dt, float time_constant
 		fprintf(stderr, "ERROR in rc_filter_first_order_highpass, dt must be >0\n");
 		return -1;
 	}
-	hp_const = dt/time_constant;
-	num[0] = 1.0f-hp_const;
-	num[1] = hp_const-1.0f;
+	c = dt/time_constant;
+	num[0] = 1.0f-c;
+	num[1] = c-1.0f;
 	den[0] = 1.0f;
-	den[1] = hp_const-1.0f;
+	den[1] = c-1.0f;
 	// make the filter
 	if(unlikely(rc_filter_alloc_from_arrays(f,dt,num,2,den,2))){
 		fprintf(stderr, "ERROR in rc_filter_first_order_highpass, failed to alloc filter\n");
@@ -731,10 +730,11 @@ int rc_filter_pid(rc_filter_t* f,float kp,float ki,float kd,float Tf,float dt)
 
 int rc_filter_third_order_complement(rc_filter_t* lp, rc_filter_t* hp, float freq, float damp, float dt)
 {
+	int i;
 	float a,b,c;
 	rc_vector_t den = rc_vector_empty();
 	rc_vector_t numlp = rc_vector_empty();
-	rc_vector_t numhp = rc_vector_empty();
+	float numhp[4],denhp[4];
 
 	// sanity checks
 	if(unlikely(freq<=0.0f)){
@@ -762,19 +762,38 @@ int rc_filter_third_order_complement(rc_filter_t* lp, rc_filter_t* hp, float fre
 	rc_vector_alloc(&numlp, 2);
 	numlp.d[0]=a;
 	numlp.d[1]=c;
+	/*
 	rc_vector_alloc(&numhp, 4);
 	numhp.d[0]=1.0;
 	numhp.d[1]=b;
 	numhp.d[2]=0.0;
 	numhp.d[3]=0.0;
+	*/
+	/*
+	printf("numlp:\n");
+	rc_vector_print(numlp);
+	printf("numhp:\n");
+	rc_vector_print(numhp);
+	printf("den:\n");
+	rc_vector_print(den);
+	*/
 
+	// calculate lp with tustin's approximation
 	if(unlikely(rc_filter_c2d_tustin(lp, numlp, den, dt, freq)==-1)){
 		fprintf(stderr, "ERROR in rc_filter_third_order_complement, failed to c2d\n");
 		rc_vector_free(&den);
 		rc_vector_free(&numlp);
-		rc_vector_free(&numhp);
 		return -1;
 	}
+
+	// calculate hp as 1-lp
+	for(i=0;i<4;i++){
+		numhp[i]=lp->den.d[i]-lp->num.d[i];
+		denhp[i]=lp->den.d[i];
+	}
+
+	rc_filter_alloc_from_arrays(hp, dt, numhp, 4, denhp, 4);
+	/*
 	if(unlikely(rc_filter_c2d_tustin(hp, numhp, den, dt, freq)==-1)){
 		fprintf(stderr, "ERROR in rc_filter_third_order_complement, failed to c2d\n");
 		rc_vector_free(&den);
@@ -782,9 +801,12 @@ int rc_filter_third_order_complement(rc_filter_t* lp, rc_filter_t* hp, float fre
 		rc_vector_free(&numhp);
 		return -1;
 	}
+	*/
+
+
+
 
 	rc_vector_free(&den);
 	rc_vector_free(&numlp);
-	rc_vector_free(&numhp);
 	return 0;
 }

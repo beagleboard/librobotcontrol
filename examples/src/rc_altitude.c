@@ -21,7 +21,7 @@
 
 #define ALT_FITLER_FREQ	0.1	// hz
 #define ALT_FILTER_DAMP	1.0	// filter damping ratio
-#define SAMPLE_RATE	200	// hz
+#define SAMPLE_RATE	100	// hz
 #define	DT		1.0f/SAMPLE_RATE
 #define PRINT_HZ	30
 #define BMP_RATE_DIV	4	// only sample bmp every 4th DMP sample
@@ -31,6 +31,8 @@ float altitude, velocity, last_alt;
 rc_mpu_data_t mpu_data;
 rc_bmp_data_t bmp_data;
 rc_filter_t lp_filter, hp_filter;
+
+float accel;
 
 
 // interrupt handler to catch ctrl-c
@@ -55,6 +57,7 @@ void dmp_handler()
 	// rotate accel vector
 	rc_quaternion_rotate_vector_array(accel_vec,mpu_data.dmp_quat);
 	// run complementary filters, integrator is alredy built into hp_filter
+	accel=accel_vec[2]-9.80665;
 	rc_filter_march(&hp_filter, accel_vec[2]-9.80665);
 	rc_filter_march(&lp_filter, bmp_data.alt_m);
 	// sum complementary filters
@@ -70,6 +73,13 @@ void dmp_handler()
 		if(rc_bmp_read(&bmp_data)) return;
 		bmp_sample_counter=0;
 	}
+
+	/*
+	printf("bmp: %7.3f raw accel %7.3f %7.3f %7.3f rotated %7.3f %7.3f %7.3f\n",
+		bmp_data.alt_m, mpu_data.accel[0], mpu_data.accel[1], mpu_data.accel[2],
+		accel_vec[0], accel_vec[1], accel_vec[2]);
+	*/
+
 	return;
 }
 
@@ -89,19 +99,28 @@ int main()
 
 	// create the filters, accel is the combination of a double integrator
 	// (to get from accel to position) and the complementary filter
-	rc_filter_third_order_complement(&lp_filter,&tmp1_filter, 2.0*M_PI*SAMPLE_RATE, ALT_FILTER_DAMP, DT);
-	rc_filter_double_integrator(&tmp2_filter, DT);
-	rc_filter_multiply(tmp1_filter, tmp2_filter,&hp_filter);
+	if(rc_filter_third_order_complement(&lp_filter,&tmp1_filter, 2.0*M_PI*ALT_FITLER_FREQ, ALT_FILTER_DAMP, DT)) return -1;
+
+	if(rc_filter_double_integrator(&hp_filter, DT)) return -1;
+	/*
+	if(rc_filter_multiply(tmp1_filter, tmp2_filter,&hp_filter)) return -1;
 	rc_filter_free(&tmp1_filter);
 	rc_filter_free(&tmp2_filter);
+	*/
+	// print filters
+	printf("lp_filter:\n");
+	rc_filter_print(lp_filter);
+	printf("hp_filter:\n");
+	rc_filter_print(hp_filter);
 
 	// init barometer and read in first data
-	if(rc_bmp_init(BMP_OVERSAMPLE_16, BMP_FILTER_OFF)) return -1;
+	if(rc_bmp_init(BMP_OVERSAMPLE_2, BMP_FILTER_OFF)) return -1;
 	if(rc_bmp_read(&bmp_data)) return -1;
 
 	// init DMP
 	mpu_conf = rc_mpu_default_config();
 	mpu_conf.dmp_sample_rate = SAMPLE_RATE;
+	mpu_conf.dmp_fetch_accel_gyro = 1;
 	if(rc_mpu_initialize_dmp(&mpu_data, mpu_conf)) return -1;
 
 
@@ -113,12 +132,13 @@ int main()
 
 	// wait for dmp to settle then start filter callback
 	printf("waiting for sensors to settle");
+	fflush(stdout);
 	rc_usleep(3000000);
 	rc_mpu_set_dmp_callback(dmp_handler);
 
 	// print a header
 	printf("\r\n");
-	printf("  altitude |");
+	printf(" altitude |");
 	printf("  velocity |");
 	printf(" alt (bmp) |");
 	printf(" alt (accel) |");
@@ -128,10 +148,11 @@ int main()
 	while(running){
 		rc_usleep(1000000/PRINT_HZ);
 		printf("\r");
-		printf("%7.3fm |", altitude);
-		printf("%5.2fm/s |", velocity);
-		printf("%7.3fm |", lp_filter.newest_output);
+		printf("%8.3fm |", altitude);
+		printf("%7.2fm/s |", velocity);
+		printf("%9.3fm |", bmp_data.alt_m);
 		printf("%7.3fm |", hp_filter.newest_output);
+		// printf(" accel %7.3fm |", accel);
 		fflush(stdout);
 	}
 	printf("\n");
