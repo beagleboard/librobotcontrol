@@ -58,6 +58,7 @@ typedef struct rc_filter_t{
 	double sat_min;		///< lower saturation limit
 	double sat_max;		///< upper saturation limit
 	int sat_flag;		///< 1 if saturated on the last step
+	///@}
 
 	/** @name soft start settings */
 	///@{

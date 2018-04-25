@@ -19,8 +19,8 @@
 #include <rc/mpu.h>
 
 
-#define ALT_FITLER_FREQ	0.15	// hz
-#define ALT_FILTER_DAMP	1.0	// filter damping ratio
+#define ALT_FITLER_FREQ	0.2	// hz
+#define ALT_FILTER_DAMP	10.0	// filter damping ratio
 #define SAMPLE_RATE	200	// hz
 #define	DT		(1.0/SAMPLE_RATE)
 #define PRINT_HZ	10

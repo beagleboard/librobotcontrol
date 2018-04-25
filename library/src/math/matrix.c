@@ -514,3 +514,32 @@ double rc_matrix_determinant(rc_matrix_t A)
 	rc_matrix_free(&tmp);
 	return det;
 }
+
+int rc_matrix_symmetrize(rc_matrix_t* P)
+{
+	int i,j;
+	double val;
+	// sanity checks
+	if(P==NULL){
+		fprintf(stderr, "ERROR in rc_matrix_symmetrize, matrix pointer is NULL\n");
+		return -1;
+	}
+	if(P->initialized!=1){
+		fprintf(stderr, "ERROR in rc_matrix_symmetrize, matrix uninitialized\n");
+		return -1;
+	}
+	if(P->rows != P->cols){
+		fprintf(stderr, "ERROR in rc_matrix_symmetrize, matrix must be square\n");
+		return -1;
+	}
+	// itterate top to bottom, skipping last row
+	for(i=0; i<(P->rows-1); i++){
+		// itterate left to right, skipping diagonal
+		for(j=i+1; j<P->cols; j++){
+			val = (P->d[i][j] + P->d[j][i])/2.0;
+			P->d[i][j] = val;
+			P->d[j][i] = val;
+		}
+	}
+	return 0;
+}
