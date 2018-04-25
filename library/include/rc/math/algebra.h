@@ -34,7 +34,7 @@ extern "C" {
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_algebra_lup_decomp(rc_matrix_t A, rc_matrix_t* L, rc_matrix_t* U, rc_matrix_t* P);
+int rc_algebra_lup_decomp(rc_matrix_t A, rc_matrix_t* L, rc_matrix_t* U, rc_matrix_t* P);
 
 /**
  * @brief      Calculate the QR decomposition of matrix A.
@@ -49,7 +49,7 @@ int   rc_algebra_lup_decomp(rc_matrix_t A, rc_matrix_t* L, rc_matrix_t* U, rc_ma
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_algebra_qr_decomp(rc_matrix_t A, rc_matrix_t* Q, rc_matrix_t* R);
+int rc_algebra_qr_decomp(rc_matrix_t A, rc_matrix_t* Q, rc_matrix_t* R);
 
 /**
  * @brief      Inverts matrix A via LUP decomposition method.
@@ -63,7 +63,7 @@ int   rc_algebra_qr_decomp(rc_matrix_t A, rc_matrix_t* Q, rc_matrix_t* R);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_algebra_invert_matrix(rc_matrix_t A, rc_matrix_t* Ainv);
+int rc_algebra_invert_matrix(rc_matrix_t A, rc_matrix_t* Ainv);
 
 /**
  * @brief      Inverts matrix A in place.
@@ -75,7 +75,7 @@ int   rc_algebra_invert_matrix(rc_matrix_t A, rc_matrix_t* Ainv);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_algebra_invert_matrix_inplace(rc_matrix_t* A);
+int rc_algebra_invert_matrix_inplace(rc_matrix_t* A);
 
 /**
  * @brief      Solves Ax=b for given matrix A and vector b.
@@ -89,7 +89,7 @@ int   rc_algebra_invert_matrix_inplace(rc_matrix_t* A);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_algebra_lin_system_solve(rc_matrix_t A, rc_vector_t b, rc_vector_t* x);
+int rc_algebra_lin_system_solve(rc_matrix_t A, rc_vector_t b, rc_vector_t* x);
 
 /**
  * @brief      Sets the zero tolerance for detecting singular matrices.
@@ -123,7 +123,7 @@ void rc_algebra_set_zero_tolerance(double tol);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_algebra_lin_system_solve_qr(rc_matrix_t A, rc_vector_t b, rc_vector_t* x);
+int rc_algebra_lin_system_solve_qr(rc_matrix_t A, rc_vector_t b, rc_vector_t* x);
 
 /**
  * @brief      Fits an ellipsoid to a set of points in 3D space.
@@ -150,7 +150,7 @@ int   rc_algebra_lin_system_solve_qr(rc_matrix_t A, rc_vector_t b, rc_vector_t* 
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_algebra_fit_ellipsoid(rc_matrix_t points, rc_vector_t* center, rc_vector_t* lengths);
+int rc_algebra_fit_ellipsoid(rc_matrix_t points, rc_vector_t* center, rc_vector_t* lengths);
 
 
 #ifdef  __cplusplus

@@ -81,7 +81,7 @@ rc_vector_t rc_vector_empty();
  *
  * @return     Returns 0 if successful, otherwise returns -1.
  */
-int   rc_vector_alloc(rc_vector_t* v, int length);
+int rc_vector_alloc(rc_vector_t* v, int length);
 
 /**
  * @brief      Frees the memory allocated for vector v.
@@ -97,7 +97,7 @@ int   rc_vector_alloc(rc_vector_t* v, int length);
  *
  * @return     Returns 0 if successful, otherwise returns -1.
  */
-int   rc_vector_free(rc_vector_t* v);
+int rc_vector_free(rc_vector_t* v);
 
 /**
  * @brief      Resizes vector v and fills with zeros.
@@ -111,7 +111,7 @@ int   rc_vector_free(rc_vector_t* v);
  *
  * @return     Returns 0 if successful, otherwise returns -1.
  */
-int   rc_vector_zeros(rc_vector_t* v, int length);
+int rc_vector_zeros(rc_vector_t* v, int length);
 
 /**
  * @brief      Resizes vector v and fills with ones.
@@ -125,7 +125,7 @@ int   rc_vector_zeros(rc_vector_t* v, int length);
  *
  * @return     Returns 0 if successful, otherwise returns -1.
  */
-int   rc_vector_ones(rc_vector_t* v, int length);
+int rc_vector_ones(rc_vector_t* v, int length);
 
 /**
  * @brief      Resizes vector v and fills with random numbers between -1.0 and
@@ -140,7 +140,7 @@ int   rc_vector_ones(rc_vector_t* v, int length);
  *
  * @return     Returns 0 if successful, otherwise returns -1.
  */
-int   rc_vector_random(rc_vector_t* v, int length);
+int rc_vector_random(rc_vector_t* v, int length);
 
 /**
  * @brief      Resizes vector v and fills with Fibonnaci sequence
@@ -154,7 +154,7 @@ int   rc_vector_random(rc_vector_t* v, int length);
  *
  * @return     Returns 0 if successful, otherwise returns -1.
  */
-int   rc_vector_fibonnaci(rc_vector_t* v, int length);
+int rc_vector_fibonnaci(rc_vector_t* v, int length);
 
 /**
  * @brief      Resizes vector v and populates with values from specified array
@@ -171,7 +171,7 @@ int   rc_vector_fibonnaci(rc_vector_t* v, int length);
  *
  * @return     Returns 0 if successful, otherwise returns -1.
  */
-int   rc_vector_from_array(rc_vector_t* v, double* ptr, int length);
+int rc_vector_from_array(rc_vector_t* v, double* ptr, int length);
 
 /**
  * @brief      Duplicates the contents of vector a and into a new vector b.
@@ -187,7 +187,7 @@ int   rc_vector_from_array(rc_vector_t* v, double* ptr, int length);
  *
  * @return     Returns 0 if successful, otherwise returns -1.
  */
-int   rc_vector_duplicate(rc_vector_t a, rc_vector_t* b);
+int rc_vector_duplicate(rc_vector_t a, rc_vector_t* b);
 
 /**
  * @brief      Prints to stdout the contents of vector v in one line.
@@ -202,7 +202,7 @@ int   rc_vector_duplicate(rc_vector_t a, rc_vector_t* b);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_vector_print(rc_vector_t v);
+int rc_vector_print(rc_vector_t v);
 
 /**
  * @brief      Prints to stdout the contents of vector v in one line.
@@ -215,7 +215,16 @@ int   rc_vector_print(rc_vector_t v);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_vector_print_sci(rc_vector_t v);
+int rc_vector_print_sci(rc_vector_t v);
+
+/**
+ * @brief      Sets all values of an already-allocated vector to 0
+ *
+ * @param      v     pointer to vector to be zero'd out
+ *
+ * @return     0 on success, -1 on failure.
+ */
+int rc_vector_zero_out(rc_vector_t* v);
 
 /**
  * @brief      Multiplies every entry in vector v by scalar s.
@@ -233,7 +242,7 @@ int   rc_vector_print_sci(rc_vector_t v);
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int   rc_vector_times_scalar(rc_vector_t* v, double s);
+int rc_vector_times_scalar(rc_vector_t* v, double s);
 
 /**
  * @brief      Returns the vector norm defined by sum(abs(v)^p)^(1/p), where p
@@ -264,7 +273,7 @@ double rc_vector_norm(rc_vector_t v, double p);
  *
  * @return     Returns the index of the maximum value in v or -1 on error.
  */
-int   rc_vector_max(rc_vector_t v);
+int rc_vector_max(rc_vector_t v);
 
 /**
  * @brief      Returns the index of the minimum value in v.
@@ -277,7 +286,7 @@ int   rc_vector_max(rc_vector_t v);
  *
  * @return     Returns the index of the minimum value in v or -1 on error.
  */
-int   rc_vector_min(rc_vector_t v);
+int rc_vector_min(rc_vector_t v);
 
 /**
  * @brief      Returns the standard deviation of the values in a vector.
@@ -312,7 +321,7 @@ double rc_vector_mean(rc_vector_t v);
  *
  * @return     Returns 0 on success, otherwise -1.
  */
-int   rc_vector_projection(rc_vector_t v, rc_vector_t e, rc_vector_t* p);
+int rc_vector_projection(rc_vector_t v, rc_vector_t e, rc_vector_t* p);
 
 /**
  * @brief      Calculates the dot product of two equal-length vectors.
@@ -337,7 +346,7 @@ double rc_vector_dot_product(rc_vector_t v1, rc_vector_t v2);
  *
  * @return     Returns 0 on success, otherwise -1.
  */
-int   rc_vector_cross_product(rc_vector_t v1, rc_vector_t v2, rc_vector_t* p);
+int rc_vector_cross_product(rc_vector_t v1, rc_vector_t v2, rc_vector_t* p);
 
 /**
  * @brief      Populates vector s with the sum of vectors v1 and v2.
@@ -352,7 +361,7 @@ int   rc_vector_cross_product(rc_vector_t v1, rc_vector_t v2, rc_vector_t* p);
  *
  * @return     Returns 0 on success, otherwise -1.
  */
-int   rc_vector_sum(rc_vector_t v1, rc_vector_t v2, rc_vector_t* s);
+int rc_vector_sum(rc_vector_t v1, rc_vector_t v2, rc_vector_t* s);
 
 /**
  * @brief      Adds vector v2 to v1 and leaves the result in v1.
@@ -365,10 +374,25 @@ int   rc_vector_sum(rc_vector_t v1, rc_vector_t v2, rc_vector_t* s);
  *
  * @return     Returns 0 on success, otherwise -1.
  */
-int   rc_vector_sum_inplace(rc_vector_t* v1, rc_vector_t v2);
+int rc_vector_sum_inplace(rc_vector_t* v1, rc_vector_t v2);
+
+/**
+ * @brief      Populates vector s with the difference v1 - v2.
+ *
+ *             v1 and v2 must be of the same length. Any existing memory
+ *             allocated for s is freed and lost, new memory is allocated if
+ *             necessary.
+ *
+ * @param[in]  v1    User's vector struct
+ * @param[in]  v2    User's vector struct
+ * @param[out] s     output difference v1-v2
+ *
+ * @return     Returns 0 on success, otherwise -1.
+ */
+int rc_vector_subtract(rc_vector_t v1, rc_vector_t v2, rc_vector_t* s);
 
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 

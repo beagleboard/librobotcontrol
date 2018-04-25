@@ -199,6 +199,16 @@ int rc_vector_print_sci(rc_vector_t v)
 	return 0;
 }
 
+int rc_vector_zero_out(rc_vector_t* v)
+{
+	int i;
+	if(unlikely(v->initialized!=1)){
+		fprintf(stderr,"ERROR in rc_vector_zero_out,vector not initialized yet\n");
+		return -1;
+	}
+	for(i=0;i<v->len;i++)	v->d[i]=0.0;
+	return 0;
+}
 
 int rc_vector_times_scalar(rc_vector_t* v, double s)
 {
@@ -410,5 +420,26 @@ int rc_vector_sum_inplace(rc_vector_t* v1, rc_vector_t v2)
 		return -1;
 	}
 	for(i=0;i<v1->len;i++) v1->d[i]+=v2.d[i];
+	return 0;
+}
+
+
+int rc_vector_subtract(rc_vector_t v1, rc_vector_t v2, rc_vector_t* s)
+{
+	int i;
+	// sanity checks
+	if(unlikely(!v1.initialized || !v2.initialized)){
+		fprintf(stderr,"ERROR in rc_vector_substract, received uninitialized vector\n");
+		return -1;
+	}
+	if(unlikely(v1.len!=v2.len)){
+		fprintf(stderr,"ERROR in rc_vector_substract, vectors not of same length\n");
+		return -1;
+	}
+	if(unlikely(rc_vector_alloc(s,v1.len))){
+		fprintf(stderr,"ERROR in rc_vector_substract, failed to allocate s\n");
+		return -1;
+	}
+	for(i=0;i<v1.len;i++) s->d[i]=v1.d[i]-v2.d[i];
 	return 0;
 }

@@ -46,7 +46,7 @@ int rc_matrix_alloc(rc_matrix_t* A, int rows, int cols)
 		return -1;
 	}
 	// if A is already allocated and of the right size, nothing to do!
-	if(A->initialized && rows==A->rows && cols==A->cols) return 0;
+	if(A->initialized==1 && rows==A->rows && cols==A->cols) return 0;
 	// free any old memory
 	rc_matrix_free(A);
 	// allocate contiguous memory for the major(row) pointers
@@ -78,7 +78,7 @@ int rc_matrix_free(rc_matrix_t* A)
 		return -1;
 	}
 	// free memory allocated for the data then the major array
-	if(A->d!=NULL && A->initialized) free(A->d[0]);
+	if(A->d!=NULL && A->initialized==1) free(A->d[0]);
 	free(A->d);
 	// zero out the struct
 	*A = rc_matrix_empty();
@@ -151,7 +151,7 @@ int rc_matrix_diagonal(rc_matrix_t* A, rc_vector_t v)
 {
 	int i;
 	// sanity check
-	if(unlikely(!v.initialized)){
+	if(unlikely(v.initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_diagonal, vector not initialized\n");
 		return -1;
 	}
@@ -168,7 +168,7 @@ int rc_matrix_diagonal(rc_matrix_t* A, rc_vector_t v)
 int rc_matrix_duplicate(rc_matrix_t A, rc_matrix_t* B)
 {
 	// sanity check
-	if(unlikely(!A.initialized)){
+	if(unlikely(A.initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_duplicate not initialized yet\n");
 		return -1;
 	}
@@ -186,7 +186,7 @@ int rc_matrix_duplicate(rc_matrix_t A, rc_matrix_t* B)
 int rc_matrix_print(rc_matrix_t A)
 {
 	int i,j;
-	if(unlikely(!A.initialized)){
+	if(unlikely(A.initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_print, matrix not initialized yet\n");
 		return -1;
 	}
@@ -203,7 +203,7 @@ int rc_matrix_print(rc_matrix_t A)
 int rc_matrix_print_sci(rc_matrix_t A)
 {
 	int i,j;
-	if(unlikely(!A.initialized)){
+	if(unlikely(A.initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_print_sci, matrix not initialized yet\n");
 		return -1;
 	}
@@ -216,10 +216,27 @@ int rc_matrix_print_sci(rc_matrix_t A)
 	return 0;
 }
 
+
+int rc_matrix_zero_out(rc_matrix_t* A)
+{
+	int i,j;
+	if(unlikely(A->initialized!=1)){
+		fprintf(stderr,"ERROR in rc_matrix_zero_out, matrix not initialized yet\n");
+		return -1;
+	}
+	for(i=0;i<A->rows;i++){
+		for(j=0;j<A->cols;j++){
+			A->d[i][j]=0.0;
+		}
+	}
+	return 0;
+}
+
+
 int rc_matrix_times_scalar(rc_matrix_t* A, double s)
 {
 	int i;
-	if(unlikely(!A->initialized)){
+	if(unlikely(A->initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_times_scalar. matrix uninitialized\n");
 		return -1;
 	}
@@ -233,7 +250,7 @@ int rc_matrix_multiply(rc_matrix_t A, rc_matrix_t B, rc_matrix_t* C)
 {
 	int i,j;
 	double* tmp;
-	if(unlikely(!A.initialized||!B.initialized)){
+	if(unlikely(A.initialized!=1 || B.initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_multiply, matrix not initialized\n");
 		return -1;
 	}
@@ -271,7 +288,7 @@ int rc_matrix_left_multiply_inplace(rc_matrix_t A, rc_matrix_t* B)
 {
 	rc_matrix_t tmp = rc_matrix_empty();
 	// Sanity Checks
-	if(unlikely(!A.initialized||!B->initialized)){
+	if(unlikely(A.initialized!=1 || B->initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_left_multiply_inplace, matrix not initialized\n");
 		return -1;
 	}
@@ -295,7 +312,7 @@ int rc_matrix_right_multiply_inplace(rc_matrix_t* A, rc_matrix_t B)
 {
 	rc_matrix_t tmp = rc_matrix_empty();
 	// Sanity Checks
-	if(unlikely(!A->initialized||!B.initialized)){
+	if(unlikely(A->initialized!=1 || B.initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_right_multiply_inplace, matrix not initialized\n");
 		return -1;
 	}
@@ -317,7 +334,7 @@ int rc_matrix_right_multiply_inplace(rc_matrix_t* A, rc_matrix_t B)
 int rc_matrix_add(rc_matrix_t A, rc_matrix_t B, rc_matrix_t* C)
 {
 	int i;
-	if(unlikely(!A.initialized||!B.initialized)){
+	if(unlikely(A.initialized!=1 || B.initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_add, matrix not initialized\n");
 		return -1;
 	}
@@ -330,7 +347,6 @@ int rc_matrix_add(rc_matrix_t A, rc_matrix_t B, rc_matrix_t* C)
 		fprintf(stderr,"ERROR in rc_matrix_add, can't allocate memory for C\n");
 		return -1;
 	}
-	// since A contains contiguous memory, gcc should vectorize this loop
 	for(i=0;i<(A.rows*A.cols);i++) C->d[0][i]=A.d[0][i]+B.d[0][i];
 	return 0;
 }
@@ -339,7 +355,7 @@ int rc_matrix_add(rc_matrix_t A, rc_matrix_t B, rc_matrix_t* C)
 int rc_matrix_add_inplace(rc_matrix_t* A, rc_matrix_t B)
 {
 	int i;
-	if(unlikely(!A->initialized||!B.initialized)){
+	if(unlikely(A->initialized!=1 || B.initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_add_inplace, matrix not initialized\n");
 		return -1;
 	}
@@ -347,8 +363,22 @@ int rc_matrix_add_inplace(rc_matrix_t* A, rc_matrix_t B)
 		fprintf(stderr,"ERROR in rc_matrix_add_inplace, dimension mismatch\n");
 		return -1;
 	}
-	// since A contains contiguous memory, gcc should vectorize this loop
 	for(i=0;i<(A->rows*A->cols);i++) A->d[0][i]+=B.d[0][i];
+	return 0;
+}
+
+int rc_matrix_subtract_inplace(rc_matrix_t* A, rc_matrix_t B)
+{
+	int i;
+	if(unlikely(A->initialized!=1 || B.initialized!=1)){
+		fprintf(stderr,"ERROR in rc_matrix_subtract_inplace, matrix not initialized\n");
+		return -1;
+	}
+	if(unlikely(A->rows!=B.rows || A->cols!=B.cols)){
+		fprintf(stderr,"ERROR in rc_matrix_subtract_inplace, dimension mismatch\n");
+		return -1;
+	}
+	for(i=0;i<(A->rows*A->cols);i++) A->d[0][i]-=B.d[0][i];
 	return 0;
 }
 
@@ -356,7 +386,7 @@ int rc_matrix_add_inplace(rc_matrix_t* A, rc_matrix_t B)
 int rc_matrix_transpose(rc_matrix_t A, rc_matrix_t* T)
 {
 	int i,j;
-	if(unlikely(!A.initialized)){
+	if(unlikely(A.initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_transpose, received uninitialized matrix\n");
 		return -1;
 	}
@@ -405,7 +435,7 @@ int rc_matrix_times_col_vec(rc_matrix_t A, rc_vector_t v, rc_vector_t* c)
 {
 	int i;
 	// sanity checks
-	if(unlikely(!A.initialized || !v.initialized)){
+	if(unlikely(A.initialized!=1 || v.initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_times_col_vec, matrix or vector uninitialized\n");
 		return -1;
 	}
@@ -428,7 +458,7 @@ int rc_matrix_row_vec_times_matrix(rc_vector_t v, rc_matrix_t A, rc_vector_t* c)
 	int i,j;
 	double* tmp;
 	// sanity checks
-	if(unlikely(!A.initialized || !v.initialized)){
+	if(unlikely(A.initialized!=1 || v.initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_row_vec_times_matrix, matrix or vector uninitialized\n");
 		return -1;
 	}
@@ -462,7 +492,7 @@ int rc_matrix_row_vec_times_matrix(rc_vector_t v, rc_matrix_t A, rc_vector_t* c)
 int rc_matrix_outer_product(rc_vector_t v1, rc_vector_t v2, rc_matrix_t* A)
 {
 	int i, j;
-	if(unlikely(!v1.initialized || !v2.initialized)){
+	if(unlikely(v1.initialized!=1 || v2.initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_outer_product, vector uninitialized\n");
 		return -1;
 	}
@@ -484,7 +514,7 @@ double rc_matrix_determinant(rc_matrix_t A)
 	double ratio, det;
 	rc_matrix_t tmp = rc_matrix_empty();
 	// sanity checks
-	if(unlikely(!A.initialized)){
+	if(unlikely(A.initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_determinant, received uninitialized matrix\n");
 		return -1.0;
 	}

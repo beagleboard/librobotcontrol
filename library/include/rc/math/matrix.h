@@ -27,15 +27,15 @@ extern "C" {
  *
  *             Set and read values directly with this code:
  * @code{.c}
- * matrix.d[row][col]=new_value; // set value in the matrix
- * value = matrix.d[row][col]; // get value from matrix
+ * matrix.d[row][col] = new_value; // set value in the matrix
+ * value = matrix.d[row][col];     // get value from the matrix
  * @endcode
  */
 typedef struct rc_matrix_t{
-	int rows; ///< number of rows in the matrix
-	int cols; /// number of columns in the matrix
-	double** d; //
-	int initialized;
+	int rows;	///< number of rows in the matrix
+	int cols;	///< number of columns in the matrix
+	double** d;	///< pointer to allocated 2d array
+	int initialized;///< set to 1 once memory has been allocated
 } rc_matrix_t;
 
 
@@ -69,7 +69,7 @@ rc_matrix_t rc_matrix_empty();
  * @param[in]  rows  number of rows
  * @param[in]  cols  number of columns
  *
- * @return     Returns 0 on success, -1 on failure.
+ * @return     0 on success, -1 on failure.
  */
 int rc_matrix_alloc(rc_matrix_t* A, int rows, int cols);
 
@@ -84,7 +84,7 @@ int rc_matrix_alloc(rc_matrix_t* A, int rows, int cols);
  *
  * @param      A     Pointer to user's matrix struct
  *
- * @return     Returns 0 on success, -1 on failure.
+ * @return     0 on success, -1 on failure.
  */
 int rc_matrix_free(rc_matrix_t* A);
 
@@ -97,7 +97,7 @@ int rc_matrix_free(rc_matrix_t* A);
  * @param[in]  rows  number of rows
  * @param[in]  cols  number of columns
  *
- * @return     Returns 0 on success, -1 on failure.
+ * @return     0 on success, -1 on failure.
  */
 int rc_matrix_zeros(rc_matrix_t* A, int rows, int cols);
 
@@ -112,7 +112,7 @@ int rc_matrix_zeros(rc_matrix_t* A, int rows, int cols);
  * @param      A     Pointer to user's matrix struct
  * @param[in]  dim   The dimension of one side of square matrix
  *
- * @return     Returns 0 on success, -1 on failure.
+ * @return     0 on success, -1 on failure.
  */
 int rc_matrix_identity(rc_matrix_t* A, int dim);
 
@@ -129,7 +129,7 @@ int rc_matrix_identity(rc_matrix_t* A, int dim);
  * @param[in]  rows  number of rows
  * @param[in]  cols  number of columns
  *
- * @return     Returns 0 on success, -1 on failure.
+ * @return     0 on success, -1 on failure.
  */
 int rc_matrix_random(rc_matrix_t* A, int rows, int cols);
 
@@ -146,7 +146,7 @@ int rc_matrix_random(rc_matrix_t* A, int rows, int cols);
  * @param      A     Pointer to user's matrix struct
  * @param[in]  v     vector of diagonal entries
  *
- * @return     Returns 0 on success, -1 on failure.
+ * @return     0 on success, -1 on failure.
  */
 int rc_matrix_diagonal(rc_matrix_t* A, rc_vector_t v);
 
@@ -160,7 +160,7 @@ int rc_matrix_diagonal(rc_matrix_t* A, rc_vector_t v);
  * @param[in]  A     Matrix to be duplicated
  * @param[out] B     new matrix
  *
- * @return     Returns 0 on success, -1 on failure.
+ * @return     0 on success, -1 on failure.
  */
 int rc_matrix_duplicate(rc_matrix_t A, rc_matrix_t* B);
 
@@ -173,7 +173,7 @@ int rc_matrix_duplicate(rc_matrix_t A, rc_matrix_t* B);
  *
  * @param[in]  A     Matrix to print
  *
- * @return     Returns 0 on success, -1 on failure.
+ * @return     0 on success, -1 on failure.
  */
 int rc_matrix_print(rc_matrix_t A);
 
@@ -186,9 +186,18 @@ int rc_matrix_print(rc_matrix_t A);
  *
  * @param[in]  A     Matrix to print
  *
- * @return     Returns 0 on success, -1 on failure.
+ * @return     0 on success, -1 on failure.
  */
 int rc_matrix_print_sci(rc_matrix_t A);
+
+/**
+ * @brief      Sets all values of an already-allocated matrix to 0
+ *
+ * @param      A     pointer to matrix to be zero'd out
+ *
+ * @return     0 on success, -1 on failure.
+ */
+int rc_matrix_zero_out(rc_matrix_t* A);
 
 /**
  * @brief      Multiplies every entry in A by scalar value s.
@@ -275,6 +284,18 @@ int rc_matrix_add(rc_matrix_t A, rc_matrix_t B, rc_matrix_t* C);
  * @return     Returns 0 on success or -1 on failure.
  */
 int rc_matrix_add_inplace(rc_matrix_t* A, rc_matrix_t B);
+
+/**
+ * @brief      Subtracts matrix B from A and leaves the result in A
+ *
+ *             The original contents of A are lost.
+ *
+ * @param      A     First matrix for subtraction and holder of the result
+ * @param[in]  B     Second matrix for subtraction
+ *
+ * @return     Returns 0 on success or -1 on failure.
+ */
+int rc_matrix_subtract_inplace(rc_matrix_t* A, rc_matrix_t B);
 
 /**
  * @brief      Transposes the contents of A and places the result in T.

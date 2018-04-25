@@ -84,7 +84,7 @@ typedef struct rc_filter_t{
 /**
  * @brief      Critical function for initializing rc_filter_t structs.
  *
- *             This is a very important function. If your d_filter_t struct is
+ *             This is a very important function. If your rc_filter_t struct is
  *             not a global variable, then its initial contents cannot be
  *             guaranteed to be anything in particular. Therefore it could
  *             contain problematic contents which could interfere with functions

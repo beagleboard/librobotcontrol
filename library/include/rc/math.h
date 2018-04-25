@@ -14,13 +14,14 @@
 #ifndef RC_MATH_H
 #define RC_MATH_H
 
-#include <rc/math/vector.h>
-#include <rc/math/matrix.h>
 #include <rc/math/algebra.h>
+#include <rc/math/filter.h>
+#include <rc/math/kalman.h>
+#include <rc/math/matrix.h>
+#include <rc/math/other.h>
 #include <rc/math/polynomial.h>
 #include <rc/math/quaternion.h>
 #include <rc/math/ring_buffer.h>
-#include <rc/math/filter.h>
-#include <rc/math/other.h>
+#include <rc/math/vector.h>
 
 #endif // RC_MATH_H
