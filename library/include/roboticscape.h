@@ -18,6 +18,7 @@
 #include <rc/bmp.h>
 #include <rc/button.h>
 #include <rc/cpu.h>
+#include <rc/deprecated.h>
 #include <rc/dsm.h>
 #include <rc/encoder_eqep.h>
 #include <rc/encoder_pru.h>
