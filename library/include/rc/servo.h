@@ -84,7 +84,7 @@
  * @author     James Strawson
  * @date       3/7/2018
  *
- * @addtogroup Servo_&_ESC
+ * @addtogroup Servo
  * @{
  */
 
@@ -244,4 +244,4 @@ int rc_servo_send_oneshot_pulse_normalized(int ch, float input);
 
 #endif // RC_SERVO_H
 
-/** @}  end group Servo_&_ESC */
+/** @}  end group Servo */

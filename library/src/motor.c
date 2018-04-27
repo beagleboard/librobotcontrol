@@ -102,7 +102,7 @@ int rc_motor_init()
 	// now set all the gpio pins and pwm to something predictable
 	stby_state = 0;
 	init_flag = 1;
-	if(unlikely(rc_motor_free_spin_all())){
+	if(unlikely(rc_motor_free_spin(0))){
 		fprintf(stderr,"ERROR in rc_motor_init\n");
 		init_flag = 0;
 		return -1;
@@ -124,7 +124,7 @@ int rc_motor_cleanup()
 {
 	int i;
 	if(!init_flag) return 0;
-	rc_motor_free_spin_all();
+	rc_motor_free_spin(0);
 	rc_pwm_cleanup(1);
 	rc_pwm_cleanup(2);
 	rc_gpio_cleanup(MOT_STBY);
@@ -148,7 +148,7 @@ int rc_motor_standby(int standby_en)
 		// return if already in standby
 		if(stby_state) return 0;
 		val=0;
-		rc_motor_free_spin_all();
+		rc_motor_free_spin(0);
 	}
 	else{
 		if(!stby_state) return 0;
@@ -165,11 +165,11 @@ int rc_motor_standby(int standby_en)
 
 int rc_motor_set(int motor, float duty)
 {
-	int a,b;
+	int a,b,i;
 
 	// sanity checks
-	if(unlikely(motor<1 || motor>CHANNELS)){
-		fprintf(stderr,"ERROR in rc_motor_set, motor argument must be between 1 & %d\n", CHANNELS);
+	if(unlikely(motor<0 || motor>CHANNELS)){
+		fprintf(stderr,"ERROR in rc_motor_set, motor argument must be between 0 & %d\n", CHANNELS);
 		return -1;
 	}
 	if(unlikely(init_flag==0)){
@@ -184,6 +184,13 @@ int rc_motor_set(int motor, float duty)
 	// check that the duty cycle is within +-1
 	if	(duty > 1.0f)	duty = 1.0f;
 	else if	(duty <-1.0f)	duty =-1.0f;
+
+	if(motor==0){
+		for(i=1;i<CHANNELS;i++){
+			if(rc_motor_set(i,duty)==-1) return -1;
+		}
+		return 0;
+	}
 
 	// determine the direction pins to H-bridge
 	duty=duty*polarity[motor-1];
@@ -207,20 +214,10 @@ int rc_motor_set(int motor, float duty)
 }
 
 
-
-int rc_motor_set_all(float duty)
-{
-	int i;
-	for(i=1;i<=CHANNELS; i++){
-		if(rc_motor_set(i, duty)) return -1;
-	}
-	return 0;
-}
-
-
-
 int rc_motor_free_spin(int motor)
 {
+	int i;
+
 	// sanity checks
 	if(unlikely(motor<1 || motor>CHANNELS)){
 		fprintf(stderr,"ERROR in rc_motor_free_spin, motor argument must be between 1 & %d\n", CHANNELS);
@@ -234,6 +231,15 @@ int rc_motor_free_spin(int motor)
 		fprintf(stderr,"ERROR in rc_motor_free_spin, motors are currently in standby mode\n");
 		return -1;
 	}
+
+	// case for all channels
+	if(motor==0){
+		for(i=1;i<CHANNELS;i++){
+			if(rc_motor_free_spin(i)==-1) return -1;
+		}
+		return 0;
+	}
+
 	// set gpio and pwm for that motor
 	if(unlikely(rc_gpio_set_value(dirA[motor-1], 0))){
 		fprintf(stderr,"ERROR in rc_motor_free_spin, failed to write to gpio pin %d\n",dirA[motor-1]);
@@ -251,18 +257,10 @@ int rc_motor_free_spin(int motor)
 }
 
 
-int rc_motor_free_spin_all()
-{
-	int i;
-	for(i=1;i<=CHANNELS; i++){
-		if(rc_motor_free_spin(i)) return -1;
-	}
-	return 0;
-}
-
-
 int rc_motor_brake(int motor)
 {
+	int i;
+
 	// sanity checks
 	if(unlikely(motor<1 || motor>CHANNELS)){
 		fprintf(stderr,"ERROR in rc_motor_brake, motor argument must be between 1 & %d\n", CHANNELS);
@@ -276,6 +274,15 @@ int rc_motor_brake(int motor)
 		fprintf(stderr,"ERROR in rc_motor_brake, motors are currently in standby mode\n");
 		return -1;
 	}
+
+	// case for all channels
+	if(motor==0){
+		for(i=1;i<CHANNELS;i++){
+			if(rc_motor_brake(i)==-1) return -1;
+		}
+		return 0;
+	}
+
 	// set gpio and pwm for that motor
 	if(unlikely(rc_gpio_set_value(dirA[motor-1], 1))){
 		fprintf(stderr,"ERROR in rc_motor_brake, failed to write to gpio pin %d\n",dirA[motor-1]);
@@ -288,16 +295,6 @@ int rc_motor_brake(int motor)
 	if(unlikely(rc_pwm_set_duty(pwmss[motor-1], pwmch[motor-1], 0.0))){
 		fprintf(stderr,"ERROR in rc_motor_brake, failed to write to pwm %d%c\n",pwmss[motor-1], pwmch[motor-1]);
 		return -1;
-	}
-	return 0;
-}
-
-
-int rc_motor_brake_all()
-{
-	int i;
-	for(i=1;i<=CHANNELS; i++){
-		if(rc_motor_brake(i)) return -1;
 	}
 	return 0;
 }

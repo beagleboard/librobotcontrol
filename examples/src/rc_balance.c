@@ -489,7 +489,7 @@ void balance_controller()
 	* check for various exit conditions AFTER state estimate
 	***************************************************************/
 	if(rc_get_state()==EXITING){
-		rc_motor_set_all(0.0);
+		rc_motor_set(0,0.0);
 		return;
 	}
 	// if controller is still ARMED while state is PAUSED, disarm it
@@ -573,10 +573,10 @@ int zero_out_controller()
 	rc_filter_reset(&D1);
 	rc_filter_reset(&D2);
 	rc_filter_reset(&D3);
-	setpoint.theta = 0.0f;
-	setpoint.phi   = 0.0f;
-	setpoint.gamma = 0.0f;
-	rc_motor_set_all(0.0f);
+	setpoint.theta = 0.0;
+	setpoint.phi   = 0.0;
+	setpoint.gamma = 0.0;
+	rc_motor_set(0,0.0f);
 	return 0;
 }
 
@@ -588,7 +588,7 @@ int zero_out_controller()
 int disarm_controller()
 {
 	rc_motor_standby(1);
-	rc_motor_set_all(0.0);
+	rc_motor_free_spin(0);
 	setpoint.arm_state = DISARMED;
 	return 0;
 }

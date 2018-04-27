@@ -65,67 +65,41 @@ int rc_motor_cleanup();
 int rc_motor_standby(int standby_en);
 
 /**
- * @brief      Sets the bidirectional duty cycle (power) to a single motor.
+ * @brief      Sets the bidirectional duty cycle (power) to a single motor or
+ *             all motors if 0 is provided as a channel.
  *
- * @param[in]  motor  The motor channel (1-4)
+ * @param[in]  ch  The motor channel (1-4) or 0 for all channels.
  * @param[in]  duty   Duty cycle, -1.0 for full reverse, 1.0 for full forward
  *
  * @return     0 on success, -1 on failure
  */
-int rc_motor_set(int motor, float duty);
-
-/**
- * @brief      Sets the bidirectional duty cycle (power) to all motors.
- *
- * @param[in]  duty  Duty cycle, -1.0 for full reverse, 1.0 for full forward
- *
- * @return     0 on success, -1 on failure
- */
-int rc_motor_set_all(float duty);
+int rc_motor_set(int ch, float duty);
 
 /**
  * @brief      Puts a motor into a zero-throttle state allowing it to spin
  *             freely.
  *
- *             This is accomplishes by putting both motor terminals connected to
+ *             This is accomplished by putting both motor terminals connected to
  *             the h-bridge into a high-impedance state.
  *
- * @param[in]  motor  The motor channel (1-4)
+ * @param[in]  ch  The motor channel (1-4) or 0 for all channels.
  *
  * @return     0 on success, -1 on failure
  */
-int rc_motor_free_spin(int motor);
+int rc_motor_free_spin(int ch);
 
-/**
- * @brief      Puts all motors into a zero-throttle state allowing them to spin
- *             freely.
- *
- *             This is accomplishes by putting both motor terminals connected to
- *             the h-bridge into a high-impedance state.
- *
- * @return     0 on success, -1 on failure
- */
-int rc_motor_free_spin_all();
 
 /**
  * @brief      Connects the motor terminal pairs together which makes the motor
  *             fight against its own back EMF turning it into a brake resisting
  *             rotation.
  *
- * @param[in]  motor  The motor channel (1-4)
+ * @param[in]  ch  The motor channel (1-4) or 0 for all channels.
  *
  * @return     0 on success, -1 on failure
  */
-int rc_motor_brake(int motor);
+int rc_motor_brake(int ch);
 
-/**
- * @brief      Connects the motor terminal pairs together which makes the motor
- *             fight against its own back EMF turning it into a brake resisting
- *             rotation.
- *
- * @return     0 on success, -1 on failure
- */
-int rc_motor_brake_all();
 
 
 #ifdef __cplusplus

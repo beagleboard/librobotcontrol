@@ -49,9 +49,8 @@ void signal_handler(__attribute__ ((unused)) int dummy)
 int main(int argc, char *argv[])
 {
 	double duty = 0.0;
-	int ch = 1;
+	int ch = 0; // assume all motor unless set otherwise
 	int c, in;
-	int all = 1;	// set to 0 if a motor (-m) argument is given
 	m_mode_t m_mode = DISABLED;
 
 	// parse arguments
@@ -62,7 +61,6 @@ int main(int argc, char *argv[])
 			in = atoi(optarg);
 			if(in<=4 && in>=1){
 				ch = in;
-				all = 0;
 			}
 			else{
 				printf("motor option must be from 1-4\n");
@@ -126,34 +124,16 @@ int main(int argc, char *argv[])
 	// decide what to do
 	switch(m_mode){
 	case NORMAL:
-		if(all){
-			printf("sending duty cycle %0.4f to all motors\n", duty);
-			rc_motor_set_all(duty);
-		}
-		else{
-			printf("sending duty cycle %0.4f to motor %d\n", duty, ch);
-			rc_motor_set(ch,duty);
-		}
+		printf("sending duty cycle %0.4f\n", duty);
+		rc_motor_set(ch,duty);
 		break;
 	case FREE:
-		if(all){
-			printf("Letting all motors free spin\n");
-			rc_motor_free_spin_all(duty);
-		}
-		else{
-			printf("Letting motor %d free spin\n", ch);
-			rc_motor_free_spin(ch);
-		}
+		printf("Free Spin Mode\n");
+		rc_motor_free_spin(ch);
 		break;
 	case BRAKE:
-		if(all){
-			printf("Braking all motors\n");
-			rc_motor_brake_all();
-		}
-		else{
-			printf("Braking motor %d\n", ch);
-			rc_motor_brake(ch);
-		}
+		printf("Braking Mode\n");
+		rc_motor_brake(ch);
 		break;
 	default:
 		break;
@@ -163,14 +143,8 @@ int main(int argc, char *argv[])
 	while(running){
 		if(m_mode==SWEEP){
 			duty = -duty; // toggle back and forth to sweep motors side to side
-			if(all){
-				printf("sending duty cycle %0.4f to all motors\n", duty);
-				rc_motor_set_all(duty);
-			}
-			else{
-				printf("sending duty cycle %0.4f to motor %d\n", duty, ch);
-				rc_motor_set(ch,duty);
-			}
+			printf("sending duty cycle %0.4f", duty);
+			rc_motor_set(ch,duty);
 		}
 
 		// if not in SWEEP mode, the motors have already been set so do nothing
