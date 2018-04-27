@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <math.h> // for M_PI
+#include <rc/math/kalman.h>
 #include <rc/math/filter.h>
 #include <rc/math/quaternion.h>
 #include <rc/time.h>
@@ -19,20 +20,21 @@
 #include <rc/mpu.h>
 
 
-#define ALT_FITLER_FREQ	0.2	// hz
-#define ALT_FILTER_DAMP	10.0	// filter damping ratio
+#define Nx 3
+#define Ny 1
+#define Nu 1
 #define SAMPLE_RATE	200	// hz
 #define	DT		(1.0/SAMPLE_RATE)
+#define ACCEL_LP_TC	20*DT	// fast LP filter for accel
 #define PRINT_HZ	10
-#define BMP_RATE_DIV	1	// optionally sample bmp less frequently than mpu
+#define BMP_RATE_DIV	10	// optionally sample bmp less frequently than mpu
 
 int running;
-double altitude, velocity, last_alt;
 rc_mpu_data_t mpu_data;
 rc_bmp_data_t bmp_data;
-rc_filter_t lp_filter, hp_filter;
-
-double accel;
+rc_kalman_t kf;
+rc_vector_t u,y;
+rc_filter_t acc_lp;
 
 
 // interrupt handler to catch ctrl-c
@@ -49,32 +51,25 @@ void dmp_handler()
 	double accel_vec[3];
 	static int bmp_sample_counter = 0;
 
-	// record last altitude for velocity calc
-	last_alt = altitude;
-
 	// make copy of acceleration reading before rotating
 	for(i=0;i<3;i++) accel_vec[i]=mpu_data.accel[i];
 	// rotate accel vector
 	rc_quaternion_rotate_vector_array(accel_vec,mpu_data.dmp_quat);
 
 	// do first-run filter setup
-	if(hp_filter.step==0){
-		rc_filter_prefill_inputs(&lp_filter, bmp_data.alt_m);
-		rc_filter_prefill_outputs(&lp_filter, bmp_data.alt_m);
-		rc_filter_prefill_inputs(&hp_filter, accel_vec[2]-9.80665);
-		altitude = bmp_data.alt_m;
-		last_alt = bmp_data.alt_m;
+	if(kf.step==0){
+		kf.x_est.d[0] = bmp_data.alt_m;
+		rc_filter_prefill_inputs(&acc_lp, accel_vec[2]-9.80665);
+		rc_filter_prefill_outputs(&acc_lp, accel_vec[2]-9.80665);
 	}
 
-	// run complementary filters, integrator is alredy built into hp_filter
-	accel=accel_vec[2]-9.80665;
-	rc_filter_march(&hp_filter, accel_vec[2]-9.80665);
-	rc_filter_march(&lp_filter, bmp_data.alt_m);
-	// sum complementary filters
-	altitude = hp_filter.newest_output + lp_filter.newest_output;
+	// calculate acceleration and smooth it just a tad
+	rc_filter_march(&acc_lp, accel_vec[2]-9.80665);
+	u.d[0] = acc_lp.newest_output;
 
-	// calc velocity
-	velocity = (altitude-last_alt)/DT;
+	// don't bother filtering Barometer, kalman will deal with that
+	y.d[0] = bmp_data.alt_m;
+	if(rc_kalman_update_lin(&kf, u, y)) running=0;
 
 	// now check if we need to sample BMP this loop
 	bmp_sample_counter++;
@@ -84,12 +79,6 @@ void dmp_handler()
 		bmp_sample_counter=0;
 	}
 
-	/*
-	printf("bmp: %7.3f raw accel %7.3f %7.3f %7.3f rotated %7.3f %7.3f %7.3f\n",
-		bmp_data.alt_m, mpu_data.accel[0], mpu_data.accel[1], mpu_data.accel[2],
-		accel_vec[0], accel_vec[1], accel_vec[2]);
-	*/
-
 	return;
 }
 
@@ -98,44 +87,84 @@ void dmp_handler()
 int main()
 {
 	rc_mpu_config_t mpu_conf;
-	rc_filter_t tmp1 = rc_filter_empty();
-	rc_filter_t tmp2 = rc_filter_empty();
-	hp_filter = rc_filter_empty();
-	lp_filter = rc_filter_empty();
+	rc_matrix_t F = rc_matrix_empty();
+	rc_matrix_t G = rc_matrix_empty();
+	rc_matrix_t H = rc_matrix_empty();
+	rc_matrix_t Q = rc_matrix_empty();
+	rc_matrix_t R = rc_matrix_empty();
+	rc_matrix_t Pi = rc_matrix_empty();
+	u = rc_vector_empty();
+	y = rc_vector_empty();
+	kf = rc_kalman_empty();
+	acc_lp = rc_filter_empty();
+
+	// allocate appropirate memory for system
+	rc_matrix_zeros(&F, Nx, Nx);
+	rc_matrix_zeros(&G, Nx, Nu);
+	rc_matrix_zeros(&H, Ny, Nx);
+	rc_matrix_zeros(&Q, Nx, Nx);
+	rc_matrix_zeros(&R, Ny, Ny);
+	rc_matrix_zeros(&Pi, Nx, Nx);
+	rc_vector_zeros(&u, Nu);
+	rc_vector_zeros(&y, Ny);
+
+	// define system -DT; // accel bias
+	F.d[0][0] = 1.0;
+	F.d[0][1] = DT;
+	F.d[0][2] = 0.0;
+	F.d[1][0] = 0.0;
+	F.d[1][1] = 1.0;
+	F.d[1][2] = -DT; // subtract accel bias
+	F.d[2][0] = 0.0;
+	F.d[2][1] = 0.0;
+	F.d[2][2] = 1.0; // accel bias state
+
+	G.d[0][0] = 0.5*DT*DT;
+	G.d[0][1] = DT;
+	G.d[0][2] = 0.0;
+
+	H.d[0][0] = 1.0;
+	H.d[0][1] = 0.0;
+	H.d[0][2] = 0.0;
+
+	// covariance matrices
+	Q.d[0][0] = 0.000000001;
+	Q.d[1][1] = 0.000000001;
+	Q.d[2][2] = 0.0001; // don't want bias to change too quickly
+	R.d[0][0] = 1000000.0;
+
+	// initial P, cloned from converged P while running
+	Pi.d[0][0] = 1258.69;
+	Pi.d[0][1] = 158.6114;
+	Pi.d[0][2] = -9.9937;
+	Pi.d[1][0] = 158.6114;
+	Pi.d[1][1] = 29.9870;
+	Pi.d[1][2] = -2.5191;
+	Pi.d[2][0] = -9.9937;
+	Pi.d[2][1] = -2.5191;
+	Pi.d[2][2] = 0.3174;
+
+	// initialize the kalman filter
+	if(rc_kalman_alloc_lin(&kf,F,G,H,Q,R,Pi)==-1) return -1;
+	// initialize the little LP filter to take out accel noise
+	if(rc_filter_first_order_lowpass(&acc_lp, DT, ACCEL_LP_TC)) return -1;
+
 
 	// set signal handler so the loop can exit cleanly
 	signal(SIGINT, signal_handler);
 	running = 1;
 
-	// create the filters, accel is the combination of a double integrator
-	// (to get from accel to position) and the complementary filter
-	if(rc_filter_third_order_complement(&lp_filter,&tmp1, 2.0*M_PI*ALT_FITLER_FREQ, ALT_FILTER_DAMP, DT)) return -1;
-	if(rc_filter_double_integrator(&tmp2, DT)) return -1;
-	if(rc_filter_multiply(tmp1, tmp2, &hp_filter)) return -1;
-	if(rc_filter_normalize(&hp_filter)) return -1;
-
-
-	// print filters
-	printf("lp_filter:\n");
-	rc_filter_print(lp_filter);
-	printf("hp_filter:\n");
-	rc_filter_print(tmp1);
-	printf("hp_filter with integrator:\n");
-	rc_filter_print(hp_filter);
-
-	rc_filter_free(&tmp1);
-	rc_filter_free(&tmp2);
-
 	// init barometer and read in first data
+	printf("initializing barometer\n");
 	if(rc_bmp_init(BMP_OVERSAMPLE_16, BMP_FILTER_16)) return -1;
 	if(rc_bmp_read(&bmp_data)) return -1;
 
 	// init DMP
+	printf("initializing DMP\n");
 	mpu_conf = rc_mpu_default_config();
 	mpu_conf.dmp_sample_rate = SAMPLE_RATE;
 	mpu_conf.dmp_fetch_accel_gyro = 1;
 	if(rc_mpu_initialize_dmp(&mpu_data, mpu_conf)) return -1;
-
 
 	// wait for dmp to settle then start filter callback
 	printf("waiting for sensors to settle");
@@ -147,19 +176,22 @@ int main()
 	printf("\r\n");
 	printf(" altitude |");
 	printf("  velocity |");
+	printf(" accel_bias |");
 	printf(" alt (bmp) |");
-	printf(" alt (acl) |");
+	printf(" vert_accel |");
 	printf("\n");
 
 	//now just wait, print_data will run
 	while(running){
 		rc_usleep(1000000/PRINT_HZ);
+
 		printf("\r");
-		printf("%8.2fm |", altitude);
-		printf("%7.1fm/s |", velocity);
-		printf("%9.2fm |", lp_filter.newest_output);
-		printf("%9.2fm |", hp_filter.newest_output);
-		// printf(" accel %7.3fm |", accel);
+		printf("%8.2fm |", kf.x_est.d[0]);
+		printf("%7.2fm/s |", kf.x_est.d[1]);
+		printf("%7.2fm/s^2|", kf.x_est.d[2]);
+		printf("%9.2fm |", bmp_data.alt_m);
+		printf("%7.2fm/s^2|", acc_lp.newest_output);
+
 		fflush(stdout);
 	}
 	printf("\n");
