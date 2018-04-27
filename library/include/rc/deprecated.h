@@ -18,7 +18,7 @@ extern "C" {
 #endif
 
 
-
+/*
 int rc_initialize() __attribute__ ((deprecated));
 
 int rc_cleanup() __attribute__ ((deprecated));
@@ -53,7 +53,7 @@ int rc_set_motor_free_spin_all();
 int rc_set_motor_brake(int motor);
 int rc_set_motor_brake_all();
 
-
+*/
 
 
 

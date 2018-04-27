@@ -1,4 +1,5 @@
 /**
+ * \example rc_altitude.c
  * \example rc_balance.c
  * \example rc_benchmark_algebra.c
  * \example rc_bind_dsm.c
@@ -27,6 +28,7 @@
  * \example rc_test_encoders_pru.c
  * \example rc_test_escs.c
  * \example rc_test_filters.c
+ * \example rc_test_kalman.c
  * \example rc_test_leds.c
  * \example rc_test_matrix.c
  * \example rc_test_mavlink.c

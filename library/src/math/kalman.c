@@ -14,16 +14,18 @@ rc_kalman_t rc_kalman_empty()
 {
 	rc_kalman_t kf;
 	// set struct to zeros
-	kf.P = rc_matrix_empty();
+	kf.F = rc_matrix_empty();
+	kf.G = rc_matrix_empty();
+	kf.H = rc_matrix_empty();
+
 	kf.Q = rc_matrix_empty();
 	kf.R = rc_matrix_empty();
-	kf.F = rc_matrix_empty();
-	kf.H = rc_matrix_empty();
+	kf.P = rc_matrix_empty();
+	kf.Pi = rc_matrix_empty();
 
 	kf.x_est = rc_vector_empty();
 	kf.x_pre = rc_vector_empty();
 
-	kf.Pi = rc_matrix_empty();
 	kf.initialized = 0;
 	kf.step = 0;
 	return kf;
@@ -40,7 +42,7 @@ int rc_kalman_alloc_lin(rc_kalman_t* kf, rc_matrix_t F, rc_matrix_t G, rc_matrix
 		return -1;
 	}
 	if(F.initialized!=1 || H.initialized!=1){
-		fprintf(stderr, "ERROR in rc_kalman_alloc, received uinitialized F or H\n");
+		fprintf(stderr, "ERROR in rc_kalman_alloc, received uninitialized F or H\n");
 		return -1;
 	}
 	if(Q.initialized!=1 || R.initialized!=1){
@@ -69,19 +71,23 @@ int rc_kalman_alloc_lin(rc_kalman_t* kf, rc_matrix_t F, rc_matrix_t G, rc_matrix
 	}
 
 	// free existing memory, this also zero's out the struct
-	rc_kalman_free(kf);
+	if(rc_kalman_free(kf)==-1) return -1;
 
 	// allocate memory
 	Nx = F.cols;
-	rc_matrix_duplicate(Q, &kf->Q);
-	rc_matrix_duplicate(R, &kf->R);
-	rc_matrix_duplicate(F, &kf->F);
-	rc_matrix_duplicate(G, &kf->G);
-	rc_matrix_duplicate(H, &kf->H);
-	rc_vector_zeros(&kf->x_est, Nx);
-	rc_vector_zeros(&kf->x_pre, Nx);
-	rc_matrix_duplicate(Pi, &kf->Pi);
+	if(rc_matrix_duplicate(F, &kf->F)==-1) return -1;
+	if(rc_matrix_duplicate(G, &kf->G)==-1) return -1;
+	if(rc_matrix_duplicate(H, &kf->H)==-1) return -1;
 
+
+	if(rc_matrix_duplicate(Q, &kf->Q)==-1) return -1;
+	if(rc_matrix_duplicate(R, &kf->R)==-1) return -1;
+	if(rc_matrix_duplicate(Pi, &kf->P)==-1) return -1;
+	if(rc_matrix_duplicate(Pi, &kf->Pi)==-1) return -1;
+
+	if(rc_vector_zeros(&kf->x_est, Nx)==-1) return -1;
+	if(rc_vector_zeros(&kf->x_pre, Nx)==-1) return -1;
+	kf->initialized = 1;
 	return 0;
 }
 
@@ -112,6 +118,7 @@ int rc_kalman_alloc_ekf(rc_kalman_t* kf, rc_matrix_t Q, rc_matrix_t R, rc_matrix
 	rc_matrix_duplicate(Q, &kf->Q);
 	rc_matrix_duplicate(R, &kf->R);
 	rc_matrix_duplicate(Pi, &kf->Pi);
+	rc_matrix_duplicate(Pi, &kf->P);
 	rc_vector_zeros(&kf->x_est, Q.rows);
 	rc_vector_zeros(&kf->x_pre, Q.rows);
 
@@ -126,11 +133,13 @@ int rc_kalman_free(rc_kalman_t* kf)
 		fprintf(stderr, "ERROR in rc_kalman_free, received NULL pointer\n");
 		return -1;
 	}
-	rc_matrix_free(&kf->P);
+	rc_matrix_free(&kf->F);
+	rc_matrix_free(&kf->G);
+	rc_matrix_free(&kf->H);
+
 	rc_matrix_free(&kf->Q);
 	rc_matrix_free(&kf->R);
-	rc_matrix_free(&kf->F);
-	rc_matrix_free(&kf->H);
+	rc_matrix_free(&kf->P);
 	rc_matrix_free(&kf->Pi);
 
 	rc_vector_free(&kf->x_est);
@@ -252,7 +261,7 @@ int rc_kalman_update_lin(rc_kalman_t* kf, rc_vector_t u, rc_vector_t y)
 }
 
 
-int rc_kalman_update_ekf(rc_kalman_t* kf, rc_matrix_t F, rc_vector_t x_pre, rc_matrix_t H, rc_vector_t y, rc_vector_t h)
+int rc_kalman_update_ekf(rc_kalman_t* kf, rc_matrix_t F, rc_matrix_t H, rc_vector_t x_pre, rc_vector_t y, rc_vector_t h)
 {
 	rc_matrix_t L = rc_matrix_empty();
 	rc_matrix_t newP = rc_matrix_empty();
