@@ -176,10 +176,6 @@ int rc_motor_set(int motor, float duty)
 		fprintf(stderr, "ERROR in rc_motor_set, call rc_motor_init first\n");
 		return -1;
 	}
-	if(unlikely(stby_state)){
-		fprintf(stderr,"ERROR in rc_motor_set, motors are currently in standby mode\n");
-		return -1;
-	}
 
 	// check that the duty cycle is within +-1
 	if	(duty > 1.0f)	duty = 1.0f;
@@ -219,16 +215,12 @@ int rc_motor_free_spin(int motor)
 	int i;
 
 	// sanity checks
-	if(unlikely(motor<1 || motor>CHANNELS)){
-		fprintf(stderr,"ERROR in rc_motor_free_spin, motor argument must be between 1 & %d\n", CHANNELS);
+	if(unlikely(motor<0 || motor>CHANNELS)){
+		fprintf(stderr,"ERROR in rc_motor_free_spin, motor argument must be between 0 & %d\n", CHANNELS);
 		return -1;
 	}
 	if(unlikely(init_flag==0)){
 		fprintf(stderr, "ERROR in rc_motor_free_spin, call rc_motor_init first\n");
-		return -1;
-	}
-	if(unlikely(stby_state)){
-		fprintf(stderr,"ERROR in rc_motor_free_spin, motors are currently in standby mode\n");
 		return -1;
 	}
 
@@ -262,16 +254,12 @@ int rc_motor_brake(int motor)
 	int i;
 
 	// sanity checks
-	if(unlikely(motor<1 || motor>CHANNELS)){
-		fprintf(stderr,"ERROR in rc_motor_brake, motor argument must be between 1 & %d\n", CHANNELS);
+	if(unlikely(motor<0 || motor>CHANNELS)){
+		fprintf(stderr,"ERROR in rc_motor_brake, motor argument must be between 0 & %d\n", CHANNELS);
 		return -1;
 	}
 	if(unlikely(init_flag==0)){
 		fprintf(stderr, "ERROR in rc_motor_brake, call rc_motor_init first\n");
-		return -1;
-	}
-	if(unlikely(stby_state)){
-		fprintf(stderr,"ERROR in rc_motor_brake, motors are currently in standby mode\n");
 		return -1;
 	}
 
