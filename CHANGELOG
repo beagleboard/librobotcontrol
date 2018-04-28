@@ -1,3 +1,17 @@
+0.4.2
+    * new kalman filter module wtih rc_test_kalman and rc_altitude examples
+    * new <rc/deprecated.h> to help some transition from v0.3 to v0.4 library
+    * convert all linear algebra from single to double precision due to rounding errors
+    * merge RobertCNelson's systemd service improvements
+    * add third order complementary filter function
+    * Improve DSM robustness
+    * rc_make_pid_file also makes the pid directory and provides helpful error messages
+    * 'make' in the library now runs on any architecture
+    * new rc_matrix_symmetrize and rc_matrix_subtract functions
+    * redundant motor functions removed
+    * Lots of random little bugfixes
+
+
 0.4.1
     * Simplify configure_robotics_dt.sh by removing unnecessary UUID line
     * update Black and Black wireless device trees to have new LED driver and IIO adc

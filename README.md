@@ -8,7 +8,7 @@ Full API documentation and examples at <http://strawsondesign.com/docs/roboticsc
 
 ## Installation
 #### From Clean BeagleBoard.org Image
-Stable RoboticsCape library releases are pre-installed with the BeagleBoard stable images. We currently recommend BeagleBone Black and Black Wireless users flash the 'BBB-blank' Debian flasher image from 3-7-2017 available [here](https://rcn-ee.com/rootfs/bb.org/testing/2017-03-07/iot/) BeagleBone Blues come from the factory with the roboticscape package pre-installed as well.
+Stable RoboticsCape library releases are pre-installed with the BeagleBoard stable images. We recommend BeagleBone Black and Black Wireless users run the latest stable Stretch IOT image available [here](http://beagleboard.org/latest-images) BeagleBone Blues come from the factory with the roboticscape package pre-installed as well.
 
 On first boot after flashing a clean image the package will be installed but not configured yet. Manually configure the package with:
 
@@ -57,13 +57,11 @@ sudo reboot
 ```
 
 ## Version
-V0.3.4 is the current stable release. V0.4 is in beta testing and can be installed from source as described above or from the github releases page.
-
 You can check which version of the package is currently installed with the rc_version program.
 
 ```
 debian@beaglebone:~$ rc_version
-0.3.4
+0.4.2
 ```
 
 ## Setting Up Networking

@@ -18,8 +18,8 @@ extern "C" {
 #endif
 
 
-#define RC_LIB_VERSION_FLOAT	0.41
-#define RC_LIB_VERSION_STRING	"0.4.1"
+#define RC_LIB_VERSION_FLOAT	0.42
+#define RC_LIB_VERSION_STRING	"0.4.2"
 
 
 /**
