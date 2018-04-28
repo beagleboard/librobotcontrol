@@ -155,5 +155,6 @@ int main()
 	rc_led_set(RC_LED_RED, 0);
 	rc_led_cleanup();
 	rc_button_cleanup();
+	rc_remove_pid_file();
 	return 0;
 }
