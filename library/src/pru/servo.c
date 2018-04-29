@@ -8,11 +8,13 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <math.h> //for lroundf
 #include <rc/pru.h>
 #include <rc/gpio.h>
 #include <rc/servo.h>
 #include <rc/time.h>
 
+#define TOL		0.01 // acceptable tolerance on floating point bounds
 #define GPIO_POWER_PIN	80 //gpio2.16 P8.36
 #define SERVO_PRU_CH	1 // PRU1
 #define SERVO_PRU_FW	"am335x-pru1-rc-servo-fw"
@@ -133,12 +135,12 @@ int rc_servo_send_pulse_us(int ch, int us)
 int rc_servo_send_pulse_normalized(int ch, float input)
 {
 	int us;
-	if(input<-1.5 || input>1.5){
+	if(input<(-1.5-TOL) || input>(1.5+TOL)){
 		fprintf(stderr,"ERROR in rc_servo_send_pulse_normalized, normalized input must be between -1.5 & 1.5\n");
 		return -1;
 	}
 	// normal range is from 900 to 2100 for 120 degree servos
-	us = 1500 + (input*600);
+	us = 1500 + lroundf((input*600.0));
 	return rc_servo_send_pulse_us(ch, us);
 }
 
@@ -147,11 +149,11 @@ int rc_servo_send_pulse_normalized(int ch, float input)
 int rc_servo_send_esc_pulse_normalized(int ch, float input)
 {
 	int us;
-	if(input < -0.1 || input > 1.0){
+	if(input<(-0.1-TOL) || input>(1.0+TOL)){
 		fprintf(stderr,"ERROR in rc_servo_send_esc_pulse_normalized, normalized input must be between -0.1 & 1.0\n");
 		return -1;
 	}
-	us = 1000 + (input*1000);
+	us = 1000 + lroundf((input*1000.0));
 	return rc_servo_send_pulse_us(ch, us);
 }
 
@@ -160,10 +162,10 @@ int rc_servo_send_esc_pulse_normalized(int ch, float input)
 int rc_servo_send_oneshot_pulse_normalized(int ch, float input)
 {
 	int us;
-	if(input < -0.1 || input > 1.0){
+	if(input<(-0.1-TOL) || input>(1.0+TOL)){
 		fprintf(stderr,"ERROR in rc_servo_send_oneshot_pulse_normalized, normalized input must be between -0.1 & 1.0\n");
 		return -1;
 	}
-	us = 125 + (input*125);
+	us = 125 + lroundf(input*125.0);
 	return rc_servo_send_pulse_us(ch, us);
 }

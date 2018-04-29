@@ -7,7 +7,7 @@
  * operates in 4 different modes. See the option list below for how to select an
  * operational mode from the command line.
  *
- * SERVO: uses rc_send_servo_pulse_normalized() to set one or all servo
+ * SERVO: uses rc_servo_send_pulse_normalized() to set one or all servo
  * positions to a value from -1.5 to 1.5 corresponding to their extended range.
  * -1 to 1 is considered the "safe" normal range as some servos will not go
  * beyond this. Test your servos incrementally to find their safe range.
@@ -15,14 +15,14 @@
  * ESC: For unidirectional brushless motor speed controllers specify a range
  * from 0 to 1 as opposed to the bidirectional servo range. Be sure to run the
  * calibrate_esc example first to make sure the ESCs are calibrated to the right
- * pulse range. This mode uses the rc_send_esc_pulse_normalized() function.
+ * pulse range. This mode uses the rc_servo_send_esc_pulse_normalized() function.
  *
  * WIDTH: You can also specify your own pulse width in microseconds (us).
- * This uses the rc_send_servo_pulse_us() function.
+ * This uses the rc_servo_send_pulse_us() function.
  *
  * SWEEP: This is intended to gently sweep a servo back and forth about the
  * center position. Specify a range limit as a command line argument as
- * described below. This also uses the rc_send_servo_pulse_normalized()
+ * described below. This also uses the rc_servo_send_pulse_normalized()
  * function.
  *
  *
@@ -237,9 +237,12 @@ int main(int argc, char *argv[])
 	// otherwise it will go into calibration mode
 	printf("waking ESC up from idle for 3 seconds\n");
 	for(i=0;i<frequency_hz*3;i++){
-		rc_servo_send_esc_pulse_normalized(ch,-0.1);
+		if(running==0) return 0;
+		if(rc_servo_send_esc_pulse_normalized(ch,-0.1)==-1) return -1;
 		rc_usleep(1000000/frequency_hz);
 	}
+	printf("done with wakeup period\n");
+	return 0;
 
 	// Main loop runs at frequency_hz
 	while(running){
