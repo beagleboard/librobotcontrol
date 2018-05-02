@@ -27,9 +27,9 @@ LDFLAGS		:= -lm -lrt -pthread -shared -Wl,-soname,$(SONAME)
 MATH_OPT_FLAGS	:= -O3 -ffast-math -ftree-vectorize
 
 # Custom hardware flags was used when the math lib used single-precision floats
-# which could be hardware vectorized but not helpful now that we use doubles
-#ARCFLAGS	:= -mfpu=neon -march=armv7-a -mtune=cortex-a8
-ARCFLAGS	:=
+# which could be hardware vectorized on the ARMV7 NEON unit but not helpful now
+# that we use doubles
+# ARCFLAGS	:= mfpu=vfp3 -march=armv7-a -mtune=cortex-a8
 
 # commands
 RM		:= rm -rf

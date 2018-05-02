@@ -17,7 +17,7 @@
 
 #include <rc/math/polynomial.h>
 
-#define unlikely(x)	__builtin_expect (!!(x), 0)
+#include "algebra_common.h"
 
 
 int rc_poly_print(rc_vector_t v)

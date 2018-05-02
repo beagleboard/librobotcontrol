@@ -17,7 +17,6 @@
 #include <rc/math/matrix.h>
 #include "algebra_common.h"
 
-#define unlikely(x)	__builtin_expect (!!(x), 0)
 
 rc_matrix_t rc_matrix_empty()
 {
@@ -52,13 +51,15 @@ int rc_matrix_alloc(rc_matrix_t* A, int rows, int cols)
 	// allocate contiguous memory for the major(row) pointers
 	A->d = (double**)malloc(rows*sizeof(double*));
 	if(unlikely(A->d==NULL)){
-		fprintf(stderr,"ERROR in rc_matrix_alloc, not enough memory\n");
+		perror("ERROR in rc_matrix_alloc");
+		fprintf(stderr, "tried allocating a %dx%d matrix\n", rows,cols);
 		return -1;
 	}
 	// allocate contiguous memory for the actual data
 	void* ptr = malloc(rows*cols*sizeof(double));
 	if(unlikely(ptr==NULL)){
-		fprintf(stderr,"ERROR in rc_matrix_alloc, not enough memory\n");
+		perror("ERROR in rc_matrix_alloc");
+		fprintf(stderr, "tried allocating a %dx%d matrix\n", rows,cols);
 		free(A->d);
 		return -1;
 	}

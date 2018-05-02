@@ -18,99 +18,91 @@
 #include <rc/math/algebra.h>
 #include "algebra_common.h"
 
-#define unlikely(x)	__builtin_expect (!!(x), 0)
+
 
 #define DEFAULT_ZERO_TOLERANCE 1e-8 // consider v to be zero if fabs(v)<ZERO_TOLERANCE
 
 // current tolerance, can be changed with rc_algebra_set_zero_tolerance.
 double zero_tolerance=DEFAULT_ZERO_TOLERANCE;
 
-/**
- * performs a right matrix multiplication of x on the bottom right minor of A
- * where x is smaller than or equal to the size of A. Only used here in the
- * backend, not for user access.
- */
-int __qr_multiply_q_right(rc_matrix_t* A, rc_matrix_t x)
-{
-	int i,j,k,q;
-	rc_matrix_t tmp = rc_matrix_empty();
-	double* col;
-	if(unlikely(!A->initialized || !x.initialized)){
-		fprintf(stderr,"ERROR in __qr_multiply_q_right, uninitialized matrix\n");
-		return -1;
-	}
-	if(unlikely(A->cols<x.rows || A->rows<x.cols)){
-		fprintf(stderr,"ERROR in __qr_multiply_q_right, dimension mismatch\n");
-		return -1;
-	}
-	// q is the number of columns of A left untouched because x is smaller
-	q=A->cols-x.rows;
-	// duplicate the subset of A to be operated on
-	if(unlikely(rc_matrix_alloc(&tmp,A->rows, x.rows))){
-		fprintf(stderr,"ERROR in __qr_multiply_q_right, failed to allocate tmp\n");
-		return -1;
-	}
-	for(i=0;i<A->rows;i++){
-		for(j=0;j<x.rows;j++){
-			tmp.d[i][j]=A->d[i][j+q];
-		}
-	}
-	// allocate memory for a column of tmp from the stack, this is faster than
-	// malloc and the memory is freed automatically when this function returns
-	// it is faster to put a column in contiguous memory before multiplying
-	col = alloca(x.rows*sizeof(double));
-	if(unlikely(col==NULL)){
-		fprintf(stderr,"ERROR in __qr_multiply_q_right, alloca failed, stack overflow\n");
-		rc_matrix_free(&tmp);
-		return -1;
-	}
-	// do the multiplication, overwriting A left q columns of A remain untouched
-	for(j=0;j<(A->cols-q);j++){
-		// put column of x in sequential memory slot
-		for(k=0;k<x.rows;k++) col[k]=x.d[k][j];
-		// now go down the i'th column of A
-		// x is hermetian so don't bother transposing its columns
-		for(i=0;i<A->rows;i++){
-			A->d[i][j+q]=__vectorized_mult_accumulate(tmp.d[i],col,x.rows);
-		}
-	}
-	// free up tmp memory
-	rc_matrix_free(&tmp);
-	return 0;
-}
 
-/**
- * performs a left matrix multiplication of x on the bottom right minor of A
- * where x is smaller than or equal to the size of A. Only used here in the
- * backend, not for user access.
- */
-int __qr_multiply_r_left(rc_matrix_t H, rc_matrix_t* R, double norm)
+// used by QR decomposition
+int __householder_reflection(int step, rc_matrix_t* Q, rc_matrix_t* R)
 {
-	int i,j,p;
-	rc_matrix_t tmp = rc_matrix_empty();
-	// sanity checks
-	if(unlikely(!R->initialized || !H.initialized)){
-		fprintf(stderr,"ERROR in __qr_multiply_q_right, uninitialized matrix\n");
-		return -1;
-	}
-	if(R->rows<H.cols){
-		fprintf(stderr,"ERROR in  __qr_multiply_r_left dimension mismatch\n");
-		return -1;
-	}
+	int i,j,k;
+	double norm, tau, taui, dot;
+	int n = R->rows-step;
+	int Rrows = R->rows;
 	// p is the index of A defining the top left corner of the operation
 	// p=q=0 if x is same size as A',
-	p=R->rows-H.rows;
-	//q=R->cols-H.cols;
-	// alloc memory for a duplicate the subset of A to be operated on
-	if(unlikely(rc_matrix_alloc(&tmp, R->cols-p, R->rows-p))){
-		fprintf(stderr,"ERROR in __qr_multiply_r_left, failed to allocate tmp\n");
-		return -1;
+	int p=R->rows-n;
+	// x will hold each column of R from diag down at each step
+	double x[n];
+	// H will be the ever-shrinking householder matrix
+	//NEW_STACK_MATRIX(H,R->rows-step,R->rows-step);
+	double H[n][n];
+	// tmp is a duplicate of the the subset of A to be operated on when
+	// left-multiplying R
+	double tmp[R->cols-p][R->rows-p];
+	// duplicate pf the subset of Q to be operated on when right-multiplying R
+	double tmp2[Q->rows][n];
+	// allocate memory for a column of tmp2
+	double col[n];
+	// q is the number of columns of Q left untouched because H is smaller
+	int q = Q->cols-n;
+
+
+	////////////////////////////////////////////////////////////////////////
+	// get the ever-shrinking householder reflection for that column
+	////////////////////////////////////////////////////////////////////////
+
+	// take col of R from diag down
+	for(j=step;j<Rrows;j++) x[j-step]=R->d[j][step];
+
+	// find norm of x
+	norm = 0.0;
+	for(i=0;i<n;i++) norm += x[i]*x[i];
+	norm=sqrt(norm);
+
+	// set sign of norm to opposite of the pivot to avoid loss of significance
+	if(x[0]>=0.0){
+		x[0]=(x[0]+norm);
+		norm = -norm;
 	}
+	else x[0]=(x[0]-norm);
+
+
+	// pre-calculate matrix multiplication coefficient tau
+	// doing this on one line causes a compiler optimization error :-/
+	dot = __vectorized_mult_accumulate(x,x,n);
+	tau = -2.0/dot;
+
+	// fill in diagonal and upper triangle of H
+	for(i=0;i<n;i++){
+		taui = tau*x[i];
+		// H=I-(2/norm(x))vv' so add 1 on the diagonal
+		H[i][i] = 1.0 + taui*x[i];
+		for(j=i+1;j<n;j++){
+			H[i][j] = taui*x[j];
+		}
+	}
+
+	// copy to lower triangle
+	for(i=1;i<n;i++){
+		for(j=0;j<i;j++){
+			H[i][j] = H[j][i];
+		}
+	}
+
+	////////////////////////////////////////////////////////////////////////
+	// left multiply R
+	////////////////////////////////////////////////////////////////////////
+
 	// Copy Section of R to be operated on
 	// store it in transpose form so memory access later is contiguous
 	for(i=0;i<R->rows-p;i++){
 		for(j=0;j<R->cols-p;j++){
-			tmp.d[j][i]=R->d[i+p][j+p];
+			tmp[j][i]=R->d[i+p][j+p];
 		}
 	}
 	// go through the rows of R starting from the first row that requires
@@ -123,75 +115,61 @@ int __qr_multiply_r_left(rc_matrix_t H, rc_matrix_t* R, double norm)
 		// do multiplication for the rest of the columns
 		// A has already been transposed so don't transpose each column
 		for(j=1;j<(R->cols-p);j++){
-			R->d[i+p][j+p]=__vectorized_mult_accumulate(H.d[i],tmp.d[j],H.cols);
+			R->d[i+p][j+p]=__vectorized_mult_accumulate(H[i],tmp[j],n);
 		}
 	}
-	// free up tmp memory
-	rc_matrix_free(&tmp);
+
+	////////////////////////////////////////////////////////////////////////
+	// right multiply Q by H
+	////////////////////////////////////////////////////////////////////////
+
+	// duplicate the subset of Q to be operated on
+	for(i=0;i<Q->rows;i++){
+		for(j=0;j<n;j++)	tmp2[i][j]=Q->d[i][j+q];
+	}
+
+	// do the multiplication, overwriting A left q columns of A remain untouched
+	for(j=0;j<(Q->cols-q);j++){
+		// put column of x in sequential memory slot
+		for(k=0;k<n;k++) col[k]=H[k][j];
+		// now go down the i'th column of A
+		// H is hermetian so don't bother transposing its columns
+		for(i=0;i<Q->rows;i++){
+			Q->d[i][j+q]=__vectorized_mult_accumulate(tmp2[i],col,n);
+		}
+	}
+
 	return 0;
 }
 
-/**
- * returns the householder reflection matrix for a given vector
- * where u=x-ae1, v=u/norm(u), H=I-(2/norm(x))vv'
- * warning! modifies x!, only for use by qr decomposition below
- **/
-rc_matrix_t __qr_householder_matrix(rc_vector_t x, double* new_norm)
+int rc_algebra_qr_decomp(rc_matrix_t A, rc_matrix_t* Q, rc_matrix_t* R)
 {
-	int i, j;
-	double norm, tau, taui, dot;
-	rc_matrix_t out = rc_matrix_empty();
-	rc_vector_t v = rc_vector_empty();
+	int i,j,steps;
+	double norm;
+	// Sanity Checks
+	if(unlikely(!A.initialized)){
+		fprintf(stderr,"ERROR in rc_algebra_qr_decomp, matrix not initialized yet\n");
+		return -1;
+	}
+	// start R as A
+	if(unlikely(rc_matrix_duplicate(A,R))){
+		fprintf(stderr,"ERROR in rc_algebra_qr_decomp, failed to duplicate A\n");
+		return -1;
+	}
+	// start R as square identity
+	rc_matrix_identity(Q,A.rows);
+	// find out how many householder reflections are necessary
+	if(A.rows==A.cols) steps=A.cols-1;	// square
+	else if(A.rows>A.cols) steps=A.cols;	// tall
+	else steps=A.rows-1;			// wide
 
-	if(unlikely(!x.initialized)){
-		fprintf(stderr,"ERROR in __qr_householder_matrix, vector uninitialized\n");
-		return rc_matrix_empty();
+	// iterate through columns of A doing householder reflection to zero
+	// the entries below the diagonal
+	for(i=0;i<steps;i++){
+		if(__householder_reflection(i,Q,R)==-1) return -1;
 	}
-	// allocate memory for output matrix
-	if(unlikely(rc_matrix_alloc(&out,x.len,x.len))){
-		fprintf(stderr,"ERROR in __qr_householder_matrix, failed to alloc matrix\n");
-		return rc_matrix_empty();
-	}
-	// allocate memory for output matrix
-	if(unlikely(rc_vector_alloc(&v,x.len))){
-		fprintf(stderr,"ERROR in __qr_householder_matrix, failed to alloc vector\n");
-		rc_matrix_free(&out);
-		return rc_matrix_empty();
-	}
-	// set sign of norm to opposite of the pivot to avoid loss of significance
-	norm = rc_vector_norm(x,2);
-	if(x.d[0]>=0.0){
-		x.d[0]=(x.d[0]+norm);
-		*new_norm = -norm;
-	}
-	else {
-		x.d[0]=(x.d[0]-norm);
-		*new_norm = norm;
-	}
-	// pre-calculate matrix multiplication coefficient
-	// doing this on one line causes a compiler optimization error :-/
-	dot = rc_vector_dot_product(x,x);
-	tau = -2.0/dot;
-	// fill in diagonal and upper triangle of H
-	for(i=0;i<v.len;i++){
-		taui = tau*x.d[i];
-		// H=I-(2/norm(x))vv' so add 1 on the diagonal
-		out.d[i][i] = 1.0 + taui*x.d[i];
-		for(j=i+1;j<v.len;j++){
-			out.d[i][j] = taui*x.d[j];
-		}
-	}
-	// copy to lower triangle
-	for(i=1;i<v.len;i++){
-		for(j=0;j<i;j++){
-			out.d[i][j] = out.d[j][i];
-		}
-	}
-	rc_vector_free(&v);
-	return out;
+	return 0;
 }
-
-
 
 int rc_algebra_lup_decomp(rc_matrix_t A, rc_matrix_t* L, rc_matrix_t* U, rc_matrix_t* P)
 {
@@ -281,47 +259,6 @@ int rc_algebra_lup_decomp(rc_matrix_t A, rc_matrix_t* L, rc_matrix_t* U, rc_matr
 	rc_matrix_free(&Adup);
 	return 0;
 }
-
-int rc_algebra_qr_decomp(rc_matrix_t A, rc_matrix_t* Q, rc_matrix_t* R)
-{
-	int i,j,steps;
-	double norm;
-	rc_vector_t x = rc_vector_empty();
-	rc_matrix_t H = rc_matrix_empty();
-	// Sanity Checks
-	if(unlikely(!A.initialized)){
-		fprintf(stderr,"ERROR in rc_algebra_qr_decomp, matrix not initialized yet\n");
-		return -1;
-	}
-	// start R as A
-	if(unlikely(rc_matrix_duplicate(A,R))){
-		fprintf(stderr,"ERROR in rc_algebra_qr_decomp, failed to duplicate A\n");
-		return -1;
-	}
-	// start R as square identity
-	rc_matrix_identity(Q,A.rows);
-	// find out how many householder reflections are necessary
-	if(A.rows==A.cols) steps=A.cols-1;		// square
-	else if(A.rows>A.cols) steps=A.cols;	// tall
-	else steps=A.rows-1;					// wide
-	// iterate through columns of A doing householder reflection to zero
-	// the entries below the diagonal
-	for(i=0;i<steps;i++){
-		// take col of R from diag down
-		rc_vector_alloc(&x,A.rows-i);
-		for(j=i;j<A.rows;j++) x.d[j-i]=R->d[j][i];
-		// get the ever-shrinking householder reflection for that column
-		// qr_householder also fills in the norm of that column to 'norm'
-		H = __qr_householder_matrix(x, &norm);
-		rc_vector_free(&x);
-		// left multiply R
-		__qr_multiply_r_left(H,R,norm);
-		__qr_multiply_q_right(Q,H);
-		rc_matrix_free(&H);
-	}
-	return 0;
-}
-
 
 int rc_algebra_invert_matrix(rc_matrix_t A, rc_matrix_t* Ainv)
 {

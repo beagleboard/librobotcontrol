@@ -26,7 +26,6 @@
 #include <rc/math/vector.h>
 #include "algebra_common.h"
 
-#define unlikely(x)	__builtin_expect (!!(x), 0)
 
 int rc_vector_alloc(rc_vector_t* v, int length)
 {

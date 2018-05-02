@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <rc/math/algebra.h>
 #include <rc/math/kalman.h>
+#include "algebra_common.h"
 
 rc_kalman_t rc_kalman_empty()
 {
@@ -182,23 +183,23 @@ int rc_kalman_update_lin(rc_kalman_t* kf, rc_vector_t u, rc_vector_t y)
 	rc_vector_t tmp2 = rc_vector_empty();
 
 	// sanity checks
-	if(kf==NULL){
+	if(unlikely(kf==NULL)){
 		fprintf(stderr, "ERROR in rc_kalman_lin_update, received NULL pointer\n");
 		return -1;
 	}
-	if(kf->initialized !=1){
+	if(unlikely(kf->initialized !=1)){
 		fprintf(stderr, "ERROR in rc_kalman_lin_update, kf uninitialized\n");
 		return -1;
 	}
-	if(u.initialized!=1 || y.initialized!=1){
+	if(unlikely(u.initialized!=1 || y.initialized!=1)){
 		fprintf(stderr, "ERROR in rc_kalman_lin_update received uninitialized vector\n");
 		return -1;
 	}
-	if(u.len != kf->G.cols){
+	if(unlikely(u.len != kf->G.cols)){
 		fprintf(stderr, "ERROR in rc_kalman_lin_update u must have same dimension as columns of G\n");
 		return -1;
 	}
-	if(y.len != kf->H.rows){
+	if(unlikely(y.len != kf->H.rows)){
 		fprintf(stderr, "ERROR in rc_kalman_lin_update y must have same dimension as rows of H\n");
 		return -1;
 	}
@@ -272,39 +273,39 @@ int rc_kalman_update_ekf(rc_kalman_t* kf, rc_matrix_t F, rc_matrix_t H, rc_vecto
 	rc_vector_t tmp2 = rc_vector_empty();
 
 	// sanity checks
-	if(kf==NULL){
+	if(unlikely(kf==NULL)){
 		fprintf(stderr, "ERROR in rc_kalman_ekf_update, received NULL pointer\n");
 		return -1;
 	}
-	if(kf->initialized !=1){
+	if(unlikely(kf->initialized !=1)){
 		fprintf(stderr, "ERROR in rc_kalman_ekf_update, kf uninitialized\n");
 		return -1;
 	}
-	if(F.initialized!=1 || H.initialized!=1){
+	if(unlikely(F.initialized!=1 || H.initialized!=1)){
 		fprintf(stderr, "ERROR in rc_kalman_ekf_update received uninitialized matrix\n");
 		return -1;
 	}
-	if(x_pre.initialized!=1 || y.initialized!=1 || h.initialized!=1){
+	if(unlikely(x_pre.initialized!=1 || y.initialized!=1 || h.initialized!=1)){
 		fprintf(stderr, "ERROR in rc_kalman_ekf_update received uninitialized vector\n");
 		return -1;
 	}
-	if(F.rows != F.cols){
+	if(unlikely(F.rows != F.cols)){
 		fprintf(stderr, "ERROR in rc_kalman_ekf_update F must be square\n");
 		return -1;
 	}
-	if(x_pre.len != F.rows){
+	if(unlikely(x_pre.len != F.rows)){
 		fprintf(stderr, "ERROR in rc_kalman_ekf_update x_pre must have same dimension as rows of F\n");
 		return -1;
 	}
-	if(x_pre.len != H.cols){
+	if(unlikely(x_pre.len != H.cols)){
 		fprintf(stderr, "ERROR in rc_kalman_ekf_update x_pre must have same dimension as columns of H\n");
 		return -1;
 	}
-	if(y.len != kf->H.rows){
+	if(unlikely(y.len != kf->H.rows)){
 		fprintf(stderr, "ERROR in rc_kalman_ekf_update y must have same dimension as rows of H\n");
 		return -1;
 	}
-	if(y.len != h.len){
+	if(unlikely(y.len != h.len)){
 		fprintf(stderr, "ERROR in rc_kalman_ekf_update y must have same dimension h\n");
 		return -1;
 	}

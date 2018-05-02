@@ -11,8 +11,7 @@
 #include <math.h>
 
 #include <rc/math/quaternion.h>
-
-#define unlikely(x)	__builtin_expect (!!(x), 0)
+#include "algebra_common.h"
 
 double rc_quaternion_norm(rc_vector_t q)
 {

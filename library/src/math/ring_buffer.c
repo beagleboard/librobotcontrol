@@ -23,8 +23,7 @@
 
 #include <rc/math/ring_buffer.h>
 
-// preposessor macros
-#define unlikely(x)	__builtin_expect (!!(x), 0)
+#include "algebra_common.h"
 
 
 

@@ -16,10 +16,7 @@
 #include <rc/math/filter.h>
 #include <rc/math/polynomial.h>
 
-// preposessor macros
-#define unlikely(x)	__builtin_expect (!!(x), 0)
-#define likely(x)	__builtin_expect (!!(x), 1)
-
+#include "algebra_common.h"
 
 // local function
 static int print_poly_z(rc_vector_t v)

@@ -7,6 +7,13 @@
 #ifndef RC_ALGEBRA_COMMON_H
 #define RC_ALGEBRA_COMMON_H
 
+#ifndef unlikely
+#define unlikely(x)	__builtin_expect (!!(x), 0)
+#endif
+
+#ifndef likely
+#define likely(x)	__builtin_expect (!!(x), 1)
+#endif
 
 /*
  * Performs a vector dot product on the contents of a and b over n values.
