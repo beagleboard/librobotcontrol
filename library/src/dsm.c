@@ -17,7 +17,12 @@
 #include <rc/time.h>
 #include <rc/uart.h>
 #include <rc/gpio.h>
+
+#ifdef RC_AUTOPILOT_EXT
+#include "../include/rc/dsm.h"
+#else
 #include <rc/dsm.h>
+#endif
 
 #define PAUSE		115	// microseconds
 #define DELAY_SPEKTRUM	200000
@@ -120,7 +125,7 @@ int __continue_or_quit()
  */
 void* __parser_func(__attribute__ ((unused)) void* ptr){
 	char buf[DSM_PACKET_SIZE];
-	int i, ret, available;
+	int i, ret;
 	int new_values[RC_MAX_DSM_CHANNELS]; // hold new values before committing
 	int detection_packets_left; // use first 4 packets just for detection
 	unsigned char ch_id;
@@ -504,7 +509,7 @@ int rc_dsm_init()
 	num_channels = 0;
 	last_time = 0;
 	active_flag = 0;
-	new_data_callback==NULL;
+	new_data_callback=NULL;
 	new_dsm_flag=0;
 
 	// 0.2s timeout, disable canonical (0), 1 stop bit (1), disable parity (0)
@@ -536,6 +541,7 @@ int rc_dsm_cleanup()
 	int ret;
 	// just return if not running
 	if(!running){
+        init_flag=0;
 		return 0;
 	}
 	// tell parser loop to stop

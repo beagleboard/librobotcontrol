@@ -19,7 +19,11 @@
 #include <rc/button.h>
 #include <rc/cpu.h>
 #include <rc/deprecated.h>
+#ifdef RC_AUTOPILOT_EXT
+#include "rc/dsm.h"
+#else
 #include <rc/dsm.h>
+#endif
 #include <rc/encoder_eqep.h>
 #include <rc/encoder_pru.h>
 #include <rc/gpio.h>

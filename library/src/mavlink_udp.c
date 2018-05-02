@@ -63,7 +63,7 @@ rc_mav_connection_state_t connection_state;
 static pthread_t listener_thread;
 static int shutdown_flag=0;
 static int listening_flag=0;
-static int listening_init_flag=0;
+//static int listening_init_flag=0;
 
 
 // private local function declarations;
@@ -85,7 +85,7 @@ static uint64_t __us_since_boot()
 // background thread for handling packets
 void* __listen_thread_func()
 {
-	int i, elapsed;
+	int i;
 	uint64_t time;
 	ssize_t num_bytes_rcvd;;
 	uint8_t buf[BUFFER_LENGTH];

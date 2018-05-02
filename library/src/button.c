@@ -7,7 +7,10 @@
 #include <poll.h>
 #include <unistd.h>
 #include <fcntl.h>
+
+#ifndef RC_AUTOPILOT_EXT
 #include <linux/gpio.h>
+#endif
 
 #include <rc/gpio.h>
 #include <rc/time.h>

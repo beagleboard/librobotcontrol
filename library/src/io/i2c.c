@@ -80,6 +80,19 @@ int rc_i2c_init(int bus, uint8_t devAddr)
 	return 0;
 }
 
+/******************************************************************
+* rc_i2c_get_fd
+******************************************************************/
+#ifdef RC_AUTOPILOT_EXT
+int rc_i2c_get_fd(int bus) {
+	if(bus!=1 && bus!=2){
+		printf("i2c bus must be 1 or 2\n");
+		return -1;
+	}
+
+	return i2c[bus].initialized == 1 ? i2c[bus].file : -1;
+}
+#endif
 
 int rc_i2c_set_device_address(int bus, uint8_t devAddr)
 {
@@ -113,7 +126,7 @@ int rc_i2c_close(int bus)
 }
 
 
-int rc_i2c_read_bytes(int bus, uint8_t regAddr, uint8_t length, uint8_t *data)
+int rc_i2c_read_data(int bus, uint8_t regAddr, size_t length, uint8_t *data)
 {
 	int ret, old_lock;
 
@@ -138,7 +151,7 @@ int rc_i2c_read_bytes(int bus, uint8_t regAddr, uint8_t length, uint8_t *data)
 
 	// then read the response
 	ret = read(i2c[bus].file, data, length);
-	if(unlikely(ret!=length)){
+	if(unlikely((size_t)ret!=length)){
 		fprintf(stderr,"ERROR: in rc_i2c_read_bytes, received %d bytes from device, expected %d\n", ret, length);
 		i2c[bus].lock = old_lock;
 		return -1;
@@ -147,6 +160,11 @@ int rc_i2c_read_bytes(int bus, uint8_t regAddr, uint8_t length, uint8_t *data)
 	// return the lock state to previous state.
 	i2c[bus].lock = old_lock;
 	return ret;
+}
+
+int rc_i2c_read_bytes(int bus, uint8_t regAddr, uint8_t length, uint8_t *data)
+{
+	return rc_i2c_read_data(bus, regAddr, length, data);
 }
 
 int rc_i2c_read_byte(int bus, uint8_t regAddr, uint8_t *data)
