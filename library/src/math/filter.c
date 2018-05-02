@@ -78,7 +78,7 @@ int rc_filter_alloc(rc_filter_t* f, rc_vector_t num, rc_vector_t den, double dt)
 		fprintf(stderr,"ERROR in rc_filter_alloc, improper transfer function\n");
 		return -1;
 	}
-	if(unlikely(den.d[0]==0.0)){
+	if(unlikely(fabs(den.d[0]) < zero_tolerance)){
 		fprintf(stderr,"ERROR in rc_filter_alloc, first coefficient in denominator is 0\n");
 		return -1;
 	}
@@ -135,7 +135,7 @@ int rc_filter_alloc_from_arrays(rc_filter_t* f,double dt,double* num,int numlen,
 		fprintf(stderr,"ERROR in rc_filter_alloc_from_arrays, dt must be >0\n");
 		return -1;
 	}
-	if(unlikely(den[0]==0.0)){
+	if(unlikely(fabs(den[0]) < zero_tolerance)){
 		fprintf(stderr,"ERROR in rc_filter_alloc_from_arrays, first coefficient in denominator is 0\n");
 		return -1;
 	}
@@ -209,13 +209,13 @@ double rc_filter_march(rc_filter_t* f, double new_input)
 	for(i=0; i<(f->num.len); i++){
 		tmp1+=f->num.d[i]*rc_ringbuf_get_value(&f->in_buf, i+rel_deg);
 	}
-	if(f->gain!=1.0) tmp1=tmp1*f->gain;
+	if(fabs(f->gain - 1.0) > zero_tolerance) tmp1=tmp1*f->gain;
 	for(i=0; i<(f->order); i++){
 		tmp2-=f->den.d[i+1]*rc_ringbuf_get_value(&f->out_buf, i);
 	}
 	new_out=tmp2+tmp1;
 	// scale in case denominator doesn't have a leading 1
-	if(f->den.d[0]!=1.0) new_out /= f->den.d[0];
+	if(fabs(f->den.d[0] - 1.0) > zero_tolerance) new_out /= f->den.d[0];
 	// soft start limits
 	if(f->ss_en && f->step<f->ss_steps){
 		double a=f->sat_max*(f->step/f->ss_steps);
@@ -394,7 +394,7 @@ int rc_filter_multiply(rc_filter_t f1, rc_filter_t f2, rc_filter_t* f3)
 		fprintf(stderr,"ERROR in rc_filter_multiply, filter uninitialized\n");
 		return -1;
 	}
-	if(unlikely(f1.dt!=f2.dt)){
+	if(unlikely(fabs(f1.dt-f2.dt) > zero_tolerance)){
 		fprintf(stderr,"ERROR in rc_filter_multiply, timestep dt must match\n");
 		return -1;
 	}
@@ -430,7 +430,7 @@ int rc_filter_multiply_three(rc_filter_t f1, rc_filter_t f2, rc_filter_t f3, rc_
 		fprintf(stderr,"ERROR in rc_filter_multiply_three, filter uninitialized\n");
 		return -1;
 	}
-	if(unlikely(f1.dt!=f2.dt || f2.dt!=f3.dt)){
+	if(unlikely(fabs(f1.dt - f2.dt) >  zero_tolerance || fabs(f2.dt- f3.dt) > zero_tolerance)){
 		fprintf(stderr,"ERROR in rc_filter_multiply_three, timestep dt must match\n");
 		return -1;
 	}
@@ -557,12 +557,12 @@ int rc_filter_normalize(rc_filter_t* f)
 		return -1;
 	}
 	val = f->den.d[0];
-	if(unlikely(val==0.0)){
+	if(unlikely(fabs(val) < zero_tolerance)){
 		fprintf(stderr,"ERROR in rc_filter_normalize, leading coefficient is 0\n");
 		return -1;
 	}
 	// if already normalized, just return
-	if(val==1.0) return 0;
+	if(fabs(val-1.0) < zero_tolerance) return 0;
 	for(i=0;i<f->num.len;i++) f->num.d[i]/=val;
 	for(i=1;i<f->den.len;i++) f->den.d[i]/=val;
 	f->den.d[0]=1.0;
@@ -780,7 +780,7 @@ int rc_filter_pid(rc_filter_t* f,double kp,double ki,double kd,double Tf,double 
 		return -1;
 	}
 	// if ki==0, return a 1st order PD filter with rolloff
-	if(ki==0.0){
+	if(fabs(ki) < zero_tolerance){
 		rc_vector_alloc(&num,2);
 		rc_vector_alloc(&den,2);
 		num.d[0] = (kp*Tf+kd)/Tf;

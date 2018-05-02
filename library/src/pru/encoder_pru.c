@@ -21,7 +21,6 @@ static int init_flag=0;
 
 int rc_encoder_pru_init()
 {
-	int i;
 	// start pru
 	if(rc_pru_start(ENCODER_PRU_CH, ENCODER_PRU_FW)){
 		fprintf(stderr,"ERROR in rc_encoder_pru_init, failed to start PRU%d\n", ENCODER_PRU_CH);
@@ -43,7 +42,6 @@ int rc_encoder_pru_init()
 
 void rc_encoder_pru_cleanup()
 {
-	int i;
 	// zero out shared memory
 	if(shared_mem_32bit_ptr != NULL){
 		shared_mem_32bit_ptr[ENCODER_MEM_OFFSET]=0;

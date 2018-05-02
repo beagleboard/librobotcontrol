@@ -33,8 +33,8 @@ typedef struct bmp280_cal_t{
 }bmp280_cal_t;
 
 // global variables
-static bmp280_cal_t cal;
-static int init_flag = 0;
+static bmp280_cal_t rc_bmp280_cal;
+static int rc_bmp280_init_flag = 0;
 
 int rc_bmp_init(rc_bmp_oversample_t oversample, rc_bmp_filter_t filter)
 {
@@ -129,28 +129,28 @@ int rc_bmp_init(rc_bmp_oversample_t oversample, rc_bmp_filter_t filter)
 	}
 
 	// save calibration in useful format
-	cal.dig_T1 = (uint16_t) ((buf[1] << 8) | buf [0]);
-	cal.dig_T2 = (uint16_t) ((buf[3] << 8) | buf [2]);
-	cal.dig_T3 = (uint16_t) ((buf[5] << 8) | buf [4]);
-	cal.dig_P1 = (uint16_t) ((buf[7] << 8) | buf [6]);
-	cal.dig_P2 = (uint16_t) ((buf[9] << 8) | buf [8]);
-	cal.dig_P3 = (uint16_t) ((buf[11] << 8) | buf [10]);
-	cal.dig_P4 = (uint16_t) ((buf[13] << 8) | buf [12]);
-	cal.dig_P5 = (uint16_t) ((buf[15] << 8) | buf [14]);
-	cal.dig_P6 = (uint16_t) ((buf[17] << 8) | buf [16]);
-	cal.dig_P7 = (uint16_t) ((buf[19] << 8) | buf [18]);
-	cal.dig_P8 = (uint16_t) ((buf[21] << 8) | buf [20]);
-	cal.dig_P9 = (uint16_t) ((buf[23] << 8) | buf [22]);
+	rc_bmp280_cal.dig_T1 = (uint16_t) ((buf[1] << 8) | buf [0]);
+	rc_bmp280_cal.dig_T2 = (uint16_t) ((buf[3] << 8) | buf [2]);
+	rc_bmp280_cal.dig_T3 = (uint16_t) ((buf[5] << 8) | buf [4]);
+	rc_bmp280_cal.dig_P1 = (uint16_t) ((buf[7] << 8) | buf [6]);
+	rc_bmp280_cal.dig_P2 = (uint16_t) ((buf[9] << 8) | buf [8]);
+	rc_bmp280_cal.dig_P3 = (uint16_t) ((buf[11] << 8) | buf [10]);
+	rc_bmp280_cal.dig_P4 = (uint16_t) ((buf[13] << 8) | buf [12]);
+	rc_bmp280_cal.dig_P5 = (uint16_t) ((buf[15] << 8) | buf [14]);
+	rc_bmp280_cal.dig_P6 = (uint16_t) ((buf[17] << 8) | buf [16]);
+	rc_bmp280_cal.dig_P7 = (uint16_t) ((buf[19] << 8) | buf [18]);
+	rc_bmp280_cal.dig_P8 = (uint16_t) ((buf[21] << 8) | buf [20]);
+	rc_bmp280_cal.dig_P9 = (uint16_t) ((buf[23] << 8) | buf [22]);
 
 	// use default pressure for now unless user sets it otherwise
-	cal.sea_level_pa = DEFAULT_SEA_LEVEL_PA;
+	rc_bmp280_cal.sea_level_pa = DEFAULT_SEA_LEVEL_PA;
 
 	// release control of the bus
 	rc_i2c_unlock_bus(BMP_BUS);
 
 	// wait for bmp to finish it's internal initialization
 	rc_usleep(50000);
-	init_flag=1;
+	rc_bmp280_init_flag=1;
 	return 0;
 }
 
@@ -179,7 +179,7 @@ int rc_bmp_power_off()
 
 	// release control of the bus
 	rc_i2c_unlock_bus(BMP_BUS);
-	init_flag=0;
+	rc_bmp280_init_flag=0;
 	return 0;
 }
 
@@ -191,7 +191,7 @@ int rc_bmp_read(rc_bmp_data_t* data)
 	int32_t adc_P, adc_T;
 
 	// sanity checks
-	if(init_flag==0){
+	if(rc_bmp280_init_flag==0){
 		fprintf(stderr,"ERROR in rc_bmp_read, call rc_bmp_init first\n");
 		return -1;
 	}
@@ -227,11 +227,11 @@ int rc_bmp_read(rc_bmp_data_t* data)
 	adc_T = (raw[3] << 12)|
 			(raw[4] << 4)|(raw[5] >> 4);
 
-	var1  = ((((adc_T>>3) - ((int32_t)cal.dig_T1 <<1))) *
-			((int32_t)cal.dig_T2)) >> 11;
-	var2  = (((((adc_T>>4) - ((int32_t)cal.dig_T1)) *
-			((adc_T>>4) - ((int32_t)cal.dig_T1))) >> 12) *
-			((int32_t)cal.dig_T3)) >> 14;
+	var1  = ((((adc_T>>3) - ((int32_t)rc_bmp280_cal.dig_T1 <<1))) *
+			((int32_t)rc_bmp280_cal.dig_T2)) >> 11;
+	var2  = (((((adc_T>>4) - ((int32_t)rc_bmp280_cal.dig_T1)) *
+			((adc_T>>4) - ((int32_t)rc_bmp280_cal.dig_T1))) >> 12) *
+			((int32_t)rc_bmp280_cal.dig_T3)) >> 14;
 
 	t_fine = var1 + var2;
 
@@ -239,12 +239,12 @@ int rc_bmp_read(rc_bmp_data_t* data)
 	data->temp_c =  T/100.0;
 
 	var3 = ((int64_t)t_fine) - 128000;
-	var4 = var3 * var3 * (int64_t)cal.dig_P6;
-	var4 = var4 + ((var3*(int64_t)cal.dig_P5)<<17);
-	var4 = var4 + (((int64_t)cal.dig_P4)<<35);
-	var3 = ((var3 * var3 * (int64_t)cal.dig_P3)>>8) +
-		   ((var3 * (int64_t)cal.dig_P2)<<12);
-	var3 = (((((int64_t)1)<<47)+var3))*((int64_t)cal.dig_P1)>>33;
+	var4 = var3 * var3 * (int64_t)rc_bmp280_cal.dig_P6;
+	var4 = var4 + ((var3*(int64_t)rc_bmp280_cal.dig_P5)<<17);
+	var4 = var4 + (((int64_t)rc_bmp280_cal.dig_P4)<<35);
+	var3 = ((var3 * var3 * (int64_t)rc_bmp280_cal.dig_P3)>>8) +
+		   ((var3 * (int64_t)rc_bmp280_cal.dig_P2)<<12);
+	var3 = (((((int64_t)1)<<47)+var3))*((int64_t)rc_bmp280_cal.dig_P1)>>33;
 
 	// avoid exception caused by division by zero
 	if(var3==0){
@@ -254,13 +254,13 @@ int rc_bmp_read(rc_bmp_data_t* data)
 
 	p = 1048576 - adc_P;
 	p = (((p<<31) - var4)*3125) / var3;
-	var3 = (((int64_t)cal.dig_P9) * (p >> 13) * (p >> 13)) >> 25;
-	var4 = (((int64_t)cal.dig_P8) * p) >> 19;
+	var3 = (((int64_t)rc_bmp280_cal.dig_P9) * (p >> 13) * (p >> 13)) >> 25;
+	var4 = (((int64_t)rc_bmp280_cal.dig_P8) * p) >> 19;
 
-	p = ((p + var3 + var4) >> 8) + (((int64_t)cal.dig_P7) << 4);
+	p = ((p + var3 + var4) >> 8) + (((int64_t)rc_bmp280_cal.dig_P7) << 4);
 	data->pressure_pa = (float)p/256;
 
-	data->alt_m = 44330.0*(1.0 - pow((data->pressure_pa/cal.sea_level_pa), 0.1903));
+	data->alt_m = 44330.0*(1.0 - pow((data->pressure_pa/rc_bmp280_cal.sea_level_pa), 0.1903));
 
 	return 0;
 }
@@ -269,7 +269,7 @@ int rc_bmp_read(rc_bmp_data_t* data)
 int rc_set_sea_level_pressure_pa(float pa)
 {
 	// sanity checks
-	if(init_flag==0){
+	if(rc_bmp280_init_flag==0){
 		fprintf(stderr, "ERROR in rc_set_sea_level_pressure_pa, call rc_bmp_init first\n");
 		return -1;
 	}
@@ -278,7 +278,7 @@ int rc_set_sea_level_pressure_pa(float pa)
 		fprintf(stderr," pressure between 80,000 & 120,000 pascals.\n");
 		return -1;
 	}
-	cal.sea_level_pa = pa;
+	rc_bmp280_cal.sea_level_pa = pa;
 	return 0;
 }
 

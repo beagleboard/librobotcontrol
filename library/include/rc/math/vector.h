@@ -27,6 +27,8 @@
 extern "C" {
 #endif
 
+extern double zero_tolerance;
+
 /**
  * @brief      Struct containing the state of a vector and a pointer to
  *             dynamically allocated memory to hold its contents.

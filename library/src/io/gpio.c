@@ -12,7 +12,17 @@
 #include <fcntl.h> // for open()
 #include <string.h> // for memset
 #include <sys/ioctl.h>
+
+#ifdef RC_AUTOPILOT_EXT
+// It might not be available in cross-compile environment.
+// Try here: https://github.com/torvalds/linux/blob/master/include/uapi/linux/gpio.h
+//
+// Not sure why #include <linux/gpio.h> did not work here after explicitly include
+// the default path /usr/include, so use full path for now.
+#include "/usr/include/linux/gpio.h"
+#else
 #include <linux/gpio.h>
+#endif
 
 #include <rc/gpio.h>
 
@@ -247,7 +257,7 @@ void rc_gpio_cleanup(int pin)
 	}
 	if(handle_fd[pin]!=0){
 		close(handle_fd[pin]);
-		handle_fd[pin]==0;
+		handle_fd[pin]=0;
 	}
 	if(event_fd[pin]!=0){
 		close(event_fd[pin]);
