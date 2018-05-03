@@ -95,6 +95,7 @@ clean:
 uninstall:
 	$(RM) $(DESTDIR)$(prefix)/$(TARGET)
 	$(RM) $(DESTDIR)$(prefix)/include/roboticscape.h
+	$(RM) $(DESTDIR)$(prefix)/include/rc_usefulincludes.h
 	$(RM) $(DESTDIR)$(prefix)/include/rc
 	@echo "Library Uninstall Complete"
 
