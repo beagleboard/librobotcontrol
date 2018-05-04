@@ -53,7 +53,7 @@ int main()
 	rc_vector_t u = rc_vector_empty();
 	rc_vector_t y = rc_vector_empty();
 
-	// allocate appropirate memory for system
+	// allocate appropriate memory for system
 	rc_matrix_zeros(&F, Nx, Nx);
 	rc_matrix_zeros(&G, Nx, Nu);
 	rc_matrix_zeros(&H, Ny, Nx);
