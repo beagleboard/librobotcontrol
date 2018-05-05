@@ -143,7 +143,8 @@ int main(int argc, char *argv[])
 	while(running){
 		if(m_mode==SWEEP){
 			duty = -duty; // toggle back and forth to sweep motors side to side
-			printf("sending duty cycle %0.4f", duty);
+			printf("sending duty cycle %0.4f\n", duty);
+			fflush(stdout);
 			rc_motor_set(ch,duty);
 		}
 

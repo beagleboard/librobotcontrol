@@ -27,7 +27,8 @@
 #define DEFAULT_MIN	1142
 #define DEFAULT_MAX	1858
 
-#define DSM_PIN		30	//gpio0.30	P9.11
+#define DSM_PINMUX_ID	30
+#define DSM_PIN		0,30	//gpio0.30	P9.11
 #define DSM_UART_BUS	4
 #define DSM_BAUD_RATE	115200
 #define DSM_PACKET_SIZE	16
@@ -494,7 +495,7 @@ int rc_dsm_init()
 		#endif
 	}
 
-	if(rc_pinmux_set(DSM_PIN, PINMUX_UART)){
+	if(rc_pinmux_set(DSM_PINMUX_ID, PINMUX_UART)){
 		fprintf(stderr,"ERROR in rc_dsm_init, failed to set pinmux\n");
 		return -1;
 	}
@@ -659,7 +660,7 @@ int rc_dsm_bind_routine()
 	int pulses = 9;
 
 	// first set the pin as input (pulldown) to detect when receiver is attached
-	if(rc_pinmux_set(DSM_PIN, PINMUX_GPIO_PD)<0){
+	if(rc_pinmux_set(DSM_PINMUX_ID, PINMUX_GPIO_PD)<0){
 		fprintf(stderr,"ERROR in rc_dsm_bind_routine, pinmux helper not enabled for P9_11\n");
 		return -1;
 	}
@@ -772,7 +773,7 @@ enter:
 	rc_usleep(1000000);
 
 	// swap pinmux from GPIO back to uart
-	if(rc_pinmux_set(DSM_PIN, PINMUX_UART)){
+	if(rc_pinmux_set(DSM_PINMUX_ID, PINMUX_UART)){
 		fprintf(stderr,"ERROR in rc_dsm_bind_routine, failed to put pin back to UART mode\n");
 		return -1;
 	}

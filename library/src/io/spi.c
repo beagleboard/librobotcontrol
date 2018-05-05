@@ -26,10 +26,31 @@
 #define SPI_MIN_SPEED		1000		// 1khz
 #define SPI_BITS_PER_WORD	8
 
+
+// Cape SS1 gpio P9_28, normally SPI mode
+#define CAPE_SS1_CHIP	3
+#define CAPE_SS1_PIN	17
+// Cape SS2 gpio P9_23, normally GPIO mode
+#define CAPE_SS2_CHIP	1
+#define CAPE_SS2_PIN	17
+// Blue SS1 gpio 0_29 pin H18
+#define BLUE_SS1_CHIP	0
+#define BLUE_SS1_PIN	29
+// Blue SS2 gpio 0_7 pin H18
+#define BLUE_SS2_CHIP	0
+#define BLUE_SS2_PIN	7
+
+// Blue Only
+#define BLUE_SPI_PIN_6_SS1	29	// gpio 0_29 pin H18
+#define BLUE_SPI_PIN_6_SS2	7	// gpio 0_7  pin C18
+
+
 static int fd[N_SS];		// file descriptor for SPI1_PATH device cs0, cs1
 static int init_flag[N_SS];	// set to 1 after successful initialization
 static int gpio_init_flag[N_SS];// init flag for manual-mode gpio SS lines
-static int gpio_ss[N_SS];	// holds gpio pins for slave select lines
+static int pinmux_id[N_SS];	// pinmux identifier for slave select lines
+static int gpio_ss_chip[N_SS];	// holds gpio pin chip for slave select lines
+static int gpio_ss_pin[N_SS];	// holds gpio pins offset for slave select lines
 static int speed[N_SS];		// speed in hz
 
 int rc_spi_init(int slave, int slave_mode, int bus_mode, int speed_hz)
@@ -96,31 +117,40 @@ int rc_spi_init(int slave, int slave_mode, int bus_mode, int speed_hz)
 
 	// set up slave select pins, pin definitions in <rc/pinmux.h>
 	if(model==BB_BLUE){
-		gpio_ss[0] = BLUE_SPI_PIN_6_SS1;
-		gpio_ss[1] = BLUE_SPI_PIN_6_SS2;
+		gpio_ss_chip[0] = BLUE_SS1_CHIP;
+		gpio_ss_pin[0]  = BLUE_SS1_PIN;
+		pinmux_id[0]    = BLUE_SPI_PIN_6_SS1;
+		gpio_ss_chip[1] = BLUE_SS2_CHIP;
+		gpio_ss_pin[1]  = BLUE_SS2_PIN;
+		pinmux_id[1]    = BLUE_SPI_PIN_6_SS1;
+
 	}
 	else{
-		gpio_ss[0] = CAPE_SPI_PIN_6_SS1;
-		gpio_ss[1] = CAPE_SPI_PIN_6_SS2;
+		gpio_ss_chip[0] = CAPE_SS1_CHIP;
+		gpio_ss_pin[0]  = CAPE_SS1_PIN;
+		pinmux_id[0]    = CAPE_SPI_PIN_6_SS1;
+		gpio_ss_chip[1] = CAPE_SS2_CHIP;
+		gpio_ss_pin[1]  = CAPE_SS2_PIN;
+		pinmux_id[1]    = CAPE_SPI_PIN_6_SS2;
 	}
 
 	if(slave_mode == SPI_SLAVE_MODE_AUTO){
-		if(rc_pinmux_set(gpio_ss[slave-1], PINMUX_SPI)){
+		if(rc_pinmux_set(pinmux_id[slave-1], PINMUX_SPI)){
 			fprintf(stderr,"ERROR in rc_spi_init, failed to set slave select pinmux to SPI mode\n");
 			return -1;
 		}
 	}
 	else{
-		if(rc_pinmux_set(gpio_ss[slave-1], PINMUX_GPIO)){
+		if(rc_pinmux_set(pinmux_id[slave-1], PINMUX_GPIO)){
 			fprintf(stderr,"ERROR in rc_spi_init, failed to set slave select pinmux to GPIO mode\n");
 			return -1;
 		}
-		if(rc_gpio_init(gpio_ss[slave-1], GPIOHANDLE_REQUEST_OUTPUT)){
+		if(rc_gpio_init(gpio_ss_chip[slave-1],gpio_ss_pin[slave-1], GPIOHANDLE_REQUEST_OUTPUT)){
 			fprintf(stderr,"ERROR in rc_spi_init failed to initialize slave select gpio pin\n");
 			return -1;
 		}
 		// make sure slave begins deselected
-		if(rc_gpio_set_value(gpio_ss[slave-1], 1)){
+		if(rc_gpio_set_value(gpio_ss_chip[slave-1],gpio_ss_pin[slave-1], 1)){
 			fprintf(stderr,"ERROR in rc_spi_init, failed to write to gpio slave select pin\n");
 			return -1;
 		}
@@ -158,7 +188,7 @@ int rc_spi_close(int slave)
 	// deselect if in manual mode
 	if(gpio_init_flag[slave-1]){
 		rc_spi_select((slave-1),0);
-		rc_gpio_cleanup(gpio_ss[slave-1]);
+		rc_gpio_cleanup(gpio_ss_chip[slave-1],gpio_ss_pin[slave-1]);
 	}
 	close(fd[slave-1]);
 	init_flag[slave-1]=0;
@@ -180,7 +210,7 @@ int rc_spi_select(int slave, int select)
 	}
 
 	// invert select to it's pulled low when selecting pin
-	if(rc_gpio_set_value(gpio_ss[slave-1], !select)==-1){
+	if(rc_gpio_set_value(gpio_ss_chip[slave-1],gpio_ss_pin[slave-1], !select)==-1){
 		fprintf(stderr,"ERROR in rc_spi_select writing to gpio pin\n");
 		return -1;
 	}

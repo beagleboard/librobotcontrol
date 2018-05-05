@@ -160,7 +160,8 @@ typedef enum rc_mpu_orientation_t{
 typedef struct rc_mpu_config_t{
 	/** @name physical connection configuration */
 	///@{
-	int gpio_interrupt_pin;		///< gpio pin, default 117 on Robotics Cape and BB Blue
+	int gpio_interrupt_pin_chip;	///< gpio pin, default 3 on Robotics Cape and BB Blue
+	int gpio_interrupt_pin;		///< gpio pin, default 21 on Robotics Cape and BB Blue
 	int i2c_bus;			///< which bus to use, default 2 on Robotics Cape and BB Blue
 	uint8_t i2c_addr;		///< default is 0x68, pull pin ad0 high to make it 0x69
 	int show_warnings;		///< set to 1 to print i2c_bus warnings for debug

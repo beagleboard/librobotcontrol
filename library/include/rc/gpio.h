@@ -53,12 +53,13 @@ extern "C" {
  *             time. If you don't know what the other flags mean just stick with
  *             INPUT and OUTPUT modes, that covers 99% of use cases.
  *
+ * @param[in]  chip          The chip number, /dev/gpiochipX
  * @param[in]  pin           The pin ID
  * @param[in]  handle_flags  The handle flags
  *
  * @return     0 on success or -1 on failure.
  */
-int rc_gpio_init(int pin, int handle_flags);
+int rc_gpio_init(int chip, int pin, int handle_flags);
 
 
 /**
@@ -66,12 +67,13 @@ int rc_gpio_init(int pin, int handle_flags);
  *
  *             must call rc_gpio_init with the OUTPUT flag first.
  *
+ * @param[in]  chip   The chip number, /dev/gpiochipX
  * @param[in]  pin    The pin ID
  * @param[in]  value  0 for off (inactive), nonzero for on (active)
  *
  * @return     0 on success or -1 on failure
  */
-int rc_gpio_set_value(int pin, int value);
+int rc_gpio_set_value(int chip, int pin, int value);
 
 
 /**
@@ -79,11 +81,12 @@ int rc_gpio_set_value(int pin, int value);
  *
  *             Must call rc_gpio_init first.
  *
+ * @param[in]  chip  The chip number, /dev/gpiochipX
  * @param[in]  pin   The pin ID
  *
  * @return     1 if pin is high, 0 if pin is low, -1 on error
  */
-int rc_gpio_get_value(int pin);
+int rc_gpio_get_value(int chip, int pin);
 
 
 /** possible edge request **/
@@ -102,6 +105,7 @@ int rc_gpio_get_value(int pin);
  *             descriptor used for polling in case the user wants to use a
  *             polling method other than rc_gpio_poll.
  *
+ * @param[in]  chip          The chip number, /dev/gpiochipX
  * @param[in]  pin           The pin ID
  * @param[in]  handle_flags  Additional pin configuration flags, this can
  *                           usually be left as 0
@@ -111,7 +115,7 @@ int rc_gpio_get_value(int pin);
  *
  * @return     File descriptor for the GPIO event or -1 on failure
  */
-int rc_gpio_init_event(int pin, int handle_flags, int event_flags);
+int rc_gpio_init_event(int chip, int pin, int handle_flags, int event_flags);
 
 /** possible return values for rc_gpio_poll **/
 #define RC_GPIOEVENT_ERROR		-1
@@ -124,6 +128,7 @@ int rc_gpio_init_event(int pin, int handle_flags, int event_flags);
  *
  *             This polls for an event and then reads one event from the queue.
  *
+ * @param[in]  chip           The chip number, /dev/gpiochipX
  * @param[in]  pin            The pin ID
  * @param[in]  timeout_ms     The timeout in milliseconds. Negative value causes
  *                            infinite timeout, a value of 0 makes the function
@@ -137,7 +142,7 @@ int rc_gpio_init_event(int pin, int handle_flags, int event_flags);
  *             RC_GPIO_EVENT_RISING_EDGE, or RC_GPIO_EVENT_FALLING_EDGE to
  *             indicate what happened.
  */
-int rc_gpio_poll(int pin, int timeout_ms, uint64_t* event_time_ns);
+int rc_gpio_poll(int chip, int pin, int timeout_ms, uint64_t* event_time_ns);
 
 
 /**
@@ -147,9 +152,10 @@ int rc_gpio_poll(int pin, int timeout_ms, uint64_t* event_time_ns);
  *             linux will clean this up for you. However this is sometimes
  *             useful in the middle of a program when a pin is no longer needed.
  *
+ * @param[in]  chip  The chip number, /dev/gpiochipX
  * @param[in]  pin   The pin ID
  */
-void rc_gpio_cleanup(int pin);
+void rc_gpio_cleanup(int chip, int pin);
 
 
 

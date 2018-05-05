@@ -41,7 +41,8 @@
 
 //I2C bus and address definitions for Robotics Cape
 #define RC_IMU_BUS		2
-#define RC_IMU_INTERRUPT_PIN	117 // gpio3.21 P9.25
+#define RC_IMU_INTERRUPT_PIN_CHIP 3
+#define RC_IMU_INTERRUPT_PIN_PIN  21 // gpio3.21 P9.25
 
 // macros
 #define ARRAY_SIZE(array) sizeof(array)/sizeof(array[0])
@@ -141,7 +142,8 @@ rc_mpu_config_t rc_mpu_default_config()
 	rc_mpu_config_t conf;
 
 	// connectivity
-	conf.gpio_interrupt_pin = RC_IMU_INTERRUPT_PIN;
+	conf.gpio_interrupt_pin_chip = RC_IMU_INTERRUPT_PIN_CHIP;
+	conf.gpio_interrupt_pin = RC_IMU_INTERRUPT_PIN_PIN;
 	conf.i2c_bus = RC_IMU_BUS;
 	conf.i2c_addr = RC_MPU_DEFAULT_I2C_ADDR;
 	conf.show_warnings = 0;
@@ -696,7 +698,7 @@ int rc_mpu_power_off()
 
 	// if in dmp mode, also unexport the interrupt pin
 	if(dmp_en){
-		rc_gpio_cleanup(config.gpio_interrupt_pin);
+		rc_gpio_cleanup(config.gpio_interrupt_pin_chip ,config.gpio_interrupt_pin);
 	}
 
 	return 0;
@@ -757,8 +759,8 @@ int rc_mpu_initialize_dmp(rc_mpu_data_t *data, rc_mpu_config_t conf)
 		return -1;
 	}
 	// configure the gpio interrupt pin
-	if(rc_gpio_init_event(config.gpio_interrupt_pin, 0, GPIOEVENT_REQUEST_FALLING_EDGE)==-1){
-		fprintf(stderr,"ERROR: in rc_mpu_initialize_dmp, failed to initialize GPIO %d\n", config.gpio_interrupt_pin);
+	if(rc_gpio_init_event(config.gpio_interrupt_pin_chip, config.gpio_interrupt_pin, 0, GPIOEVENT_REQUEST_FALLING_EDGE)==-1){
+		fprintf(stderr,"ERROR: in rc_mpu_initialize_dmp, failed to initialize GPIO\n");
 		fprintf(stderr,"probably insufficient privileges\n");
 		return -1;
 	}
@@ -1740,7 +1742,8 @@ void* __dmp_interrupt_handler(__attribute__ ((unused)) void* ptr)
 
 	while(!imu_shutdown_flag){
 		// system hangs here until IMU FIFO interrupt
-		ret = rc_gpio_poll(	config.gpio_interrupt_pin,
+		ret = rc_gpio_poll(	config.gpio_interrupt_pin_chip,
+					config.gpio_interrupt_pin,
 					IMU_POLL_TIMEOUT,
 					&last_interrupt_timestamp_nanos);
 		// check for bad things that may have happened

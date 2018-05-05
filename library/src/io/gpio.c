@@ -12,7 +12,7 @@
 #include <fcntl.h> // for open()
 #include <string.h> // for memset
 #include <sys/ioctl.h>
-#include <linux/gpio.h>
+#include <linux/gpio.h> // for ioctl calls and GPIOHANDLES_MAX
 
 #include <rc/gpio.h>
 
@@ -21,39 +21,21 @@
 #define likely(x)	__builtin_expect (!!(x), 1)
 
 #define DEVICE_BASE "/dev/gpiochip"
-#define N_CHIPS		4
+#define CHIPS_MAX	6 // up to 6 chip chips, make larger if you want
 #define MAX_BUF		64
-#define LINES_PER_CHIP	32
 
 
-static int chip_fd[N_CHIPS];
-static int handle_fd[N_CHIPS*LINES_PER_CHIP];
-static int event_fd[N_CHIPS*LINES_PER_CHIP];
+static int chip_fd[CHIPS_MAX];
+static int handle_fd[CHIPS_MAX][GPIOHANDLES_MAX];
+static int event_fd[CHIPS_MAX][GPIOHANDLES_MAX];
 
 
 
-static int pin_to_chip(int pin, int* chip, int* line)
-{
-	// sanity checks
-	if(pin<0 || pin>=(N_CHIPS*LINES_PER_CHIP)){
-		fprintf(stderr, "ERROR, gpio pin out of bounds\n");
-		return -1;
-	}
-	*chip = pin/LINES_PER_CHIP;
-	*line = pin%LINES_PER_CHIP;
-	return 0;
-}
 
-static int open_gpiochip(int chip)
+static int __open_gpiochip(int chip)
 {
 	char buf[MAX_BUF];
 	int temp_fd;
-
-	// sanity checks
-	if(chip<0 || chip>N_CHIPS){
-		fprintf(stderr,"ERROR, chip out of bounds\n");
-		return -1;
-	}
 
 	snprintf(buf, sizeof(buf), DEVICE_BASE "%d", chip);
 	temp_fd=open(buf,O_RDWR);
@@ -66,22 +48,29 @@ static int open_gpiochip(int chip)
 }
 
 
-int rc_gpio_init(int pin, int handle_flags)
+int rc_gpio_init(int chip, int pin, int handle_flags)
 {
-	int chip, line, ret;
+	int ret;
 	struct gpiohandle_request req;
 
-	// convert pin to chip&line, this also does sanity checks
-	if(unlikely(pin_to_chip(pin, &chip, &line))) return -1;
+	// sanity checks
+	if(chip<0 || chip>=CHIPS_MAX){
+		fprintf(stderr,"ERROR in rc_gpio_init, chip out of bounds\n");
+		return -1;
+	}
+	if(pin<0 || pin>=GPIOHANDLES_MAX){
+		fprintf(stderr,"ERROR in rc_gpio_init, pin out of bounds\n");
+		return -1;
+	}
 
 	// open chip if not opened already
 	if(chip_fd[chip]==0){
-		if(unlikely(open_gpiochip(chip))) return -1;
+		if(unlikely(__open_gpiochip(chip))) return -1;
 	}
 
 	// request only one pin
 	memset(&req,0,sizeof(req));
-	req.lineoffsets[0] = line;
+	req.lineoffsets[0] = pin;
 	req.lines = 1;
 	req.flags = handle_flags;
 	errno=0;
@@ -94,22 +83,27 @@ int rc_gpio_init(int pin, int handle_flags)
 		fprintf(stderr,"ERROR in rc_gpio_init, ioctl gave NULL fd\n");
 		return -1;
 	}
-	handle_fd[pin]=req.fd;
+	handle_fd[chip][pin]=req.fd;
 	return 0;
 }
 
 
-int rc_gpio_set_value(int pin, int value)
+int rc_gpio_set_value(int chip, int pin, int value)
 {
 	int ret;
 	struct gpiohandle_data data;
 
 	// sanity checks
-	if(unlikely(pin<0 || pin>=(N_CHIPS*LINES_PER_CHIP))){
-		fprintf(stderr, "ERROR, gpio pin out of bounds\n");
+	// sanity checks
+	if(chip<0 || chip>=CHIPS_MAX){
+		fprintf(stderr,"ERROR in rc_gpio_set_value, chip out of bounds\n");
 		return -1;
 	}
-	if(unlikely(handle_fd[pin]==0)){
+	if(pin<0 || pin>=GPIOHANDLES_MAX){
+		fprintf(stderr,"ERROR in rc_gpio_set_value, pin out of bounds\n");
+		return -1;
+	}
+	if(unlikely(handle_fd[chip][pin]==0)){
 		fprintf(stderr,"ERROR, pin %d not initialized yet\n",pin);
 		return -1;
 	}
@@ -117,7 +111,7 @@ int rc_gpio_set_value(int pin, int value)
 	if(value) data.values[0]=1;
 	else data.values[0]=0;
 
-	ret = ioctl(handle_fd[pin], GPIOHANDLE_SET_LINE_VALUES_IOCTL, &data);
+	ret = ioctl(handle_fd[chip][pin], GPIOHANDLE_SET_LINE_VALUES_IOCTL, &data);
 	if(unlikely(ret==-1)){
 		perror("ERROR in rc_gpio_set_value");
 		return -1;
@@ -127,22 +121,26 @@ int rc_gpio_set_value(int pin, int value)
 }
 
 
-int rc_gpio_get_value(int pin)
+int rc_gpio_get_value(int chip, int pin)
 {
 	int ret;
 	struct gpiohandle_data data;
 
 	// sanity checks
-	if(unlikely(pin<0 || pin>=(N_CHIPS*LINES_PER_CHIP))){
-		fprintf(stderr, "ERROR, gpio pin out of bounds\n");
+	if(chip<0 || chip>=CHIPS_MAX){
+		fprintf(stderr,"ERROR in rc_gpio_get_value, chip out of bounds\n");
 		return -1;
 	}
-	if(unlikely(handle_fd[pin]==0)){
-		fprintf(stderr,"ERROR, pin %d not initialized yet\n",pin);
+	if(pin<0 || pin>=GPIOHANDLES_MAX){
+		fprintf(stderr,"ERROR in rc_gpio_get_value, pin out of bounds\n");
+		return -1;
+	}
+	if(unlikely(handle_fd[chip][pin]==0)){
+		fprintf(stderr,"ERROR in rc_gpio_get_value chip %d pin %d not initialized yet\n",chip, pin);
 		return -1;
 	}
 
-	ret = ioctl(handle_fd[pin], GPIOHANDLE_GET_LINE_VALUES_IOCTL, &data);
+	ret = ioctl(handle_fd[chip][pin], GPIOHANDLE_GET_LINE_VALUES_IOCTL, &data);
 	if(unlikely(ret==-1)){
 		perror("ERROR in rc_gpio_get_value");
 		return -1;
@@ -153,14 +151,20 @@ int rc_gpio_get_value(int pin)
 
 
 
-int rc_gpio_init_event(int pin, int handle_flags, int event_flags)
+int rc_gpio_init_event(int chip, int pin, int handle_flags, int event_flags)
 {
-	int chip, line, ret;
+	int ret;
 	struct gpioevent_request req;
 
-	// convert pin to chip&line, this also does sanity checks
-	if(unlikely(pin_to_chip(pin, &chip, &line))) return -1;
-
+	// sanity checks
+	if(chip<0 || chip>=CHIPS_MAX){
+		fprintf(stderr,"ERROR in rc_gpio_init_event, chip out of bounds\n");
+		return -1;
+	}
+	if(pin<0 || pin>=GPIOHANDLES_MAX){
+		fprintf(stderr,"ERROR in rc_gpio_init_event, pin out of bounds\n");
+		return -1;
+	}
 	if(unlikely(handle_flags&GPIOHANDLE_REQUEST_OUTPUT)){
 		fprintf(stderr, "ERROR in rc_gpio_init_event, can't request OUTPUT and poll input events\n");
 		return -1;
@@ -168,10 +172,10 @@ int rc_gpio_init_event(int pin, int handle_flags, int event_flags)
 
 	// open chip if not opened already
 	if(chip_fd[chip]==0){
-		if(unlikely(open_gpiochip(chip))) return -1;
+		if(unlikely(__open_gpiochip(chip))) return -1;
 	}
 
-	req.lineoffset = line;
+	req.lineoffset = pin;
 	req.eventflags = event_flags;
 	req.handleflags = handle_flags;
 	ret=ioctl(chip_fd[chip], GPIO_GET_LINEEVENT_IOCTL, &req);
@@ -180,30 +184,30 @@ int rc_gpio_init_event(int pin, int handle_flags, int event_flags)
 		return -1;
 	}
 
-	event_fd[pin]=req.fd;
-	handle_fd[pin]=req.fd; // put same fd in handle array so reads also work
+	event_fd[chip][pin]=req.fd;
+	handle_fd[chip][pin]=req.fd; // put same fd in handle array so reads also work
 	return req.fd;
 }
 
 
-int rc_gpio_poll(int pin, int timeout_ms, uint64_t* event_time_ns)
+int rc_gpio_poll(int chip, int pin, int timeout_ms, uint64_t* event_time_ns)
 {
 	int ret;
 	struct gpioevent_data event;
 	struct pollfd poll_fds[1];
 
 	// sanity checks
-	if(unlikely(pin<0 || pin>=(N_CHIPS*LINES_PER_CHIP))){
-		fprintf(stderr, "ERROR in rc_gpio_poll, gpio pin out of bounds\n");
+	if(chip<0 || chip>=CHIPS_MAX){
+		fprintf(stderr,"ERROR in rc_gpio_poll, chip out of bounds\n");
 		return -1;
 	}
-	if(unlikely(event_fd[pin]==0)){
-		fprintf(stderr,"ERROR in rc_gpio_poll, pin %d not initialized yet\n",pin);
+	if(pin<0 || pin>=GPIOHANDLES_MAX){
+		fprintf(stderr,"ERROR in rc_gpio_poll, pin out of bounds\n");
 		return -1;
 	}
 
 	// configure the pollfd
-	poll_fds[0].fd = event_fd[pin];
+	poll_fds[0].fd = event_fd[chip][pin];
 	poll_fds[0].events = POLLIN | POLLPRI;
 	poll_fds[0].revents = 0;
 
@@ -216,7 +220,7 @@ int rc_gpio_poll(int pin, int timeout_ms, uint64_t* event_time_ns)
 	else if(ret==0) return RC_GPIOEVENT_TIMEOUT;
 
 	// read value to see if it was rising or falling
-	ret = read(event_fd[pin], &event, sizeof(event));
+	ret = read(event_fd[chip][pin], &event, sizeof(event));
 	if(ret==-1){
 		perror("ERROR in rc_gpio_poll while reading event");
 		return RC_GPIOEVENT_ERROR;
@@ -238,20 +242,24 @@ int rc_gpio_poll(int pin, int timeout_ms, uint64_t* event_time_ns)
 }
 
 
-void rc_gpio_cleanup(int pin)
+void rc_gpio_cleanup(int chip, int pin)
 {
 	// sanity checks
-	if(unlikely(pin<0 || pin>=(N_CHIPS*LINES_PER_CHIP))){
-		fprintf(stderr, "ERROR, in rc_gpio_cleanup, gpio pin out of bounds\n");
+	if(chip<0 || chip>=CHIPS_MAX){
+		fprintf(stderr,"ERROR in rc_gpio_cleanup, chip out of bounds\n");
 		return;
 	}
-	if(handle_fd[pin]!=0){
-		close(handle_fd[pin]);
-		handle_fd[pin]==0;
+	if(pin<0 || pin>=GPIOHANDLES_MAX){
+		fprintf(stderr,"ERROR in rc_gpio_cleanup, pin out of bounds\n");
+		return;
 	}
-	if(event_fd[pin]!=0){
-		close(event_fd[pin]);
-		event_fd[pin]=0;
+	if(handle_fd[chip][pin]!=0){
+		close(handle_fd[chip][pin]);
+		handle_fd[chip][pin]==0;
+	}
+	if(event_fd[chip][pin]!=0){
+		close(event_fd[chip][pin]);
+		event_fd[chip][pin]=0;
 	}
 	return;
 }

@@ -15,7 +15,7 @@
 #include <rc/time.h>
 
 #define TOL		0.01 // acceptable tolerance on floating point bounds
-#define GPIO_POWER_PIN	80 //gpio2.16 P8.36
+#define GPIO_POWER_PIN	2,16 //gpio2.16 P8.36
 #define SERVO_PRU_CH	1 // PRU1
 #define SERVO_PRU_FW	"am335x-pru1-rc-servo-fw"
 #define PRU_SERVO_LOOP_INSTRUCTIONS 48 // instructions per PRU servo timer loop

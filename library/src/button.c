@@ -7,7 +7,8 @@
 #include <poll.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <linux/gpio.h>
+#include <linux/gpio.h> // for GPIOHANDLES_MAX
+#include <stdlib.h> // for malloc free
 
 #include <rc/gpio.h>
 #include <rc/time.h>
@@ -18,24 +19,35 @@
 #define unlikely(x)	__builtin_expect (!!(x), 0)
 #define likely(x)	__builtin_expect (!!(x), 1)
 
-#define MAX_PINS	128
+#define CHIPS_MAX 6
 #define POLL_TIMEOUT_MS	500	// 0.1 seconds
 #define THREAD_TIMEOUT	3.0	// 3 seconds
 
-static void (*press_cb[MAX_PINS])(void);
-static void (*release_cb[MAX_PINS])(void);
-static pthread_t poll_thread[MAX_PINS];
-static char init_flag[MAX_PINS];
-static char started[MAX_PINS];
-static int shutdown_flag = 0;
-static char pol[MAX_PINS];
+// state of a given pin
+typedef struct btn_cfg_t{
+	void (*press_cb)(void);
+	void (*release_cb)(void);
+	pthread_t poll_thread;
+	char started;
+	char pol;
+	pthread_mutex_t press_mutex;
+	pthread_cond_t  press_condition;
+	pthread_mutex_t release_mutex;
+	pthread_cond_t  release_condition;
+} btn_cfg_t;
+
 
 // struct passed to each button thread to configure it
 typedef struct thread_cfg_t{
+	int chip;
 	int pin;
+	int pol;
 	int debounce;
 } thread_cfg_t;
 
+// pointer to dynamically allocated btn_cfg_t structs
+static btn_cfg_t* cfg[CHIPS_MAX][GPIOHANDLES_MAX];
+static int shutdown_flag = 0;
 
 /**
  * poll a gpio edge with debounce check. When the button changes state spawn off
@@ -43,16 +55,21 @@ typedef struct thread_cfg_t{
  */
 void* poll_thread_func(void* arg)
 {
-	int val, event;
+	int val, event, chip, pin, pol, debounce;
 	int press_expected_event, release_expected_event;
 	pthread_t press_thread, release_thread;
 
-	thread_cfg_t cfg = *(thread_cfg_t*)arg;
-	// once config data has been saved locally, flag that the thread has started
-	started[cfg.pin]=1;
+	thread_cfg_t thread_cfg = *(thread_cfg_t*)arg;
+	chip = thread_cfg.chip;
+	pin = thread_cfg.pin;
+	pol = thread_cfg.pol;
+	debounce = thread_cfg.debounce;
 
-	// based on polaity, set up expected events for each direction
-	if(pol[cfg.pin]==RC_BTN_POLARITY_NORM_HIGH){
+	// once config data has been saved locally, flag that the thread has started
+	cfg[chip][pin]->started=1;
+
+	// based on polarity, set up expected events for each direction
+	if(pol==RC_BTN_POLARITY_NORM_HIGH){
 		press_expected_event = RC_GPIOEVENT_FALLING_EDGE;
 		release_expected_event = RC_GPIOEVENT_RISING_EDGE;
 	}
@@ -64,7 +81,7 @@ void* poll_thread_func(void* arg)
 
 	// keep running until the program closes
 	while(!shutdown_flag){
-		event=rc_gpio_poll(cfg.pin,POLL_TIMEOUT_MS,NULL);
+		event=rc_gpio_poll(chip, pin, POLL_TIMEOUT_MS, NULL);
 		if(event==RC_GPIOEVENT_ERROR){
 			fprintf(stderr,"ERROR in rc_button handler thread\n");
 			return NULL;
@@ -72,9 +89,9 @@ void* poll_thread_func(void* arg)
 		if(event==RC_GPIOEVENT_TIMEOUT) continue;
 
 		// if debounce is enabled, do extra wait and check
-		if(cfg.debounce){
-			rc_usleep(cfg.debounce);
-			val=rc_gpio_get_value(cfg.pin);
+		if(debounce){
+			rc_usleep(debounce);
+			val=rc_gpio_get_value(chip,pin);
 			if(val==-1){
 				fprintf(stderr,"ERROR in rc_button handler thread\n");
 				return NULL;
@@ -86,14 +103,23 @@ void* poll_thread_func(void* arg)
 
 		// spawn callback functions
 		if(event==press_expected_event){
-			if(press_cb[cfg.pin]!=NULL){
-				rc_pthread_create(&press_thread,(void * (*)(void *))press_cb[cfg.pin],NULL,SCHED_OTHER, 0);
+			if(cfg[chip][pin]->press_cb!=NULL){
+				rc_pthread_create(&press_thread, (void* (*)(void*))cfg[chip][pin]->press_cb, NULL, SCHED_OTHER, 0);
 			}
+			// aquires mutex and broadcast condition
+			pthread_mutex_lock(&cfg[chip][pin]->press_mutex);
+			pthread_cond_broadcast(&cfg[chip][pin]->press_condition);
+			pthread_mutex_unlock(&cfg[chip][pin]->press_mutex);
+
 		}
 		else if(event==release_expected_event){
-			if(release_cb[cfg.pin]!=NULL){
-				rc_pthread_create(&release_thread,(void * (*)(void *))release_cb[cfg.pin],NULL,SCHED_OTHER, 0);
+			if(cfg[chip][pin]->release_cb!=NULL){
+				rc_pthread_create(&release_thread, (void* (*)(void*))cfg[chip][pin]->release_cb, NULL, SCHED_OTHER, 0);
 			}
+			// aquires mutex and broadcast condition
+			pthread_mutex_lock(&cfg[chip][pin]->release_mutex);
+			pthread_cond_broadcast(&cfg[chip][pin]->release_condition);
+			pthread_mutex_unlock(&cfg[chip][pin]->release_mutex);
 		}
 	}
 
@@ -101,14 +127,19 @@ void* poll_thread_func(void* arg)
 }
 
 
-int rc_button_init(int pin, char polarity, int debounce_us)
+int rc_button_init(int chip, int pin, char polarity, int debounce_us)
 {
 	int i;
-	thread_cfg_t cfg;
+	btn_cfg_t* ptr;
+	thread_cfg_t thread_cfg;
 
 	// sanity checks
-	if(pin<0 || pin>MAX_PINS){
-		fprintf(stderr,"ERROR in rc_button_init, pin must be between 0 and %d\n",MAX_PINS);
+	if(chip<0 || chip>=CHIPS_MAX){
+		fprintf(stderr,"ERROR in rc_button_init, chip out of bounds\n");
+		return -1;
+	}
+	if(pin<0 || pin>=GPIOHANDLES_MAX){
+		fprintf(stderr,"ERROR in rc_button_init, pin out of bounds\n");
 		return -1;
 	}
 	if(polarity!=RC_BTN_POLARITY_NORM_LOW && polarity!=RC_BTN_POLARITY_NORM_HIGH){
@@ -120,94 +151,141 @@ int rc_button_init(int pin, char polarity, int debounce_us)
 		fprintf(stderr, "ERROR in rc_button_init, debounce_us must be >=0\n");
 		return -1;
 	}
+	if(ptr!=NULL){
+		fprintf(stderr, "ERROR in rc_button_init, button already initialized\n");
+		return -1;
+	}
 
 	// basic gpio setup
-	if(rc_gpio_init_event(pin,GPIOHANDLE_REQUEST_INPUT,GPIOEVENT_REQUEST_BOTH_EDGES)==-1){
+	if(rc_gpio_init_event(chip,pin,GPIOHANDLE_REQUEST_INPUT,GPIOEVENT_REQUEST_BOTH_EDGES)==-1){
 		fprintf(stderr,"ERROR: in rc_button_init, failed to setup GPIO pin\n");
 		return -1;
 	}
 
+	// allocate memory for the config for that pin
+	ptr = (btn_cfg_t*)malloc(sizeof(btn_cfg_t));
+	if(ptr==NULL){
+		perror("ERROR in rc_button_init");
+		return -1;
+	}
+
+	// start filling in the pin config struct
+	ptr->press_cb=NULL;
+	ptr->release_cb=NULL;
+	ptr->poll_thread=0;
+	ptr->started=0;
+	ptr->pol=polarity;
+	pthread_mutex_init(&ptr->press_mutex, NULL);
+	pthread_cond_init(&ptr->press_condition, NULL);
+	pthread_mutex_init(&ptr->release_mutex, NULL);
+	pthread_cond_init(&ptr->release_condition, NULL);
+
 	// set up thread config structs
-	cfg.pin = pin;
-	cfg.debounce = debounce_us;
-	pol[pin] = polarity;
+	thread_cfg.chip = chip;
+	thread_cfg.pin = pin;
+	thread_cfg.pol = polarity;
+	thread_cfg.debounce = debounce_us;
 
 	// start threads
 	shutdown_flag=0;
-	started[pin]=0;
-	if(rc_pthread_create(&poll_thread[pin], poll_thread_func, (void*)&cfg, SCHED_OTHER, 0)){
+	cfg[chip][pin]=ptr;
+
+	if(rc_pthread_create(&ptr->poll_thread, poll_thread_func, (void*)&thread_cfg, SCHED_OTHER, 0)){
 		fprintf(stderr,"ERROR in rc_button_init, failed to start press handler thread\n");
+		cfg[chip][pin]=NULL;
 		return -1;
 	}
 
 	// wait for thread to start
 	i=0;
-	while(started[pin]==0){
+	while(ptr->started==0){
 		i++;
 		if(i>=100){
 			fprintf(stderr,"ERROR in rc_button_init, timeout waiting for thread to start\n");
+			cfg[chip][pin]=NULL;
 			return -1;
 		}
 		rc_usleep(1000);
 	}
 
-	// set flags
-	init_flag[pin]=1;
+	// done!
+
 	return 0;
 }
 
 
 void rc_button_cleanup()
 {
-	int i, ret;
+	int i,j, ret;
 	// signal threads to close
 	shutdown_flag=1;
 	// loop through all pins
-	for(i=0;i<MAX_PINS;i++){
-		// skip uninitialized pins
-		if(!init_flag[i]) continue;
-		// join thread
-		ret=rc_pthread_timed_join(poll_thread[i],NULL,THREAD_TIMEOUT);
-		if(ret==-1){
-			fprintf(stderr,"WARNING in rc_button_cleanup, problem joining button handler thread for pin %d\n",i);
+	for(i=0;i<CHIPS_MAX;i++){
+		for(j=0;j<GPIOHANDLES_MAX;j++){
+			// skip uninitialized pins
+			if(cfg[i][j]==NULL) continue;
+			// join thread
+			ret=rc_pthread_timed_join(cfg[i][j]->poll_thread,NULL,THREAD_TIMEOUT);
+			if(ret==-1){
+				fprintf(stderr,"WARNING in rc_button_cleanup, problem joining button handler thread for pin %d\n",i);
+			}
+			else if(ret==1){
+				fprintf(stderr,"WARNING in rc_button_cleanup, thread exit timeout for pin %d\n",i);
+				fprintf(stderr,"most likely cause is your button press callback function is stuck and didn't return\n");
+			}
+			free(cfg[i][j]);
+			cfg[i][j]=NULL;
 		}
-		else if(ret==1){
-			fprintf(stderr,"WARNING in rc_button_cleanup, thread exit timeout for pin %d\n",i);
-			fprintf(stderr,"most likely cause is your button press callback function is stuck and didn't return\n");
-		}
-
 	}
 	return;
 }
 
 
-int rc_button_set_callbacks(int pin, void (*press_func)(void), void (*release_func)(void))
+int rc_button_set_callbacks(int chip, int pin, void (*press_func)(void), void (*release_func)(void))
 {
 	// sanity checks
-	if(pin<0 || pin>MAX_PINS){
-		fprintf(stderr,"ERROR in rc_button_set_callabcks, pin must be between 0 and %d\n",MAX_PINS);
+	if(chip<0 || chip>=CHIPS_MAX){
+		fprintf(stderr,"ERROR in rc_button_set_callbacks, chip out of bounds\n");
 		return -1;
 	}
-	press_cb[pin] = press_func;
-	release_cb[pin] = release_func;
+	if(pin<0 || pin>=GPIOHANDLES_MAX){
+		fprintf(stderr,"ERROR in rc_button_set_callbacks, pin out of bounds\n");
+		return -1;
+	}
+	if(cfg[chip][pin]==NULL){
+		fprintf(stderr,"ERROR in rc_button_set_callbacks, pin not initialized yet\n");
+		return -1;
+	}
+	cfg[chip][pin]->press_cb = press_func;
+	cfg[chip][pin]->release_cb = release_func;
 	return 0;
 }
 
 
-int rc_button_get_state(int pin)
+int rc_button_get_state(int chip, int pin)
 {
 	int val,ret;
-	if(!init_flag[pin]){
-		fprintf(stderr,"ERROR: call to rc_button_get_state without calling rc_button_init first\n");
+	// sanity checks
+	if(chip<0 || chip>=CHIPS_MAX){
+		fprintf(stderr,"ERROR in rc_button_get_state, chip out of bounds\n");
 		return -1;
 	}
-	val=rc_gpio_get_value(pin);
+	if(pin<0 || pin>=GPIOHANDLES_MAX){
+		fprintf(stderr,"ERROR in rc_button_get_state, pin out of bounds\n");
+		return -1;
+	}
+	if(cfg[chip][pin]==NULL){
+		fprintf(stderr,"ERROR in rc_button_get_state, pin not initialized yet\n");
+		return -1;
+	}
+	// read gpio chip
+	val=rc_gpio_get_value(chip,pin);
 	if(val==-1){
 		fprintf(stderr,"ERROR in rc_button_get_state\n");
 		return -1;
 	}
 	// determine return based on polarity
-	if(pol[pin]==RC_BTN_POLARITY_NORM_HIGH){
+	if(cfg[chip][pin]->pol==RC_BTN_POLARITY_NORM_HIGH){
 		if(val) ret=RC_BTN_STATE_RELEASED;
 		else ret=RC_BTN_STATE_PRESSED;
 	}
@@ -218,6 +296,40 @@ int rc_button_get_state(int pin)
 	return ret;
 }
 
+int rc_button_wait_for_event(int chip, int pin, int press_or_release)
+{
+	// sanity checks
+	if(chip<0 || chip>=CHIPS_MAX){
+		fprintf(stderr,"ERROR in rc_button_wait_for_event, chip out of bounds\n");
+		return -1;
+	}
+	if(pin<0 || pin>=GPIOHANDLES_MAX){
+		fprintf(stderr,"ERROR in rc_button_wait_for_event, pin out of bounds\n");
+		return -1;
+	}
+	if(cfg[chip][pin]==NULL){
+		fprintf(stderr,"ERROR in rc_button_wait_for_event, pin not initialized yet\n");
+		return -1;
+	}
 
+	if(press_or_release==RC_BTN_STATE_PRESSED){
+		// wait for condition signal which unlocks mutex
+		pthread_mutex_lock(&cfg[chip][pin]->press_mutex);
+		pthread_cond_wait(&cfg[chip][pin]->press_condition, &cfg[chip][pin]->press_mutex);
+		pthread_mutex_unlock(&cfg[chip][pin]->press_mutex);
+	}
+	else if(press_or_release==RC_BTN_STATE_RELEASED){
+		// wait for condition signal which unlocks mutex
+		pthread_mutex_lock(&cfg[chip][pin]->release_mutex);
+		pthread_cond_wait(&cfg[chip][pin]->release_condition, &cfg[chip][pin]->release_mutex);
+		pthread_mutex_unlock(&cfg[chip][pin]->release_mutex);
+	}
+	else{
+		fprintf(stderr, "ERROR in rc_button_wait_for_event, argument should be RC_BTN_STATE_PRESSED or RC_BTN_STATE_RELEASED\n");
+		return -1;
+	}
+
+	return 0;
+}
 
 

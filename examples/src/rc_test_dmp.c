@@ -18,10 +18,11 @@
 #include <rc/mpu.h>
 #include <rc/time.h>
 
-// bus for Robotics Cape and BeagleboneBlue is 2, gpio int pin  is 117
+// bus for Robotics Cape and BeagleboneBlue is 2, interrupt pin is on gpio3.21
 // change these for your platform
 #define I2C_BUS 2
-#define GPIO_INT_PIN 117
+#define GPIO_INT_PIN_CHIP 3
+#define GPIO_INT_PIN_PIN  21
 
 // Global Variables
 int running;
@@ -237,7 +238,8 @@ int main(int argc, char *argv[])
 	// start with default config and modify based on options
 	rc_mpu_config_t conf = rc_mpu_default_config();
 	conf.i2c_bus = I2C_BUS;
-	conf.gpio_interrupt_pin = GPIO_INT_PIN;
+	conf.gpio_interrupt_pin_chip = GPIO_INT_PIN_CHIP;
+	conf.gpio_interrupt_pin = GPIO_INT_PIN_PIN;
 
 	// parse arguments
 	opterr = 0;
