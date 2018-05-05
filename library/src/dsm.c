@@ -1,7 +1,6 @@
 /**
  * @file dsm.c
  *
- *
  * @author     James Strawson
  * @date       3/7/2018
  */
@@ -26,6 +25,7 @@
 // don't ask me why, but this is the default range for spektrum and orange
 #define DEFAULT_MIN	1142
 #define DEFAULT_MAX	1858
+#define DEFAULT_CENTER	1500
 
 #define DSM_PINMUX_ID	30
 #define DSM_PIN		0,30	//gpio0.30	P9.11
@@ -34,11 +34,12 @@
 #define DSM_PACKET_SIZE	16
 
 static int running;
-static int rc_channels[RC_MAX_DSM_CHANNELS];
-static int rc_maxes[RC_MAX_DSM_CHANNELS];
-static int rc_mins[RC_MAX_DSM_CHANNELS];
-static float range[RC_MAX_DSM_CHANNELS];
-static int center[RC_MAX_DSM_CHANNELS];
+static int channels[RC_MAX_DSM_CHANNELS];
+static int maxes[RC_MAX_DSM_CHANNELS];
+static int mins[RC_MAX_DSM_CHANNELS];
+static int centers[RC_MAX_DSM_CHANNELS];
+static float range_up[RC_MAX_DSM_CHANNELS];
+static float range_down[RC_MAX_DSM_CHANNELS];
 static int num_channels; // actual number of channels being sent
 static int resolution; // 10 or 11
 static int new_dsm_flag;
@@ -385,7 +386,7 @@ START_NORMAL_LOOP:
 			active_flag=1;
 			last_time = rc_nanos_since_boot();
 			for(i=0;i<num_channels;i++){
-				rc_channels[i]=new_values[i];
+				channels[i]=new_values[i];
 				new_values[i]=0;// put local values array back to 0
 			}
 			// run the dsm ready function.
@@ -419,8 +420,8 @@ void* __calibration_listen_func(__attribute__ ((unused)) void *ptr)
 
 	//start limits at first value
 	for(j=0;j<RC_MAX_DSM_CHANNELS;j++){
-		rc_mins[j]=rc_channels[j];
-		rc_maxes[j]=rc_channels[j];
+		mins[j]=channels[j];
+		maxes[j]=channels[j];
 	}
 
 	// record limits until user presses enter
@@ -428,14 +429,14 @@ void* __calibration_listen_func(__attribute__ ((unused)) void *ptr)
 		printf("\r");
 		if(rc_dsm_is_new_data()){
 			for(j=0;j<RC_MAX_DSM_CHANNELS;j++){
-				raw = rc_channels[j];
+				raw = channels[j];
 				//record only non-zero channels
 				if(raw > 0){
-					if(raw>rc_maxes[j]){
-						rc_maxes[j] = raw;
+					if(raw>maxes[j]){
+						maxes[j] = raw;
 					}
-					else if(raw<rc_mins[j]){
-						rc_mins[j] = raw;
+					else if(raw<mins[j]){
+						mins[j] = raw;
 					}
 					printf("%d:%d ",j+1,raw);
 				}
@@ -444,6 +445,15 @@ void* __calibration_listen_func(__attribute__ ((unused)) void *ptr)
 		}
 		rc_usleep(10000);
 	}
+
+	// record zeros
+	for(j=0;j<RC_MAX_DSM_CHANNELS;j++){
+		raw = channels[j];
+		//record only non-zero channels
+		if(raw > 0) centers[j]=raw;
+	}
+
+
 	return 0;
 }
 
@@ -462,20 +472,22 @@ int rc_dsm_init()
 		fprintf(stderr,"Run calibrate_dsm example to create one\n");
 		fprintf(stderr,"Using default values for now\n");
 		for(i=0;i<RC_MAX_DSM_CHANNELS;i++){
-			rc_mins[i]=DEFAULT_MIN;
-			rc_maxes[i]=DEFAULT_MAX;
+			mins[i]=DEFAULT_MIN;
+			maxes[i]=DEFAULT_MAX;
+			centers[i]=DEFAULT_CENTER;
 		}
 	}
 	else{
 		for(i=0;i<RC_MAX_DSM_CHANNELS;i++){
-			if(fscanf(fd,"%d %d", &rc_mins[i],&rc_maxes[i])!=2){
+			if(fscanf(fd,"%d %d %d", &mins[i],&maxes[i],&centers[i])!=3){
 				fprintf(stderr, "ERROR in rc_dsm_init reading calibration data\n");
 				fprintf(stderr, "Malformed calibration file, deleting and using defaults\n");
-				fclose(fd);
+				//fclose(fd);
 				remove(RC_DSM_CALIBRATION_FILE);
 				for(i=0;i<RC_MAX_DSM_CHANNELS;i++){
-					rc_mins[i]=DEFAULT_MIN;
-					rc_maxes[i]=DEFAULT_MAX;
+					mins[i]=DEFAULT_MIN;
+					maxes[i]=DEFAULT_MAX;
+					centers[i]=DEFAULT_CENTER;
 				}
 				break;
 			}
@@ -488,10 +500,20 @@ int rc_dsm_init()
 
 	// configure range and center for future use
 	for(i=0;i<RC_MAX_DSM_CHANNELS;i++){
-		range[i] = rc_maxes[i]-rc_mins[i];
-		center[i] = (rc_maxes[i]+rc_mins[i])/2;
+		// check for two-position switch and throttle modes
+		if((centers[i]<(mins[i]+50)  && centers[i]>(mins[i]-50)) || \
+		   (centers[i]<(maxes[i]+50) && centers[i]>(maxes[i]-50))){
+			centers[i] = mins[i];
+			range_up[i] = maxes[i]-mins[i];
+			range_down[i] = maxes[i]-mins[i];
+		}
+		// otherwise normal mode
+		else{
+			range_up[i] = maxes[i]-centers[i];
+			range_down[i] = centers[i]-mins[i];
+		}
 		#ifdef DEBUG
-		printf("channel %d range %f center %d\n", i, range[i],center[i]);
+		printf("channel %d range %f center %d\n", i, range_up[i],centers[i]);
 		#endif
 	}
 
@@ -566,7 +588,7 @@ int rc_dsm_ch_raw(int ch)
 		return -1;
 	}
 	new_dsm_flag = 0;
-	return rc_channels[ch-1];
+	return channels[ch-1];
 }
 
 
@@ -580,11 +602,15 @@ float rc_dsm_ch_normalized(int ch)
 		fprintf(stderr,"ERROR in rc_dsm_ch_raw channel must be between 1 & %d",RC_MAX_DSM_CHANNELS);
 		return -1.0;
 	}
-	if(range!=0 && rc_channels[ch-1]!=0) {
-		new_dsm_flag = 0;
-		return 2.0*(rc_channels[ch-1]-center[ch-1])/range[ch-1];
-	}
-	return 0;
+	// return 0 if there was a weird condition
+	if(range_up[ch-1]==0 || range_down[ch-1]==0 || channels[ch-1]==0) return 0.0f;
+
+	// mark data as read
+	new_dsm_flag = 0;
+
+	if(channels[ch-1]==centers[ch-1]) return 0.0f;
+	if(channels[ch-1]>centers[ch-1]) return (channels[ch-1]-centers[ch-1])/(float)range_up[ch-1];
+	return (channels[ch-1]-centers[ch-1])/(float)range_down[ch-1];
 }
 
 
@@ -821,7 +847,14 @@ int rc_dsm_calibrate_routine()
 	printf("receiver are paired and working. Move all channels through\n");
 	printf("their range of motion and the minimum and maximum values will\n");
 	printf("be recorded. When you are finished moving all channels,\n");
-	printf("press ENTER to save the data or any other key to abort.\n\n");
+	printf("return 3-position switches and sticks to their natural\n");
+	printf("zero-position which will be recorded.\n\n");
+	printf("Two position switches can be left in either position, and sliding\n");
+	printf("throttle sticks should be left at the bottom of their travel.\n");
+	printf("If there is a RATE switch, make sure it's in the HIGH position.\n\n");
+	printf("If there is a DISARM switch which fixes the throttle position, leave\n");
+	printf("it in the ARMED state and DO NOT TOUCH IT during calibration\n");
+	printf("Press ENTER to save data or any other key to abort.\n\n");
 
 	// start listening
 	listening = 1;
@@ -843,7 +876,7 @@ int rc_dsm_calibrate_routine()
 	}
 
 	// if it looks like no new data came in exit
-	if((rc_mins[0]==0) || (rc_mins[0]==rc_maxes[0])){
+	if((mins[0]==0) || (mins[0]==maxes[0])){
 		fprintf(stderr,"no new data recieved, exiting\n");
 		return -1;
 	}
@@ -859,11 +892,11 @@ int rc_dsm_calibrate_routine()
 	// otherwise fill in defaults for unused channels in case
 	// a higher channel radio is used in the future with this cal file
 	for(i=0;i<RC_MAX_DSM_CHANNELS;i++){
-		if((rc_mins[i]==0) || (rc_mins[i]==rc_maxes[i])){
-			fprintf(fd, "%d %d\n",DEFAULT_MIN, DEFAULT_MAX);
+		if((mins[i]==0) || (mins[i]==maxes[i])){
+			fprintf(fd, "%d %d %d\n",DEFAULT_MIN, DEFAULT_MAX, DEFAULT_CENTER);
 		}
 		else{
-			fprintf(fd, "%d %d\n", rc_mins[i], rc_maxes[i]);
+			fprintf(fd, "%d %d %d\n", mins[i], maxes[i], centers[i]);
 		}
 	}
 	fclose(fd);
