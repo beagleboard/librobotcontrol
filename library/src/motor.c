@@ -44,7 +44,7 @@
 #define PWM_FREQ		25000	// 25kHz
 
 // polarity of the motor connections
-const static float polarity[]={1.0,-1.0,-1.0,1.0};
+static const float polarity[]={1.0,-1.0,-1.0,1.0};
 
 static int init_flag = 0;
 static int stby_state = 0;

@@ -5,7 +5,9 @@
  * @date 2/1/2018
  */
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1731,12 +1733,12 @@ int __mpu_set_dmp_state(unsigned char enable)
  */
 void* __dmp_interrupt_handler(__attribute__ ((unused)) void* ptr)
 {
-	struct pollfd fdset[1];
+	//struct pollfd fdset[1];
 	int ret;
 	// start magnetometer read divider at the end of the counter
 	// so it reads on the first run
 	int mag_div_step = config.mag_sample_rate_div;
-	char buf[64];
+	//char buf[64];
 	int first_run = 1;
 	__mpu_reset_fifo();
 
@@ -2186,7 +2188,12 @@ int __data_fusion(rc_mpu_data_t* data)
 	// check for validity and make sure the heading is positive
 	lastMagYaw = newMagYaw; // save from last loop
 	newMagYaw = -atan2(mag_vec[1], mag_vec[0]);
+
+#ifdef RC_AUTOPILOT_EXT
+	if (isnan(newMagYaw)) {
+#else
 	if (newMagYaw != newMagYaw) {
+#endif
 		#ifdef WARNINGS
 		printf("newMagYaw NAN\n");
 		#endif
@@ -2587,7 +2594,7 @@ int rc_mpu_calibrate_gyro_routine(rc_mpu_config_t conf)
 	uint8_t c, data[6];
 	int32_t gyro_sum[3] = {0, 0, 0};
 	int16_t offsets[3];
-	int was_last_steady = 1;
+	was_last_steady = 1;
 
 	// save bus and address globally for other functions to use
 	config.i2c_bus = conf.i2c_bus;
@@ -2821,7 +2828,9 @@ int rc_mpu_calibrate_mag_routine(rc_mpu_config_t conf)
 			break;
 		}
 		// make sure the data is non-zero
-		if(imu_data.mag[0]==0 && imu_data.mag[1]==0 && imu_data.mag[2]==0){
+		if(fabs(imu_data.mag[0]) < zero_tolerance &&
+		   fabs(imu_data.mag[1]) < zero_tolerance &&
+		   fabs(imu_data.mag[2]) < zero_tolerance){
 			fprintf(stderr,"ERROR: retreived all zeros from magnetometer\n");
 			break;
 		}

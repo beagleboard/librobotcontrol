@@ -27,9 +27,9 @@
 #define MAX_READ_LEN	128
 
 
-static int fd[MAX_BUS+1]; // file descriptors for all ports
-static float bus_timeout_s[MAX_BUS+1]; // user-requested timeout in seconds for each bus
-static int shutdown_flag[MAX_BUS+1];
+static int   rc_uart_fd[MAX_BUS+1]; // file descriptors for all ports
+static float rc_uart_bus_timeout_s[MAX_BUS+1]; // user-requested timeout in seconds for each bus
+static int   rc_uart_shutdown_flag[MAX_BUS+1];
 
 
 int rc_uart_init(int bus, int baudrate, float timeout_s, int canonical_en, int stop_bits, int parity_en)
@@ -178,7 +178,7 @@ int rc_uart_init(int bus, int baudrate, float timeout_s, int canonical_en, int s
 	}
 	if(tcsetattr(tmpfd, TCSANOW, &config) < 0) {
 		fprintf(stderr,"cannot set uart%d attributes\n", bus);
-		close(fd[bus]);
+		close(rc_uart_fd[bus]);
 		return -1;
 	}
 	if(tcflush(tmpfd,TCIOFLUSH)==-1){
@@ -199,9 +199,9 @@ int rc_uart_init(int bus, int baudrate, float timeout_s, int canonical_en, int s
 		return -1;
 	}
 
-	fd[bus]=tmpfd;
-	bus_timeout_s[bus]=timeout_s;
-	shutdown_flag[bus]=0;
+	rc_uart_fd[bus]=tmpfd;
+	rc_uart_bus_timeout_s[bus]=timeout_s;
+	rc_uart_shutdown_flag[bus]=0;
 	return 0;
 }
 
@@ -213,13 +213,13 @@ int rc_uart_close(int bus)
 		fprintf(stderr,"ERROR: uart bus must be between 0 & %d\n", MAX_BUS);
 		return -1;
 	}
-	shutdown_flag[bus]=1;
+	rc_uart_shutdown_flag[bus]=1;
 	// if not initialized already, return
-	if(fd[bus]==0) return 0;
+	if(rc_uart_fd[bus]==0) return 0;
 	// flush and close
-	tcflush(fd[bus],TCIOFLUSH);
-	close(fd[bus]);
-	fd[bus]=0;
+	tcflush(rc_uart_fd[bus],TCIOFLUSH);
+	close(rc_uart_fd[bus]);
+	rc_uart_fd[bus]=0;
 	return 0;
 }
 
@@ -231,11 +231,11 @@ int rc_uart_get_fd(int bus)
 		fprintf(stderr,"ERROR: in rc_uart_get_fd, bus must be between 0 & %d\n", MAX_BUS);
 		return -1;
 	}
-	if(fd[bus]==0){
+	if(rc_uart_fd[bus]==0){
 		fprintf(stderr,"ERROR: in rc_uart_get_fd, uart%d not initialized yet\n", bus);
 		return -1;
 	}
-	return fd[bus];
+	return rc_uart_fd[bus];
 }
 
 
@@ -246,11 +246,11 @@ int rc_uart_flush(int bus)
 		fprintf(stderr,"ERROR: in rc_uart_flush, bus must be between 0 & %d\n", MAX_BUS);
 		return -1;
 	}
-	if(fd[bus]==0){
+	if(rc_uart_fd[bus]==0){
 		fprintf(stderr,"ERROR: in rc_uart_flush, uart%d must be initialized first\n", bus);
 		return -1;
 	}
-	if(tcflush(fd[bus],TCIOFLUSH)==-1){
+	if(tcflush(rc_uart_fd[bus],TCIOFLUSH)==-1){
 		perror("ERROR in rc_uart_flush:");
 		return -1;
 	}
@@ -270,11 +270,11 @@ int rc_uart_write(int bus, char* data, int bytes)
 		fprintf(stderr,"ERROR: number of bytes to send must be >1\n");
 		return -1;
 	}
-	if(fd[bus]==0){
+	if(rc_uart_fd[bus]==0){
 		fprintf(stderr,"ERROR: uart%d must be initialized first\n", bus);
 		return -1;
 	}
-	ret=write(fd[bus], data, bytes);
+	ret=write(rc_uart_fd[bus], data, bytes);
 	if(ret==-1) perror("ERROR in rc_uart_write");
 	return ret;
 }
@@ -292,7 +292,7 @@ int rc_uart_read_bytes(int bus, char* buf, int bytes)
 		fprintf(stderr,"ERROR: number of bytes to read must be >=1\n");
 		return -1;
 	}
-	if(fd[bus]==0){
+	if(rc_uart_fd[bus]==0){
 		fprintf(stderr,"ERROR: uart%d must be initialized first\n", bus);
 		return -1;
 	}
@@ -303,7 +303,7 @@ int rc_uart_read_bytes(int bus, char* buf, int bytes)
 	if(bytes<=MAX_READ_LEN){
 		// small read, return in one read() call
 		// this uses built-in timeout instead of select()
-		ret = read(fd[bus], buf, bytes);
+		ret = read(rc_uart_fd[bus], buf, bytes);
 		return ret;
 	}
 	*/
@@ -322,15 +322,15 @@ int rc_uart_read_bytes(int bus, char* buf, int bytes)
 	// select() multiple times and that will decrease the timeout struct each
 	// time ensuring the TOTAL timeout requested by the user is honoured instead
 	// of the timeout value compounding each loop.
-	timeout.tv_sec = (int)bus_timeout_s[bus];
-	timeout.tv_usec = (int)(1000000*fmod(bus_timeout_s[bus],1));
+	timeout.tv_sec = (int)rc_uart_bus_timeout_s[bus];
+	timeout.tv_usec = (int)(1000000*fmod(rc_uart_bus_timeout_s[bus],1));
 
 	// exit the read loop once enough bytes have been read
 	// or the the shutdown signal flag is set
-	while((bytes_left>0) && shutdown_flag[bus]==0){
+	while((bytes_left>0) && rc_uart_shutdown_flag[bus]==0){
 		FD_ZERO(&set); /* clear the set */
-		FD_SET(fd[bus], &set); /* add our file descriptor to the set */
-		ret = select(fd[bus] + 1, &set, NULL, NULL, &timeout);
+		FD_SET(rc_uart_fd[bus], &set); /* add our file descriptor to the set */
+		ret = select(rc_uart_fd[bus] + 1, &set, NULL, NULL, &timeout);
 		if(ret == -1){
 			// select returned and error. EINTR means interrupted by SIGINT
 			// aka ctrl-c. Don't print anything as this happens normally
@@ -354,7 +354,7 @@ int rc_uart_read_bytes(int bus, char* buf, int bytes)
 			// read no more than MAX_READ_LEN at a time
 			if(bytes_left>MAX_READ_LEN)	bytes_to_read = MAX_READ_LEN;
 			else bytes_to_read = bytes_left;
-			ret=read(fd[bus], buf+bytes_read, bytes_to_read);
+			ret=read(rc_uart_fd[bus], buf+bytes_read, bytes_to_read);
 			if(ret<0){
 				perror("ERROR: in uart_read_bytes");
 				return -1;
@@ -387,7 +387,7 @@ int rc_uart_read_line(int bus, char* buf, int max_bytes)
 		fprintf(stderr,"ERROR: in rc_uart_read_line, max_bytes must be >=1\n");
 		return -1;
 	}
-	if(fd[bus]==0){
+	if(rc_uart_fd[bus]==0){
 		fprintf(stderr,"ERROR: in rc_uart_read_line, uart%d must be initialized first\n", bus);
 		return -1;
 	}
@@ -396,15 +396,15 @@ int rc_uart_read_line(int bus, char* buf, int max_bytes)
 	// select() multiple times and that will decrease the timeout struct each
 	// time ensuring the TOTAL timeout requested by the user is honoured instead
 	// of the timeout value compounding each loop.
-	timeout.tv_sec = (int)bus_timeout_s[bus];
-	timeout.tv_usec = (int)(1000000*fmod(bus_timeout_s[bus],1));
+	timeout.tv_sec = (int)rc_uart_bus_timeout_s[bus];
+	timeout.tv_usec = (int)(1000000*fmod(rc_uart_bus_timeout_s[bus],1));
 
 	// exit the read loop once enough bytes have been read
 	// or the shutdown flag is set
-	while(bytes_read<max_bytes && shutdown_flag[bus]==0){
+	while(bytes_read<max_bytes && rc_uart_shutdown_flag[bus]==0){
 		FD_ZERO(&set); /* clear the set */
-		FD_SET(fd[bus], &set); /* add our file descriptor to the set */
-		ret = select(fd[bus] + 1, &set, NULL, NULL, &timeout);
+		FD_SET(rc_uart_fd[bus], &set); /* add our file descriptor to the set */
+		ret = select(rc_uart_fd[bus] + 1, &set, NULL, NULL, &timeout);
 		if(ret==-1){
 			// select returned and error. EINTR means interrupted by SIGINT
 			// aka ctrl-c. Don't print anything as this happens normally
@@ -422,7 +422,7 @@ int rc_uart_read_line(int bus, char* buf, int max_bytes)
 		}
 		else{
 			// There was data to read. Read one byte;
-			ret=read(fd[bus], &temp, 1);
+			ret=read(rc_uart_fd[bus], &temp, 1);
 			if(ret<0){
 				perror("ERROR in rc_uart_read_line calling read");
 				return -1;
@@ -449,11 +449,11 @@ int rc_uart_bytes_available(int bus)
 		fprintf(stderr,"ERROR: uart bus must be between 0 & %d\n", MAX_BUS);
 		return -1;
 	}
-	if(fd[bus]==0){
+	if(rc_uart_fd[bus]==0){
 		fprintf(stderr,"ERROR: uart%d must be initialized first\n", bus);
 		return -1;
 	}
-	if(ioctl(fd[bus], FIONREAD, &out)==-1){
+	if(ioctl(rc_uart_fd[bus], FIONREAD, &out)==-1){
 		perror("ERROR in rc_uart_bytes_available calling ioctl");
 		return -1;
 	}

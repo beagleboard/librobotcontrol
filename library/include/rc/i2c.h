@@ -280,6 +280,33 @@ int rc_i2c_unlock_bus(int bus);
  */
 int rc_i2c_get_lock(int bus);
 
+#ifdef RC_AUTOPILOT_EXT
+/**
+ * @brief      Reads multiple bytes from a device register.
+ *
+ *             This sends the device address and register address to be read
+ *             from before reading the response, works for most i2c devices.
+ *
+ * @param[in]  bus      The bus
+ * @param[in]  regAddr  The register address
+ * @param[in]  length   number of bytes to read. It can be larger than 255 as MPU9250 FIFO size is 512 bytes.
+ * @param[out] data     The data pointer to write response to.
+ *
+ * @return     returns number of bytes read or -1 on failure
+ */
+int rc_i2c_read_data(int bus, uint8_t regAddr, size_t length, uint8_t *data);
+
+/**
+ * @brief      Gets file descriptor.
+ *
+ *
+ * @param[in]  bus      The bus
+ *
+ * @return     returns file descriptor of the specified bus or -1 on failure
+ */
+int rc_i2c_get_fd(int bus);
+#endif
+
 #ifdef  __cplusplus
 }
 #endif

@@ -120,8 +120,8 @@ int rc_led_blink(rc_led_t led, float hz, float duration)
 	}
 
 	// figure out constants for later
-	const int delay_us = 1000000.0/(2.0*hz);
-	const int blinks = duration*2.0*hz;
+	const int delay_us = 1000000.0f/(2.0f*hz);
+	const int blinks = duration*2.0f*hz;
 
 	// make sure global flags are set before starting
 	blinking[(int)led]=1;

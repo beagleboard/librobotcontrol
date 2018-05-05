@@ -243,7 +243,6 @@ int rc_pwm_init(int ss, int frequency)
 
 int rc_pwm_cleanup(int ss)
 {
-	int len;
 	int enableA_fd;
 	int enableB_fd;
 	char buf[MAXBUF];
@@ -258,15 +257,15 @@ int rc_pwm_cleanup(int ss)
 	}
 
 	// now open enable FDs
-	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/enable", ss*2); // mode 0
-	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:0/enable", ss*2, ss*2); // mode 1
+	if(mode==0)	snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/enable", ss*2); // mode 0
+	else		snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:0/enable", ss*2, ss*2); // mode 1
 	enableA_fd = open(buf,O_WRONLY);
 	if(unlikely(enableA_fd==-1)){
 		perror("ERROR in rc_pwm_cleanup, failed to open pwm A enable fd");
 		return -1;
 	}
-	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/enable", ss*2); // mode 0
-	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:1/enable", ss*2, ss*2); // mode 1
+	if(mode==0)	snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/enable", ss*2); // mode 0
+	else		snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:1/enable", ss*2, ss*2); // mode 1
 	enableB_fd = open(buf,O_WRONLY);
 	if(unlikely(enableB_fd==-1)){
 		perror("ERROR in rc_pwm_cleanup, failed to open pwm B enable fd");

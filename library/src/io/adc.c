@@ -18,12 +18,12 @@
 // preposessor macros
 #define unlikely(x)	__builtin_expect (!!(x), 0)
 
-#define DC_JACK_OFFSET -0.15
-#define LIPO_OFFSET -0.10
+#define DC_JACK_OFFSET -0.15f
+#define LIPO_OFFSET -0.10f
 #define LIPO_ADC_CH 6
 #define DC_JACK_ADC_CH  5
-#define V_DIV_RATIO 11.0
-#define BATTERY_DEADZONE 1.0
+#define V_DIV_RATIO 11.0f
+#define BATTERY_DEADZONE 1.0f
 
 
 #define CHANNELS 8
@@ -101,7 +101,7 @@ float rc_adc_read_volt(int ch)
 {
 	int raw = rc_adc_read_raw(ch);
 	if(raw<0) return -1;
-	return raw * 1.8 / 4095.0;
+	return raw * 1.8f / 4095.0f;
 }
 
 
@@ -109,7 +109,7 @@ float rc_adc_batt()
 {
 	float v = (rc_adc_read_volt(LIPO_ADC_CH)*V_DIV_RATIO)+LIPO_OFFSET;
 	// add in a little dead zone to make disconnected battery easier to detect
-	if(v<BATTERY_DEADZONE) v = 0.0;
+	if(v<BATTERY_DEADZONE) v = 0.0f;
 	return v;
 }
 
@@ -117,7 +117,7 @@ float rc_adc_batt()
 float rc_adc_dc_jack()
 {
 	float v = (rc_adc_read_volt(DC_JACK_ADC_CH)*V_DIV_RATIO)+DC_JACK_OFFSET;
-	if(v<BATTERY_DEADZONE) v = 0.0;
+	if(v<BATTERY_DEADZONE) v = 0.0f;
 	return v;
 }
 

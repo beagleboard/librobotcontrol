@@ -65,7 +65,7 @@ int rc_normalize_quaternion_array(double q[4])
 
 	// can't check if length is below a constant value as q may be filled
 	// with extremely small but valid doubles
-	if(unlikely(len==0.0)){
+	if(unlikely(fabs(len) < zero_tolerance)){
 		fprintf(stderr, "ERROR in quaternion has 0 length\n");
 		return -1;
 	}

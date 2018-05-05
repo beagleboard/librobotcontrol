@@ -26,7 +26,6 @@
 #define SPI_MIN_SPEED		1000		// 1khz
 #define SPI_BITS_PER_WORD	8
 
-
 // Cape SS1 gpio P9_28, normally SPI mode
 #define CAPE_SS1_CHIP	3
 #define CAPE_SS1_PIN	17
@@ -44,14 +43,14 @@
 #define BLUE_SPI_PIN_6_SS1	29	// gpio 0_29 pin H18
 #define BLUE_SPI_PIN_6_SS2	7	// gpio 0_7  pin C18
 
+static int _rc_spi_fd[N_SS];		// file descriptor for SPI1_PATH device cs0, cs1
+static int rc_spi_init_flag[N_SS];	// set to 1 after successful initialization
+static int rc_spi_gpio_init_flag[N_SS];// init flag for manual-mode gpio SS lines
+static int rc_spi_gpio_ss_chip[N_SS];	// holds gpio pin chip for slave select lines
+static int rc_spi_gpio_ss_pin[N_SS];	// holds gpio pins offset for slave select lines
+static int rc_spi_speed[N_SS];		// speed in hz
+static int rc_spi_pinmux_id[N_SS];
 
-static int fd[N_SS];		// file descriptor for SPI1_PATH device cs0, cs1
-static int init_flag[N_SS];	// set to 1 after successful initialization
-static int gpio_init_flag[N_SS];// init flag for manual-mode gpio SS lines
-static int pinmux_id[N_SS];	// pinmux identifier for slave select lines
-static int gpio_ss_chip[N_SS];	// holds gpio pin chip for slave select lines
-static int gpio_ss_pin[N_SS];	// holds gpio pins offset for slave select lines
-static int speed[N_SS];		// speed in hz
 
 int rc_spi_init(int slave, int slave_mode, int bus_mode, int speed_hz)
 {
@@ -82,16 +81,16 @@ int rc_spi_init(int slave, int slave_mode, int bus_mode, int speed_hz)
 
 	// get file descriptor for spi1 device
 	if(slave==1){
-		fd[0]=open(SPI10_PATH, O_RDWR);
-		if(fd[0]==-1){
+		_rc_spi_fd[0]=open(SPI10_PATH, O_RDWR);
+		if(_rc_spi_fd[0]==-1){
 			perror("ERROR in rc_spi_init");
 			if(errno!=EPERM) fprintf(stderr,"likely SPI is not enabled in the device tree or kernel\n");
 			return -1;
 		}
 	}
 	else{
-		fd[1]=open(SPI11_PATH, O_RDWR);
-		if(fd[1]==-1){
+		_rc_spi_fd[1]=open(SPI11_PATH, O_RDWR);
+		if(_rc_spi_fd[1]==-1){
 			perror("ERROR in rc_spi_init");
 			if(errno!=EPERM) fprintf(stderr,"likely SPI is not enabled in the device tree or kernel\n");
 			return -1;
@@ -99,66 +98,66 @@ int rc_spi_init(int slave, int slave_mode, int bus_mode, int speed_hz)
 	}
 
 	// set settings
-	if(ioctl(fd[slave-1], SPI_IOC_WR_MODE, &bus_mode)==-1){
+	if(ioctl(_rc_spi_fd[slave-1], SPI_IOC_WR_MODE, &bus_mode)==-1){
 		perror("ERROR in rc_spi_init setting spi mode");
-		close(fd[slave-1]);
+		close(_rc_spi_fd[slave-1]);
 		return -1;
 	}
-	if(ioctl(fd[slave-1], SPI_IOC_WR_BITS_PER_WORD, &bits)==-1){
+	if(ioctl(_rc_spi_fd[slave-1], SPI_IOC_WR_BITS_PER_WORD, &bits)==-1){
 		perror("ERROR in rc_spi_init setting bits per word");
-		close(fd[slave-1]);
+		close(_rc_spi_fd[slave-1]);
 		return -1;
 	}
-	if(ioctl(fd[slave-1], SPI_IOC_WR_MAX_SPEED_HZ, &speed_hz)==-1){
+	if(ioctl(_rc_spi_fd[slave-1], SPI_IOC_WR_MAX_SPEED_HZ, &speed_hz)==-1){
 		perror("ERROR in rc_spi_init setting max speed hz");
-		close(fd[slave-1]);
+		close(_rc_spi_fd[slave-1]);
 		return -1;
 	}
 
 	// set up slave select pins, pin definitions in <rc/pinmux.h>
 	if(model==BB_BLUE){
-		gpio_ss_chip[0] = BLUE_SS1_CHIP;
-		gpio_ss_pin[0]  = BLUE_SS1_PIN;
-		pinmux_id[0]    = BLUE_SPI_PIN_6_SS1;
-		gpio_ss_chip[1] = BLUE_SS2_CHIP;
-		gpio_ss_pin[1]  = BLUE_SS2_PIN;
-		pinmux_id[1]    = BLUE_SPI_PIN_6_SS1;
+		rc_spi_gpio_ss_chip[0] = BLUE_SS1_CHIP;
+		rc_spi_gpio_ss_pin[0]  = BLUE_SS1_PIN;
+		rc_spi_pinmux_id[0]    = BLUE_SPI_PIN_6_SS1;
+		rc_spi_gpio_ss_chip[1] = BLUE_SS2_CHIP;
+		rc_spi_gpio_ss_pin[1]  = BLUE_SS2_PIN;
+		rc_spi_pinmux_id[1]    = BLUE_SPI_PIN_6_SS1;
 
 	}
 	else{
-		gpio_ss_chip[0] = CAPE_SS1_CHIP;
-		gpio_ss_pin[0]  = CAPE_SS1_PIN;
-		pinmux_id[0]    = CAPE_SPI_PIN_6_SS1;
-		gpio_ss_chip[1] = CAPE_SS2_CHIP;
-		gpio_ss_pin[1]  = CAPE_SS2_PIN;
-		pinmux_id[1]    = CAPE_SPI_PIN_6_SS2;
+		rc_spi_gpio_ss_chip[0] = CAPE_SS1_CHIP;
+		rc_spi_gpio_ss_pin[0]  = CAPE_SS1_PIN;
+		rc_spi_pinmux_id[0]    = CAPE_SPI_PIN_6_SS1;
+		rc_spi_gpio_ss_chip[1] = CAPE_SS2_CHIP;
+		rc_spi_gpio_ss_pin[1]  = CAPE_SS2_PIN;
+		rc_spi_pinmux_id[1]    = CAPE_SPI_PIN_6_SS2;
 	}
 
 	if(slave_mode == SPI_SLAVE_MODE_AUTO){
-		if(rc_pinmux_set(pinmux_id[slave-1], PINMUX_SPI)){
+		if(rc_pinmux_set(rc_spi_pinmux_id[slave-1], PINMUX_SPI)){
 			fprintf(stderr,"ERROR in rc_spi_init, failed to set slave select pinmux to SPI mode\n");
 			return -1;
 		}
 	}
 	else{
-		if(rc_pinmux_set(pinmux_id[slave-1], PINMUX_GPIO)){
+		if(rc_pinmux_set(rc_spi_pinmux_id[slave-1], PINMUX_GPIO)){
 			fprintf(stderr,"ERROR in rc_spi_init, failed to set slave select pinmux to GPIO mode\n");
 			return -1;
 		}
-		if(rc_gpio_init(gpio_ss_chip[slave-1],gpio_ss_pin[slave-1], GPIOHANDLE_REQUEST_OUTPUT)){
+		if(rc_gpio_init(rc_spi_gpio_ss_chip[slave-1],rc_spi_gpio_ss_pin[slave-1], GPIOHANDLE_REQUEST_OUTPUT)){
 			fprintf(stderr,"ERROR in rc_spi_init failed to initialize slave select gpio pin\n");
 			return -1;
 		}
 		// make sure slave begins deselected
-		if(rc_gpio_set_value(gpio_ss_chip[slave-1],gpio_ss_pin[slave-1], 1)){
+		if(rc_gpio_set_value(rc_spi_gpio_ss_chip[slave-1],rc_spi_gpio_ss_pin[slave-1], 1)){
 			fprintf(stderr,"ERROR in rc_spi_init, failed to write to gpio slave select pin\n");
 			return -1;
 		}
 	}
 	// all done, store speed and flag initialization
-	speed[slave-1] = speed_hz;
-	init_flag[slave-1] = 1;
-	gpio_init_flag[slave-1]=1;
+	rc_spi_speed[slave-1] = speed_hz;
+	rc_spi_init_flag[slave-1] = 1;
+	rc_spi_gpio_init_flag[slave-1]=1;
 	return 0;
 }
 
@@ -170,11 +169,11 @@ int rc_spi_fd(int slave)
 		fprintf(stderr,"ERROR in rc_spi_fd, slave must be 1 or 2\n");
 		return -1;
 	}
-	if(init_flag[slave-1]==0){
+	if(rc_spi_init_flag[slave-1]==0){
 		fprintf(stderr,"ERROR in rc_spi_fd, call rc_spi_init first\n");
 		return -1;
 	}
-	return fd[slave-1];
+	return _rc_spi_fd[slave-1];
 }
 
 
@@ -186,13 +185,13 @@ int rc_spi_close(int slave)
 		return -1;
 	}
 	// deselect if in manual mode
-	if(gpio_init_flag[slave-1]){
+	if(rc_spi_gpio_init_flag[slave-1]){
 		rc_spi_select((slave-1),0);
-		rc_gpio_cleanup(gpio_ss_chip[slave-1],gpio_ss_pin[slave-1]);
+		rc_gpio_cleanup(rc_spi_gpio_ss_chip[slave-1],rc_spi_gpio_ss_pin[slave-1]);
 	}
-	close(fd[slave-1]);
-	init_flag[slave-1]=0;
-	gpio_init_flag[slave-1]=0;
+	close(_rc_spi_fd[slave-1]);
+	rc_spi_init_flag[slave-1]=0;
+	rc_spi_gpio_init_flag[slave-1]=0;
 	return 0;
 }
 
@@ -204,13 +203,13 @@ int rc_spi_select(int slave, int select)
 		fprintf(stderr,"ERROR in rc_spi_select, slave must be 1 or 2\n");
 		return -1;
 	}
-	if(gpio_init_flag[slave-1]==0){
+	if(rc_spi_gpio_init_flag[slave-1]==0){
 		fprintf(stderr,"ERROR in rc_spi_select, slave must be configured with SPI_SLAVE_MODE_MANUAL to use this function\n");
 		return -1;
 	}
 
 	// invert select to it's pulled low when selecting pin
-	if(rc_gpio_set_value(gpio_ss_chip[slave-1],gpio_ss_pin[slave-1], !select)==-1){
+	if(rc_gpio_set_value(rc_spi_gpio_ss_chip[slave-1],rc_spi_gpio_ss_pin[slave-1], !select)==-1){
 		fprintf(stderr,"ERROR in rc_spi_select writing to gpio pin\n");
 		return -1;
 	}
@@ -228,7 +227,7 @@ int rc_spi_transfer(int slave, char* tx_data, int tx_bytes, char* rx_data)
 		fprintf(stderr,"ERROR in rc_spi_transfer, slave must be 1 or 2\n");
 		return -1;
 	}
-	if(init_flag[slave-1]==0){
+	if(rc_spi_init_flag[slave-1]==0){
 		fprintf(stderr,"ERROR: in rc_spi_transfer call rc_spi_init first\n");
 		return -1;
 	}
@@ -240,14 +239,14 @@ int rc_spi_transfer(int slave, char* tx_data, int tx_bytes, char* rx_data)
 	// fill in send struct
 	xfer.cs_change = 1;
 	xfer.delay_usecs = 0;
-	xfer.speed_hz = speed[slave-1];
+	xfer.speed_hz = rc_spi_speed[slave-1];
 	xfer.bits_per_word = SPI_BITS_PER_WORD;
 	xfer.tx_buf = (unsigned long) tx_data;
 	xfer.rx_buf = (unsigned long) rx_data;
 	xfer.len = tx_bytes;
 
 	// do ioctl transfer
-	ret=ioctl(fd[slave-1], SPI_IOC_MESSAGE(1), &xfer);
+	ret=ioctl(_rc_spi_fd[slave-1], SPI_IOC_MESSAGE(1), &xfer);
 	if(ret==-1){
 		perror("ERROR in rc_spi_transfer");
 		return -1;
@@ -266,7 +265,7 @@ int rc_spi_write(int slave, char* data, int bytes)
 		fprintf(stderr,"ERROR in rc_spi_write, slave must be 1 or 2\n");
 		return -1;
 	}
-	if(init_flag[slave-1]==0){
+	if(rc_spi_init_flag[slave-1]==0){
 		fprintf(stderr,"ERROR: in rc_spi_write call rc_spi_init first\n");
 		return -1;
 	}
@@ -278,14 +277,14 @@ int rc_spi_write(int slave, char* data, int bytes)
 	// fill in send struct
 	xfer.cs_change = 1;
 	xfer.delay_usecs = 0;
-	xfer.speed_hz = speed[slave-1];
+	xfer.speed_hz = rc_spi_speed[slave-1];
 	xfer.bits_per_word = SPI_BITS_PER_WORD;
 	xfer.rx_buf = 0;
 	xfer.tx_buf = (unsigned long) data;
 	xfer.len = bytes;
 
 	// send
-	ret=ioctl(fd[slave-1], SPI_IOC_MESSAGE(1), &xfer);
+	ret=ioctl(_rc_spi_fd[slave-1], SPI_IOC_MESSAGE(1), &xfer);
 	if(ret==-1){
 		perror("ERROR in rc_spi_write");
 		return -1;
@@ -304,7 +303,7 @@ int rc_spi_read(int slave, char* data, int bytes)
 		fprintf(stderr,"ERROR in rc_spi_read, slave must be 1 or 2\n");
 		return -1;
 	}
-	if(init_flag[slave-1]==0){
+	if(rc_spi_init_flag[slave-1]==0){
 		fprintf(stderr,"ERROR: in rc_spi_read call rc_spi_init first\n");
 		return -1;
 	}
@@ -316,14 +315,14 @@ int rc_spi_read(int slave, char* data, int bytes)
 	// fill in send struct
 	xfer.cs_change = 1;
 	xfer.delay_usecs = 0;
-	xfer.speed_hz = speed[slave-1];
+	xfer.speed_hz = rc_spi_speed[slave-1];
 	xfer.bits_per_word = SPI_BITS_PER_WORD;
 	xfer.rx_buf = (unsigned long) data;
 	xfer.tx_buf = 0;
 	xfer.len = bytes;
 
 	// read
-	ret=ioctl(fd[slave-1], SPI_IOC_MESSAGE(1), &xfer);
+	ret=ioctl(_rc_spi_fd[slave-1], SPI_IOC_MESSAGE(1), &xfer);
 	if(ret==-1){
 		perror("ERROR in rc_spi_read");
 		return -1;
