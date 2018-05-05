@@ -699,7 +699,7 @@ int rc_dsm_bind_routine()
 
 	// configure gpio pin as input
 	if(rc_gpio_init(DSM_PIN, GPIOHANDLE_REQUEST_INPUT)==-1){
-		fprintf(stderr,"ERROR in rc_dsm_bind_routine initializing gpio pin %d as input\n", DSM_PIN);
+		fprintf(stderr,"ERROR in rc_dsm_bind_routine initializing gpio pin as input\n");
 		return -1;
 	}
 
@@ -782,7 +782,7 @@ enter:
 	// now configure gpio pin as output
 	rc_gpio_cleanup(DSM_PIN);
 	if(rc_gpio_init(DSM_PIN, GPIOHANDLE_REQUEST_OUTPUT)==-1){
-		fprintf(stderr,"ERROR in rc_dsm_bind_routine initializing gpio pin %d as output\n", DSM_PIN);
+		fprintf(stderr,"ERROR in rc_dsm_bind_routine initializing gpio pin as output\n");
 		return -1;
 	}
 	if(rc_gpio_set_value(DSM_PIN, 1)==-1){

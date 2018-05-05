@@ -119,16 +119,16 @@ int rc_motor_init()
 
 	// set up gpio pins
 	if(unlikely(rc_gpio_init(MOT_STBY, GPIOHANDLE_REQUEST_OUTPUT))){
-		fprintf(stderr,"ERROR in rc_motor_init, failed to set up gpio %d\n", MOT_STBY);
+		fprintf(stderr,"ERROR in rc_motor_init, failed to set up gpio %d,%d\n", MOT_STBY);
 		return -1;
 	}
 	for(i=0;i<CHANNELS;i++){
 		if(unlikely(rc_gpio_init(dirA_chip[i],dirA_pin[i], GPIOHANDLE_REQUEST_OUTPUT))){
-			fprintf(stderr,"ERROR in rc_motor_init, failed to set up gpio %d\n", dirA_chip[i],dirA_pin[i]);
+			fprintf(stderr,"ERROR in rc_motor_init, failed to set up gpio %d,%d\n", dirA_chip[i],dirA_pin[i]);
 			return -1;
 		}
 		if(unlikely(rc_gpio_init(dirB_chip[i],dirB_pin[i], GPIOHANDLE_REQUEST_OUTPUT))){
-			fprintf(stderr,"ERROR in rc_motor_init, failed to set up gpio %d\n", dirB_chip[i],dirB_pin[i]);
+			fprintf(stderr,"ERROR in rc_motor_init, failed to set up gpio %d,%d\n", dirB_chip[i],dirB_pin[i]);
 			return -1;
 		}
 	}
@@ -144,7 +144,7 @@ int rc_motor_init()
 
 	// make sure standby is off since most users won't use it
 	if(unlikely(rc_gpio_set_value(MOT_STBY,1))){
-		fprintf(stderr,"ERROR in rc_motor_init, can't write to gpio %d\n",MOT_STBY);
+		fprintf(stderr,"ERROR in rc_motor_init, can't write to gpio %d,%d\n",MOT_STBY);
 		return -1;
 	}
 	stby_state = 0;
@@ -189,7 +189,7 @@ int rc_motor_standby(int standby_en)
 		val=1;
 	}
 	if(unlikely(rc_gpio_set_value(MOT_STBY,val))){
-		fprintf(stderr,"ERROR in rc_motor_standby, unable to write to gpio %d\n", MOT_STBY);
+		fprintf(stderr,"ERROR in rc_motor_standby, unable to write to gpio %d,%d\n", MOT_STBY);
 		return -1;
 	}
 	stby_state = standby_en;
@@ -229,11 +229,11 @@ int rc_motor_set(int motor, float duty)
 
 	// set gpio and pwm for that motor
 	if(unlikely(rc_gpio_set_value(dirA_chip[motor-1],dirA_pin[motor-1], a))){
-		fprintf(stderr,"ERROR in rc_motor_set, failed to write to gpio pin %d\n",dirA_chip[motor-1],dirA_pin[motor-1]);
+		fprintf(stderr,"ERROR in rc_motor_set, failed to write to gpio pin %d,%d\n",dirA_chip[motor-1],dirA_pin[motor-1]);
 		return -1;
 	}
 	if(unlikely(rc_gpio_set_value(dirB_chip[motor-1],dirB_pin[motor-1], b))){
-		fprintf(stderr,"ERROR in rc_motor_set, failed to write to gpio pin %d\n",dirB_chip[motor-1],dirB_pin[motor-1]);
+		fprintf(stderr,"ERROR in rc_motor_set, failed to write to gpio pin %d,%d\n",dirB_chip[motor-1],dirB_pin[motor-1]);
 		return -1;
 	}
 	if(unlikely(rc_pwm_set_duty(pwmss[motor-1], pwmch[motor-1], duty))){
@@ -268,11 +268,11 @@ int rc_motor_free_spin(int motor)
 
 	// set gpio and pwm for that motor
 	if(unlikely(rc_gpio_set_value(dirA_chip[motor-1],dirA_pin[motor-1], 0))){
-		fprintf(stderr,"ERROR in rc_motor_free_spin, failed to write to gpio pin %d\n",dirA_chip[motor-1],dirA_pin[motor-1]);
+		fprintf(stderr,"ERROR in rc_motor_free_spin, failed to write to gpio pin %d,%d\n",dirA_chip[motor-1],dirA_pin[motor-1]);
 		return -1;
 	}
 	if(unlikely(rc_gpio_set_value(dirB_chip[motor-1],dirB_pin[motor-1], 0))){
-		fprintf(stderr,"ERROR in rc_motor_free_spin, failed to write to gpio pin %d\n",dirB_chip[motor-1],dirB_pin[motor-1]);
+		fprintf(stderr,"ERROR in rc_motor_free_spin, failed to write to gpio pin %d,%d\n",dirB_chip[motor-1],dirB_pin[motor-1]);
 		return -1;
 	}
 	if(unlikely(rc_pwm_set_duty(pwmss[motor-1], pwmch[motor-1], 0.0))){
@@ -307,11 +307,11 @@ int rc_motor_brake(int motor)
 
 	// set gpio and pwm for that motor
 	if(unlikely(rc_gpio_set_value(dirA_chip[motor-1],dirA_pin[motor-1], 1))){
-		fprintf(stderr,"ERROR in rc_motor_brake, failed to write to gpio pin %d\n",dirA_chip[motor-1],dirA_pin[motor-1]);
+		fprintf(stderr,"ERROR in rc_motor_brake, failed to write to gpio pin %d,%d\n",dirA_chip[motor-1],dirA_pin[motor-1]);
 		return -1;
 	}
 	if(unlikely(rc_gpio_set_value(dirB_chip[motor-1],dirB_pin[motor-1], 1))){
-		fprintf(stderr,"ERROR in rc_motor_brake, failed to write to gpio pin %d\n",dirB_chip[motor-1],dirB_pin[motor-1]);
+		fprintf(stderr,"ERROR in rc_motor_brake, failed to write to gpio pin %d,%d\n",dirB_chip[motor-1],dirB_pin[motor-1]);
 		return -1;
 	}
 	if(unlikely(rc_pwm_set_duty(pwmss[motor-1], pwmch[motor-1], 0.0))){

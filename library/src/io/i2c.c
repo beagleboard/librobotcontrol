@@ -152,7 +152,7 @@ int rc_i2c_read_data(int bus, uint8_t regAddr, size_t length, uint8_t *data)
 	// then read the response
 	ret = read(i2c[bus].file, data, length);
 	if(unlikely((size_t)ret!=length)){
-		fprintf(stderr,"ERROR: in rc_i2c_read_bytes, received %d bytes from device, expected %d\n", ret, length);
+		fprintf(stderr,"ERROR: in rc_i2c_read_bytes, received %d bytes from device, expected %d\n", ret, (int)length);
 		i2c[bus].lock = old_lock;
 		return -1;
 	}
