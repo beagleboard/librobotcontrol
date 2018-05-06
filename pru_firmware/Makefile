@@ -95,7 +95,6 @@ install:
 	@$(INSTALLDIR) $(DESTDIR)/etc/modprobe.d
 	@$(INSTALLNONEXEC) $(TARGET0) $(DESTDIR)/lib/firmware/
 	@$(INSTALLNONEXEC) $(TARGET1) $(DESTDIR)/lib/firmware/
-	@$(INSTALLNONEXEC) pruss-blacklist.conf $(DESTDIR)/etc/modprobe.d/
 	@echo 'PRU Firmware Install Complete'
 
 
@@ -107,5 +106,4 @@ clean:
 uninstall:
 	@$(RM) $(DESTDIR)/lib/firmware/$(PRU0_FW)
 	@$(RM) $(DESTDIR)$(DESTDIR)/lib/firmware/$(PRU1_FW)
-	@$(RM) $(DESTDIR)/etc/modprobe.d/pruss-blacklist.conf
 	@echo "PRU Firmware Uninstall Complete"
