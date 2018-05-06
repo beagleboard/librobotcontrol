@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <rc/pru.h>
+#include <rc/time.h>
 #include <rc/encoder_pru.h>
 
 #define ENCODER_PRU_CH		0 // PRU0
@@ -21,11 +22,7 @@ static int init_flag=0;
 
 int rc_encoder_pru_init()
 {
-	// start pru
-	if(rc_pru_start(ENCODER_PRU_CH, ENCODER_PRU_FW)){
-		fprintf(stderr,"ERROR in rc_encoder_pru_init, failed to start PRU%d\n", ENCODER_PRU_CH);
-		return -1;
-	}
+	int i;
 	// map memory
 	shared_mem_32bit_ptr = rc_pru_shared_mem_ptr();
 	if(shared_mem_32bit_ptr==NULL){
@@ -33,10 +30,29 @@ int rc_encoder_pru_init()
 		init_flag=0;
 		return -1;
 	}
-	// zero out the memory
-	shared_mem_32bit_ptr[ENCODER_MEM_OFFSET]=0;
-	init_flag=1;
-	return 0;
+	// set first channel to be nonzero, PRU binary will zero this out later
+	shared_mem_32bit_ptr[ENCODER_MEM_OFFSET]=42;
+
+	// start pru
+	if(rc_pru_start(ENCODER_PRU_CH, ENCODER_PRU_FW)){
+		fprintf(stderr,"ERROR in rc_encoder_pru_init, failed to start PRU%d\n", ENCODER_PRU_CH);
+		return -1;
+	}
+
+	// make sure memory actually got zero'd out
+	for(i=0;i<40;i++){
+		if(shared_mem_32bit_ptr[ENCODER_MEM_OFFSET]==0){
+			init_flag=1;
+			return 0;
+		}
+		rc_usleep(100000);
+	}
+
+	fprintf(stderr, "ERROR in rc_encoder_pru_init, %s failed to load\n", ENCODER_PRU_FW);
+	fprintf(stderr, "attempting to stop PRU%d\n", ENCODER_PRU_CH);
+	rc_pru_stop(ENCODER_PRU_CH);
+	init_flag=0;
+	return -1;
 }
 
 
