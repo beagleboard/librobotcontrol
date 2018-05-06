@@ -33,11 +33,6 @@ int rc_servo_init()
 		init_flag=0;
 		return -1;
 	}
-	// start pru
-	if(rc_pru_start(SERVO_PRU_CH, SERVO_PRU_FW)){
-		fprintf(stderr,"ERROR in rc_servo_init, failed to start PRU%d\n", SERVO_PRU_CH);
-		return -1;
-	}
 	// map memory
 	shared_mem_32bit_ptr = rc_pru_shared_mem_ptr();
 	if(shared_mem_32bit_ptr == NULL){
@@ -45,20 +40,29 @@ int rc_servo_init()
 		init_flag=0;
 		return -1;
 	}
-	// zero out the memory
-	for(i=0;i<RC_SERVO_CH_MAX;i++) shared_mem_32bit_ptr[i]=0;
+	// set first channel to be nonzero, PRU binary will zero this out later
+	shared_mem_32bit_ptr[0]=42;
 
-	// make sure memory actually got zero'd out
-	for(i=0;i<RC_SERVO_CH_MAX;i++){
-		if(shared_mem_32bit_ptr[i-1]!=0){
-			fprintf(stderr, "ERROR in rc_servo_init, failed to write to PRU shared memory\n");
-			init_flag=0;
-			return -1;
-		}
+	// start pru
+	if(rc_pru_start(SERVO_PRU_CH, SERVO_PRU_FW)){
+		fprintf(stderr,"ERROR in rc_servo_init, failed to start PRU%d\n", SERVO_PRU_CH);
+		return -1;
 	}
 
-	init_flag=1;
-	return 0;
+	// make sure memory actually got zero'd out
+	for(i=0;i<40;i++){
+		if(shared_mem_32bit_ptr[0]==0){
+			init_flag=1;
+			return 0;
+		}
+		rc_usleep(100000);
+	}
+
+	fprintf(stderr, "ERROR in rc_servo_init, %s failed to load\n", SERVO_PRU_FW);
+	fprintf(stderr, "attempting to stop PRU1\n");
+	rc_pru_stop(SERVO_PRU_CH);
+	init_flag=0;
+	return -1;
 }
 
 
