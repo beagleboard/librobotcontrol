@@ -28,9 +28,9 @@
 #define PRU1_FW		"/sys/class/remoteproc/remoteproc2/firmware"
 
 // share memory pointer location
-#define PRU_ADDR	0x4A300000		// Start of PRU memory Page 184 am335x TRM
-#define PRU_LEN		0x80000			// Length of PRU memory
-#define PRU_SHAREDMEM	0x10000			// Offset to shared memory
+#define PRU_ADDR	0x4A300000	// Start of PRU memory Page 184 am335x TRM
+#define PRU_LEN		0x80000		// Length of PRU memory
+#define PRU_SHAREDMEM	0x10000		// Offset to shared memory
 
 static volatile unsigned int* shared_mem_32bit_ptr = NULL;
 
@@ -118,7 +118,7 @@ int rc_pru_start(int ch, const char* fw_name)
 volatile uint32_t* rc_pru_shared_mem_ptr()
 {
 	int fd;
-	unsigned int* map;
+	volatile unsigned int* map;
 
 	// if already set, just return the pointer
 	if(shared_mem_32bit_ptr!=NULL){

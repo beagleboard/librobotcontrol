@@ -219,3 +219,7 @@ pip-log.txt
 *.so
 .debhelper/
 debian/roboticscape/
+pru_firmware/file.map
+pru_firmware/main_pru0.asm
+pru_firmware/main_pru1.asm
+

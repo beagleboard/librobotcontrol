@@ -14,9 +14,9 @@
 #include <rc/servo.h>
 #include <rc/time.h>
 
-#define TOL		0.01 // acceptable tolerance on floating point bounds
-#define GPIO_POWER_PIN	2,16 //gpio2.16 P8.36
-#define SERVO_PRU_CH	1 // PRU1
+#define TOL		0.01	// acceptable tolerance on floating point bounds
+#define GPIO_POWER_PIN	2,16	//gpio2.16 P8.36
+#define SERVO_PRU_CH	1	// PRU1
 #define SERVO_PRU_FW	"am335x-pru1-rc-servo-fw"
 #define PRU_SERVO_LOOP_INSTRUCTIONS 48 // instructions per PRU servo timer loop
 
@@ -27,6 +27,12 @@ static int init_flag=0;
 int rc_servo_init()
 {
 	int i;
+	// start gpio power rail pin
+	if(rc_gpio_init(GPIO_POWER_PIN, GPIOHANDLE_REQUEST_OUTPUT)==-1){
+		fprintf(stderr, "ERROR in rc_servo_init, failed to set up power rail GPIO pin\n");
+		init_flag=0;
+		return -1;
+	}
 	// start pru
 	if(rc_pru_start(SERVO_PRU_CH, SERVO_PRU_FW)){
 		fprintf(stderr,"ERROR in rc_servo_init, failed to start PRU%d\n", SERVO_PRU_CH);
@@ -41,12 +47,16 @@ int rc_servo_init()
 	}
 	// zero out the memory
 	for(i=0;i<RC_SERVO_CH_MAX;i++) shared_mem_32bit_ptr[i]=0;
-	// start gpio pin
-	if(rc_gpio_init(GPIO_POWER_PIN, GPIOHANDLE_REQUEST_OUTPUT)==-1){
-		fprintf(stderr, "ERROR in rc_servo_init, failed to set up power rail GPIO pin\n");
-		init_flag=0;
-		return -1;
+
+	// make sure memory actually got zero'd out
+	for(i=0;i<RC_SERVO_CH_MAX;i++){
+		if(shared_mem_32bit_ptr[i-1]!=0){
+			fprintf(stderr, "ERROR in rc_servo_init, failed to write to PRU shared memory\n");
+			init_flag=0;
+			return -1;
+		}
 	}
+
 	init_flag=1;
 	return 0;
 }
@@ -122,6 +132,7 @@ int rc_servo_send_pulse_us(int ch, int us)
 		if(shared_mem_32bit_ptr[i-1] != 0){
 			fprintf(stderr,"ERROR: in rc_servo_send_pulse_us, tried to start a new pulse amidst another on channel %d\n", i);
 			fprintf(stderr,"current val:%d\n", shared_mem_32bit_ptr[i-1]);
+			fprintf(stderr,"this either means you are sending pulses too fast, or the PRU binary didn't load properly\n");
 			ret = -1;
 			continue;
 		}
