@@ -63,6 +63,7 @@ void print_usage()
 	printf(" -s {max}       Gently sweep throttle from 0 to {max} back to 0 again\n");
 	printf("                {max} can be between 0 & 1.0\n");
 	printf(" -r {ch}        Use DSM radio channel {ch} to control ESC\n");
+	printf(" -d             Disable the wakeup period for ESCs which do not require it\n");
 	printf(" -h             Print this help messege \n\n");
 	printf("sample use to control ESC channel 2 with DSM radio channel 1:\n");
 	printf("   rc_test_esc -c 2 -r 1\n\n");
@@ -89,14 +90,15 @@ int main(int argc, char *argv[])
 	int c,i;		// misc variables
 	test_mode_t mode;	// current operating mode
 	uint64_t dsm_nanos;	// nanoseconds since last dsm packet
-	int frequency_hz = 50; // default 50hz frequency to send pulses
+	int frequency_hz = 50;	// default 50hz frequency to send pulses
+	int wakeup_en = 1;	// wakeup period enabled by default
 
 	// start with mode as disabled
 	mode = DISABLED;
 
 	// parse arguments
 	opterr = 0;
-	while ((c = getopt(argc, argv, "c:f:t:ow:s:r:h")) != -1){
+	while ((c = getopt(argc, argv, "c:f:t:ow:s:r:hd")) != -1){
 		switch(c){
 		// channel option
 		case 'c':
@@ -194,6 +196,10 @@ int main(int argc, char *argv[])
 			}
 			mode = RADIO;
 			break;
+		// disable wakeup
+		case 'd':
+			wakeup_en = 0;
+			break;
 
 		// help mode
 		case 'h':
@@ -235,14 +241,16 @@ int main(int argc, char *argv[])
 
 	// if driving an ESC, send throttle of 0 first
 	// otherwise it will go into calibration mode
-	printf("waking ESC up from idle for 3 seconds\n");
-	for(i=0;i<frequency_hz*3;i++){
-		if(running==0) return 0;
-		if(rc_servo_send_esc_pulse_normalized(ch,-0.1)==-1) return -1;
-		rc_usleep(1000000/frequency_hz);
+	if(wakeup_en){
+		printf("waking ESC up from idle for 3 seconds\n");
+		for(i=0;i<frequency_hz*3;i++){
+			if(running==0) return 0;
+			if(rc_servo_send_esc_pulse_normalized(ch,-0.1)==-1) return -1;
+			rc_usleep(1000000/frequency_hz);
+		}
+		printf("done with wakeup period\n");
 	}
-	printf("done with wakeup period\n");
-	return 0;
+
 
 	// Main loop runs at frequency_hz
 	while(running){
