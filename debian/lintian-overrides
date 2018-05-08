@@ -10,7 +10,5 @@
 [linux-any]: package-name-doesnt-match-sonames *
 [linux-any]: untranslatable-debconf-templates *
 [linux-any]: not-using-po-debconf *
-[linux-any]:
-[linux-any]:
-[linux-any]:
-[linux-any]:
+roboticscape source: untranslatable-debconf-templates *
+roboticscape source: not-using-po-debconf *
