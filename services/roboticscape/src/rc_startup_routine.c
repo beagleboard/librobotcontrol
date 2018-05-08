@@ -35,7 +35,7 @@ static uint64_t start_us;
 int main()
 {
 	char buf[MAXBUF];
-	float time;
+	double time;
 	rc_model_t model;
 
 	// ensure root privileges
@@ -45,8 +45,9 @@ int main()
 	}
 
 	// log start time
-	start_us = rc_nanos_since_epoch()/1000 ;
-	system("echo start > " START_LOG);
+	time = rc_nanos_since_boot()/1000000000.0;
+	sprintf(buf, "echo 'start time (s): %6.2f' > %s",time,START_LOG);
+	system(buf);
 
 	// make pid directory with correct permissions
 	make_pid_directory();
@@ -60,7 +61,9 @@ int main()
 		}
 	}
 
-	// set permissions on gpio
+	// set permissions on gpio, not strictly necessary anymore with udev rules
+	// but still here for older systems and since it also checks to make sure
+	// gpio chips are loaded
 	while(set_gpio_permissions()!=0){
 		if(check_timeout()){
 			system("echo 'timeout reached while waiting for gpio driver' >> " START_LOG);
@@ -69,7 +72,7 @@ int main()
 		}
 		rc_usleep(500000);
 	}
-	time = (rc_nanos_since_epoch()/1000-start_us)/1000000.0;
+	time = rc_nanos_since_boot()/1000000000.0;
 	sprintf(buf, "echo 'time (s): %4.2f GPIO loaded' >> %s",time,START_LOG);
 	system(buf);
 
@@ -83,7 +86,7 @@ int main()
 		}
 		rc_usleep(500000);
 	}
-	time = (rc_nanos_since_epoch()/1000-start_us)/1000000.0;
+	time = rc_nanos_since_boot()/1000000000.0;
 	sprintf(buf, "echo 'time (s): %4.2f PWM loaded' >> %s",time,START_LOG);
 	system(buf);
 
@@ -96,11 +99,10 @@ int main()
 		}
 		rc_usleep(500000);
 	}
-	time = (rc_nanos_since_epoch()/1000-start_us)/1000000.0;
+	time = rc_nanos_since_boot()/1000000000.0;
 	sprintf(buf, "echo 'time (s): %4.2f eQEP loaded' >> %s",time,START_LOG);
 	system(buf);
 
-	set_gpio_permissions();
 
 	printf("roboticscape startup routine complete\n");
 	system("echo 'startup routine complete' >> " START_LOG);
@@ -145,7 +147,7 @@ int set_gpio_permissions(){
  */
 int check_timeout()
 {
-	uint64_t new_us = rc_nanos_since_epoch()/1000;
+	uint64_t new_us = rc_nanos_since_boot()/1000;
 	int seconds = (new_us-start_us)/1000000;
 	if(seconds>TIMEOUT_S){
 		printf("TIMEOUT REACHED\n");
