@@ -1,7 +1,7 @@
 /**
  * @headerfile version.h <rc/version.h>
  *
- * @brief functions for getting the current version of the Robotics Cape Library
+ * @brief macros and functions for getting the current version of the Robotics Cape Library
  *
  * @author     James Strawson
  * @date       2/8/2018
@@ -18,49 +18,35 @@ extern "C" {
 #endif
 
 
-#define RC_LIB_VERSION_FLOAT	0.42
-#define RC_LIB_VERSION_STRING	"0.4.2"
+#define RC_LIB_VERSION_MAJOR	0
+#define RC_LIB_VERSION_MINOR	4
+#define RC_LIB_VERSION_PATCH	3
+#define RC_LIB_VERSION_HEX	((RC_LIB_VERSION_MAJOR << 16) | \
+				 (RC_LIB_VERSION_MINOR <<  8) | \
+				 (RC_LIB_VERSION_PATCH))
 
 
 /**
- * @brief      gets a floating point representation of the current Robotics Cape
- *             library version.
+ * @brief      get an integer representation of the library version
  *
- *             This is better than using the RC_LIB_VERSION_FLOAT macro because
- *             the number returned will be from the library .so file instead of
- *             being hard-coded into your program. Therefore it will change the
- *             return value when you update the library without the user needing
- *             to recompile their program.
+ *             8 bits are used for each component, with the patch number stored
+ *             in the 8 least significant bits. E.g. for version 1.2.3 this
+ *             would be 0x010203.
  *
- * @return     float
+ * @return     integer representation of the library version
  */
-float rc_version_float();
+unsigned int rc_version();
 
 /**
- * @brief      gets a string representation of the current Robotics Cape library
- *             version.
- *
- *             This is better than using the RC_LIB_VERSION_STRING macro because
- *             the number returned will be from the library .so file instead of
- *             being hard-coded into your program. Therefore it will change the
- *             return value when you update the library without the user needing
- *             to recompile their program.
+ * @brief      gets a string representation of the current library version.
  *
  * @return     const char* string
  */
 const char* rc_version_string();
 
 /**
- * @brief      prints a string representation of the current Robotics Cape library
- *             version with no trailing newline character.
- *
- *             This is better than using the RC_LIB_VERSION_STRING macro because
- *             the number returned will be from the library .so file instead of
- *             being hard-coded into your program. Therefore it will change the
- *             return value when you update the library without the user needing
- *             to recompile their program.
- *
- * @return     const char* string
+ * @brief      prints a string representation of the current library version to
+ *             stdout with no trailing newline character.
  */
 void rc_version_print();
 

@@ -5,26 +5,27 @@
 #include <stdio.h>
 #include <rc/version.h>
 
+#define RC_STRINGIFY(v) RC_STRINGIFY_HELPER(v)
+#define RC_STRINGIFY_HELPER(v) #v
 
-float rc_version_float()
+#define RC_LIB_VERSION_STRING	RC_STRINGIFY(RC_LIB_VERSION_MAJOR) "." \
+				RC_STRINGIFY(RC_LIB_VERSION_MINOR) "." \
+				RC_STRINGIFY(RC_LIB_VERSION_PATCH)
+
+
+unsigned int rc_version()
 {
-	return RC_LIB_VERSION_FLOAT;
+	return RC_LIB_VERSION_HEX;
 }
 
 
 const char* rc_version_string()
 {
-	// // annoying macro hack to convert to string
-	// #define Q(x) #x
-	// #define QUOTE(x) Q(x)
-	// return QUOTE(RC_LIB_VERSION_STRING);
-	// #undef Q
-	// #undef QUOTE
 	return RC_LIB_VERSION_STRING;
 }
 
 void rc_version_print()
 {
-	printf("%s",RC_LIB_VERSION_STRING);
+	printf(RC_LIB_VERSION_STRING);
 	return;
 }

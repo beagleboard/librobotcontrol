@@ -1,3 +1,15 @@
+0.4.3
+    * rc_startup_routine makes log timestamps relative to power button press
+    * encoder and servo pru code has more robust checking of if PRU binary actually loaded
+    * remove pruss-blacklist.conf
+    * option in rc_test_escs to disable warmup period
+    * tweaks for PX4 build environment
+    * DSM calibration now logs center positions too
+    * GPIO device interface now separates gpiochips for portability
+    * fix some floating point number comparisons
+    * put back rc_usefulincludes.h for backwards compatability
+    * optimizations in QR decomposition
+
 0.4.2
     * new kalman filter module wtih rc_test_kalman and rc_altitude examples
     * new <rc/deprecated.h> to help some transition from v0.3 to v0.4 library

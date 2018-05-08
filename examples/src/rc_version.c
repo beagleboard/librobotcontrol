@@ -15,11 +15,12 @@
 #include <stdio.h>
 #include <rc/version.h>
 
-int main(){
+int main()
+{
 	// simply print the version and a newline
 	rc_version_print();
 	printf("\n");
-	// alternatively you could use rc_version_float() for numeric comparisons
+	// alternatively you could use rc_version() for numeric comparisons
 	// or get the string directly with rc_version_string();
 	return 0;
 }
