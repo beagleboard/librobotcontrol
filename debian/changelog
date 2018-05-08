@@ -1,3 +1,19 @@
+roboticscape (0.4.3) stable; urgency=low
+    * rc_startup_routine makes log timestamps relative to power button press
+    * encoder & servo pru code has more robust checking if binary actually runs
+    * remove pruss-blacklist.conf
+    * option in rc_test_escs to disable warmup period
+    * tweaks for PX4 build environment
+    * DSM calibration now logs center positions too
+    * GPIO device interface now separates gpiochips for portability
+    * fix some floating point number comparisons
+    * put back rc_usefulincludes.h for backwards compatibility
+    * optimizations in QR decomposition
+    * switch to semantic version scheme
+    * label so version as major version 0
+
+ -- James Strawson <james@strawsondesign.com>  Tue, 8 May 2018 02:24:00 +0000
+
 roboticscape (0.4.2) stable; urgency=low
 
     * new kalman filter module wtih rc_test_kalman and rc_altitude examples

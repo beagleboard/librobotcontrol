@@ -7,8 +7,10 @@
     * DSM calibration now logs center positions too
     * GPIO device interface now separates gpiochips for portability
     * fix some floating point number comparisons
-    * put back rc_usefulincludes.h for backwards compatability
+    * put back rc_usefulincludes.h for backwards compatibility
     * optimizations in QR decomposition
+    * switch to semantic version scheme
+    * label so version as major version 0
 
 0.4.2
     * new kalman filter module wtih rc_test_kalman and rc_altitude examples
