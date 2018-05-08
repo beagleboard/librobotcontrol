@@ -14,4 +14,6 @@ then
   systemctl stop $ROBOT_SERVICE
 fi
 
+#DEBHELPER#
+
 exit 0

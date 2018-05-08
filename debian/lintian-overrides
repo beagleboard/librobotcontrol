@@ -1,0 +1,16 @@
+[linux-any]: binary-from-other-architecture lib/firmware/am335x-pru0-rc-encoder-fw
+[linux-any]: unstripped-binary-or-object lib/firmware/am335x-pru0-rc-encoder-fw
+[linux-any]: statically-linked-binary lib/firmware/am335x-pru0-rc-encoder-fw
+[linux-any]: binary-from-other-architecture lib/firmware/am335x-pru1-rc-servo-fw
+[linux-any]: unstripped-binary-or-object lib/firmware/am335x-pru1-rc-servo-fw
+[linux-any]: statically-linked-binary lib/firmware/am335x-pru1-rc-servo-fw
+[linux-any]: maintainer-script-calls-systemctl *
+[linux-any]: maintainer-script-ignores-errors *
+[linux-any]: binary-without-manpage *
+[linux-any]: package-name-doesnt-match-sonames *
+[linux-any]: untranslatable-debconf-templates *
+[linux-any]: not-using-po-debconf *
+[linux-any]:
+[linux-any]:
+[linux-any]:
+[linux-any]:

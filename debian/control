@@ -3,14 +3,17 @@ Section: utils
 Priority: optional
 Build-Depends: debhelper (>= 9),
          devscripts,
+         libc6-dev,
          debconf (>= 0.2.26),
          ti-pru-cgt-installer,
          pru-software-support-package,
-Standards-Version: 3.9.5
+Standards-Version: 3.9.8
 Maintainer: James Strawson <james@strawsondesign.com>
 Homepage: http://www.strawsondesign.com/
 
 Package: roboticscape
 Architecture: armhf
+Depends: debconf, libc6, ${shlibs:Depends}, ${misc:Depends}
 Description: Robotics Cape Library and Examples
-	Supporting library and example programs for the Robotics Cape and Beaglebone Blue
+	Supporting library and example programs for the Robotics Cape and
+	BeagleBone Blue.

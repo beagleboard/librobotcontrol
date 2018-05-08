@@ -5,7 +5,9 @@ SRCDIR		:= src
 LIBDIR		:= lib
 BUILDDIR	:= build
 INCLUDEDIR	:= include
-SONAME		:= libroboticscape.so
+BASENAME	:= libroboticscape.so
+VERSION		:= 0
+SONAME		:= $(BASENAME).$(VERSION)
 TARGET		:= $(LIBDIR)/$(SONAME)
 
 # file definitions for rules
@@ -19,7 +21,7 @@ LINKER		:= gcc
 
 # general compiler flags
 WFLAGS		:= -Wall -Wextra
-CFLAGS		:= -fPIC -I $(INCLUDEDIR)
+CFLAGS		:= -g -fPIC -I $(INCLUDEDIR)
 OPT_FLAGS	:= -O1
 LDFLAGS		:= -lm -lrt -pthread -shared -Wl,-soname,$(SONAME)
 
@@ -36,6 +38,7 @@ RM		:= rm -rf
 INSTALL		:= install -m 755
 INSTALLDIR	:= install -d -m 755
 INSTALLDIRWRITE	:= install -d -m 777
+LINK		:= ln -sf
 
 # prefix variable for making debian package
 prefix		?= /usr
@@ -76,6 +79,8 @@ native:
 	$(MAKE) $(MAKEFILE) ARCFLAGS=""
 
 # make and install everything
+# ldconfig will make this symlink but deb packaging rules say it should
+# also be here
 install:
 	$(MAKE)
 	@$(INSTALLDIRWRITE) $(DESTDIR)/var/lib/roboticscape
@@ -83,6 +88,7 @@ install:
 	@cp -r include/* $(DESTDIR)$(prefix)/include
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/lib
 	@$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/lib
+	#@$(LINK) $(DESTDIR)$(prefix)/lib/$(SONAME) $(DESTDIR)$(prefix)/lib/$(BASENAME)
 	@echo "Library Install Complete"
 
 # cleanup local binaries
@@ -94,6 +100,7 @@ clean:
 # uninstall completely from system
 uninstall:
 	$(RM) $(DESTDIR)$(prefix)/$(TARGET)
+	$(RM) $(DESTDIR)$(prefix)/lib/$(BASENAME)
 	$(RM) $(DESTDIR)$(prefix)/include/roboticscape.h
 	$(RM) $(DESTDIR)$(prefix)/include/rc_usefulincludes.h
 	$(RM) $(DESTDIR)$(prefix)/include/rc

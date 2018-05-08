@@ -9,4 +9,6 @@ systemctl disable rc_battery_monitor
 systemctl stop roboticscape
 systemctl disable roboticscape
 
+#DEBHELPER#
+
 exit 0

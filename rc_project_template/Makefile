@@ -4,7 +4,7 @@ TARGET = rc_project_template
 
 CC		:= gcc
 LINKER		:= gcc
-CFLAGS		:= -c -Wall
+CFLAGS		:= -g -c -Wall
 LFLAGS		:= -pthread -lm -lrt -lroboticscape
 
 SOURCES		:= $(wildcard *.c)

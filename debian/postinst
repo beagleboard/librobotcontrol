@@ -15,7 +15,6 @@ if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
 
 	# set something or nothing to run on boot. Default was 'none' which removes
 	# any existing link. If 'existing' was selected then link is left alone
-	echo "**********************************************"
 	 # make sure /etc/roboticscape exists
 	if [ ! -d "/etc/roboticscape" ]; then
 		echo "making /etc/roboticscape"
@@ -35,7 +34,6 @@ if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
 	fi
 
 	# enable services
-	echo "**********************************************"
 	echo "systemctl daemon-reload"
 	systemctl daemon-reload
 	echo "Enabling roboticscape Service"
@@ -49,18 +47,20 @@ if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
 
 	# leave error checking off when setting up device tree too
 	if [ "$ENABLE_DT" = "true" ]; then
-		echo "**********************************************"
 		echo "Configuring Device Tree"
 		configure_robotics_dt
 	fi
 
-	echo "**********************************************"
-	echo " "
 	echo "Robotics Cape package installation complete."
-	if [ "$ENABLE_DT" = "true" ]; then echo "Please reboot now." ; fi
-	echo " "
-	echo "**********************************************"
+
+	if [ "$ENABLE_DT" = "true" ]; then
+		echo "**********************************************"
+		echo "Please reboot now to load new device tree."
+		echo "**********************************************"
+	fi
 
 fi
+
+#DEBHELPER#
 
 exit 0

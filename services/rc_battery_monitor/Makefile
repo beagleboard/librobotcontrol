@@ -19,7 +19,7 @@ LINKER		:= gcc
 
 # compiler and linker flags
 WFLAGS		:= -Wall -Wextra
-CFLAGS		:= -pthread -I $(INCLUDEDIR)
+CFLAGS		:= -g -pthread -I $(INCLUDEDIR)
 LDFLAGS		:= -lm -lrt -pthread -L $(LIBDIR) -lroboticscape
 
 # commands
