@@ -1,3 +1,7 @@
+0.4.4
+    * go back to generic .so name to avoid conflicts
+    * add rc/encoder.h as generic interface to all 4 channels
+
 0.4.3
     * rc_startup_routine makes log timestamps relative to power button press
     * encoder and servo pru code has more robust checking of if PRU binary actually loaded

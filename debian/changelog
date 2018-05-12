@@ -1,3 +1,9 @@
+roboticscape (0.4.4) stable; urgency=low
+    * go back to generic .so name to avoid conflicts
+    * add rc/encoder.h as generic interface to all 4 channels
+
+ -- James Strawson <james@strawsondesign.com>  Sat, 12 May 2018 02:24:00 +0000
+
 roboticscape (0.4.3) stable; urgency=low
     * rc_startup_routine makes log timestamps relative to power button press
     * encoder & servo pru code has more robust checking if binary actually runs
