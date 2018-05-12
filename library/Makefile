@@ -6,8 +6,7 @@ LIBDIR		:= lib
 BUILDDIR	:= build
 INCLUDEDIR	:= include
 BASENAME	:= libroboticscape.so
-VERSION		:= 0
-SONAME		:= $(BASENAME).$(VERSION)
+SONAME		:= $(BASENAME)
 TARGET		:= $(LIBDIR)/$(SONAME)
 
 # file definitions for rules
@@ -38,7 +37,6 @@ RM		:= rm -rf
 INSTALL		:= install -m 755
 INSTALLDIR	:= install -d -m 755
 INSTALLDIRWRITE	:= install -d -m 777
-LINK		:= ln -sf
 
 # prefix variable for making debian package
 prefix		?= /usr
@@ -78,9 +76,6 @@ debug:
 native:
 	$(MAKE) $(MAKEFILE) ARCFLAGS=""
 
-# make and install everything
-# ldconfig will make this symlink but deb packaging rules say it should
-# also be here
 install:
 	$(MAKE)
 	@$(INSTALLDIRWRITE) $(DESTDIR)/var/lib/roboticscape
@@ -88,7 +83,6 @@ install:
 	@cp -r include/* $(DESTDIR)$(prefix)/include
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/lib
 	@$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/lib
-	#@$(LINK) $(DESTDIR)$(prefix)/lib/$(SONAME) $(DESTDIR)$(prefix)/lib/$(BASENAME)
 	@echo "Library Install Complete"
 
 # cleanup local binaries
