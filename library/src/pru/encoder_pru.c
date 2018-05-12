@@ -79,7 +79,7 @@ int rc_encoder_pru_read()
 }
 
 
-int set_encoder_pru_write(int pos)
+int rc_encoder_pru_write(int pos)
 {
 	if(shared_mem_32bit_ptr==NULL || init_flag==0){
 		fprintf(stderr, "ERROR in rc_encoder_pru_write, call rc_encoder_pru_init first\n");

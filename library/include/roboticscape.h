@@ -26,6 +26,7 @@
 #endif
 #include <rc/encoder_eqep.h>
 #include <rc/encoder_pru.h>
+#include <rc/encoder.h>
 #include <rc/gpio.h>
 #include <rc/i2c.h>
 #include <rc/led.h>
