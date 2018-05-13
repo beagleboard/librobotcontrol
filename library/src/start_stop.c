@@ -137,14 +137,16 @@ int rc_kill_existing_process(float timeout_s)
 		return 0;
 	}
 	if(access(RC_PID_FILE, W_OK)){
-		fprintf(stderr, "ERROR, don't have write access to PID file\n");
-		fprintf(stderr, "existing process is probably running as root\n");
-		fprintf(stderr, "try running sudo rc_kill instead\n");
+		fprintf(stderr, "ERROR, in rc_kill_existing_process, don't have write access \n");
+		fprintf(stderr, "to PID file. Existing process is probably running as root.\n");
+		fprintf(stderr, "Try running 'sudo rc_kill'\n");
 		return -3;
 	}
 	// attempt to open PID file if it fails something very wrong with it
 	fd = fopen(RC_PID_FILE, "r");
 	if(fd==NULL){
+		fprintf(stderr, "WARNING, in rc_kill_existing_process, PID file exists but is not\n");
+		fprintf(stderr, "readable. Attempting to delete it.\n");
 		remove(RC_PID_FILE);
 		return -2;
 	}
@@ -153,6 +155,8 @@ int rc_kill_existing_process(float timeout_s)
 	fclose(fd);
 	if(ret!=1){
 		// invalid contents, just delete pid file
+		fprintf(stderr, "WARNING, in rc_kill_existing_process, PID file exists but contains\n");
+		fprintf(stderr, "invalid contents. Attempting to delete it.\n");
 		remove(RC_PID_FILE);
 		return -2;
 	}
@@ -160,6 +164,8 @@ int rc_kill_existing_process(float timeout_s)
 	// if the file didn't contain a PID number, remove it and
 	// return -2 indicating weird behavior
 	if(old_pid == 0){
+		fprintf(stderr, "WARNING, in rc_kill_existing_process, PID file exists but contains\n");
+		fprintf(stderr, "invalid contents. Attempting to delete it.\n");
 		remove(RC_PID_FILE);
 		return -2;
 	}
@@ -177,9 +183,9 @@ int rc_kill_existing_process(float timeout_s)
 	// process must be running, attempt a clean shutdown
 	if(kill((pid_t)old_pid, SIGINT)==-1){
 		if(errno==EPERM){
-			fprintf(stderr, "ERROR in rc_kill, insufficient permissions to kill process\n");
-			fprintf(stderr, "existing process is probably running as root\n");
-			fprintf(stderr, "try running sudo rc_kill instead\n");
+			fprintf(stderr, "ERROR in rc_kill_existing_process, insufficient permissions to stop\n");
+			fprintf(stderr, "en existing process which is probably running as root.\n");
+			fprintf(stderr, "Try running 'sudo rc_kill' to stop it.\n\n");
 			return -3;
 		}
 		remove(RC_PID_FILE);
@@ -213,6 +219,8 @@ int rc_kill_existing_process(float timeout_s)
 	// delete the old PID file if it was left over
 	remove(RC_PID_FILE);
 	// return -1 indicating the program had to be killed
+	fprintf(stderr, "WARNING in rc_kill_existing_process, process failed to\n");
+	fprintf(stderr, "close cleanly and had to be killed.\n");
 	return -1;
 }
 

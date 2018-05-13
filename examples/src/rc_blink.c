@@ -87,9 +87,11 @@ void on_mode_release()
 int main()
 {
 	// make sure another instance isn't running
-	// return value -3 means a root process is running and we need more
-	// privileges to stop it.
-	if(rc_kill_existing_process(2.0)==-3) return -1;
+	// if return value is -3 then a background process is running with
+	// higher privaledges and we couldn't kill it, in which case we should
+	// not continue or there may be hardware conflicts. If it returned -4
+	// then there was an invalid argument that needs to be fixed.
+	if(rc_kill_existing_process(2.0)<-2) return -1;
 
 	// start signal handler so we can exit cleanly
 	if(rc_enable_signal_handler()<0){
@@ -123,8 +125,13 @@ int main()
 		return -1;
 	}
 
-	// final setup
+	// make PID file to indicate your project is running
+	// due to the check made on the call to rc_kill_existing_process() above
+	// we can be fairly confident there is no PID file already and we can
+	// make our own safely.
 	rc_make_pid_file();
+
+	// prepare to run
 	rc_set_state(RUNNING);
 	mode = 0;
 	printf("\nPress mode to change blink rate\n");

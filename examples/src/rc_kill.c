@@ -15,13 +15,9 @@
 int main()
 {
 	int ret = rc_kill_existing_process(TIMEOUT);
+	// print success messages since rc_kill_existing_process is normally
+	// quiet on success but prints errors and warnings already.
 	switch(ret){
-	case -2:
-		printf("WARNING: invalid contents in PID_FILE, deleted file anyway\n");
-		break;
-	case -1:
-		printf("Existing project failed to close and had to be killed.\n");
-		break;
 	case 0:
 		printf("No existing roboticscape program is running.\n");
 		break;
@@ -29,7 +25,7 @@ int main()
 		printf("An existing program was running and shut down cleanly.\n");
 		break;
 	default:
-		return 0;
+		break;
 	}
-	return 0;
+	return ret;
 }

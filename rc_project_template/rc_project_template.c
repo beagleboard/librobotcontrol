@@ -26,7 +26,11 @@ void on_pause_release();
 int main()
 {
 	// make sure another instance isn't running
-	rc_kill_existing_process(2.0);
+	// if return value is -3 then a background process is running with
+	// higher privaledges and we couldn't kill it, in which case we should
+	// not continue or there may be hardware conflicts. If it returned -4
+	// then there was an invalid argument that needs to be fixed.
+	if(rc_kill_existing_process(2.0)<-2) return -1;
 
 	// start signal handler so we can exit cleanly
 	if(rc_enable_signal_handler()==-1){
@@ -45,6 +49,9 @@ int main()
 	rc_button_set_callbacks(RC_BTN_PIN_PAUSE,on_pause_press,on_pause_release);
 
 	// make PID file to indicate your project is running
+	// due to the check made on the call to rc_kill_existing_process() above
+	// we can be fairly confident there is no PID file already and we can
+	// make our own safely.
 	rc_make_pid_file();
 
 
