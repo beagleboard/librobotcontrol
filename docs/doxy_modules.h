@@ -24,6 +24,7 @@
  * \example rc_test_dmp_tap.c
  * \example rc_test_drivers.c
  * \example rc_test_dsm.c
+ * \example rc_test_encoders.c
  * \example rc_test_encoders_eqep.c
  * \example rc_test_encoders_pru.c
  * \example rc_test_escs.c

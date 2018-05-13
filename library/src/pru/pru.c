@@ -128,7 +128,8 @@ volatile uint32_t* rc_pru_shared_mem_ptr()
 	// map shared memory
 	fd=open("/dev/mem", O_RDWR | O_SYNC);
 	if(fd==-1){
-		perror("ERROR: in rc_pru_shared_mem_ptr could not open /dev/mem.\n\n");
+		perror("ERROR: in rc_pru_shared_mem_ptr could not open /dev/mem");
+		fprintf(stderr, "Need to be root to access PRU shared memory\n");
 		return NULL;
 	}
 
