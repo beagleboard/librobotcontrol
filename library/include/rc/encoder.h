@@ -13,7 +13,8 @@
  * @date       5/12/2018
  *
  * @addtogroup Encoder
- * @ingroup    Quadrature_Encoder @{
+ * @ingroup    Quadrature_Encoder
+ * @{
  */
 
 #ifndef RC_ENCODER_H
