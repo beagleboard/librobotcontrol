@@ -7,7 +7,7 @@
  * @date       2016
  *
  * @addtogroup Other_Math
- * @ingroup math
+ * @ingroup Math
  * @{
  */
 
