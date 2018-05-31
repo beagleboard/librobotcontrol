@@ -37,6 +37,8 @@
 #define DSM_UART_BUS	4
 #define DSM_BAUD_RATE	115200
 #define DSM_PACKET_SIZE	16
+#define UART_TIMEOUT_S	0.2
+#define CONNECTION_LOST_TIMEOUT_NS 300000000
 
 static int running;
 static int channels[RC_MAX_DSM_CHANNELS];
@@ -53,6 +55,7 @@ static uint64_t last_time;
 static pthread_t parse_thread;
 static int listening; // for calibration routine only
 static void (*new_data_callback)();
+static void (*disconnect_callback)();
 static int active_flag=0;
 static int init_flag=0;
 
@@ -286,6 +289,12 @@ DETECTION_START:
 START_NORMAL_LOOP:
 	while(running){
 
+		// check for timeouts
+		if(active_flag!=0 && rc_dsm_nanos_since_last_packet()>CONNECTION_LOST_TIMEOUT_NS){
+			active_flag=0;
+			if(disconnect_callback!=NULL) disconnect_callback();
+		}
+
 		memset(buf,0,DSM_PACKET_SIZE);
 		rc_uart_flush(DSM_UART_BUS); // flush
 		ret = rc_uart_read_bytes(DSM_UART_BUS, buf, DSM_PACKET_SIZE);
@@ -293,14 +302,12 @@ START_NORMAL_LOOP:
 			#ifdef DEBUG
 				fprintf(stderr,"WARNING: read the wrong number of bytes: %d\n", ret);
 			#endif
-			active_flag=0;
 			rc_uart_flush(DSM_UART_BUS); // flush
 			continue;
 		}
 
 		// orange R110X sends this packet repeatedly without signal, discard it.
 		if(buf[1]==0xA2 && buf[3]==0xA2 && buf[5]==0xA2 && buf[7]==0xA2 && buf[9]==0xA2 && buf[11]==0xA2){
-			active_flag=0;
 			continue;
 		}
 
@@ -533,10 +540,11 @@ int rc_dsm_init()
 	last_time = 0;
 	active_flag = 0;
 	new_data_callback=NULL;
+	disconnect_callback=NULL;
 	new_dsm_flag=0;
 
 	// 0.2s timeout, disable canonical (0), 1 stop bit (1), disable parity (0)
-	if(rc_uart_init(DSM_UART_BUS, DSM_BAUD_RATE, 0.2, 0, 1, 0)){
+	if(rc_uart_init(DSM_UART_BUS, DSM_BAUD_RATE, UART_TIMEOUT_S, 0, 1, 0)){
 		fprintf(stderr,"ERROR in rc_dsm_init, failed to init uart bus\n");
 		return -1;
 	}
@@ -564,7 +572,7 @@ int rc_dsm_cleanup()
 	int ret;
 	// just return if not running
 	if(!running){
-        init_flag=0;
+	init_flag=0;
 		return 0;
 	}
 	// tell parser loop to stop
@@ -636,6 +644,15 @@ void rc_dsm_set_callback(void (*func)(void))
 		fprintf(stderr,"ERROR in rc_dsm_set_callback, call rc_dsm_init first\n");
 	}
 	new_data_callback = func;
+	return;
+}
+
+void rc_dsm_set_disconnect_callback(void (*func)(void))
+{
+	if(init_flag==0){
+		fprintf(stderr,"ERROR in rc_dsm_set_disconnect_callback, call rc_dsm_init first\n");
+	}
+	disconnect_callback = func;
 	return;
 }
 
@@ -831,6 +848,7 @@ int rc_dsm_calibrate_routine()
 	last_time = 0;
 	active_flag = 0;
 	new_data_callback=NULL;
+	disconnect_callback=NULL;
 
 	// make sure directory and calibration file exist and are writable first
 	ret = mkdir(RC_DSM_CALIBRATION_DIR, 0777);
@@ -847,6 +865,17 @@ int rc_dsm_calibrate_routine()
 	}
 
 	pthread_create(&parse_thread, NULL, __parser_func, (void*) NULL);
+
+	// wait for thread to start
+	i=0;
+	while(init_flag==0){
+		rc_usleep(10000);
+		if(i>10){
+			fprintf(stderr, "ERROR in rc_dsm_calibrate_routine, timeout waiting for parser thread to start\n");
+			return -1;
+		}
+		i++;
+	}
 
 	// display instructions
 	printf("\nRaw dsm data should display below if the transmitter and\n");

@@ -110,6 +110,14 @@ int rc_dsm_is_new_data();
  */
 void rc_dsm_set_callback(void (*func)(void));
 
+/**
+ * @brief      Set your own callback function to be called when DSM loses
+ *             connection.
+ *
+ * @param[in]  func  callback function
+ */
+void rc_dsm_set_disconnect_callback(void (*func)(void));
+
 
 /**
  * @brief      Easily check on the state of the DSM radio packets without
