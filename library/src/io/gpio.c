@@ -14,9 +14,6 @@
 #include <sys/ioctl.h>
 
 #ifdef RC_AUTOPILOT_EXT
-// It might not be available in cross-compile environment.
-// Try here: https://github.com/torvalds/linux/blob/master/include/uapi/linux/gpio.h
-//
 // Not sure why #include <linux/gpio.h> did not work here after explicitly include
 // the default path /usr/include, so use full path for now.
 #include "/usr/include/linux/gpio.h"

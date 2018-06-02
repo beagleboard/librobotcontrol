@@ -2189,11 +2189,7 @@ int __data_fusion(rc_mpu_data_t* data)
 	lastMagYaw = newMagYaw; // save from last loop
 	newMagYaw = -atan2(mag_vec[1], mag_vec[0]);
 
-#ifdef RC_AUTOPILOT_EXT
 	if (isnan(newMagYaw)) {
-#else
-	if (newMagYaw != newMagYaw) {
-#endif
 		#ifdef WARNINGS
 		printf("newMagYaw NAN\n");
 		#endif
