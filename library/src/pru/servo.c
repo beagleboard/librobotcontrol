@@ -40,8 +40,11 @@ int rc_servo_init()
 		init_flag=0;
 		return -1;
 	}
-	// set first channel to be nonzero, PRU binary will zero this out later
-	shared_mem_32bit_ptr[0]=42;
+	// set channels to be nonzero, PRU binary will zero this out later
+	for(i=RC_SERVO_CH_MIN;i<=RC_SERVO_CH_MAX;i++){
+		// write to PRU shared memory
+		shared_mem_32bit_ptr[i-1] = 42;
+	}
 
 	// start pru
 	if(rc_pru_start(SERVO_PRU_CH, SERVO_PRU_FW)){

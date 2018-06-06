@@ -312,6 +312,7 @@ int main(int argc, char *argv[])
 					printf("%d:% 0.2f ", i+1, rc_dsm_ch_normalized(i+1));
 				}
 			}
+			fflush(stdout);
 			break;
 		default:
 			fprintf(stderr,"ERROR unhandled mode\n");
@@ -328,6 +329,7 @@ int main(int argc, char *argv[])
 	rc_usleep(50000);
 	rc_servo_cleanup();
 	rc_dsm_cleanup();
+	printf("\n");
 	return 0;
 }
 
