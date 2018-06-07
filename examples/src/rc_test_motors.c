@@ -62,8 +62,8 @@ int main(int argc, char *argv[])
 			if(in<=4 && in>=1){
 				ch = in;
 			}
-			else{
-				printf("motor option must be from 1-4\n");
+			else if(ch != 0) {
++				printf("motor option must be from 1-4, or 0 for all\n");
 				return -1;
 			}
 			break;
