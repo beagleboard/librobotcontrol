@@ -33,7 +33,7 @@ void print_usage()
 	printf("-b          enable motor brake function\n");
 	printf("-f          enable free spin function\n");
 	printf("-s {duty}   sweep motors back and forward at duty cycle\n");
-	printf("-m {motor}  specify a single motor from 1-4, otherwise all\n");
+	printf("-m {motor}  specify a single motor from 1-4, otherwise all will be driven\n");
 	printf("            motors will be driven equally.\n");
 	printf("-h          print this help message\n");
 	printf("\n");
@@ -59,11 +59,11 @@ int main(int argc, char *argv[])
 		switch (c){
 		case 'm': // motor channel option
 			in = atoi(optarg);
-			if(in<=4 && in>=1){
+			if(in<=4 && in>=0){
 				ch = in;
 			}
 			else{
-				printf("motor option must be from 1-4\n");
+				fprintf(stderr,"-m motor option must be from 0-4\n");
 				return -1;
 			}
 			break;
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 				m_mode = NORMAL;
 			}
 			else{
-				printf("duty cycle must be from -1 to 1\n");
+				fprintf(stderr,"duty cycle must be from -1 to 1\n");
 				return -1;
 			}
 			break;
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 				m_mode = SWEEP;
 			}
 			else{
-				printf("duty cycle must be from -1 to 1\n");
+				fprintf(stderr,"duty cycle must be from -1 to 1\n");
 				return -1;
 			}
 			break;
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
 
 
 	// final cleanup
-	printf("calling motor_cleanup\n");
+	printf("\ncalling rc_motor_cleanup()\n");
 	rc_motor_cleanup();
 	return 0;
 }
