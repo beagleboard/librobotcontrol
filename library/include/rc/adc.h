@@ -70,21 +70,21 @@ int rc_adc_read_raw(int ch);
  *
  * @return     voltage from 0-1.8v or -1 on error
  */
-float rc_adc_read_volt(int ch);
+double rc_adc_read_volt(int ch);
 
 /**
  * @brief      reads the voltage of the 2-cell Lithium battery
  *
  * @return     voltage of battery or -1 on failure
  */
-float rc_adc_batt();
+double rc_adc_batt();
 
 /**
  * @brief      Reads the voltage of the 9-18v DC jack
  *
  * @return     Voltage at DC jack or -1 on failure
  */
-float rc_adc_dc_jack();
+double rc_adc_dc_jack();
 
 
 

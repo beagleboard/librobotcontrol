@@ -302,7 +302,7 @@ int rc_pwm_cleanup(int ss)
 }
 
 
-int rc_pwm_set_duty(int ss, char ch, float duty)
+int rc_pwm_set_duty(int ss, char ch, double duty)
 {
 	int len, ret, duty_ns;
 	char buf[MAXBUF];
@@ -316,7 +316,7 @@ int rc_pwm_set_duty(int ss, char ch, float duty)
 		fprintf(stderr, "ERROR in rc_pwm_set_duty, subsystem %d not initialized yet\n", ss);
 		return -1;
 	}
-	if(unlikely(duty > 1.0f || duty<0.0f)){
+	if(unlikely(duty > 1.0 || duty<0.0)){
 		fprintf(stderr,"ERROR in rc_pwm_set_duty, duty must be between 0.0f & 1.0f\n");
 		return -1;
 	}

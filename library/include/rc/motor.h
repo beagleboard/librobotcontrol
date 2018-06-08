@@ -73,7 +73,7 @@ int rc_motor_standby(int standby_en);
  *
  * @return     0 on success, -1 on failure
  */
-int rc_motor_set(int ch, float duty);
+int rc_motor_set(int ch, double duty);
 
 /**
  * @brief      Puts a motor into a zero-throttle state allowing it to spin

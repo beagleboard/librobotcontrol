@@ -29,7 +29,7 @@ typedef struct bmp280_cal_t{
 	int16_t  dig_P7;
 	int16_t  dig_P8;
 	int16_t  dig_P9;
-	float sea_level_pa;
+	double sea_level_pa;
 }bmp280_cal_t;
 
 // global variables
@@ -258,7 +258,7 @@ int rc_bmp_read(rc_bmp_data_t* data)
 	var4 = (((int64_t)rc_bmp280_cal.dig_P8) * p) >> 19;
 
 	p = ((p + var3 + var4) >> 8) + (((int64_t)rc_bmp280_cal.dig_P7) << 4);
-	data->pressure_pa = (float)p/256;
+	data->pressure_pa = p/256.0;
 
 	data->alt_m = 44330.0*(1.0 - pow((data->pressure_pa/rc_bmp280_cal.sea_level_pa), 0.1903));
 
@@ -266,7 +266,7 @@ int rc_bmp_read(rc_bmp_data_t* data)
 }
 
 
-int rc_set_sea_level_pressure_pa(float pa)
+int rc_set_sea_level_pressure_pa(double pa)
 {
 	// sanity checks
 	if(rc_bmp280_init_flag==0){

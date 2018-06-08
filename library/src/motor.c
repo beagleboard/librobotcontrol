@@ -44,7 +44,7 @@
 #define PWM_FREQ		25000	// 25kHz
 
 // polarity of the motor connections
-static const float polarity[]={1.0,-1.0,-1.0,1.0};
+static const double polarity[]={1.0,-1.0,-1.0,1.0};
 
 static int init_flag = 0;
 static int stby_state = 0;
@@ -197,7 +197,7 @@ int rc_motor_standby(int standby_en)
 }
 
 
-int rc_motor_set(int motor, float duty)
+int rc_motor_set(int motor, double duty)
 {
 	int a,b,i;
 
@@ -212,8 +212,8 @@ int rc_motor_set(int motor, float duty)
 	}
 
 	// check that the duty cycle is within +-1
-	if	(duty > 1.0f)	duty = 1.0f;
-	else if	(duty <-1.0f)	duty =-1.0f;
+	if	(duty > 1.0)	duty = 1.0;
+	else if	(duty <-1.0)	duty =-1.0;
 
 	if(motor==0){
 		for(i=1;i<CHANNELS;i++){
@@ -224,7 +224,7 @@ int rc_motor_set(int motor, float duty)
 
 	// determine the direction pins to H-bridge
 	duty=duty*polarity[motor-1];
-	if(duty>=0){	a=1; b=0;}
+	if(duty>=0.0){	a=1; b=0;}
 	else{		a=0; b=1; duty=-duty;}
 
 	// set gpio and pwm for that motor

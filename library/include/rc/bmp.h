@@ -54,9 +54,9 @@ typedef enum rc_bmp_filter_t{
  * struct to hold the data retreived during one read of the barometer.
  */
 typedef struct rc_bmp_data_t{
-	float temp_c;		///< temperature in degrees celcius
-	float alt_m;		///< altitude in meters
-	float pressure_pa;	///< current pressure in pascals
+	double temp_c;		///< temperature in degrees celcius
+	double alt_m;		///< altitude in meters
+	double pressure_pa;	///< current pressure in pascals
 } rc_bmp_data_t;
 
 
@@ -87,7 +87,7 @@ int rc_bmp_init(rc_bmp_oversample_t oversample, rc_bmp_filter_t filter);
  *
  * @return     0 on success, -1 on failure
  */
-int rc_bmp_set_sea_level_pressure_pa(float pa);
+int rc_bmp_set_sea_level_pressure_pa(double pa);
 
 
 /**

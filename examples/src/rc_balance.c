@@ -581,7 +581,7 @@ int zero_out_controller()
 	setpoint.theta = 0.0;
 	setpoint.phi   = 0.0;
 	setpoint.gamma = 0.0;
-	rc_motor_set(0,0.0f);
+	rc_motor_set(0,0.0);
 	return 0;
 }
 

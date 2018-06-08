@@ -59,11 +59,11 @@ int rc_pwm_cleanup(int ss);
  *
  * @param[in]  ss    subsystem 0,1,2
  * @param[in]  ch    channel 'A' or 'B'
- * @param[in]  duty  between 0.0f (off) and 1.0f(full on)
+ * @param[in]  duty  between 0.0 (off) and 1.0(full on)
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int rc_pwm_set_duty(int ss, char ch, float duty);
+int rc_pwm_set_duty(int ss, char ch, double duty);
 
 /**
  * @brief      Like rc_pwm_set_duty() but takes a pulse width in nanoseconds.
