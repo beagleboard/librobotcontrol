@@ -18,6 +18,8 @@
 #include <sys/stat.h>
 #include <stdint.h>
 #include <errno.h>
+#include <sys/stat.h>	// for mkdir and chmod
+#include <sys/types.h>	// for mkdir and chmod
 
 #include <rc/mpu.h>
 #include <rc/math/vector.h>
@@ -101,6 +103,7 @@ static rc_mpu_data_t* data_ptr;
 static int imu_shutdown_flag = 0;
 static rc_filter_t low_pass, high_pass; // for magnetometer Yaw filtering
 static int was_last_steady = 0;
+static double startMagYaw = 0.0;
 
 /**
 * functions for internal use only
@@ -137,6 +140,7 @@ static int __write_accel_cal_to_disk(double* center, double* lengths);
 static void* __dmp_interrupt_handler(void* ptr);
 static int __read_dmp_fifo(rc_mpu_data_t* data);
 static int __data_fusion(rc_mpu_data_t* data);
+static int __mag_correct_orientation(double mag_vec[3]);
 
 
 rc_mpu_config_t rc_mpu_default_config()
@@ -709,6 +713,7 @@ int rc_mpu_power_off()
 
 int rc_mpu_initialize_dmp(rc_mpu_data_t *data, rc_mpu_config_t conf)
 {
+	int i;
 	uint8_t tmp;
 	// range check
 	if(conf.dmp_sample_rate>DMP_MAX_RATE || conf.dmp_sample_rate<DMP_MIN_RATE){
@@ -855,6 +860,19 @@ int rc_mpu_initialize_dmp(rc_mpu_data_t *data, rc_mpu_config_t conf)
 			rc_i2c_unlock_bus(config.i2c_bus);
 			return -1;
 		}
+		// collect some mag data to get a starting heading
+		double x_sum = 0.0;
+		double y_sum = 0.0;
+		double mag_vec[3];
+		for(i=0;i<20;i++){
+			rc_mpu_read_mag(data);
+			// correct for orientation and put data into mag_vec
+			if(__mag_correct_orientation(mag_vec)) return -1;
+			x_sum += mag_vec[0];
+			y_sum += mag_vec[1];
+			rc_usleep(10000);
+		}
+		startMagYaw = -atan2(y_sum, x_sum);
 	}
 	else __power_off_magnetometer();
 
@@ -2132,55 +2150,9 @@ int __data_fusion(rc_mpu_data_t* data)
 	// generate a quaternion rotation of just roll/pitch
 	rc_quaternion_from_tb_array(tilt_tb,tilt_q);
 
-	// create a quaternion vector from the current magnetic field vector
-	// in IMU body coordinate frame. Since the DMP quaternion is aligned with
-	// a particular orientation, we must be careful to orient the magnetometer
-	// data to match.
-	switch(config.orient){
-	case ORIENTATION_Z_UP:
-		mag_vec[0] = data->mag[TB_PITCH_X];
-		mag_vec[1] = data->mag[TB_ROLL_Y];
-		mag_vec[2] = data->mag[TB_YAW_Z];
-		break;
-	case ORIENTATION_Z_DOWN:
-		mag_vec[0] = -data->mag[TB_PITCH_X];
-		mag_vec[1] = data->mag[TB_ROLL_Y];
-		mag_vec[2] = -data->mag[TB_YAW_Z];
-		break;
-	case ORIENTATION_X_UP:
-		mag_vec[0] = data->mag[TB_YAW_Z];
-		mag_vec[1] = data->mag[TB_ROLL_Y];
-		mag_vec[2] = data->mag[TB_PITCH_X];
-		break;
-	case ORIENTATION_X_DOWN:
-		mag_vec[0] = -data->mag[TB_YAW_Z];
-		mag_vec[1] = data->mag[TB_ROLL_Y];
-		mag_vec[2] = -data->mag[TB_PITCH_X];
-		break;
-	case ORIENTATION_Y_UP:
-		mag_vec[0] = data->mag[TB_PITCH_X];
-		mag_vec[1] = -data->mag[TB_YAW_Z];
-		mag_vec[2] = data->mag[TB_ROLL_Y];
-		break;
-	case ORIENTATION_Y_DOWN:
-		mag_vec[0] = data->mag[TB_PITCH_X];
-		mag_vec[1] = data->mag[TB_YAW_Z];
-		mag_vec[2] = -data->mag[TB_ROLL_Y];
-		break;
-	case ORIENTATION_X_FORWARD:
-		mag_vec[0] = data->mag[TB_ROLL_Y];
-		mag_vec[1] = -data->mag[TB_PITCH_X];
-		mag_vec[2] = data->mag[TB_YAW_Z];
-		break;
-	case ORIENTATION_X_BACK:
-		mag_vec[0] = -data->mag[TB_ROLL_Y];
-		mag_vec[1] = data->mag[TB_PITCH_X];
-		mag_vec[2] = data->mag[TB_YAW_Z];
-		break;
-	default:
-		fprintf(stderr,"ERROR: invalid orientation\n");
-		return -1;
-	}
+	// correct for orientation and put data into
+	if(__mag_correct_orientation(mag_vec)) return -1;
+
 	// tilt that vector by the roll/pitch of the IMU to align magnetic field
 	// vector such that Z points vertically
 	rc_quaternion_rotate_vector_array(mag_vec,tilt_q);
@@ -2219,8 +2191,8 @@ int __data_fusion(rc_mpu_data_t* data)
 		double dt = 1.0/config.dmp_sample_rate;
 		rc_filter_first_order_lowpass(&low_pass,dt,config.compass_time_constant);
 		rc_filter_first_order_highpass(&high_pass,dt,config.compass_time_constant);
-		rc_filter_prefill_inputs(&low_pass,newMagYaw);
-		rc_filter_prefill_outputs(&low_pass,newMagYaw);
+		rc_filter_prefill_inputs(&low_pass,startMagYaw);
+		rc_filter_prefill_outputs(&low_pass,startMagYaw);
 		rc_filter_prefill_inputs(&high_pass,newDMPYaw);
 		rc_filter_prefill_outputs(&high_pass,0);
 		first_run = 0;
@@ -2477,19 +2449,37 @@ int __write_gyro_cal_to_disk(int16_t offsets[3])
 		return -1;
 	}
 
+	// remove old file
+	remove(GYRO_CAL_FILE);
+
 	fd = fopen(GYRO_CAL_FILE, "w");
 	if(fd==NULL){
 		perror("ERROR in rc_calibrate_gyro_routine opening calibration file for writing");
+		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
+		fprintf(stderr, "running it as a normal user. try deleting the file\n");
+		fprintf(stderr, "sudo rm /var/lib/roboticscape/gyro.cal\n");
 		return -1;
 	}
 
 	// write to the file, close, and exit
 	if(fprintf(fd,"%d\n%d\n%d\n", offsets[0],offsets[1],offsets[2])<0){
 		perror("ERROR in rc_calibrate_gyro_routine writing to file");
+		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
+		fprintf(stderr, "running it as a normal user. try deleting the file\n");
+		fprintf(stderr, "sudo rm /var/lib/roboticscape/gyro.cal\n");
 		fclose(fd);
 		return -1;
 	}
 	fclose(fd);
+
+	// now give proper permissions
+	if(chmod(GYRO_CAL_FILE, S_IRWXU | S_IRWXG | S_IRWXO)==-1){
+		perror("ERROR in rc_calibrate_gyro_routine setting correct permissions for file\n");
+		fprintf(stderr, "writing file anyway, will probably still work\n");
+		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
+		fprintf(stderr, "running it as a normal user. try deleting the file\n");
+		fprintf(stderr, "sudo rm /var/lib/roboticscape/gyro.cal\n");
+	}
 	return 0;
 }
 
@@ -2514,10 +2504,15 @@ int __write_mag_cal_to_disk(double offsets[3], double scale[3])
 		perror("ERROR in rc_calibrate_mag_routine making calibration file directory");
 		return -1;
 	}
+	// remove old file
+	remove(MAG_CAL_FILE);
 
 	fd = fopen(MAG_CAL_FILE, "w");
 	if(fd==NULL){
-		perror("ERROR in rrc_calibrate_mag_routine opening calibration file for writing");
+		perror("ERROR in rc_calibrate_mag_routine opening calibration file for writing");
+		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
+		fprintf(stderr, "running it as a normal user. try deleting the file\n");
+		fprintf(stderr, "sudo rm /var/lib/roboticscape/mag.cal\n");
 		return -1;
 	}
 
@@ -2535,6 +2530,16 @@ int __write_mag_cal_to_disk(double offsets[3], double scale[3])
 		return -1;
 	}
 	fclose(fd);
+
+	// now give proper permissions
+	if(chmod(MAG_CAL_FILE, S_IRWXU | S_IRWXG | S_IRWXO)==-1){
+		perror("ERROR in rc_calibrate_mag_routine setting correct permissions for file\n");
+		fprintf(stderr, "writing file anyway, will probably still work\n");
+		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
+		fprintf(stderr, "running it as a normal user. try deleting the file\n");
+		fprintf(stderr, "sudo rm /var/lib/roboticscape/mag.cal\n");
+	}
+
 	return 0;
 }
 
@@ -2559,10 +2564,15 @@ int __write_accel_cal_to_disk(double* center, double* lengths)
 		perror("ERROR in rc_mpu_calibrate_accel_routine making calibration file directory");
 		return -1;
 	}
+	// remove old file
+	remove(ACCEL_CAL_FILE);
 
 	fd = fopen(ACCEL_CAL_FILE, "w");
 	if(fd==NULL){
 		perror("ERROR in rc_mpu_calibrate_accel_routine opening calibration file for writing");
+		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
+		fprintf(stderr, "running it as a normal user. try deleting the file\n");
+		fprintf(stderr, "sudo rm /var/lib/roboticscape/accel.cal\n");
 		return -1;
 	}
 
@@ -2580,6 +2590,15 @@ int __write_accel_cal_to_disk(double* center, double* lengths)
 		return -1;
 	}
 	fclose(fd);
+
+	// now give proper permissions
+	if(chmod(ACCEL_CAL_FILE, S_IRWXU | S_IRWXG | S_IRWXO)==-1){
+		perror("WARNING in rc_calibrate_accel_routine setting correct permissions for file\n");
+		fprintf(stderr, "writing file anyway, will probably still work\n");
+		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
+		fprintf(stderr, "running it as a normal user. try deleting the file\n");
+		fprintf(stderr, "sudo rm /var/lib/roboticscape/accel.cal\n");
+	}
 	return 0;
 }
 
@@ -3066,6 +3085,7 @@ int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf)
 		ret=__collect_accel_samples(avg_raw[0]);
 		if(ret==-1) return -1;
 	}
+	printf("success\n");
 	// collect an orientation
 	printf("\nOrient Z pointing down and hold as still as possible\n");
 	printf("When ready, press any key to sample accelerometer\n");
@@ -3076,6 +3096,7 @@ int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf)
 		ret=__collect_accel_samples(avg_raw[1]);
 		if(ret==-1) return -1;
 	}
+	printf("success\n");
 	// collect an orientation
 	printf("\nOrient X pointing up and hold as still as possible\n");
 	printf("When ready, press any key to sample accelerometer\n");
@@ -3086,6 +3107,7 @@ int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf)
 		ret=__collect_accel_samples(avg_raw[2]);
 		if(ret==-1) return -1;
 	}
+	printf("success\n");
 	// collect an orientation
 	printf("\nOrient X pointing down and hold as still as possible\n");
 	printf("When ready, press any key to sample accelerometer\n");
@@ -3096,6 +3118,7 @@ int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf)
 		ret=__collect_accel_samples(avg_raw[3]);
 		if(ret==-1) return -1;
 	}
+	printf("success\n");
 	// collect an orientation
 	printf("\nOrient Y pointing up and hold as still as possible\n");
 	printf("When ready, press any key to sample accelerometer\n");
@@ -3106,6 +3129,7 @@ int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf)
 		ret=__collect_accel_samples(avg_raw[4]);
 		if(ret==-1) return -1;
 	}
+	printf("success\n");
 	// collect an orientation
 	printf("\nOrient Y pointing down and hold as still as possible\n");
 	printf("When ready, press any key to sample accelerometer\n");
@@ -3116,6 +3140,7 @@ int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf)
 		ret=__collect_accel_samples(avg_raw[5]);
 		if(ret==-1) return -1;
 	}
+	printf("success\n");
 
 	// done with I2C for now
 	rc_mpu_power_off();
@@ -3363,5 +3388,57 @@ int rc_mpu_block_until_tap()
 	return 0;
 }
 
-
+static int __mag_correct_orientation(double mag_vec[3])
+{
+	// create a quaternion vector from the current magnetic field vector
+	// in IMU body coordinate frame. Since the DMP quaternion is aligned with
+	// a particular orientation, we must be careful to orient the magnetometer
+	// data to match.
+	switch(config.orient){
+	case ORIENTATION_Z_UP:
+		mag_vec[0] = data_ptr->mag[TB_PITCH_X];
+		mag_vec[1] = data_ptr->mag[TB_ROLL_Y];
+		mag_vec[2] = data_ptr->mag[TB_YAW_Z];
+		break;
+	case ORIENTATION_Z_DOWN:
+		mag_vec[0] = -data_ptr->mag[TB_PITCH_X];
+		mag_vec[1] = data_ptr->mag[TB_ROLL_Y];
+		mag_vec[2] = -data_ptr->mag[TB_YAW_Z];
+		break;
+	case ORIENTATION_X_UP:
+		mag_vec[0] = data_ptr->mag[TB_YAW_Z];
+		mag_vec[1] = data_ptr->mag[TB_ROLL_Y];
+		mag_vec[2] = data_ptr->mag[TB_PITCH_X];
+		break;
+	case ORIENTATION_X_DOWN:
+		mag_vec[0] = -data_ptr->mag[TB_YAW_Z];
+		mag_vec[1] = data_ptr->mag[TB_ROLL_Y];
+		mag_vec[2] = -data_ptr->mag[TB_PITCH_X];
+		break;
+	case ORIENTATION_Y_UP:
+		mag_vec[0] = data_ptr->mag[TB_PITCH_X];
+		mag_vec[1] = -data_ptr->mag[TB_YAW_Z];
+		mag_vec[2] = data_ptr->mag[TB_ROLL_Y];
+		break;
+	case ORIENTATION_Y_DOWN:
+		mag_vec[0] = data_ptr->mag[TB_PITCH_X];
+		mag_vec[1] = data_ptr->mag[TB_YAW_Z];
+		mag_vec[2] = -data_ptr->mag[TB_ROLL_Y];
+		break;
+	case ORIENTATION_X_FORWARD:
+		mag_vec[0] = data_ptr->mag[TB_ROLL_Y];
+		mag_vec[1] = -data_ptr->mag[TB_PITCH_X];
+		mag_vec[2] = data_ptr->mag[TB_YAW_Z];
+		break;
+	case ORIENTATION_X_BACK:
+		mag_vec[0] = -data_ptr->mag[TB_ROLL_Y];
+		mag_vec[1] = data_ptr->mag[TB_PITCH_X];
+		mag_vec[2] = data_ptr->mag[TB_YAW_Z];
+		break;
+	default:
+		fprintf(stderr,"ERROR: reading magnetometer, invalid orientation\n");
+		return -1;
+	}
+	return 0;
+}
 // Phew, that was a lot of code....
