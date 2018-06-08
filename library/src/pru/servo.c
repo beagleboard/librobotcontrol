@@ -109,7 +109,7 @@ int rc_servo_set_esc_range(int min, int max)
 		fprintf(stderr, "ERROR in rc_servo_set_esc_range, in and max values must be positive\n");
 		return -1;
 	}
-	if(min<=max){
+	if(min>=max){
 		fprintf(stderr, "ERROR in rc_servo_set_esc_range. max must be greater than min\n");
 		return -1;
 	}

@@ -54,6 +54,7 @@ void print_usage()
 {
 	printf("\n");
 	printf(" Options\n");
+	printf(" -h             Print this help messege \n\n");
 	printf(" -c {channel}   Specify one channel to be driven from 1-8.\n");
 	printf("                Otherwise all channels will be driven equally\n");
 	printf(" -f {hz}        Specify pulse frequency, otherwise 50hz is used\n");
@@ -63,10 +64,17 @@ void print_usage()
 	printf(" -s {max}       Gently sweep throttle from 0 to {max} back to 0 again\n");
 	printf("                {max} can be between 0 & 1.0\n");
 	printf(" -r {ch}        Use DSM radio channel {ch} to control ESC\n");
+	printf(" -m {min,max}   Set the pulse width range in microseconds, default is 1000,2000\n");
+	printf("                if this option is not given. Use -m 1120,1920 for DJI ESCs.\n");
+	printf(" -p {period,value} Set the wakeup period (seconds) and value (normalized)\n");
+	printf("                default is 3.0,-0.1 if this option is not given.\n");
+	printf("                Use -p 3,0.0 for DJI ESCs.\n");
 	printf(" -d             Disable the wakeup period for ESCs which do not require it\n");
-	printf(" -h             Print this help messege \n\n");
-	printf("sample use to control ESC channel 2 with DSM radio channel 1:\n");
+	printf("\n");
+	printf("sample use to control blheli ESC channel 2 with DSM radio channel 1:\n");
 	printf("   rc_test_esc -c 2 -r 1\n\n");
+	printf("sample use to control DJI ESC channel 2 with DSM radio channel 1:\n");
+	printf("   rc_test_esc -c 2 -r 1 -m 1120,1920 -p 1.0,0.0\n\n");
 	printf("sample use to sweep all ESC channels from 0 to quarter throttle with oneshot mode\n");
 	printf("   rc_test_esc -o -s 0.25\n\n");
 }
@@ -80,25 +88,29 @@ void signal_handler(__attribute__ ((unused)) int dummy)
 
 int main(int argc, char *argv[])
 {
-	float sweep_limit = 0;	// max throttle allowed when sweeping
+	int c,i,ret;		// misc variables
+	double sweep_limit = 0;	// max throttle allowed when sweeping
 	int oneshot_en = 0;	// set to 1 if oneshot is enabled
-	float thr = 0;		// normalized throttle
+	double thr = 0;		// normalized throttle
 	int width_us = 0;	// pulse width in microseconds mode
 	int ch = 0;		// channel to test, 0 means all channels
 	int radio_ch;		// DSM radio channel to watch
-	float dir = 1;		// switches between 1 & -1 in sweep mode
-	int c,i;		// misc variables
+	double dir = 1;		// switches between 1 & -1 in sweep mode
 	test_mode_t mode;	// current operating mode
 	uint64_t dsm_nanos;	// nanoseconds since last dsm packet
 	int frequency_hz = 50;	// default 50hz frequency to send pulses
 	int wakeup_en = 1;	// wakeup period enabled by default
+	double wakeup_s = 3.0;	// wakeup period in seconds
+	double wakeup_val = -0.1;// wakeup value
+	int min_us = RC_ESC_DEFAULT_MIN_US;
+	int max_us = RC_ESC_DEFAULT_MAX_US;
 
 	// start with mode as disabled
 	mode = DISABLED;
 
 	// parse arguments
 	opterr = 0;
-	while ((c = getopt(argc, argv, "c:f:t:ow:s:r:hd")) != -1){
+	while ((c = getopt(argc, argv, "c:f:t:ow:s:r:hdp:m:")) != -1){
 		switch(c){
 		// channel option
 		case 'c':
@@ -201,6 +213,28 @@ int main(int argc, char *argv[])
 			wakeup_en = 0;
 			break;
 
+		// min/max option
+		case 'm':
+			ret = sscanf(optarg, "%d,%d", &min_us, &max_us);
+			if(ret!=2){
+				fprintf(stderr, "-m min/max option must have the form: -m 1120,1920\n");
+				return -1;
+			}
+			break;
+
+		// wakeup option
+		case 'p':
+			ret = sscanf(optarg, "%lf,%lf", &wakeup_s, &wakeup_val);
+			if(ret!=2){
+				fprintf(stderr, "-m min/max option must have the form: -m 1120,1920\n");
+				return -1;
+			}
+			if(wakeup_s<0.0){
+				fprintf(stderr, "ERROR in -p option, period must be positive\n");
+				return -1;
+			}
+			break;
+
 		// help mode
 		case 'h':
 			print_usage();
@@ -226,6 +260,7 @@ int main(int argc, char *argv[])
 
 	// initialize PRU and make sure power rail is OFF
 	if(rc_servo_init()) return -1;
+	if(rc_servo_set_esc_range(min_us,max_us)) return -1;
 	rc_servo_power_rail_en(0);
 
 	// wait for radio to start
@@ -243,9 +278,9 @@ int main(int argc, char *argv[])
 	// otherwise it will go into calibration mode
 	if(wakeup_en){
 		printf("waking ESC up from idle for 3 seconds\n");
-		for(i=0;i<frequency_hz*3;i++){
+		for(i=0;i<=frequency_hz*wakeup_s;i++){
 			if(running==0) return 0;
-			if(rc_servo_send_esc_pulse_normalized(ch,-0.1)==-1) return -1;
+			if(rc_servo_send_esc_pulse_normalized(ch,wakeup_val)==-1) return -1;
 			rc_usleep(1000000/frequency_hz);
 		}
 		printf("done with wakeup period\n");
