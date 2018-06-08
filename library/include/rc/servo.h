@@ -28,9 +28,9 @@
  * - Normalized     (Microseconds)    (Degrees)
  * - -1.5             600us           90 deg ccw
  * - -1.0             900us           60 deg ccw
- * - 0.0             1500us           centered
- * - 1.0             2100us           60 deg cw
- * - 1.5             2400us           90 deg cw
+ * -  0.0            1500us           centered
+ * -  1.0            2100us           60 deg cw
+ * -  1.5            2400us           90 deg cw
  *
  *             Unlike PWM which is concerned with the ratio of pulse width to
  *             pulse frequency, servos and ESCs are only concerned with the
@@ -100,6 +100,13 @@ extern "C" {
 #define RC_SERVO_CH_MAX	8 ///< servo channels range from 1-8
 #define RC_SERVO_CH_ALL	0 ///< providing this as an argument writes the same pulse to all channels
 
+
+
+#define RC_ESC_DEFAULT_MIN_US	1000
+#define RC_ESC_DEFAULT_MAX_US	2000
+#define RC_ESC_DJI_MIN_US	1120
+#define RC_ESC_DJI_MAX_US	1920
+
 /**
  * @brief      Configures the PRU to send servo pulses
  *
@@ -139,6 +146,34 @@ void rc_servo_cleanup();
  * @return     0 on success, -1 on failure
  */
 int rc_servo_power_rail_en(int en);
+
+
+/**
+ * @brief      Sets the pulse width range used by the
+ *             rc_servo_esc_send_pulse_normalized() function.
+ *
+ *             This function is not necessary when using the default range which
+ *             is  RC_ESC_DEFAULT_MIN_US (1000) to RC_ESC_DEFAULT_MAX_US (2000).
+ *             This is only neccessary when using custom ranges. The most common
+ *             need for this is when dealing with DJI motor drivers which cannot
+ *             be calibrated. In this case use the line:
+ *
+ *             rc_servo_set_esc_range(RC_ESC_DJI_MIN_US, RC_ESC_DJI_MAX_US);
+ *
+ *             This will set the range to 1120-1920 for DJI motor drivers. Note
+ *             that the minimum value is what is sent when calling
+ *             rc_servo_usc_send_pulse_normalized with a desired motor control
+ *             input of 0. A slightly negative value is still possible which
+ *             will send a pulse width shorter than the minimum value given
+ *             here. These negative values shoul dbe avoided with DJI motor
+ *             drivers as they don't register.
+ *
+ * @param[in]  min   The minimum pulse width in microseconds
+ * @param[in]  max   The maximum pulse width in microseconds
+ *
+ * @return     0 on success, -1 on failure.
+ */
+int rc_servo_set_esc_range(int min, int max);
 
 
 /**

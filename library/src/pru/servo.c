@@ -24,6 +24,9 @@
 static volatile unsigned int* shared_mem_32bit_ptr = NULL;
 static int init_flag=0;
 
+static int esc_max_us =  RC_ESC_DEFAULT_MAX_US;
+static int esc_min_us =  RC_ESC_DEFAULT_MIN_US;
+
 int rc_servo_init()
 {
 	int i;
@@ -100,6 +103,21 @@ int rc_servo_power_rail_en(int en)
 	return 0;
 }
 
+int rc_servo_set_esc_range(int min, int max)
+{
+	if(min<1 || max<2){
+		fprintf(stderr, "ERROR in rc_servo_set_esc_range, in and max values must be positive\n");
+		return -1;
+	}
+	if(min<=max){
+		fprintf(stderr, "ERROR in rc_servo_set_esc_range. max must be greater than min\n");
+		return -1;
+	}
+	esc_min_us = min;
+	esc_max_us = max;
+	return 0;
+}
+
 
 int rc_servo_send_pulse_us(int ch, int us)
 {
@@ -171,7 +189,7 @@ int rc_servo_send_esc_pulse_normalized(int ch, float input)
 		fprintf(stderr,"ERROR in rc_servo_send_esc_pulse_normalized, normalized input must be between -0.1 & 1.0\n");
 		return -1;
 	}
-	us = 1000 + lroundf((input*1000.0));
+	us = esc_min_us + lroundf((input*(esc_max_us-esc_min_us)));
 	return rc_servo_send_pulse_us(ch, us);
 }
 
