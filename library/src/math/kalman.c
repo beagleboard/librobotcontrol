@@ -153,7 +153,6 @@ int rc_kalman_free(rc_kalman_t* kf)
 
 int rc_kalman_reset(rc_kalman_t* kf)
 {
-	int i;
 	// sanity checks
 	if(kf==NULL){
 		fprintf(stderr, "ERROR in rc_kalman_reset, received NULL pointer\n");

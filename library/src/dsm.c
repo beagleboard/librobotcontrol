@@ -27,6 +27,7 @@
 #define PAUSE		115	// microseconds
 #define DELAY_SPEKTRUM	200000
 #define DELAY_ORANGE	50000
+#define TOL		0.0001
 
 // don't ask me why, but this is the default range for spektrum and orange
 #define DEFAULT_MIN	1142
@@ -46,8 +47,8 @@ static int channels[RC_MAX_DSM_CHANNELS];
 static int maxes[RC_MAX_DSM_CHANNELS];
 static int mins[RC_MAX_DSM_CHANNELS];
 static int centers[RC_MAX_DSM_CHANNELS];
-static float range_up[RC_MAX_DSM_CHANNELS];
-static float range_down[RC_MAX_DSM_CHANNELS];
+static double range_up[RC_MAX_DSM_CHANNELS];
+static double range_down[RC_MAX_DSM_CHANNELS];
 static int num_channels; // actual number of channels being sent
 static int resolution; // 10 or 11
 static int new_dsm_flag;
@@ -60,7 +61,6 @@ static void (*disconnect_callback)();
 static int active_flag=0;
 static int init_flag=0;
 
-extern double zero_tolerance;
 
 /**
  * This returns a string (char*) of '1' and '0' representing a character. For
@@ -608,7 +608,7 @@ int rc_dsm_ch_raw(int ch)
 }
 
 
-float rc_dsm_ch_normalized(int ch)
+double rc_dsm_ch_normalized(int ch)
 {
 	if(init_flag==0){
 		fprintf(stderr,"ERROR in rc_dsm_ch_normalized, call rc_dsm_init first\n");
@@ -619,14 +619,14 @@ float rc_dsm_ch_normalized(int ch)
 		return -1.0;
 	}
 	// return 0 if there was a weird condition
-	if(fabsf(range_up[ch-1]) < zero_tolerance || fabsf(range_down[ch-1]) < zero_tolerance || channels[ch-1]==0) return 0.0f;
+	if(fabs(range_up[ch-1]) < TOL || fabs(range_down[ch-1]) < TOL || channels[ch-1]==0) return 0.0f;
 
 	// mark data as read
 	new_dsm_flag = 0;
 
-	if(channels[ch-1]==centers[ch-1]) return 0.0f;
-	if(channels[ch-1]>centers[ch-1]) return (channels[ch-1]-centers[ch-1])/(float)range_up[ch-1];
-	return (channels[ch-1]-centers[ch-1])/(float)range_down[ch-1];
+	if(channels[ch-1]==centers[ch-1]) return 0.0;
+	if(channels[ch-1]>centers[ch-1]) return (channels[ch-1]-centers[ch-1])/range_up[ch-1];
+	return (channels[ch-1]-centers[ch-1])/range_down[ch-1];
 }
 
 

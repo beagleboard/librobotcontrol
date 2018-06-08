@@ -87,7 +87,7 @@ int rc_dsm_ch_raw(int ch);
  * @return     normalized input from -1.0 to 1.0 if that channel has data, 0 if
  *             that channel has no data, -1 on error.
  */
-float rc_dsm_ch_normalized(int ch);
+double rc_dsm_ch_normalized(int ch);
 
 
 /**

@@ -327,11 +327,11 @@ int rc_poly_butter(int N, double wc, rc_vector_t* b)
 	}
 	// for even orders
 	if(N%2 == 0){
-		P3.d[0] = 1.0f/(wc*wc);		// Initialize leading coefficient based on crossover
-		P3.d[2] = 1.0f;				// zeroth order coefficient is always 1
+		P3.d[0] = 1.0/(wc*wc);		// Initialize leading coefficient based on crossover
+		P3.d[2] = 1.0;			// zeroth order coefficient is always 1
 		for(i=1;i<=N/2;i++){
 			// formula for first order poly coefficient based on desired order filter
-			P3.d[1] = -2.0f*cos((2.0f*i + N - 1.0f)*M_PI/(2.0f*N))/wc;
+			P3.d[1] = -2.0*cos(((2*i) + (N-1))*M_PI/(2.0*N))/wc;
 			// duplicate b (which starts off as 1) to tmp
 			rc_vector_duplicate(*b,&tmp);
 			// perform convolution between tmp and P3. Send to b and loop through i to
@@ -347,18 +347,18 @@ int rc_poly_butter(int N, double wc, rc_vector_t* b)
 	// for odd orders the opperation is similar to above except for a real poll at -1.
 	// This is why P2, as in (s + 1), is convolved first, then subsequent P3s.
 	if(N%2 == 1){
-		P2.d[0] = 1.0f/wc;
-		P2.d[1] = 1.0f;
+		P2.d[0] = 1.0/wc;
+		P2.d[1] = 1.0;
 		rc_vector_duplicate(*b,&tmp);
 		if(unlikely(rc_poly_conv(tmp,P2,b))){
 			fprintf(stderr,"ERROR in rc_poly_butter, failed to polyconv\n");
 			ret = -1;
 			goto POLY_END;
 		}
-		P3.d[0] = 1.0f/(wc*wc);
-		P3.d[2] = 1.0f;
+		P3.d[0] = 1.0/(wc*wc);
+		P3.d[2] = 1.0;
 		for(i=1;i<=(N-1)/2;i++){
-			P3.d[1] = -2.0f*cos((2.0f*i + N - 1.0f)*M_PI/(2.0f*N))/wc;
+			P3.d[1] = -2.0*cos(((2*i) + (N-1))*M_PI/(2.0*N))/wc;
 			rc_vector_duplicate(*b,&tmp);
 			if(unlikely(rc_poly_conv(tmp,P3,b))){
 				fprintf(stderr,"ERROR in rc_poly_butter, failed to polyconv\n");

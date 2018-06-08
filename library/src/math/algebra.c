@@ -144,8 +144,8 @@ int __householder_reflection(int step, rc_matrix_t* Q, rc_matrix_t* R)
 
 int rc_algebra_qr_decomp(rc_matrix_t A, rc_matrix_t* Q, rc_matrix_t* R)
 {
-	int i,j,steps;
-	double norm;
+	int i,steps;
+
 	// Sanity Checks
 	if(unlikely(!A.initialized)){
 		fprintf(stderr,"ERROR in rc_algebra_qr_decomp, matrix not initialized yet\n");

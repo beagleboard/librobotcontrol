@@ -582,9 +582,9 @@ int rc_filter_first_order_lowpass(rc_filter_t* f, double dt, double time_constan
 
 	c = dt/time_constant;
 	num[0] = c;
-	num[1] = 0.0f;
-	den[0] = 1.0f;
-	den[1] = c -1.0f;
+	num[1] = 0.0;
+	den[0] = 1.0;
+	den[1] = c - 1.0;
 
 	// make the filter
 	if(unlikely(rc_filter_alloc_from_arrays(f,dt,num,2,den,2))){
@@ -610,10 +610,10 @@ int rc_filter_first_order_highpass(rc_filter_t* f, double dt, double time_consta
 	}
 
 	c = dt/time_constant;
-	num[0] = 1.0f-c;
-	num[1] = c-1.0f;
-	den[0] = 1.0f;
-	den[1] = c-1.0f;
+	num[0] = 1.0 - c;
+	num[1] = c - 1.0;
+	den[0] = 1.0;
+	den[1] = c - 1.0;
 
 	// make the filter
 	if(unlikely(rc_filter_alloc_from_arrays(f,dt,num,2,den,2))){

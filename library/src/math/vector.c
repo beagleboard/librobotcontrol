@@ -234,12 +234,12 @@ double rc_vector_norm(rc_vector_t v, double p)
 		return -1;
 	}
 	// shortcut for 1-norm
-	if(p<1.001f && p>0.999f){
+	if(p<1.001 && p>0.999){
 		for(i=0;i<v.len;i++) norm+=fabs(v.d[i]);
 		return norm;
 	}
 	// shortcut for 2-norm
-	if(p<2.001f && p>1.999f){
+	if(p<2.001 && p>1.999){
 		for(i=0;i<v.len;i++) norm+=v.d[i]*v.d[i];
 		return sqrt(norm);
 	}

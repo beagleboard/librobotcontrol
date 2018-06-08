@@ -2127,7 +2127,7 @@ int __data_fusion(rc_mpu_data_t* data)
 	// filter that later.
 	tilt_tb[0] = data->dmp_TaitBryan[TB_PITCH_X];
 	tilt_tb[1] = data->dmp_TaitBryan[TB_ROLL_Y];
-	tilt_tb[2] = 0.0f;
+	tilt_tb[2] = 0.0;
 
 	// generate a quaternion rotation of just roll/pitch
 	rc_quaternion_from_tb_array(tilt_tb,tilt_q);
@@ -2886,9 +2886,9 @@ int rc_mpu_calibrate_mag_routine(rc_mpu_config_t conf)
 	// all seems well, calculate scaling factors to map ellipse lengths to
 	// a sphere of radius 70uT, this scale will later be multiplied by the
 	// factory corrected data
-	new_scale[0] = 70.0f/lengths.d[0];
-	new_scale[1] = 70.0f/lengths.d[1];
-	new_scale[2] = 70.0f/lengths.d[2];
+	new_scale[0] = 70.0/lengths.d[0];
+	new_scale[1] = 70.0/lengths.d[1];
+	new_scale[2] = 70.0/lengths.d[2];
 	// print results
 	printf("\n");
 	printf("Offsets X: %7.3f Y: %7.3f Z: %7.3f\n",	center.d[0],\

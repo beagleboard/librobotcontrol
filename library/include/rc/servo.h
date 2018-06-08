@@ -216,7 +216,7 @@ int rc_servo_send_pulse_us(int ch, int us);
  *
  * @return     0 on success, -1 on failure
  */
-int rc_servo_send_pulse_normalized(int ch, float input);
+int rc_servo_send_pulse_normalized(int ch, double input);
 
 
 /**
@@ -243,7 +243,7 @@ int rc_servo_send_pulse_normalized(int ch, float input);
  *
  * @return     0 on success, -1 on failure
  */
-int rc_servo_send_esc_pulse_normalized(int ch, float input);
+int rc_servo_send_esc_pulse_normalized(int ch, double input);
 
 
 /**
@@ -270,7 +270,7 @@ int rc_servo_send_esc_pulse_normalized(int ch, float input);
  *
  * @return     0 on success, -1 on failure
  */
-int rc_servo_send_oneshot_pulse_normalized(int ch, float input);
+int rc_servo_send_oneshot_pulse_normalized(int ch, double input);
 
 
 #ifdef __cplusplus
