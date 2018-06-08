@@ -17,7 +17,7 @@ CC		:= gcc
 LINKER		:= gcc
 
 # compile flags
-WFLAGS		:= -Wall -Wextra
+WFLAGS		:= -Wall -Wextra -Werror=float-equal -Wuninitialized -Wunused-variable -Wdouble-promotion
 CFLAGS		:= -g -pthread -I $(INCLUDEDIR)
 LDFLAGS		:= -lm -lrt -pthread -L $(LIBDIR) -lroboticscape
 

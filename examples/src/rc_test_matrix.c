@@ -14,7 +14,7 @@
 
 int main()
 {
-	float det;
+	double det;
 	rc_matrix_t A = rc_matrix_empty();
 	rc_matrix_t A_dup = rc_matrix_empty();
 	rc_matrix_t B = rc_matrix_empty();
@@ -68,10 +68,10 @@ int main()
 	// get determinant of A & B
 	printf("\nDeterminant of A:");
 	det = rc_matrix_determinant(A);
-	printf("%8.4f\n", det);
+	printf("%8.6lf\n", det);
 	printf("\nDeterminant of B:");
 	det = rc_matrix_determinant(B);
-	printf("%8.4f\n", det);
+	printf("%8.6lf\n", det);
 
 	// multiply A*B=C
 	printf("\nThree ways to multiply:");

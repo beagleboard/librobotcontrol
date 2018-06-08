@@ -52,10 +52,10 @@ static int running;
 int main(int argc, char *argv[])
 {
 	FILE* fd;
-	float new_v_pack, new_v_jack;
-	float v_pack;	// 2S pack voltage on JST XH 2S balance connector
-	float v_jack;	// could be dc power supply or another battery
-	float cell_voltage;	// cell voltage from either 2S or external pack
+	double new_v_pack, new_v_jack;
+	double v_pack;	// 2S pack voltage on JST XH 2S balance connector
+	double v_jack;	// could be dc power supply or another battery
+	double cell_voltage;	// cell voltage from either 2S or external pack
 	int toggle = 0;
 	int printing = 0;
 	int num_cells = 0;
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 	int charging = 0;
 	int pack_connected = 0;
 	int c;
-	float stddev;
+	double stddev;
 	rc_model_t model;
 	rc_filter_t filterB = rc_filter_empty();
 	rc_filter_t filterJ = rc_filter_empty(); // battery and jack filters
@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
 		new_v_pack = rc_adc_batt();
 		new_v_jack = rc_adc_dc_jack();
 
-		if(new_v_pack==-1.0f || new_v_jack==-1.0f){
+		if(new_v_pack<0.0 || new_v_jack<0.0){
 			fprintf(stderr,"ERROR in rc_battery_monitor, can't read ADC voltages\n");
 			remove(BATTPIDFILE);
 			return -1;

@@ -79,12 +79,12 @@ void signal_handler(__attribute__ ((unused)) int dummy)
 
 int main(int argc, char *argv[])
 {
-	float servo_pos=0;
-	float sweep_limit=0;
+	double servo_pos=0;
+	double sweep_limit=0;
 	uint64_t dsm_nanos=0;
 	int width_us=0;
 	int ch=0; // channel to test, 0 means all channels
-	float direction = 1; // switches between 1 & -1 in sweep mode
+	double direction = 1; // switches between 1 & -1 in sweep mode
 	test_mode_t mode = DISABLED; //start mode disabled
 	int frequency_hz = 50; // default 50hz frequency to send pulses
 	int i, c, radio_ch;

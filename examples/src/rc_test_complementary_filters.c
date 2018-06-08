@@ -39,8 +39,8 @@ int main()
 	rc_filter_t lp_third = rc_filter_empty();
 	rc_filter_t hp_third = rc_filter_empty();
 
-	const float dt = 1.0/SAMPLE_RATE;
-	float lpf,hpf,lpt,hpt,u;
+	const double dt = 1.0/SAMPLE_RATE;
+	double lpf,hpf,lpt,hpt,u;
 	int counter = 0;
 
 	printf("\nSample Rate: %dhz\n", SAMPLE_RATE);
@@ -88,13 +88,13 @@ int main()
 		hpt = rc_filter_march(&hp_third, u);
 
 		printf("\r");
-		printf("%8.3f  |", u);
-		printf("%8.3f  |", lpf);
-		printf("%8.3f  |", hpf);
-		printf("%8.3f  |", lpf+hpf);
-		printf("%8.3f  |", lpt);
-		printf("%8.3f  |", hpt);
-		printf("%8.3f  |", lpt+hpt);
+		printf("%8.3lf  |", u);
+		printf("%8.3lf  |", lpf);
+		printf("%8.3lf  |", hpf);
+		printf("%8.3lf  |", lpf+hpf);
+		printf("%8.3lf  |", lpt);
+		printf("%8.3lf  |", hpt);
+		printf("%8.3lf  |", lpt+hpt);
 		fflush(stdout);
 
 		// toggle u between 0 and 1 every 10 seconds

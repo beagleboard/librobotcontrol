@@ -14,9 +14,9 @@
 
 int main()
 {
-	float pack_voltage;	// 2S pack voltage on JST XH 2S balance connector
-	float cell_voltage;	// cell voltage
-	float jack_voltage;	// could be dc power supply or another battery
+	double pack_voltage;	// 2S pack voltage on JST XH 2S balance connector
+	double cell_voltage;	// cell voltage
+	double jack_voltage;	// could be dc power supply or another battery
 
 	// start signal handler so we can exit cleanly
 	if(rc_enable_signal_handler()==-1) return -1;
@@ -29,7 +29,7 @@ int main()
 		jack_voltage = rc_adc_dc_jack();
 
 		// sanity check the SDC didn't return an error
-		if(pack_voltage==-1 || jack_voltage==-1){
+		if(pack_voltage<0.0 || jack_voltage<0.0){
 			fprintf(stderr,"ERROR: can't read voltages\n");
 			return -1;
 		}
@@ -47,7 +47,7 @@ int main()
 		cell_voltage = pack_voltage/2;
 
 		// print results
-		printf("\rPack: %0.2fV   Cell: %0.2fV   DC Jack: %0.2fV  ", \
+		printf("\rPack: %0.2lfV   Cell: %0.2lfV   DC Jack: %0.2lfV  ", \
 					pack_voltage, cell_voltage, jack_voltage);
 		fflush(stdout);
 

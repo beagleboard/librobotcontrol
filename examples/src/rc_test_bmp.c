@@ -40,7 +40,7 @@ void signal_handler(__attribute__ ((unused)) int dummy)
 int main()
 {
 	rc_bmp_data_t data;
-	float filtered_alt;
+	double filtered_alt;
 	rc_filter_t lowpass = rc_filter_empty();
 
 	// set signal handler so the loop can exit cleanly
@@ -78,10 +78,10 @@ int main()
 		filtered_alt = rc_filter_march(&lowpass,data.alt_m);
 
 		printf("\r");
-		printf("%6.2fC |", data.temp_c);
-		printf("%7.2fkpa |", data.pressure_pa/1000.0);
-		printf("%8.2fm |", data.alt_m);
-		printf("%8.2fm |", filtered_alt);
+		printf("%6.2lfC |", data.temp_c);
+		printf("%7.2lfkpa |", data.pressure_pa/1000.0);
+		printf("%8.2lfm |", data.alt_m);
+		printf("%8.2lfm |", filtered_alt);
 		fflush(stdout);
 	}
 	printf("\n");

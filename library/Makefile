@@ -19,8 +19,7 @@ CC		:= gcc
 LINKER		:= gcc
 
 # general compiler flags
-#WFLAGS		:= -Wall -Wextra
-WFLAGS		:= -Werror=float-equal -Wuninitialized -Wunused-variable -Wdouble-promotion
+WFLAGS		:= -Wall -Wextra -Werror=float-equal -Wuninitialized -Wunused-variable -Wdouble-promotion
 CFLAGS		:= -g -fPIC -I $(INCLUDEDIR)
 OPT_FLAGS	:= -O1
 LDFLAGS		:= -lm -lrt -pthread -shared -Wl,-soname,$(SONAME)

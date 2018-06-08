@@ -282,7 +282,7 @@ int rc_mav_set_dest_ip(const char* dest_ip)
 
 int rc_mav_set_system_id(uint8_t sys_id)
 {
-	system_id = system_id;
+	system_id = sys_id;
 	return 0;
 }
 

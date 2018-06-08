@@ -2,10 +2,14 @@
 # Just change the target name to match your main source code filename.
 TARGET = rc_project_template
 
+# compiler and linker binaries
 CC		:= gcc
 LINKER		:= gcc
+
+# compiler and linker flags
+WFLAGS		:= -Wall -Wextra -Werror=float-equal -Wuninitialized -Wunused-variable -Wdouble-promotion
 CFLAGS		:= -g -c -Wall
-LFLAGS		:= -pthread -lm -lrt -lroboticscape
+LDFLAGS		:= -pthread -lm -lrt -lroboticscape
 
 SOURCES		:= $(wildcard *.c)
 INCLUDES	:= $(wildcard *.h)
@@ -23,13 +27,13 @@ SYMLINKNAME	:= link_to_startup_program
 
 # linking Objects
 $(TARGET): $(OBJECTS)
-	@$(LINKER) -o $@ $(OBJECTS) $(LFLAGS)
+	@$(LINKER) -o $@ $(OBJECTS) $(LDFLAGS)
 	@echo "Made: $@"
 
 
 # compiling command
 $(OBJECTS): %.o : %.c $(INCLUDES)
-	@$(CC) $(CFLAGS) $(DEBUGFLAG) $< -o $@
+	@$(CC) $(CFLAGS) $(WFLAGS) $(DEBUGFLAG) $< -o $@
 	@echo "Compiled: $@"
 
 all:	$(TARGET)

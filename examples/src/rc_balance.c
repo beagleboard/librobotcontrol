@@ -270,7 +270,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	// wait for the battery thread to make the first read
-	while(cstate.vBatt==0 && rc_get_state()!=EXITING) rc_usleep(1000);
+	while(cstate.vBatt<1.0 && rc_get_state()!=EXITING) rc_usleep(10000);
 
 	// start printf_thread if running from a terminal
 	// if it was started as a background process then don't bother
@@ -520,7 +520,7 @@ void balance_controller()
 	* Input to the controller is phi error (setpoint-state).
 	*************************************************************/
 	if(ENABLE_POSITION_HOLD){
-		if(setpoint.phi_dot != 0.0) setpoint.phi += setpoint.phi_dot*DT;
+		if(fabs(setpoint.phi_dot) > 0.001) setpoint.phi += setpoint.phi_dot*DT;
 		cstate.d2_u = rc_filter_march(&D2,setpoint.phi-cstate.phi);
 		setpoint.theta = cstate.d2_u;
 	}
