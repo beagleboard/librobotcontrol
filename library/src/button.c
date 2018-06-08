@@ -9,7 +9,11 @@
 #include <fcntl.h>
 #include <stdlib.h>
 
-#ifndef RC_AUTOPILOT_EXT
+#ifdef RC_AUTOPILOT_EXT
+// Not sure why #include <linux/gpio.h> did not work here after explicitly include
+// the default path /usr/include, so use full path for now.
+#include "/usr/include/linux/gpio.h"
+#else
 #include <linux/gpio.h>
 #endif
 
@@ -133,7 +137,7 @@ void* poll_thread_func(void* arg)
 int rc_button_init(int chip, int pin, char polarity, int debounce_us)
 {
 	int i;
-	btn_cfg_t* ptr;
+	btn_cfg_t* ptr = NULL;
 	thread_cfg_t thread_cfg;
 
 	// sanity checks
