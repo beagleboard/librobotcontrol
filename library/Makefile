@@ -19,7 +19,8 @@ CC		:= gcc
 LINKER		:= gcc
 
 # general compiler flags
-WFLAGS		:= -Wall -Wextra
+#WFLAGS		:= -Wall -Wextra
+WFLAGS		:= -Werror=float-equal -Wuninitialized -Wunused-variable -Wdouble-promotion
 CFLAGS		:= -g -fPIC -I $(INCLUDEDIR)
 OPT_FLAGS	:= -O1
 LDFLAGS		:= -lm -lrt -pthread -shared -Wl,-soname,$(SONAME)
@@ -52,13 +53,13 @@ $(TARGET): $(OBJECTS)
 # rule for math libs
 $(BUILDDIR)/math/%.o : $(SRCDIR)/math/%.c $(INCLUDES)
 	@mkdir -p $(dir $(@))
-	@$(CC) -c $(CFLAGS) $(ARCFLAGS) $(MATH_OPT_FLAGS) $(DEBUGFLAG) $< -o $(@)
+	@$(CC) -c $(CFLAGS) $(WFLAGS) $(ARCFLAGS) $(MATH_OPT_FLAGS) $(DEBUGFLAG) $< -o $(@)
 	@echo "made: $(@)"
 
 # rule for all other objects
 $(BUILDDIR)/%.o : $(SRCDIR)/%.c $(INCLUDES)
 	@mkdir -p $(dir $(@))
-	@$(CC) -c $(CFLAGS) $(ARCFLAGS) $(OPT_FLAGS) $(DEBUGFLAG) $< -o $(@)
+	@$(CC) -c $(CFLAGS) $(WFLAGS) $(ARCFLAGS) $(OPT_FLAGS) $(DEBUGFLAG) $< -o $(@)
 	@echo "made: $(@)"
 
 

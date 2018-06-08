@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <math.h>
 #include <rc/pthread.h>
 #include <rc/pinmux.h>
 #include <rc/time.h>
@@ -59,6 +60,7 @@ static void (*disconnect_callback)();
 static int active_flag=0;
 static int init_flag=0;
 
+extern double zero_tolerance;
 
 /**
  * This returns a string (char*) of '1' and '0' representing a character. For
@@ -617,7 +619,7 @@ float rc_dsm_ch_normalized(int ch)
 		return -1.0;
 	}
 	// return 0 if there was a weird condition
-	if(range_up[ch-1]==0 || range_down[ch-1]==0 || channels[ch-1]==0) return 0.0f;
+	if(fabsf(range_up[ch-1]) < zero_tolerance || fabsf(range_down[ch-1]) < zero_tolerance || channels[ch-1]==0) return 0.0f;
 
 	// mark data as read
 	new_dsm_flag = 0;
