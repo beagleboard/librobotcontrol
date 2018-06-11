@@ -9,7 +9,7 @@ LINKER		:= gcc
 # compiler and linker flags
 WFLAGS		:= -Wall -Wextra -Werror=float-equal -Wuninitialized -Wunused-variable -Wdouble-promotion
 CFLAGS		:= -g -c -Wall
-LDFLAGS		:= -pthread -lm -lrt -lroboticscape
+LDFLAGS		:= -pthread -lm -lrt -lrobotcontrol
 
 SOURCES		:= $(wildcard *.c)
 INCLUDES	:= $(wildcard *.h)
@@ -21,7 +21,7 @@ INSTALL		:= install -m 4755
 INSTALLDIR	:= install -d -m 755
 
 SYMLINK		:= ln -s -f
-SYMLINKDIR	:= /etc/roboticscape
+SYMLINKDIR	:= /etc/robotcontrol
 SYMLINKNAME	:= link_to_startup_program
 
 

@@ -6,7 +6,7 @@
  */
 
 #include <stdio.h>
-#include <roboticscape.h> // includes ALL robotics cape subsystems
+#include <robotcontrol.h> // includes ALL robotics cape subsystems
 
 // function declarations
 void on_pause_press();

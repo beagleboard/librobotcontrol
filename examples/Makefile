@@ -19,14 +19,14 @@ LINKER		:= gcc
 # compile flags
 WFLAGS		:= -Wall -Wextra -Werror=float-equal -Wuninitialized -Wunused-variable -Wdouble-promotion
 CFLAGS		:= -g -pthread -I $(INCLUDEDIR)
-LDFLAGS		:= -lm -lrt -pthread -L $(LIBDIR) -lroboticscape
+LDFLAGS		:= -lm -lrt -pthread -L $(LIBDIR) -l:librobotcontrol.so.1
 
 # commands
 RM		:= rm -rf
 INSTALL		:= install -m 755
 INSTALLDIR	:= install -d -m 755
 LINK		:= ln -s -f
-LINKDIR		:= /etc/roboticscape
+LINKDIR		:= /etc/librobotcontrol
 LINKNAME	:= link_to_startup_program
 
 # prefix variable in case this is used to make a deb package

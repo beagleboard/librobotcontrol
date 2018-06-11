@@ -31,9 +31,9 @@ void print_usage()
 
 int main(int argc, char *argv[])
 {
-	char test_str[] = "Hello World";
+	char* test_str = "Hello World";
 	int bytes = strlen(test_str); // get number of bytes in test string
-	char buf[BUF_SIZE];
+	uint8_t buf[BUF_SIZE];
 	int ret; // return value
 	int bus; // which bus to use
 
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 	// Flush and Write
 	printf("Sending  %d bytes: %s \n", bytes, test_str);
 	rc_uart_flush(bus);
-	rc_uart_write(bus, test_str, bytes);
+	rc_uart_write(bus, (uint8_t*)test_str, bytes);
 
 	// Read
 	printf("reading bytes:\n");
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 	// now write again
 	printf("\n");
 	printf("Sending  %d bytes: %s \n", bytes, test_str);
-	rc_uart_write(bus, &test_str[0], bytes);
+	rc_uart_write(bus, (uint8_t*)test_str, bytes);
 
 	// read back as line
 	printf("reading line:\n");

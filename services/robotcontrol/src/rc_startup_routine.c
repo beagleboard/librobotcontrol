@@ -2,7 +2,7 @@
  * @file rc_startup_routine.c
  *
  *
- * This startup routine is called by the roboticscape systemd service and serves
+ * This startup routine is called by the robotcontrol systemd service and serves
  * to do some initial setup such as setting permissions on things that udev cant
  * handle such as pwm and gpio
  */
@@ -21,7 +21,7 @@
 
 #define MAXBUF 128
 #define TIMEOUT_S 15
-#define START_LOG "/var/log/roboticscape/startup_log.txt"
+#define START_LOG "/var/log/robotcontrol/startup_log.txt"
 
 static int make_pid_directory();
 static int set_gpio_permissions();
@@ -55,8 +55,8 @@ int main()
 	// whitelist blue, black, and black wireless only when RC device tree is in use
 	model = rc_model();
 	if(model!=BB_BLACK_RC && model!=BB_BLACK_W_RC && model!=BB_BLUE){
-		if(system("grep -q roboticscape /boot/uEnv.txt")!=0){
-			fprintf(stderr,"roboticscape service can only run on BB Blue, Black, and Black wireless when the roboticscape device tree is in use.\n");
+		if(system("grep -q robotcontrol /boot/uEnv.txt")!=0){
+			fprintf(stderr,"robotcontrol service can only run on BB Blue, Black, and Black wireless when the robotcontrol device tree is in use.\n");
 			return 0;
 		}
 	}
@@ -104,7 +104,7 @@ int main()
 	system(buf);
 
 
-	printf("roboticscape startup routine complete\n");
+	printf("robotcontrol startup routine complete\n");
 	system("echo 'startup routine complete' >> " START_LOG);
 	return 0;
 }

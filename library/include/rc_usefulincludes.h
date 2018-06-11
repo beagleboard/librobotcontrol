@@ -13,7 +13,7 @@
 #define RC_USEFUL_INCLUDES
 
 
-#define _GNU_SOURCE  // to enable macros in pthread
+#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <stdlib.h>

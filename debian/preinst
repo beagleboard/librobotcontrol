@@ -2,7 +2,7 @@
 
 SERVICE_DIR=/lib/systemd/system
 BATT_SERVICE=rc_battery_monitor
-ROBOT_SERVICE=roboticscape
+ROBOT_SERVICE=robotcontrol
 
 if [ -f "$SERVICE_DIR/$BATT_SERVICE.service" ]
 then

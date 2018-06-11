@@ -17,12 +17,15 @@
 #include <rc/time.h>
 #include <rc/uart.h>
 #include <rc/gpio.h>
+#include "common.h"
 
 #ifdef RC_AUTOPILOT_EXT
 #include "../include/rc/dsm.h"
 #else
 #include <rc/dsm.h>
 #endif
+
+#define DSM_CALIBRATION_FILE	"dsm.cal"
 
 #define PAUSE		115	// microseconds
 #define DELAY_SPEKTRUM	200000
@@ -131,7 +134,7 @@ int __continue_or_quit()
  * @return     { description_of_the_return_value }
  */
 void* __parser_func(__attribute__ ((unused)) void* ptr){
-	char buf[DSM_PACKET_SIZE];
+	uint8_t buf[DSM_PACKET_SIZE];
 	int i, ret;
 	int new_values[RC_MAX_DSM_CHANNELS]; // hold new values before committing
 	int detection_packets_left; // use first 4 packets just for detection
@@ -479,7 +482,7 @@ int rc_dsm_init()
 	FILE* fd;
 
 	// open for reading
-	fd = fopen(RC_DSM_CALIBRATION_FILE, "r");
+	fd = fopen(CALIBRATION_DIR DSM_CALIBRATION_FILE, "r");
 
 	if(fd==NULL){
 		fprintf(stderr,"\ndsm Calibration File Doesn't Exist Yet\n");
@@ -497,7 +500,7 @@ int rc_dsm_init()
 				fprintf(stderr, "ERROR in rc_dsm_init reading calibration data\n");
 				fprintf(stderr, "Malformed calibration file, deleting and using defaults\n");
 				//fclose(fd);
-				remove(RC_DSM_CALIBRATION_FILE);
+				remove(CALIBRATION_DIR DSM_CALIBRATION_FILE);
 				for(i=0;i<RC_MAX_DSM_CHANNELS;i++){
 					mins[i]=DEFAULT_MIN;
 					maxes[i]=DEFAULT_MAX;
@@ -853,7 +856,7 @@ int rc_dsm_calibrate_routine()
 	disconnect_callback=NULL;
 
 	// make sure directory and calibration file exist and are writable first
-	ret = mkdir(RC_DSM_CALIBRATION_DIR, 0777);
+	ret = mkdir(CALIBRATION_DIR, 0777);
 	// error check, EEXIST is okay, we want directory to exist!
 	if(ret==-1 && errno!=EEXIST){
 		perror("ERROR in rc_dsm_calibration_routine making calibration file directory");
@@ -919,7 +922,7 @@ int rc_dsm_calibrate_routine()
 	}
 
 	// open for writing
-	fd = fopen(RC_DSM_CALIBRATION_FILE, "w");
+	fd = fopen(CALIBRATION_DIR DSM_CALIBRATION_FILE, "w");
 	if(fd == NULL){
 		perror("ERROR in rc_dsm_calibration_routine opening calibration file for writing");
 		return -1;

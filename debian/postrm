@@ -9,7 +9,7 @@ fi
 
 #DEBHELPER#
 
-echo "Roboticscape Package Uninstallation Complete"
+echo "librobotcontrol Package Uninstallation Complete"
 
 exit 0
 

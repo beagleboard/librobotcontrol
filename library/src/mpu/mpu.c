@@ -36,12 +36,12 @@
 #include "dmp_firmware.h"
 #include "dmpKey.h"
 #include "dmpmap.h"
+#include "../common.h"
 
 // Calibration File Locations
-#define CALIBRATION_DIR		"/var/lib/roboticscape/"
-#define ACCEL_CAL_FILE		"/var/lib/roboticscape/accel.cal"
-#define GYRO_CAL_FILE		"/var/lib/roboticscape/gyro.cal"
-#define MAG_CAL_FILE		"/var/lib/roboticscape/mag.cal"
+#define ACCEL_CAL_FILE		"accel.cal"
+#define GYRO_CAL_FILE		"gyro.cal"
+#define MAG_CAL_FILE		"mag.cal"
 
 //I2C bus and address definitions for Robotics Cape
 #define RC_IMU_BUS		2
@@ -2233,7 +2233,7 @@ int __load_gyro_calibration()
 	uint8_t data[6];
 	int x,y,z;
 
-	fd = fopen(GYRO_CAL_FILE, "r");
+	fd = fopen(CALIBRATION_DIR GYRO_CAL_FILE, "r");
 
 	if(fd==NULL){
 		// calibration file doesn't exist yet
@@ -2291,7 +2291,7 @@ int __load_mag_calibration()
 	FILE *fd;
 	double x,y,z,sx,sy,sz;
 
-	fd = fopen(MAG_CAL_FILE, "r");
+	fd = fopen(CALIBRATION_DIR MAG_CAL_FILE, "r");
 	if(fd==NULL){
 		// calibration file doesn't exist yet
 		fprintf(stderr,"WARNING: no magnetometer calibration data found\n");
@@ -2346,7 +2346,7 @@ int __load_accel_calibration()
 	double x,y,z,sx,sy,sz; // offsets and scales in xyz
 	int16_t bias[3], factory[3];
 
-	fd = fopen(ACCEL_CAL_FILE, "r");
+	fd = fopen(CALIBRATION_DIR ACCEL_CAL_FILE, "r");
 
 	if(fd==NULL){
 		// calibration file doesn't exist yet
@@ -2450,9 +2450,9 @@ int __write_gyro_cal_to_disk(int16_t offsets[3])
 	}
 
 	// remove old file
-	remove(GYRO_CAL_FILE);
+	remove(CALIBRATION_DIR GYRO_CAL_FILE);
 
-	fd = fopen(GYRO_CAL_FILE, "w");
+	fd = fopen(CALIBRATION_DIR GYRO_CAL_FILE, "w");
 	if(fd==NULL){
 		perror("ERROR in rc_calibrate_gyro_routine opening calibration file for writing");
 		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
@@ -2473,7 +2473,7 @@ int __write_gyro_cal_to_disk(int16_t offsets[3])
 	fclose(fd);
 
 	// now give proper permissions
-	if(chmod(GYRO_CAL_FILE, S_IRWXU | S_IRWXG | S_IRWXO)==-1){
+	if(chmod(CALIBRATION_DIR GYRO_CAL_FILE, S_IRWXU | S_IRWXG | S_IRWXO)==-1){
 		perror("ERROR in rc_calibrate_gyro_routine setting correct permissions for file\n");
 		fprintf(stderr, "writing file anyway, will probably still work\n");
 		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
@@ -2505,9 +2505,9 @@ int __write_mag_cal_to_disk(double offsets[3], double scale[3])
 		return -1;
 	}
 	// remove old file
-	remove(MAG_CAL_FILE);
+	remove(CALIBRATION_DIR MAG_CAL_FILE);
 
-	fd = fopen(MAG_CAL_FILE, "w");
+	fd = fopen(CALIBRATION_DIR MAG_CAL_FILE, "w");
 	if(fd==NULL){
 		perror("ERROR in rc_calibrate_mag_routine opening calibration file for writing");
 		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
@@ -2532,7 +2532,7 @@ int __write_mag_cal_to_disk(double offsets[3], double scale[3])
 	fclose(fd);
 
 	// now give proper permissions
-	if(chmod(MAG_CAL_FILE, S_IRWXU | S_IRWXG | S_IRWXO)==-1){
+	if(chmod(CALIBRATION_DIR MAG_CAL_FILE, S_IRWXU | S_IRWXG | S_IRWXO)==-1){
 		perror("ERROR in rc_calibrate_mag_routine setting correct permissions for file\n");
 		fprintf(stderr, "writing file anyway, will probably still work\n");
 		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
@@ -2565,9 +2565,9 @@ int __write_accel_cal_to_disk(double* center, double* lengths)
 		return -1;
 	}
 	// remove old file
-	remove(ACCEL_CAL_FILE);
+	remove(CALIBRATION_DIR ACCEL_CAL_FILE);
 
-	fd = fopen(ACCEL_CAL_FILE, "w");
+	fd = fopen(CALIBRATION_DIR ACCEL_CAL_FILE, "w");
 	if(fd==NULL){
 		perror("ERROR in rc_mpu_calibrate_accel_routine opening calibration file for writing");
 		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
@@ -2592,7 +2592,7 @@ int __write_accel_cal_to_disk(double* center, double* lengths)
 	fclose(fd);
 
 	// now give proper permissions
-	if(chmod(ACCEL_CAL_FILE, S_IRWXU | S_IRWXG | S_IRWXO)==-1){
+	if(chmod(CALIBRATION_DIR ACCEL_CAL_FILE, S_IRWXU | S_IRWXG | S_IRWXO)==-1){
 		perror("WARNING in rc_calibrate_accel_routine setting correct permissions for file\n");
 		fprintf(stderr, "writing file anyway, will probably still work\n");
 		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
@@ -3218,19 +3218,19 @@ int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf)
 
 int rc_mpu_is_gyro_calibrated()
 {
-	if(!access(GYRO_CAL_FILE, F_OK)) return 1;
+	if(!access(CALIBRATION_DIR GYRO_CAL_FILE, F_OK)) return 1;
 	else return 0;
 }
 
 int rc_mpu_is_mag_calibrated()
 {
-	if(!access(MAG_CAL_FILE, F_OK)) return 1;
+	if(!access(CALIBRATION_DIR MAG_CAL_FILE, F_OK)) return 1;
 	else return 0;
 }
 
 int rc_mpu_is_accel_calibrated()
 {
-	if(!access(ACCEL_CAL_FILE, F_OK)) return 1;
+	if(!access(CALIBRATION_DIR ACCEL_CAL_FILE, F_OK)) return 1;
 	else return 0;
 }
 

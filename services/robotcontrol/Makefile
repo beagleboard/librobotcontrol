@@ -1,6 +1,6 @@
-# makefile for roboticscape service
+# makefile for robotcontrol service
 
-SERVICE		:= roboticscape
+SERVICE		:= robotcontrol
 
 # directories
 SRCDIR		:= src
@@ -20,7 +20,7 @@ LINKER		:= gcc
 # compiler and linker flags
 WFLAGS		:= -Wall -Wextra -Werror=float-equal -Wuninitialized -Wunused-variable -Wdouble-promotion
 CFLAGS		:= -g -pthread -I $(INCLUDEDIR)
-LDFLAGS		:= -lm -lrt -pthread -L $(LIBDIR) -lroboticscape
+LDFLAGS		:= -lm -lrt -pthread -L $(LIBDIR) -l:librobotcontrol.so.1
 
 # commands
 RM		:= rm -rf
@@ -36,30 +36,30 @@ all: $(TARGET)
 
 install:
 	@$(MAKE)
-	@$(INSTALLDIR) $(DESTDIR)/etc/roboticscape
-	@$(INSTALLDIR) $(DESTDIR)/var/log/roboticscape
+	@$(INSTALLDIR) $(DESTDIR)/etc/robotcontrol
+	@$(INSTALLDIR) $(DESTDIR)/var/log/robotcontrol
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/bin
 	@$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/bin/
 	@$(INSTALLDIR) $(DESTDIR)/lib/systemd/system
 	@$(INSTALLNONEXEC) $(SERVICE).service $(DESTDIR)/lib/systemd/system/
 	@$(INSTALLDIR) $(DESTDIR)/etc/modules-load.d/
-	@$(INSTALLNONEXEC) roboticscape_modules.conf $(DESTDIR)/etc/modules-load.d/
+	@$(INSTALLNONEXEC) robotcontrol_modules.conf $(DESTDIR)/etc/modules-load.d/
 	@echo ""
-	@echo "roboticscape Service Install Complete"
+	@echo "robotcontrol Service Install Complete"
 	@echo "run the following to manually enable:"
 	@echo "sudo systemctl daemon-reload"
-	@echo "sudo systemctl enable roboticscape"
+	@echo "sudo systemctl enable robotcontrol"
 	@echo ""
 
 clean:
 	@$(RM) $(BINDIR)
-	@echo "roboticscape Service Clean Complete"
+	@echo "robotcontrol Service Clean Complete"
 
 uninstall:
 	@$(RM) $(DESTDIR)/lib/systemd/system/$(SERVICE).service
-	@$(RM) $(DESTDIR)/etc/modules-load.d/roboticscape_modules.conf
+	@$(RM) $(DESTDIR)/etc/modules-load.d/robotcontrol_modules.conf
 	@$(RM) $(DESTDIR)$(prefix)/$(TARGET)
-	@echo "roboticscape Service Uninstall Complete"
+	@echo "robotcontrol Service Uninstall Complete"
 
 
 $(BINDIR)/% : $(SRCDIR)/%.c

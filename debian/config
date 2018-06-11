@@ -1,8 +1,8 @@
 #!/bin/sh
- 
+
 # Exit on error
 set -e
- 
+
 # Source debconf library.
 . /usr/share/debconf/confmodule
 
@@ -27,19 +27,19 @@ if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ]; then
 
 	# first, for Black and Black wireless we need to ask to modify uEnv.txt
 	if [ "$ISBLACK" = "true" ]; then
-		db_input critical roboticscape/q_enable_dt || true
+		db_input critical librobotcontrol/q_enable_dt || true
 		db_go || true
 	fi
 
 	# now get the answer to the last question, if the user requested to enable
 	# the DT then set ISCAPE to true as well since it will be after reboot
-	db_get roboticscape/q_enable_dt || true
+	db_get librobotcontrol/q_enable_dt || true
 	if [ "$RET" = "true" ]; then ISCAPE=true; fi
-	
-	# if blue or cape DT enabled, or cape DT was just requested to be enabled, 
+
+	# if blue or cape DT enabled, or cape DT was just requested to be enabled,
 	# ask for what should run on boot
 	if [ "$ISCAPE" = "true" ] || [ "$ISBLUE" = "true" ]; then
-		db_input critical roboticscape/q_runonboot || true
+		db_input critical librobotcontrol/q_runonboot || true
 		db_go || true
 	fi
 fi

@@ -8,36 +8,36 @@ set -e	# exit on error
 if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
 
 	# Fetching configuration from debconf
-	db_get roboticscape/q_enable_dt
+	db_get librobotcontrol/q_enable_dt
 	ENABLE_DT=$RET
-	db_get roboticscape/q_runonboot
+	db_get librobotcontrol/q_runonboot
 	PROG=$RET
 
 	# set something or nothing to run on boot. Default was 'none' which removes
 	# any existing link. If 'existing' was selected then link is left alone
-	 # make sure /etc/roboticscape exists
-	if [ ! -d "/etc/roboticscape" ]; then
-		echo "making /etc/roboticscape"
-		mkdir /etc/roboticscape
+	 # make sure /etc/robotcontrol exists
+	if [ ! -d "/etc/robotcontrol" ]; then
+		echo "making /etc/robotcontrol"
+		mkdir /etc/robotcontrol
 	fi
 	if [ "$PROG" = "rc_blink" ]; then
 		echo "setting rc_blink to run on boot"
-		ln -s -f /usr/bin/rc_blink /etc/roboticscape/link_to_startup_program
+		ln -s -f /usr/bin/rc_blink /etc/robotcontrol/link_to_startup_program
 	elif [ "$PROG" = "rc_balance" ]; then
-		ln -s -f /usr/bin/rc_balance /etc/roboticscape/link_to_startup_program
+		ln -s -f /usr/bin/rc_balance /etc/robotcontrol/link_to_startup_program
 		echo "setting rc_balance to run on boot"
 	elif [ "$PROG" = "none" ]; then
 		echo "setting nothing to run on boot"
-		rm -f /etc/roboticscape/link_to_startup_program
+		rm -f /etc/robotcontrol/link_to_startup_program
 	else
-		echo "leaving current roboticscape startup program alone"
+		echo "leaving current robotcontrol startup program alone"
 	fi
 
 	# enable services
 	echo "systemctl daemon-reload"
 	systemctl daemon-reload
-	echo "Enabling roboticscape Service"
-	systemctl enable roboticscape
+	echo "Enabling robotcontrol Service"
+	systemctl enable robotcontrol
 	echo "Enabling rc_battery_monitor Service"
 	systemctl enable rc_battery_monitor
 	# try to start battery monitor, but ignore errors as this may not work

@@ -1,12 +1,12 @@
 [Unit]
-Description=roboticscape
+Description=robotcontrol
 Requires=systemd-modules-load.service
 
 [Service]
 User=root
-PIDFile=/var/run/roboticscape/roboticscape.pid
+PIDFile=/var/run/robotcontrol/robotcontrol.pid
 ExecStartPre=/usr/bin/rc_startup_routine
-ExecStart=-/etc/roboticscape/link_to_startup_program
+ExecStart=-/etc/robotcontrol/link_to_startup_program
 ExecStop=/usr/bin/rc_kill
 
 [Install]

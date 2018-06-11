@@ -10,18 +10,18 @@ all:
 	@make -C library --no-print-directory
 	@make -C examples --no-print-directory
 	@make -C services/rc_battery_monitor --no-print-directory
-	@make -C services/roboticscape --no-print-directory
+	@make -C services/robotcontrol --no-print-directory
 
 install:
-	@$(INSTALLDIR) $(DESTDIR)$(prefix)/share/roboticscape
-	@cp -r -f  rc_project_template $(DESTDIR)$(prefix)/share/roboticscape/
+	@$(INSTALLDIR) $(DESTDIR)$(prefix)/share/robotcontrol
+	@cp -r -f  rc_project_template $(DESTDIR)$(prefix)/share/robotcontrol/
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/bin
 	@$(INSTALL) device_tree/configure_robotics_dt.sh $(DESTDIR)$(prefix)/bin/configure_robotics_dt
 	@make -C pru_firmware -s install
 	@make -C library -s install
 	@make -C examples -s install
 	@make -C services/rc_battery_monitor -s install
-	@make -C services/roboticscape -s install
+	@make -C services/robotcontrol -s install
 
 
 clean:
@@ -29,11 +29,11 @@ clean:
 	@make -C library -s clean
 	@make -C examples -s clean
 	@make -C services/rc_battery_monitor -s clean
-	@make -C services/roboticscape -s clean
+	@make -C services/robotcontrol -s clean
 	@make -C rc_project_template -s clean
-	@$(RM) debian/roboticscape
-	@$(RM) debian/roboticscape.postrm.debhelper
-	@$(RM) debian/roboticscape.substvars
+	@$(RM) debian/robotcontrol
+	@$(RM) debian/robotcontrol.postrm.debhelper
+	@$(RM) debian/robotcontrol.substvars
 	@$(RM) debian/files
 	@$(RM) debian/*.debhelper.log
 	@$(RM) debian/debhelper-build-stamp
@@ -46,11 +46,11 @@ uninstall:
 	@make -C library -s uninstall
 	@make -C examples -s uninstall
 	@make -C services/rc_battery_monitor -s uninstall
-	@make -C services/roboticscape -s uninstall
+	@make -C services/robotcontrol -s uninstall
 	@$(RM) $(DESTDIR)$(prefix)/bin/configure_robotics_dt
-	@$(RM) $(DESTDIR)$(prefix)/share/roboticscape
-	@$(RM) $(DESTDIR)/var/lib/roboticscape
-	@$(RM) $(DESTDIR)/var/log/roboticscape
+	@$(RM) $(DESTDIR)$(prefix)/share/robotcontrol
+	@$(RM) $(DESTDIR)/var/lib/robotcontrol
+	@$(RM) $(DESTDIR)/var/log/robotcontrol
 	@echo "Robotics Cape Uninstalled"
 
 package:

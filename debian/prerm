@@ -5,9 +5,9 @@
 systemctl stop rc_battery_monitor
 systemctl disable rc_battery_monitor
 
-# stop and disable the roboticscape service
-systemctl stop roboticscape
-systemctl disable roboticscape
+# stop and disable the robotcontrol service
+systemctl stop robotcontrol
+systemctl disable robotcontrol
 
 #DEBHELPER#
 

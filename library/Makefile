@@ -1,12 +1,11 @@
-# makefile for libroboticscape.so
-
 # directories
 SRCDIR		:= src
 LIBDIR		:= lib
 BUILDDIR	:= build
 INCLUDEDIR	:= include
-BASENAME	:= libroboticscape.so
-SONAME		:= $(BASENAME)
+BASENAME	:= librobotcontrol.so
+VERSION		:= 1
+SONAME		:= $(BASENAME).$(VERSION)
 TARGET		:= $(LIBDIR)/$(SONAME)
 
 # file definitions for rules
@@ -78,7 +77,7 @@ native:
 
 install:
 	$(MAKE)
-	@$(INSTALLDIRWRITE) $(DESTDIR)/var/lib/roboticscape
+	@$(INSTALLDIRWRITE) $(DESTDIR)/var/lib/librobotcontrol
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/include
 	@cp -r include/* $(DESTDIR)$(prefix)/include
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/lib
@@ -96,6 +95,7 @@ uninstall:
 	$(RM) $(DESTDIR)$(prefix)/$(TARGET)
 	$(RM) $(DESTDIR)$(prefix)/lib/$(BASENAME)
 	$(RM) $(DESTDIR)$(prefix)/include/roboticscape.h
+	$(RM) $(DESTDIR)$(prefix)/include/robotcontrol.h
 	$(RM) $(DESTDIR)$(prefix)/include/rc_usefulincludes.h
 	$(RM) $(DESTDIR)$(prefix)/include/rc
 	@echo "Library Uninstall Complete"

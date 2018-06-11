@@ -1,7 +1,7 @@
 /**
  * @headerfile version.h <rc/version.h>
  *
- * @brief macros and functions for getting the current version of the Robotics Cape Library
+ * @brief macros and functions for getting the current version of librobotcontrol
  *
  * @author     James Strawson
  * @date       2/8/2018
@@ -18,9 +18,9 @@ extern "C" {
 #endif
 
 
-#define RC_LIB_VERSION_MAJOR	0
-#define RC_LIB_VERSION_MINOR	4
-#define RC_LIB_VERSION_PATCH	4
+#define RC_LIB_VERSION_MAJOR	1
+#define RC_LIB_VERSION_MINOR	0
+#define RC_LIB_VERSION_PATCH	0
 #define RC_LIB_VERSION_HEX	((RC_LIB_VERSION_MAJOR << 16) | \
 				 (RC_LIB_VERSION_MINOR <<  8) | \
 				 (RC_LIB_VERSION_PATCH))

@@ -258,7 +258,7 @@ int rc_uart_flush(int bus)
 }
 
 
-int rc_uart_write(int bus, char* data, int bytes)
+int rc_uart_write(int bus, uint8_t* data, int bytes)
 {
 	int ret;
 	// sanity checks
@@ -280,7 +280,7 @@ int rc_uart_write(int bus, char* data, int bytes)
 }
 
 
-int rc_uart_read_bytes(int bus, char* buf, int bytes)
+int rc_uart_read_bytes(int bus, uint8_t* buf, int bytes)
 {
 	int bytes_to_read, ret;
 	// sanity checks
@@ -370,7 +370,7 @@ int rc_uart_read_bytes(int bus, char* buf, int bytes)
 }
 
 
-int rc_uart_read_line(int bus, char* buf, int max_bytes)
+int rc_uart_read_line(int bus, uint8_t* buf, int max_bytes)
 {
 	int ret;
 	char temp;
