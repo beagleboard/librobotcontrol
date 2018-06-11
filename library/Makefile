@@ -3,10 +3,10 @@ SRCDIR		:= src
 LIBDIR		:= lib
 BUILDDIR	:= build
 INCLUDEDIR	:= include
-BASENAME	:= librobotcontrol.so
-VERSION		:= 1
-SONAME		:= $(BASENAME).$(VERSION)
-TARGET		:= $(LIBDIR)/$(SONAME)
+SONAME		:= librobotcontrol.so
+VERSION		:= 1.0.0
+FULLNAME	:= $(SONAME).$(VERSION)
+TARGET		:= $(LIBDIR)/$(FULLNAME)
 
 # file definitions for rules
 SOURCES		:= $(shell find $(SRCDIR) -type f -name *.c)
@@ -46,6 +46,8 @@ prefix		?= /usr
 $(TARGET): $(OBJECTS)
 	@mkdir -p $(LIBDIR)
 	@$(LINKER) -o $(TARGET) $(OBJECTS) $(LDFLAGS)
+	# symlink only for local examples compilation, not for install
+	@ln -sf $(TARGET) $(LIBDIR)/$(SONAME)
 	@echo "Done making $(TARGET)"
 
 # rule for math libs
@@ -77,7 +79,7 @@ native:
 
 install:
 	$(MAKE)
-	@$(INSTALLDIRWRITE) $(DESTDIR)/var/lib/librobotcontrol
+	@$(INSTALLDIRWRITE) $(DESTDIR)/var/lib/robotcontrol
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/include
 	@cp -r include/* $(DESTDIR)$(prefix)/include
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/lib
@@ -92,8 +94,7 @@ clean:
 
 # uninstall completely from system
 uninstall:
-	$(RM) $(DESTDIR)$(prefix)/$(TARGET)
-	$(RM) $(DESTDIR)$(prefix)/lib/$(BASENAME)
+	$(RM) $(DESTDIR)$(prefix)/lib/$(FULLNAME)
 	$(RM) $(DESTDIR)$(prefix)/include/roboticscape.h
 	$(RM) $(DESTDIR)$(prefix)/include/robotcontrol.h
 	$(RM) $(DESTDIR)$(prefix)/include/rc_usefulincludes.h

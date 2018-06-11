@@ -20,7 +20,7 @@ LINKER		:= gcc
 # compiler and linker flags
 WFLAGS		:= -Wall -Wextra -Werror=float-equal -Wuninitialized -Wunused-variable -Wdouble-promotion
 CFLAGS		:= -g -pthread -I $(INCLUDEDIR)
-LDFLAGS		:= -lm -lrt -pthread -L $(LIBDIR) -l:librobotcontrol.so.1
+LDFLAGS		:= -lm -lrt -pthread -L $(LIBDIR) -lrobotcontrol
 
 # commands
 RM		:= rm -rf
