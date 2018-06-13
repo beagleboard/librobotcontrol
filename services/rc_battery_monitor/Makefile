@@ -41,13 +41,7 @@ install:
 	@$(INSTALLDIR) $(DESTDIR)/lib/systemd/system
 	@$(INSTALLNONEXEC) $(SERVICE).service $(DESTDIR)/lib/systemd/system/
 	@$(INSTALLDIR) $(DESTDIR)/etc/modules-load.d/
-	@echo ""
 	@echo "rc_battery_monitor Service Install Complete"
-	@echo "run the following to manually enable:"
-	@echo "sudo systemctl daemon-reload"
-	@echo "sudo systemctl enable rc_battery_monitor"
-	@echo "sudo systemctl start rc_battery_monitor"
-	@echo ""
 
 clean:
 	@$(RM) $(BINDIR)

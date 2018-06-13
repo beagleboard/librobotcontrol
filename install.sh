@@ -43,6 +43,7 @@ case $mode in
 		make
 		sudo make install
 		sudo ldconfig
+		sudo systemctl daemon-reload
 		sudo systemctl enable robotcontrol
 		sudo systemctl enable rc_battery_monitor
 		sudo configure_robotics_dt.sh

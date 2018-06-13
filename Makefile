@@ -56,3 +56,6 @@ uninstall:
 package:
 	debuild -us -uc
 
+# no compile option for package
+packagenc:
+	debuild -us -uc -nc
