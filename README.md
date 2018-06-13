@@ -1,4 +1,4 @@
-librobotcontrol                   {#mainpage}
+Robot Control Library                   {#mainpage}
 ===============================
 
 This package contains the C library and example/testing programs for the Robot Control project. This project began as a hardware interface for the Robotics Cape and later the BeagleBone Blue and was originally called Robotics_Cape_Installer. It grew to include an extensive math library for discrete time feedback control, as well as a plethora of POSIX-compliant functions for timing, threads, program flow, and lots more, all aimed at developing robot control software on embedded computers.
@@ -42,7 +42,7 @@ To help beta-test and to stay with the latest library version you can either clo
 The debian package installation also enables the systemd services which you will have to do manually if installing from source:
 
 ```
-sudo systemctl enable librobotcontrol
+sudo systemctl enable robotcontrol
 sudo systemctl enable rc_battery_monitor
 ```
 
@@ -139,9 +139,9 @@ make runonboot
 
 `make runonboot` sets the program to run automatically on boot if the librobotcontrol systemd service is enabled, see the services section above for more details.
 
-The project template source is also included as part of the librobotcontrol package and in installed to /usr/share/librobotcontrol/rc_project_template so it can be easily copied and modified. We suggest copying the project and modifying as follows
+The project template source is also included as part of the librobotcontrol package and in installed to /usr/share/robotcontrol/rc_project_template so it can be easily copied and modified. We suggest copying the project and modifying as follows
 
-1. `cp -r /usr/share/librobotcontrol/rc_project_template /home/debian/new_project_name`
+1. `cp -r /usr/share/robotcontrol/rc_project_template ~/new_project_name`
 2. `cd new_project_name`
 3. `mv rc_project_template.c new_project_name.c`
 4. Edit the makefile, changing the TARGET variable to your new project name

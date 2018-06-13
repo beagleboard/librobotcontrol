@@ -47,7 +47,7 @@ prefix		?= /usr
 $(TARGET): $(OBJECTS)
 	@mkdir -p $(LIBDIR)
 	@$(LINKER) -o $(TARGET) $(OBJECTS) $(LDFLAGS)
-	@ln -sf $(TARGET) $(LIBDIR)/$(SONAME)
+	@ln -s $(FULLNAME) $(LIBDIR)/$(SONAME)
 	@echo "Done making $(TARGET)"
 
 # rule for math libs
@@ -74,6 +74,7 @@ debug:
 	@echo "$(TARGET) Make Debug Complete"
 
 # compile with no specific architecture flags so it can run on unsupported platforms
+# this is deprecated now
 native:
 	$(MAKE) $(MAKEFILE) ARCFLAGS=""
 
