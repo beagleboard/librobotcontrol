@@ -29,6 +29,7 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
 #include <linux/spi/spidev.h> // for xfer and ioctl calls
 
 #define SPI_SLAVE_MODE_AUTO	0
@@ -96,7 +97,7 @@ int rc_spi_select(int slave, int select);
  *
  * @return     number of bytes received or -1 on failure
  */
-int rc_spi_transfer(int slave, char* tx_data, int tx_bytes, char* rx_data);
+int rc_spi_transfer(int slave, uint8_t* tx_data, int tx_bytes, uint8_t* rx_data);
 
 /**
  * @brief      Writes data to specified slave
@@ -107,7 +108,7 @@ int rc_spi_transfer(int slave, char* tx_data, int tx_bytes, char* rx_data);
  *
  * @return     returns number of bytes written or -1 on failure
  */
-int rc_spi_write(int slave, char* data, int bytes);
+int rc_spi_write(int slave, uint8_t* data, int bytes);
 
 /**
  * @brief      Reads data from a specified slave
@@ -118,7 +119,7 @@ int rc_spi_write(int slave, char* data, int bytes);
  *
  * @return     number of bytes read or -1 on failure
  */
-int rc_spi_read(int slave, char* data, int bytes);
+int rc_spi_read(int slave, uint8_t* data, int bytes);
 
 
 #ifdef __cplusplus

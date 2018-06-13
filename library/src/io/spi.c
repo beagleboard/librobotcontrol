@@ -217,7 +217,7 @@ int rc_spi_select(int slave, int select)
 }
 
 
-int rc_spi_transfer(int slave, char* tx_data, int tx_bytes, char* rx_data)
+int rc_spi_transfer(int slave, uint8_t* tx_data, int tx_bytes, uint8_t* rx_data)
 {
 	int ret;
 	struct spi_ioc_transfer xfer;
@@ -255,7 +255,7 @@ int rc_spi_transfer(int slave, char* tx_data, int tx_bytes, char* rx_data)
 }
 
 
-int rc_spi_write(int slave, char* data, int bytes)
+int rc_spi_write(int slave, uint8_t* data, int bytes)
 {
 	int ret;
 	struct spi_ioc_transfer xfer;
@@ -293,7 +293,7 @@ int rc_spi_write(int slave, char* data, int bytes)
 }
 
 
-int rc_spi_read(int slave, char* data, int bytes)
+int rc_spi_read(int slave, uint8_t* data, int bytes)
 {
 	int ret;
 	struct spi_ioc_transfer xfer;

@@ -43,10 +43,10 @@ prefix		?= /usr
 
 
 # linking rules
+# symlink only for local examples compilation, not for install
 $(TARGET): $(OBJECTS)
 	@mkdir -p $(LIBDIR)
 	@$(LINKER) -o $(TARGET) $(OBJECTS) $(LDFLAGS)
-	# symlink only for local examples compilation, not for install
 	@ln -sf $(TARGET) $(LIBDIR)/$(SONAME)
 	@echo "Done making $(TARGET)"
 

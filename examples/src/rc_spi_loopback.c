@@ -19,9 +19,9 @@
 
 int main()
 {
-	char test_str[] = "Hello World";
+	char* test_str = "Hello World";
 	int bytes = strlen(test_str);	// get number of bytes in test string
-	char buf[bytes];		// read buffer
+	uint8_t buf[bytes];		// read buffer
 	int ret;			// return value
 
 	printf("Make sure the MISO and MOSI lines are connected with\n");
@@ -33,7 +33,7 @@ int main()
 
 	// attempt a string send/receive test
 	printf("Sending  %d bytes: %s\n", bytes, test_str);
-	ret = rc_spi_transfer(SLAVE, test_str, bytes, buf);
+	ret = rc_spi_transfer(SLAVE, (uint8_t*)test_str, bytes, buf);
 	if(ret<0){
 		printf("send failed\n");
 		rc_spi_close(SLAVE);
