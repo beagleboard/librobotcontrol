@@ -3,9 +3,8 @@ SRCDIR		:= src
 LIBDIR		:= lib
 BUILDDIR	:= build
 INCLUDEDIR	:= include
-SONAME		:= librobotcontrol.so
-VERSION		:= 1.0.0
-FULLNAME	:= $(SONAME).$(VERSION)
+SONAME		:= librobotcontrol.so.1
+FULLNAME	:= librobotcontrol.so.1.0.0
 TARGET		:= $(LIBDIR)/$(FULLNAME)
 
 # file definitions for rules
@@ -85,6 +84,7 @@ install:
 	@cp -r include/* $(DESTDIR)$(prefix)/include
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/lib
 	@$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/lib
+	@ln -s $(FULLNAME) $(DESTDIR)$(prefix)/lib/$(SONAME)
 	@echo "Library Install Complete"
 
 # cleanup local binaries
@@ -96,6 +96,7 @@ clean:
 # uninstall completely from system
 uninstall:
 	$(RM) $(DESTDIR)$(prefix)/lib/$(FULLNAME)
+	$(RM) $(DESTDIR)$(prefix)/lib/$(SONAME)
 	$(RM) $(DESTDIR)$(prefix)/include/roboticscape.h
 	$(RM) $(DESTDIR)$(prefix)/include/robotcontrol.h
 	$(RM) $(DESTDIR)$(prefix)/include/rc_usefulincludes.h

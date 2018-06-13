@@ -31,9 +31,9 @@ clean:
 	@make -C services/rc_battery_monitor -s clean
 	@make -C services/robotcontrol -s clean
 	@make -C rc_project_template -s clean
-	@$(RM) debian/robotcontrol
-	@$(RM) debian/robotcontrol.postrm.debhelper
-	@$(RM) debian/robotcontrol.substvars
+	@$(RM) debian/librobotcontrol
+	@$(RM) debian/librobotcontrol.postrm.debhelper
+	@$(RM) debian/librobotcontrol.substvars
 	@$(RM) debian/files
 	@$(RM) debian/*.debhelper.log
 	@$(RM) debian/debhelper-build-stamp
