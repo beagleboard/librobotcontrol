@@ -1,3 +1,7 @@
+1.0.0
+    * finally, v1.0.0 release!
+    * rename package to librobotcontrol
+
 0.4.4
     * go back to generic .so name to avoid conflicts
     * add rc/encoder.h as generic interface to all 4 channels

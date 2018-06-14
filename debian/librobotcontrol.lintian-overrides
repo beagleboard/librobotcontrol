@@ -1,7 +1,3 @@
-librobotcontrol source: untranslatable-debconf-templates templates *
-librobotcontrol source: not-using-po-debconf *
-
-
 librobotcontrol: binary-from-other-architecture lib/firmware/am335x-pru0-rc-encoder-fw
 librobotcontrol: unstripped-binary-or-object lib/firmware/am335x-pru0-rc-encoder-fw
 librobotcontrol: statically-linked-binary lib/firmware/am335x-pru0-rc-encoder-fw
