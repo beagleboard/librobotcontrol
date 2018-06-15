@@ -25,6 +25,8 @@
 extern "C" {
 #endif
 
+#define RC_MOTOR_DEFAULT_PWM_FREQ	25000	// 25kHz
+
 
 /**
  * @brief      Initializes all 4 motors and leaves them in a free-spin (0
@@ -32,12 +34,34 @@ extern "C" {
  *
  *             Note, if the user is optionally using the rc_motor_standby
  *             functionality they should be aware that rc_motor_init starts
- *             standby mode in a disabled state so it is not necessary for the majority of users who are not interested in standby mode to
+ *             standby mode in a disabled state so it is not necessary for the
+ *             majority of users who are not interested in standby mode.
+ *
+ *             This starts the motor drivers at RC_MOTOR_DEFAULT_PWM_FREQ. To
+ *             use another frequency initialize with rc_motor_init_freq instead.
  *
  * @return     0 on success, -1 on failure which is usually due to lack of user
  *             permissions to access the gpio and pwm systems.
  */
 int rc_motor_init();
+
+/**
+ * @brief      Just like rc_motor_init but allows the user to set the pwm
+ *             frequency
+ *
+ *             RC_MOTOR_DEFAULT_PWM_FREQ is a good frequency to start at.
+ *
+ *             Note, if the user is optionally using the rc_motor_standby
+ *             functionality they should be aware that rc_motor_init starts
+ *             standby mode in a disabled state so it is not necessary for the
+ *             majority of users who are not interested in standby mode.
+ *
+ * @param[in]  pwm_frequency_hz  The pwm frequency in hz
+ *
+ * @return     0 on success, -1 on failure which is usually due to lack of user
+ *             permissions to access the gpio and pwm systems.
+ */
+int rc_motor_init_freq(int pwm_frequency_hz);
 
 /**
  * @brief      Puts all 4 motors into a free-spin (0 throttle) state, puts the

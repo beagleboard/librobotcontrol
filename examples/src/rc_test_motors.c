@@ -31,6 +31,7 @@ void print_usage()
 	printf("\n");
 	printf("-d {duty}   define a duty cycle from -1.0 to 1.0\n");
 	printf("-b          enable motor brake function\n");
+	printf("-F {freq}   set a custom pwm frequency in HZ, otherwise default 25000 is used\n");
 	printf("-f          enable free spin function\n");
 	printf("-s {duty}   sweep motors back and forward at duty cycle\n");
 	printf("-m {motor}  specify a single motor from 1-4, otherwise all will be driven\n");
@@ -51,11 +52,12 @@ int main(int argc, char *argv[])
 	double duty = 0.0;
 	int ch = 0; // assume all motor unless set otherwise
 	int c, in;
+	int freq_hz = RC_MOTOR_DEFAULT_PWM_FREQ;
 	m_mode_t m_mode = DISABLED;
 
 	// parse arguments
 	opterr = 0;
-	while ((c = getopt(argc, argv, "m:d:fbs:h")) != -1){
+	while ((c = getopt(argc, argv, "m:d:F:fbs:h")) != -1){
 		switch (c){
 		case 'm': // motor channel option
 			in = atoi(optarg);
@@ -75,6 +77,13 @@ int main(int argc, char *argv[])
 			}
 			else{
 				fprintf(stderr,"duty cycle must be from -1 to 1\n");
+				return -1;
+			}
+			break;
+		case 'F': // pwm frequency option
+			freq_hz = atoi(optarg);
+			if(freq_hz<1){
+				fprintf(stderr,"PWM frequency must be >=1\n");
 				return -1;
 			}
 			break;
@@ -119,7 +128,7 @@ int main(int argc, char *argv[])
 	running =1;
 
 	// initialize hardware first
-	if(rc_motor_init()) return -1;
+	if(rc_motor_init_freq(freq_hz)) return -1;
 
 	// decide what to do
 	switch(m_mode){

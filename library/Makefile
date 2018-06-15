@@ -46,7 +46,7 @@ prefix		?= /usr
 $(TARGET): $(OBJECTS)
 	@mkdir -p $(LIBDIR)
 	@$(LINKER) -o $(TARGET) $(OBJECTS) $(LDFLAGS)
-	@ln -s $(FULLNAME) $(LIBDIR)/$(SONAME)
+	@ln -sf $(FULLNAME) $(LIBDIR)/$(SONAME)
 	@echo "Done making $(TARGET)"
 
 # rule for math libs
@@ -84,7 +84,7 @@ install:
 	@cp -r include/* $(DESTDIR)$(prefix)/include
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/lib
 	@$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/lib
-	@ln -s $(FULLNAME) $(DESTDIR)$(prefix)/lib/$(SONAME)
+	@ln -sf $(FULLNAME) $(DESTDIR)$(prefix)/lib/$(SONAME)
 	@echo "Library Install Complete"
 
 # cleanup local binaries

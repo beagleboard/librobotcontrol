@@ -12,6 +12,7 @@
 #include <string.h>
 #include <errno.h>
 #include <rc/pwm.h>
+#include <rc/time.h>
 
 #define MIN_HZ 1
 #define MAX_HZ 1000000000
@@ -90,6 +91,42 @@ int __export_channels(int ss)
 	return 0;
 }
 
+/**
+ * @brief      unexports A and B pwm channels
+ *
+ * @param[in]  ss    subsystem, to export
+ *
+ * @return     0 on succcess, -1 on failure
+ */
+int __unexport_channels(int ss)
+{
+	int unexport_fd=0;
+	char buf[MAXBUF];
+	int len;
+
+	// open export file for that subsystem
+	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/unexport", ss*2);
+	unexport_fd = open(buf, O_WRONLY);
+	if(unlikely(unexport_fd<0)){
+		perror("ERROR in rc_pwm_init, can't open pwm unexport file for writing");
+		fprintf(stderr,"Probably kernel or BeagleBone image is too old\n");
+		return -1;
+	}
+	len=write(unexport_fd, "0", 2);
+	if(unlikely(len<0 && errno!=EBUSY && errno!=ENODEV)){
+		perror("ERROR: in rc_pwm_init, failed to write 0 to unexport file");
+		return -1;
+	}
+	len=write(unexport_fd, "1", 2);
+	if(unlikely(len<0 && errno!=EBUSY  && errno!=ENODEV)){
+		perror("ERROR: in rc_pwm_init, failed to write 1 to unexport file");
+		return -1;
+	}
+	close(unexport_fd);
+	return 0;
+}
+
+
 int rc_pwm_init(int ss, int frequency)
 {
 	int periodA_fd; // pointers to frequency file descriptor
@@ -111,8 +148,16 @@ int rc_pwm_init(int ss, int frequency)
 		return -1;
 	}
 
-	// export channels first
+	// unexport then export channels first
+	if(__unexport_channels(ss)==-1) return -1;
 	if(__export_channels(ss)==-1) return -1;
+
+	// wait for udev to set correct permissions
+
+	//system("ls -la /sys/class/pwm/pwmchip4/pwm-4:0/");
+	//system("udevadm trigger");
+	//rc_usleep(1000000);
+	//system("ls -la /sys/class/pwm/pwmchip4/pwm-4:0/");
 
 	#ifdef DEBUG
 	printf("pwm ss:%d mode:%d\n",ss,mode);
@@ -122,11 +167,18 @@ int rc_pwm_init(int ss, int frequency)
 	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/duty_cycle", ss*2); // mode 0
 	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:0/duty_cycle", ss*2, ss*2); // mode 1
 	dutyA_fd[ss] = open(buf,O_WRONLY);
+
 	if(unlikely(dutyA_fd[ss]==-1)){
-		perror("ERROR in rc_pwm_init, failed to open duty_cycle channel A FD");
-		fprintf(stderr,"tried accessing: %s\n", buf);
-		return -1;
+		// first error is probably from udev being slow, wait a bit and try again
+		rc_usleep(600000);
+		dutyA_fd[ss] = open(buf,O_WRONLY);
+		if(unlikely(dutyA_fd[ss]==-1)){
+			perror("ERROR in rc_pwm_init, failed to open duty_cycle channel A FD");
+			fprintf(stderr,"tried accessing: %s\n", buf);
+			return -1;
+		}
 	}
+
 	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/duty_cycle", ss*2); // mode 0
 	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:1/duty_cycle", ss*2, ss*2); // mode 1
 	dutyB_fd[ss] = open(buf,O_WRONLY);
@@ -295,6 +347,12 @@ int rc_pwm_cleanup(int ss)
 	// close fds
 	close(enableA_fd);
 	close(enableB_fd);
+	close(dutyA_fd[ss]);
+	close(dutyB_fd[ss]);
+
+	// unexport channels, not critical if this fails since everything else
+	// has been closed
+	__unexport_channels(ss);
 
 	init_flag[ss] = 0;
 	return 0;

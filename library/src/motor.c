@@ -41,7 +41,7 @@
 #define MOT_STBY		0,20	//gpio0.20	P9.41
 
 #define CHANNELS		4
-#define PWM_FREQ		25000	// 25kHz
+
 
 // polarity of the motor connections
 static const double polarity[]={1.0,-1.0,-1.0,1.0};
@@ -59,6 +59,12 @@ static int pwmch[CHANNELS];
 
 
 int rc_motor_init()
+{
+	return rc_motor_init_freq(RC_MOTOR_DEFAULT_PWM_FREQ);
+}
+
+
+int rc_motor_init_freq(int pwm_frequency_hz)
 {
 	int i;
 
@@ -108,11 +114,11 @@ int rc_motor_init()
 	pwmch[3]='B';
 
 	// set up pwm channels
-	if(unlikely(rc_pwm_init(1,PWM_FREQ))){
+	if(unlikely(rc_pwm_init(1,pwm_frequency_hz))){
 		fprintf(stderr,"ERROR in rc_motor_init, failed to initialize pwm subsystem 1\n");
 		return -1;
 	}
-	if(unlikely(rc_pwm_init(2,PWM_FREQ))){
+	if(unlikely(rc_pwm_init(2,pwm_frequency_hz))){
 		fprintf(stderr,"ERROR in rc_motor_init, failed to initialize pwm subsystem 2\n");
 		return -1;
 	}
