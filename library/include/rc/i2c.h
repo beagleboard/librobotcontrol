@@ -96,12 +96,12 @@ int rc_i2c_read_byte(int bus, uint8_t regAddr, uint8_t *data);
  *
  * @param[in]  bus      The bus
  * @param[in]  regAddr  The register address
- * @param[in]  length   number of bytes to read
+ * @param[in]  count   number of bytes to read
  * @param[out] data     The data pointer to write response to.
  *
  * @return     returns number of bytes read or -1 on failure
  */
-int rc_i2c_read_bytes(int bus, uint8_t regAddr, uint8_t length,  uint8_t *data);
+int rc_i2c_read_bytes(int bus, uint8_t regAddr, size_t count,  uint8_t *data);
 
 /**
  * @brief      Reads a single word (16 bits) from a device register.
@@ -125,14 +125,12 @@ int rc_i2c_read_word(int bus, uint8_t regAddr, uint16_t *data);
  *
  * @param[in]  bus      The bus
  * @param[in]  regAddr  The register address
- * @param[in]  length   number of words to read
+ * @param[in]  count    Number of 16-bit words to read, NOT number of bytes to read
  * @param[out] data     The data pointer to write response to.
  *
  * @return     0 on success or -1 on failure
  */
-int rc_i2c_read_words(int bus, uint8_t regAddr, uint8_t length, uint16_t* data);
-
-
+int rc_i2c_read_words(int bus, uint8_t regAddr, size_t count, uint16_t* data);
 
 
 /**
@@ -143,7 +141,7 @@ int rc_i2c_read_words(int bus, uint8_t regAddr, uint8_t length, uint16_t* data);
  *
  * @param[in]  bus      The bus
  * @param[in]  regAddr  The register address
- * @param[in]  data     The data
+ * @param[in]  data     Single byte to be writen
  *
  * @return     0 on success or -1 on failure
  */
@@ -156,13 +154,13 @@ int rc_i2c_write_byte(int bus, uint8_t regAddr, uint8_t data);
  *             the actual data to be written. Works for most i2c devices.
  *
  * @param[in]  bus      The bus
- * @param[in]  regAddr  The register address
- * @param[in]  length   The length
- * @param      data     The data
+ * @param[in]  regAddr  The register address to write to
+ * @param[in]  count    The number of bytes to write
+ * @param      data     pointer to user's data to be writen
  *
  * @return     0 on success or -1 on failure
  */
-int rc_i2c_write_bytes(int bus, uint8_t regAddr, uint8_t length, uint8_t* data);
+int rc_i2c_write_bytes(int bus, uint8_t regAddr, size_t count, uint8_t* data);
 
 
 /**
@@ -172,8 +170,8 @@ int rc_i2c_write_bytes(int bus, uint8_t regAddr, uint8_t length, uint8_t* data);
  *             the actual data to be written. Works for most i2c devices.
  *
  * @param[in]  bus      The bus
- * @param[in]  regAddr  The register address
- * @param[in]  data     The data
+ * @param[in]  regAddr  The register address to write to
+ * @param[in]  data     16-bit word to be written
  *
  * @return     0 on success or -1 on failure
  */
@@ -188,12 +186,12 @@ int rc_i2c_write_word(int bus, uint8_t regAddr, uint16_t data);
  *
  * @param[in]  bus      The bus
  * @param[in]  regAddr  The register address
- * @param[in]  length   Number of words to write
+ * @param[in]  count    Number of 16-bit words to write, NOT number of bytes
  * @param[in]  data     The data
  *
  * @return     0 on success or -1 on failure
  */
-int rc_i2c_write_words(int bus, uint8_t regAddr, uint8_t length, uint16_t* data);
+int rc_i2c_write_words(int bus, uint8_t regAddr, size_t count, uint16_t* data);
 
 
 
@@ -208,12 +206,12 @@ int rc_i2c_write_words(int bus, uint8_t regAddr, uint8_t length, uint16_t* data)
  *             uploading firmware to a device.
  *
  * @param[in]  bus     The bus
- * @param[in]  length  Number of bytes to send
+ * @param[in]  count   Number of bytes to send
  * @param[in]  data    The data
  *
  * @return     0 on success or -1 on failure
  */
-int rc_i2c_send_bytes(int bus, uint8_t length, uint8_t* data);
+int rc_i2c_send_bytes(int bus, size_t count, uint8_t* data);
 
 /**
  * @brief      Sends exactly user-defined data without prepending a register
@@ -280,6 +278,19 @@ int rc_i2c_unlock_bus(int bus);
  */
 int rc_i2c_get_lock(int bus);
 
+/**
+ * @brief      Gets file descriptor.
+ *
+ *
+ * @param[in]  bus      The bus
+ *
+ * @return     returns file descriptor of the specified bus or -1 on failure
+ */
+int rc_i2c_get_fd(int bus);
+
+
+
+
 #ifdef RC_AUTOPILOT_EXT
 /**
  * @brief      Reads multiple bytes from a device register.
@@ -295,19 +306,12 @@ int rc_i2c_get_lock(int bus);
  * @return     returns number of bytes read or -1 on failure
  */
 int rc_i2c_read_data(int bus, uint8_t regAddr, size_t length, uint8_t *data);
+#endif // RC_AUTOPILOT_EXT
 
-/**
- * @brief      Gets file descriptor.
- *
- *
- * @param[in]  bus      The bus
- *
- * @return     returns file descriptor of the specified bus or -1 on failure
- */
-int rc_i2c_get_fd(int bus);
-#endif
 
-#ifdef  __cplusplus
+
+
+#ifdef __cplusplus
 }
 #endif
 
