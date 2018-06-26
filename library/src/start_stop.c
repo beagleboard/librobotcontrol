@@ -65,7 +65,6 @@ int rc_make_pid_file()
 {
 	FILE *fd;
 	DIR* dir;
-	int ret;
 	pid_t current_pid;
 
 	// start by checking if a pid file exists
@@ -79,30 +78,9 @@ int rc_make_pid_file()
 	errno=0;
 	dir = opendir(RC_PID_DIR);
 	if(dir) closedir(dir); // exists, yay!
-	else if(errno==ENOENT){
-		// make missing directory
-		// try giving 777 permissions but umask will overwrite it
-		ret = mkdir(RC_PID_DIR, S_IRWXU | S_IRWXG | S_IRWXO);
-		if(ret==-1 && errno==EACCES){
-			fprintf(stderr,"ERROR in rc_make_pid_file, need to be root to create %s\n",RC_PID_DIR);
-			fprintf(stderr,"This should have been done by the roboticscape systemd service\n");
-			fprintf(stderr,"Make sure the service is running by executing:\n");
-			fprintf(stderr,"sudo systemctl enable roboticscape && sudo systemctl restart roboticscape\n");
-			return -1;
-		}
-		if(ret==-1){
-			perror("ERROR in rc_make_pid_file trying to make directory /var/run/roboticscape");
-			return -1;
-		}
-		// now give proper permissions
-		if(chmod(RC_PID_DIR, S_IRWXU | S_IRWXG | S_IRWXO)==-1){
-			perror("ERROR in rc_make_pid_file setting permissions for /var/run/roboticscape");
-			return -1;
-		}
-	}
 	else{
 		//opendir() failed for some other reason.
-		perror("ERROR in rc_make_pid_file trying to open /var/run/roboticscape");
+		perror("ERROR in rc_make_pid_file trying to open /run/shm/");
 		return -1;
 	}
 

@@ -1,42 +1,48 @@
 /**
  * <rc/start_stop.h>
  *
- * @brief cleanly start and stop a process, signal handling, program flow
+ * @brief      cleanly start and stop a process, signal handling, program flow
  *
- * It can be tricky to manage the starting and stopping of mutiple threads and
- * loops. Since the robotics cape library has several background threads in
- * addition to any user-created threads, we encourage the use of the
- * consolidated high-level process control method described here. These
- * functions allow easy implementation of good-practice process handling
- * including a global shutdown flag, a signal handler, making & deleting a PID
- * file, stopping previously running copies of a program, and stopping a program
- * when it's in the background.
+ *             It can be tricky to manage the starting and stopping of mutiple
+ *             threads and loops. Since the robot control library has several
+ *             background threads in addition to any user-created threads, we
+ *             encourage the use of the consolidated high-level process control
+ *             method described here. These functions allow easy implementation
+ *             of good-practice process handling including a global shutdown
+ *             flag, a signal handler, making & deleting a PID file, stopping
+ *             previously running copies of a program, and stopping a program
+ *             when it's in the background.
  *
- * The rc_state_t struct tries to cover the majority of use cases in the context
- * of a robotics application. The user should start their program main()
- * function by setting the state to UNINITIALIZED and enabling the signal
- * handler before doing hardware initialization and starting threads. When the
- * user's own initialization sequence is complete they should set the flow state
- * to PAUSED or RUNNING to indicate to the newly created threads that the
- * program should now behave in normal ongoing operational mode.
+ *             The rc_state_t struct tries to cover the majority of use cases in
+ *             the context of a robotics application. The user should start
+ *             their program main() function by setting the state to
+ *             UNINITIALIZED and enabling the signal handler before doing
+ *             hardware initialization and starting threads. When the user's own
+ *             initialization sequence is complete they should set the flow
+ *             state to PAUSED or RUNNING to indicate to the newly created
+ *             threads that the program should now behave in normal ongoing
+ *             operational mode.
  *
- * During normal operation, the user may elect to implement a PAUSED state where
- * the user's threads may keep running to read sensors but do not actuate
- * motors, leaving their robot in a safe state. For example, pressing the pause
- * button could be assigned to change this state back and forth between RUNNING
- * and PAUSED. This is entirely optional.
+ *             During normal operation, the user may elect to implement a PAUSED
+ *             state where the user's threads may keep running to read sensors
+ *             but do not actuate motors, leaving their robot in a safe state.
+ *             For example, pressing the pause button could be assigned to
+ *             change this state back and forth between RUNNING and PAUSED. This
+ *             is entirely optional.
  *
- * The most important state here is EXITING. The signal handler described here intercepts the SIGINT signal when the user presses
- * Ctrl-C and sets the state to EXITING. It is then up to the user's
- * threads to watch for this condition and exit cleanly. The user
- * may also set the state to EXITING at any time to trigger the closing of
- * their own threads and Robotics Cape library's own background threads.
+ *             The most important state here is EXITING. The signal handler
+ *             described here intercepts the SIGINT signal when the user presses
+ *             Ctrl-C and sets the state to EXITING. It is then up to the user's
+ *             threads to watch for this condition and exit cleanly. The user
+ *             may also set the state to EXITING at any time to trigger the
+ *             closing of their own threads and robot control library's own
+ *             background threads.
  *
- * The flow state variable is kept in the robotics cape library's memory
- * space and should be read and modified by the rc_get_state() and
- * rc_set_state() functions above. The user may optionally use the
- * rc_print_state() function to print a human readable version of the state enum
- * to the screen.
+ *             The flow state variable is kept in the robot control library's
+ *             memory space and should be read and modified by the
+ *             rc_get_state() and rc_set_state() functions above. The user may
+ *             optionally use the rc_print_state() function to print a human
+ *             readable version of the state enum to the screen.
  *
  *
  * @addtogroup start_stop
@@ -50,8 +56,8 @@
 extern "C" {
 #endif
 
-#define RC_PID_DIR	"/var/run/roboticscape"
-#define RC_PID_FILE	"/var/run/roboticscape/roboticscape.pid"
+#define RC_PID_DIR	"/run/shm/"
+#define RC_PID_FILE	"/run/shm/robotcontrol.pid"
 
 /**
  * @brief      process state variable, read and modify by rc_get_state,
@@ -91,7 +97,7 @@ void rc_set_state(rc_state_t new_state);
 int rc_print_state();
 
 /**
- * @brief      Makes a PID file RC_PID_FILE (/var/run/robotics_cape.pid)
+ * @brief      Makes a PID file RC_PID_FILE (/run/shm/robotcontrol.pid)
  *             containing the current PID of your process
  *
  * @return     Returns 0 if successful. If that file already exists then it is

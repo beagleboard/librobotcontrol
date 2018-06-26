@@ -6,6 +6,7 @@ INCLUDEDIR	:= include
 SONAME		:= librobotcontrol.so.1
 FULLNAME	:= librobotcontrol.so.1.0.0
 TARGET		:= $(LIBDIR)/$(FULLNAME)
+RC_VAR_DIR	:= var/lib/robotcontrol
 
 # file definitions for rules
 SOURCES		:= $(shell find $(SRCDIR) -type f -name *.c)
@@ -79,12 +80,12 @@ native:
 
 install:
 	$(MAKE)
-	@$(INSTALLDIRWRITE) $(DESTDIR)/var/lib/robotcontrol
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/include
 	@cp -r include/* $(DESTDIR)$(prefix)/include
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/lib
 	@$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/lib
 	@ln -sf $(FULLNAME) $(DESTDIR)$(prefix)/lib/$(SONAME)
+	@$(INSTALLDIRWRITE) $(DESTDIR)/$(RC_VAR_DIR)
 	@echo "Library Install Complete"
 
 # cleanup local binaries
