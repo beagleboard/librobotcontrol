@@ -43,7 +43,7 @@
 #define GYRO_CAL_FILE		"gyro.cal"
 #define MAG_CAL_FILE		"mag.cal"
 
-//I2C bus and address definitions for Robotics Cape
+//I2C bus and address definitions for Robotics Cape & bealgebone blue
 #define RC_IMU_BUS		2
 #define RC_IMU_INTERRUPT_PIN_CHIP 3
 #define RC_IMU_INTERRUPT_PIN_PIN  21 // gpio3.21 P9.25
@@ -2457,7 +2457,7 @@ int __write_gyro_cal_to_disk(int16_t offsets[3])
 		perror("ERROR in rc_calibrate_gyro_routine opening calibration file for writing");
 		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
 		fprintf(stderr, "running it as a normal user. try deleting the file\n");
-		fprintf(stderr, "sudo rm /var/lib/roboticscape/gyro.cal\n");
+		fprintf(stderr, "sudo rm /var/lib/robotcontrol/gyro.cal\n");
 		return -1;
 	}
 
@@ -2466,7 +2466,7 @@ int __write_gyro_cal_to_disk(int16_t offsets[3])
 		perror("ERROR in rc_calibrate_gyro_routine writing to file");
 		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
 		fprintf(stderr, "running it as a normal user. try deleting the file\n");
-		fprintf(stderr, "sudo rm /var/lib/roboticscape/gyro.cal\n");
+		fprintf(stderr, "sudo rm /var/lib/robotcontrol/gyro.cal\n");
 		fclose(fd);
 		return -1;
 	}
@@ -2478,7 +2478,7 @@ int __write_gyro_cal_to_disk(int16_t offsets[3])
 		fprintf(stderr, "writing file anyway, will probably still work\n");
 		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
 		fprintf(stderr, "running it as a normal user. try deleting the file\n");
-		fprintf(stderr, "sudo rm /var/lib/roboticscape/gyro.cal\n");
+		fprintf(stderr, "sudo rm /var/lib/robotcontrol/gyro.cal\n");
 	}
 	return 0;
 }
@@ -2512,7 +2512,7 @@ int __write_mag_cal_to_disk(double offsets[3], double scale[3])
 		perror("ERROR in rc_calibrate_mag_routine opening calibration file for writing");
 		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
 		fprintf(stderr, "running it as a normal user. try deleting the file\n");
-		fprintf(stderr, "sudo rm /var/lib/roboticscape/mag.cal\n");
+		fprintf(stderr, "sudo rm /var/lib/robotcontrol/mag.cal\n");
 		return -1;
 	}
 
@@ -2537,7 +2537,7 @@ int __write_mag_cal_to_disk(double offsets[3], double scale[3])
 		fprintf(stderr, "writing file anyway, will probably still work\n");
 		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
 		fprintf(stderr, "running it as a normal user. try deleting the file\n");
-		fprintf(stderr, "sudo rm /var/lib/roboticscape/mag.cal\n");
+		fprintf(stderr, "sudo rm /var/lib/robotcontrol/mag.cal\n");
 	}
 
 	return 0;
@@ -2572,7 +2572,7 @@ int __write_accel_cal_to_disk(double* center, double* lengths)
 		perror("ERROR in rc_mpu_calibrate_accel_routine opening calibration file for writing");
 		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
 		fprintf(stderr, "running it as a normal user. try deleting the file\n");
-		fprintf(stderr, "sudo rm /var/lib/roboticscape/accel.cal\n");
+		fprintf(stderr, "sudo rm /var/lib/robotcontrol/accel.cal\n");
 		return -1;
 	}
 
@@ -2597,7 +2597,7 @@ int __write_accel_cal_to_disk(double* center, double* lengths)
 		fprintf(stderr, "writing file anyway, will probably still work\n");
 		fprintf(stderr, "most likely you ran this as root in the past and are now\n");
 		fprintf(stderr, "running it as a normal user. try deleting the file\n");
-		fprintf(stderr, "sudo rm /var/lib/roboticscape/accel.cal\n");
+		fprintf(stderr, "sudo rm /var/lib/robotcontrol/accel.cal\n");
 	}
 	return 0;
 }

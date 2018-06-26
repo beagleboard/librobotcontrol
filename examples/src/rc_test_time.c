@@ -2,7 +2,7 @@
  * @file rc_test_time.c
  * @example    rc_test_time
  *
- * Prints the current version of the Robotics Cape Library.
+ * Prints the current version of the robot control library.
  *
  *
  *
@@ -16,7 +16,8 @@
 
 #define LOOPS 10000
 
-int main(){
+int main()
+{
 	int i;
 	uint64_t a,b,nanos;
 

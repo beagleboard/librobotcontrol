@@ -5,6 +5,13 @@
 set -e	# exit on error
 . /usr/share/debconf/confmodule # Source debconf library.
 
+
+# enable services, but don't start yet
+systemctl daemon-reload
+systemctl enable robotcontrol
+systemctl enable rc_battery_monitor
+
+# in interactive mode, ask for configuration options
 if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
 
 	# Fetching configuration from debconf
@@ -30,20 +37,14 @@ if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
 		echo "setting nothing to run on boot"
 		rm -f /etc/robotcontrol/link_to_startup_program
 	else
-		echo "leaving current robotcontrol startup program alone"
+		echo "leaving current robot control startup program alone"
 	fi
 
-	# enable services
-	echo "systemctl daemon-reload"
-	systemctl daemon-reload
-	echo "Enabling robotcontrol Service"
-	systemctl enable robotcontrol
-	echo "Enabling rc_battery_monitor Service"
-	systemctl enable rc_battery_monitor
-	# try to start battery monitor, but ignore errors as this may not work
-	echo "Starting rc_battery_monitor Service"
+
+	# try to start services, but ignore errors as this may not work
 	set +e
 	systemctl start rc_battery_monitor
+	systemctl start robotcontrol
 
 	# leave error checking off when setting up device tree too
 	if [ "$ENABLE_DT" = "true" ]; then
@@ -51,13 +52,15 @@ if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
 		configure_robotics_dt
 	fi
 
-	echo "Robotics Cape package installation complete."
-
+	echo "**********************************************"
+	echo "librobotcontrol package installation complete."
 	if [ "$ENABLE_DT" = "true" ]; then
-		echo "**********************************************"
 		echo "Please reboot now to load new device tree."
-		echo "**********************************************"
 	fi
+	echo "**********************************************"
+
+	# put error checking back on in case debhelper wants it
+	set -e
 
 fi
 

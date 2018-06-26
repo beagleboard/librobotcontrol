@@ -10,7 +10,7 @@
 #include <rc/start_stop.h>
 #include <rc/time.h>
 
-#define VOLTAGE_DISCONNECT	1	// Threshold for detecting disconnected battery
+#define VOLTAGE_DISCONNECT	1 // Threshold for detecting disconnected battery
 
 int main()
 {

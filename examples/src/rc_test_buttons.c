@@ -2,7 +2,8 @@
  * @file rc_test_buttons.c
  * @example    rc_test_buttons
  *
- * This is a very basic test of button functionality. It simply prints to the screen when a button has been pressed or released.
+ * This is a very basic test of button functionality. It simply prints to the
+ * screen when a button has been pressed or released.
  **/
 
 #include <stdio.h>

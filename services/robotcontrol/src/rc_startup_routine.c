@@ -23,7 +23,6 @@
 #define TIMEOUT_S 15
 #define START_LOG "/var/log/robotcontrol/startup_log.txt"
 
-static int make_pid_directory();
 static int set_gpio_permissions();
 static int check_timeout();
 static int setup_pwm();
@@ -48,9 +47,6 @@ int main()
 	time = rc_nanos_since_boot()/1000000000.0;
 	sprintf(buf, "echo 'start time (s): %6.2f' > %s",time,START_LOG);
 	system(buf);
-
-	// make pid directory with correct permissions
-	make_pid_directory();
 
 	// whitelist blue, black, and black wireless only when RC device tree is in use
 	model = rc_model();
@@ -231,33 +227,3 @@ int check_eqep()
 	return 0;
 }
 
-
-/**
- * @brief      Makes a directory to put PID file in which has universal write
- *             access so non-root users can still use PID files in /var/run.
- *
- *             /var/run/user doesn't work since user may run some programs as
- *             root and others as debian user.
- *
- * @return     return 0 on success, -1 on failure
- */
-int make_pid_directory()
-{
-	int ret;
-	// these permissions are not the final permissions of the directory as
-	// mkdir will mask it with umask on creation
-	ret = mkdir(RC_PID_DIR, 0777);
-	// error check, EEXIST is okay, we want directory to exist!
-	if(ret==-1 && errno!=EEXIST){
-		perror("ERROR making PID directory");
-		return -1;
-	}
-
-	// now set the correct permissions
-	ret = chmod(RC_PID_DIR, 0777);
-	if(ret==-1){
-		perror("ERROR setting permissions of PID directory");
-		return -1;
-	}
-	return 0;
-}

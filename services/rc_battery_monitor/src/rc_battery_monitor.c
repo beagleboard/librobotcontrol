@@ -18,7 +18,7 @@
 #include <rc/time.h>
 #include <rc/model.h>
 
-#define BATTPIDFILE	"/var/run/rc_battery_monitor.pid"
+#define BATTPIDFILE	"/run/rc_battery_monitor.pid"
 #define START_BLINK_US	100000	// 0.1 second
 
 // Critical Max voltages of packs used to detect number of cells in pack

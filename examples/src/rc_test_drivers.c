@@ -2,7 +2,7 @@
  * @example    rc_test_drivers.c
  *
  * without actually calling library functions, this checks that all the drivers
- * necessary for libroboticscape to work.
+ * necessary for the robot control library to fully work.
  **/
 
 #include <stdio.h>

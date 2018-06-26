@@ -16,8 +16,8 @@
 
 int main()
 {
-	printf("Please connect a DSM satellite receiver to your Robotics Cape\n");
-	printf("and make sure your transmitter is on and paired to the receiver\n");
+	printf("Please connect a DSM satellite receiver and make sure\n");
+	printf("your transmitter is on and paired to the receiver.\n");
 	printf("\n");
 	printf("Press ENTER to continue or anything else to quit\n");
 	getchar();

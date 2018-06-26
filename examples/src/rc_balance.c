@@ -8,7 +8,7 @@
 #include <unistd.h> // for isatty()
 #include <stdlib.h> // for strtof()
 #include <math.h> // for M_PI
-#include <roboticscape.h>
+#include <robotcontrol.h>
 
 #include "rc_balance_defs.h"
 
@@ -474,7 +474,7 @@ void balance_controller()
 	* read sensors and compute the state when either ARMED or DISARMED
 	******************************************************************/
 	// angle theta is positive in the direction of forward tip around X axis
-	cstate.theta = mpu_data.dmp_TaitBryan[TB_PITCH_X] + CAPE_MOUNT_ANGLE;
+	cstate.theta = mpu_data.dmp_TaitBryan[TB_PITCH_X] + BOARD_MOUNT_ANGLE;
 
 	// collect encoder positions, right wheel is reversed
 	cstate.wheelAngleR = (rc_encoder_eqep_read(ENCODER_CHANNEL_R) * 2.0 * M_PI) \

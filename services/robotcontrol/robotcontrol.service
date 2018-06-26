@@ -4,7 +4,7 @@ Requires=systemd-modules-load.service
 
 [Service]
 User=root
-PIDFile=/var/run/robotcontrol/robotcontrol.pid
+PIDFile=/run/robotcontrol/robotcontrol.pid
 ExecStartPre=/usr/bin/rc_startup_routine
 ExecStart=-/etc/robotcontrol/link_to_startup_program
 ExecStop=/usr/bin/rc_kill

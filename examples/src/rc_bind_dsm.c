@@ -1,8 +1,7 @@
 /**
  * @example    rc_bind_dsm
  *
- * routine to put a DSM2/DSMX satellite receiver into pairing mode James
- * Strawson 2014
+ * routine to put a DSM2/DSMX satellite receiver into pairing mode
  *
  * DSM satellite receivers are put into bind mode by sending them a sequence of
  * pulses right after it receives power and starts up. This program puts the

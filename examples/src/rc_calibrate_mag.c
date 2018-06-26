@@ -20,11 +20,12 @@
 // change this for your platform
 #define I2C_BUS 2
 
-int main(){
+int main()
+{
 
 	printf("\n");
 	printf("This will sample the magnetometer for the next 15 seconds\n");
-	printf("Rotate the cape around in the air through as many orientations\n");
+	printf("Rotate the board around in the air through as many orientations\n");
 	printf("as possible to collect sufficient data for calibration\n");
 	printf("Press any key to continue\n");
 	getchar();

@@ -2,7 +2,7 @@
  * @file rc_test_leds.c
  * @example    rc_test_leds
  *
- * tests all LEDs on Robotics Cape & BeagleBone Blue
+ * tests all LEDs
  *
  * @author     James Strawson
  * @date       1/29/2018

@@ -4,6 +4,5 @@
 
 override_dh_fixperms:
 	dh_fixperms \
-	--exclude var/lib/robotcontrol \
-	--exclude var/run/robotcontrol
+	--exclude var/lib/robotcontrol
 

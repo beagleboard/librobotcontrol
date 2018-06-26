@@ -17,14 +17,14 @@
 #include <stdio.h>
 #include <rc/mpu.h>
 
-// bus for Robotics Cape and BeagleboneBlue is 2
+// bus for Robotics Cape and BeagleBone Blue is 2
 // change this for your platform
 #define I2C_BUS 2
 
-int main(){
-
+int main()
+{
 	printf("\nThis program will generate a new gyro calibration file\n");
-	printf("keep your beaglebone very still for this procedure.\n");
+	printf("keep your board very still for this procedure.\n");
 	printf("Press any key to continue\n");
 	getchar();
 	printf("Starting calibration routine\n");

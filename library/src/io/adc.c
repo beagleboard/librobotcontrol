@@ -1,8 +1,7 @@
 /**
  * @file adc_bbb_iio.c
  *
- * Basic interface to the iio adc driver to reading ADCs on Robotics Cape and
- * BeagleBone Blue.
+ * Basic interface to the iio adc driver
  *
  * @author     James Strawson
  * @date       1/29/2018

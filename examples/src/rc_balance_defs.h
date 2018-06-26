@@ -11,34 +11,14 @@
 #define DT			0.01			// 1/sample_rate
 
 // Structural properties of eduMiP
-#define CAPE_MOUNT_ANGLE	0.49 // increase if mip tends to roll forward
+#define BOARD_MOUNT_ANGLE	0.49 // increase if mip tends to roll forward
 #define GEARBOX			35.577
 #define ENCODER_RES		60
 #define WHEEL_RADIUS_M		0.034
 #define TRACK_WIDTH_M		0.035
 #define V_NOMINAL		7.4
 
-/*
-// inner loop controller 200hz old
-#define D1_GAIN			0.8
-#define D1_ORDER		2
-#define D1_NUM			{-6.289, 11.910, -5.634 }
-#define D1_DEN			{ 1.000, -1.702,  0.702 }
-#define D1_NUM_LEN		3
-#define D1_DEN_LEN		3
-#define D1_SATURATION_TIMEOUT	0.5
-
-// outer loop controller original 200hz
-#define D2_GAIN			0.7
-#define	D2_ORDER		1
-#define D2_NUM			{ 0.3858, -0.3853 }
-#define D2_DEN			{ 1.0000, -0.9277 }
-#define D2_NUM_LEN		2
-#define D2_DEN_LEN		2
-#define THETA_REF_MAX		0.37
-*/
-
-// // inner loop controller 100hz new
+// inner loop controller 100hz
 #define D1_GAIN			1.05
 #define D1_ORDER		2
 #define D1_NUM			{-4.945, 8.862, -3.967}
@@ -48,7 +28,7 @@
 #define D1_SATURATION_TIMEOUT	0.4
 
 
-// outer loop controller new 100hz
+// outer loop controller 100hz
 #define D2_GAIN			0.9
 #define	D2_ORDER		2
 #define D2_NUM			{0.18856,  -0.37209,  0.18354}

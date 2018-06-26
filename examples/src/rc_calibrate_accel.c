@@ -21,8 +21,8 @@
 // change this for your platform
 #define I2C_BUS 2
 
-int main(){
-
+int main()
+{
 	printf("\nThis program will generate a new accelerometer calibration file\n");
 	printf("Press any key to continue\n");
 	getchar();

@@ -14,7 +14,8 @@
 #include <rc/time.h>
 
 
-int main(){
+int main()
+{
 	int i;
 
 	// initialize hardware first

@@ -15,7 +15,7 @@
 #include <rc/bmp.h>
 
 // choice of 1,2,4,8,16 oversampling. Here we use 16 and sample at 25hz which
-// is close to the update rate specified in robotics_cape.h for that oversample.
+// is close to the update rate specified in rc/bmp.h for that oversample.
 #define OVERSAMPLE  BMP_OVERSAMPLE_16
 
 // choice of OFF, 2, 4, 8, 16 filter constants. Here we turn off the filter and

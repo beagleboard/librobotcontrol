@@ -780,7 +780,7 @@ enter:
 
 	// wait for user to hit enter before continuing
 	printf("\nDisconnect your dsm satellite receiver if it is still connected\n");
-	printf("Plug it into the cape quickly and firmly to begin binding.\n");
+	printf("Plug it into the board quickly and firmly to begin binding.\n");
 
 	// wait for the receiver to be disconnected
 	value = 1;
