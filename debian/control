@@ -9,6 +9,8 @@ Homepage: http://www.strawsondesign.com/
 Package: librobotcontrol
 Architecture: armhf
 Depends: debconf, ${shlibs:Depends}, ${misc:Depends}
+Replaces: roboticscape
 Conflicts: roboticscape
+Provides: roboticscape
 Description: Robot Control Library and Examples
  Hardware support for the Robotics Cape and BeagleBone Blue.
