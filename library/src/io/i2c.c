@@ -194,7 +194,7 @@ int rc_i2c_read_words(int bus, uint8_t regAddr, size_t count, uint16_t *data)
 	// then read the response
 	ret = read(i2c[bus].fd, buf, count*2);
 	if(ret!=(signed)(count*2)){
-		fprintf(stderr,"ERROR: in rc_i2c_read_words, received %d bytes, expected %d\n", ret, count*2);
+		fprintf(stderr,"ERROR: in rc_i2c_read_words, received %d bytes, expected %zu\n", ret, count*2);
 		i2c[bus].lock = old_lock;
 		return -1;
 	}
@@ -238,7 +238,7 @@ int rc_i2c_write_bytes(int bus, uint8_t regAddr, size_t count, uint8_t* data)
 	ret = write(i2c[bus].fd, writeData, count+1);
 	// write should have returned the correct # bytes written
 	if(unlikely(ret!=(signed)(count+1))){
-		fprintf(stderr,"ERROR in rc_i2c_write_bytes, bus wrote %d bytes, expected %d\n", ret, count+1);
+		fprintf(stderr,"ERROR in rc_i2c_write_bytes, bus wrote %d bytes, expected %zu\n", ret, count+1);
 		i2c[bus].lock = old_lock;
 		return -1;
 	}
@@ -309,7 +309,7 @@ int rc_i2c_write_words(int bus, uint8_t regAddr, size_t count, uint16_t* data)
 
 	ret = write(i2c[bus].fd, writeData, (count*2)+1);
 	if(unlikely(ret!=(signed)(count*2)+1)){
-		fprintf(stderr,"ERROR: in rc_i2c_write_words, system write returned %d, expected %d\n", ret, (count*2)+1);
+		fprintf(stderr,"ERROR: in rc_i2c_write_words, system write returned %d, expected %zu\n", ret, (count*2)+1);
 		i2c[bus].lock = old_lock;
 		return -1;
 	}
@@ -377,7 +377,7 @@ int rc_i2c_send_bytes(int bus, size_t count, uint8_t* data)
 	ret = write(i2c[bus].fd, data, count);
 	// write should have returned the correct # bytes written
 	if(ret!=(signed)count){
-		fprintf(stderr,"ERROR: in rc_i2c_send_bytes, system write returned %d, expected %d\n", ret, count);
+		fprintf(stderr,"ERROR: in rc_i2c_send_bytes, system write returned %d, expected %zu\n", ret, count);
 		i2c[bus].lock = old_lock;
 		return -1;
 	}
