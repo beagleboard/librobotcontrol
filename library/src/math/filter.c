@@ -678,7 +678,7 @@ int rc_filter_butterworth_highpass(rc_filter_t* f, int order, double dt, double 
 }
 
 
-int rc_filter_moving_average(rc_filter_t* f, int samples, int dt)
+int rc_filter_moving_average(rc_filter_t* f, int samples, double dt)
 {
 	int i;
 	rc_vector_t num = rc_vector_empty();
@@ -686,6 +686,10 @@ int rc_filter_moving_average(rc_filter_t* f, int samples, int dt)
 	// sanity checks
 	if(unlikely(samples<2)){
 		fprintf(stderr,"ERROR in rc_filter_moving_average, samples must be >=2\n");
+		return -1;
+	}
+	if(unlikely(dt<=0.0)){
+		fprintf(stderr, "ERROR in rc_filter_moving_average, dt must be >0\n");
 		return -1;
 	}
 	rc_vector_alloc(&num,samples);
@@ -703,6 +707,7 @@ int rc_filter_moving_average(rc_filter_t* f, int samples, int dt)
 		rc_vector_free(&den);
 		return -1;
 	}
+	f->dt=dt;
 	rc_vector_free(&num);
 	rc_vector_free(&den);
 	return 0;

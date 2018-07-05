@@ -455,7 +455,7 @@ int rc_filter_butterworth_highpass(rc_filter_t* f, int order, double dt, double 
  *
  * @return     Returns 0 on success or -1 on failure.
  */
-int rc_filter_moving_average(rc_filter_t* f, int samples, int dt);
+int rc_filter_moving_average(rc_filter_t* f, int samples, double dt);
 
 /**
  * @brief      Creates a first order integrator.
