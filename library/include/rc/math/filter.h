@@ -449,6 +449,13 @@ int rc_filter_butterworth_highpass(rc_filter_t* f, int order, double dt, double 
  *             Any existing memory allocated for f is freed safely to avoid
  *             memory leaks and new memory is allocated for the new filter.
  *
+ *             Note that the timestep dt does not effect the dynamics of the
+ *             produced filter. It is simply copied into the 'dt' field of the
+ *             rc_filter_t struct. However, it is necessary for creation of this
+ *             filter for compatability with the soft-start feature and any
+ *             other user codepaths that may be dependent on a filter's
+ *             timestep.
+ *
  * @param[out] f        Pointer to user's rc_filter_t struct
  * @param[in]  samples  The samples to average over (>=2)
  * @param[in]  dt       desired timestep of discrete filter in seconds
