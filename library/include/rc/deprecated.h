@@ -6,7 +6,8 @@
  * @author     James Strawson
  * @date       4/26/2018
  *
- * @addtogroup deprecated
+ * @addtogroup Deprecated_Functions
+ * @ingroup Deprecated
  * @{
  */
 

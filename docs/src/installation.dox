@@ -1,0 +1,94 @@
+
+
+
+/*! \page installation Installation
+
+\section s1 From Clean BeagleBoard.org Image
+Stable Robot Control library releases are pre-installed with the BeagleBoard stable images. We recommend BeagleBone Black and Black Wireless users run the latest stable Stretch IOT image available [here](http://beagleboard.org/latest-images). Currently the latest stable Debian Stretch IOT image is 2018-06-17 which includes the previously-named robticscape package, although the API is the same.
+
+On first boot after flashing a clean 2018-06-17 image the package will be installed but not configured yet. Manually configure the package and reboot with:
+
+````
+sudo dpkg-reconfigure roboticscape
+sudo reboot
+````
+
+
+This will let you configure a program to run on boot and enable the two systemd services. In future testing images that include the librobotcontrol debian package, these services will be enbaled by default.
+
+Finally check that the right device tree is loaded with the rc_model program which will print something like this:
+
+```
+debian@beaglebone:~$ rc_model
+
+Currently running on a:
+BB_BLACK_RC
+```
+
+On the BeagleBone Blue, expect it to say BB_BLUE. If you are using the RoboticsCape on a BealgeBone Black or Black Wireless, make sure it says BB_BLACK_RC or BB_BLACK_W_RC. If it doesn't show the RC suffix then you either did not reboot after reconfiguring the package, or something weird happened and you should manually set the device tree with the following. Note, this is for BeagleBone Black and Black Wireless board using the Robotics Cape, not the BeagleBone Blue.
+
+```
+debian@beaglebone:~$ sudo configure_robotics_dt
+debian@beaglebone:~$ sudo reboot
+```
+
+\section s2 Upgrade From Repository
+BeagleBoard.org graciously hosts the latest stable librobotcontrol package in their repositories. On a BeagleBoard product, install like any other package with:
+
+```
+sudo apt update && sudo apt install librobotcontrol
+```
+
+The package can easily be updated from there with:
+
+```
+sudo apt update && sudo apt upgrade librobotcontrol
+```
+
+\section s3 From Source
+
+To help beta-test and to stay with the latest library version you can either clone this repo and run 'make && sudo make install', or download and install the latest debian package from the [releases](https://github.com/StrawsonDesign/Robotics_Cape_Installer/releases) page. A debian package is the safer option.
+
+An installer script exists to help compile and install from source.
+
+```
+debian@beaglebone:~/librobotcontrol$ ./install.sh
+
+This install script is just to help install from source.
+If you are running this on a BeagleBone we recommend running
+the version which comes packaged and preinstalled in the
+official BeagleBone images. Please visit this link for details:
+
+http://strawsondesign.com/docs/robotcontrol/
+
+To continue, enter 1 to compile and install on BeagleBone
+enter 2 for other platforms (Raspberry Pi, x86, etc..)
+```
+
+Option 2 will only install the library and examples, whereas option 1 will also do the following beaglebone-specific steps: compile and install PRU binaries, enable systemd services, setup uEnv.txt to enable the Robotics Cape device tree if running on a beaglebone black or black wireless.
+
+You can manually setup the device tree outside of this script with the following command, although this is not necessary when using the install.sh helper script. This is not necessary for the BeagleBone Blue or when installing a debian package.
+
+```
+sudo configure_robotics_dt.sh
+sudo reboot
+```
+
+To revert to the standard device tree, replace uEnv.txt with the backup that was created by the previous step.
+
+```
+sudo cp /boot/uEnv.txt.backup /boot/uEnv.txt
+sudo reboot
+```
+
+
+\tableofcontents
+*/
+
+
+
+
+
+
+
+

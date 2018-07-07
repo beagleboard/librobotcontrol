@@ -11,9 +11,9 @@
  *             black/brown ground wire should always be closest to the cape PCB.
  *             The pinnout for these standard 3 pin connectors is as follows.
  *
- * - 1 Ground
- * - 2 6V Power
- * - 3 Pulse width signal
+ *           - 1 Ground
+ *           - 2 6V Power
+ *           - 3 Pulse width signal
  *
  *             Both servos and Brushless ESCs expect pulse width signals
  *             corresponding to the desired output position or speed. These
@@ -24,13 +24,13 @@
  *             extended range from 600us to 2400us. Test the limits of your
  *             servos very carefully to avoid stalling the servos motors.
  *
- * - Pulse Width     Pulse Width      Servo Angle
- * - Normalized     (Microseconds)    (Degrees)
- * - -1.5             600us           90 deg ccw
- * - -1.0             900us           60 deg ccw
- * -  0.0            1500us           centered
- * -  1.0            2100us           60 deg cw
- * -  1.5            2400us           90 deg cw
+ *             Pulse Width     Pulse Width      Servo Angle Normalized
+ *             (Microseconds)    (Degrees)
+ *             -1.5             600us           90 deg ccw
+ *             -1.0             900us           60 deg ccw
+ *            - 0.0            1500us           centered
+ *            - 1.0            2100us           60 deg cw
+ *            - 1.5            2400us           90 deg cw
  *
  *             Unlike PWM which is concerned with the ratio of pulse width to
  *             pulse frequency, servos and ESCs are only concerned with the

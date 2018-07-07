@@ -1,12 +1,12 @@
 /**
  * @file rc_project_template.c
  *
- * This is meant to be a skeleton program for robotics cape projects. Change
- * this description and file name before starting your own.
+ * This is meant to be a skeleton program for Robot Control projects. Change
+ * this description and file name before modifying for your own purpose.
  */
 
 #include <stdio.h>
-#include <robotcontrol.h> // includes ALL robotics cape subsystems
+#include <robotcontrol.h> // includes ALL Robot Control subsystems
 
 // function declarations
 void on_pause_press();

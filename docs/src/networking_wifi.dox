@@ -1,0 +1,139 @@
+
+/** \page networking_wifi Networking WiFi
+
+Configuring Wifi to work in Debian from the command line is now quite easy thanks to a tool called connmanctl. To set up your BeagleBone Black with a wifi dongle, plug in the dongle while the BeagleBone is powered off then power it on while connected to wifi. These instructions also apply to the BeagleBone Blue, Black Wireless, and Green Wireless.
+
+Once you have restarted your BeagleBone with a wifi dongle plugged in, SSH in with the USB network conenction. Then use ifconfig to confirm the dongle is recognized. Note that no ipv4 address is assigned yet as we haven't yet set up a connection.
+
+
+\section basiccommands Basic Commands
+
+````
+root@beaglebone:~# ifconfig wlan0
+wlan0     Link encap:Ethernet  HWaddr ec:11:27:bf:fa:51
+          UP BROADCAST MULTICAST DYNAMIC  MTU:1500  Metric:1
+          RX packets:833 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:142 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000
+          RX bytes:114829 (112.1 KiB)  TX bytes:26578 (25.9 KiB)
+````
+
+
+Now start the connmanctl tool, enable wifi, and disable wifi tethering. Ignore any warnings regarding VPN connections. Depending on your image tethering may already be disabled.
+
+````
+root@beaglebone:~# connmanctl
+connmanctl> enable wifi
+Enabled wifi
+connmanctl> tether wifi disable
+Disabled tethering for wifi
+````
+
+
+Now we can scan for networks with 'scan wifi'. Once it says Scan complete, run 'services' to list the available networks.
+
+````
+connmanctl> scan wifi
+Scan completed for wifi
+connmanctl> services
+	wheelies2.4          wifi_ec1127bffa51_776865656c696573322e34_managed_psk
+	ATT5363              wifi_ec1127bffa51_41545435333633_managed_psk
+	2WIRE407             wifi_ec1127bffa51_3257495245343037_managed_psk
+	ATT8fHHhfi           wifi_ec1127bffa51_41545438664848686669_managed_psk
+connmanctl>
+````
+
+
+
+\section connecting1 Connecting with Passkey
+
+
+To connect to a network with WPA/WPA2 security you need to enable the WPA agent. Then connect to your desired networking using the long name listed instead of the SSID. Don't worry, you can use the tab key to autocomplete the name.
+
+````
+connmanctl> agent on
+Agent registered
+connmanctl>
+connmanctl> connect wifi_ec1127bffa51_776865656c696573322e34_managed_psk
+Agent RequestInput wifi_ec1127bffa51_776865656c696573322e34_managed_psk
+  Passphrase = [ Type=psk, Requirement=mandatory, Alternates=[ WPS ] ]
+  WPS = [ Type=wpspin, Requirement=alternate ]
+Passphrase? your_password
+connmanctl>
+Connected wifi_ec1127bffa51_776865656c696573322e34_managed_psk
+connmanctl>
+````
+
+Now check to  see what ipv4 address your BeagleBone was assigned by your router's DHCP service.
+
+
+````
+connmanctl> quit
+root@beaglebone:~#
+root@beaglebone:~# ifconfig wlan0
+wlan0     Link encap:Ethernet  HWaddr ec:11:27:bf:fa:51
+          inet addr:192.168.1.172  Bcast:192.168.1.255  Mask:255.255.255.0
+          inet6 addr: fe80::ee11:27ff:febf:fa51/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST DYNAMIC  MTU:1500  Metric:1
+          RX packets:976 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:403 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000
+          RX bytes:136872 (133.6 KiB)  TX bytes:91792 (89.6 KiB)
+
+root@beaglebone:~#
+````
+
+Here you can see my beaglebone was assigned the address 192.168.1.172 which can now be used to SSH in over the network.
+
+
+\section connecting2 Networks with Enterprise Login
+
+Many wifi networks such as those found at universities and enterprises, require a user login instead of a shared passphrase. To demonstrate how to configure connman to connect to such networks, we will use the UCSD campus-wide network as an example.
+
+
+Start with a normal scan and look for the desired enterprise network.
+
+````
+connmanctl> scan wifi
+Scan completed for wifi
+connmanctl> services
+	UCSD-PROTECTED       wifi_000f540aa884_554353442d50524f544543544544-ieee8021x
+	ATT5363              wifi_ec1127bffa51_41545435333633_managed_psk
+	2WIRE407             wifi_ec1127bffa51_3257495245343037_managed_psk
+	ATT8fHHhfi           wifi_ec1127bffa51_41545438664848686669_managed_psk
+connmanctl>
+````
+
+
+Note how the type of network is listed as ieee8021x indicating that it uses Network Access Control instead of a typical passkey (psk) as you would find in a consumer home network.
+
+Make a new file in the /var/lib/connman/ directory with a name matching what is listed during the scan. For this example, the name would be 000f540aa884_554353442d50524f544543544544-ieee8021x.config
+
+Fill in this file as follows, replacing the service name, SSID, Identity, and Passphrase with your own details. Your enterprise network may also use an authentication method other than PEAP and MSCHAPV2. Consult the IT help desk for your enterprise for details on that configuration.
+
+````
+sudo nano /var/lib/connman/wifi_000f540aa884_554353442d50524f544543544544-ieee8021x.config
+````
+
+Enter your information into the new config file like so:
+
+````
+[service_wifi_000f540aa884_554353442d50524f544543544544_managed_ieee8021x]
+Type = wifi
+SSID = 554353442d50524f544543544544
+EAP = peap
+Phase2 = MSCHAPV2
+Identity= USERNAME
+Passphrase= PASSWORD
+````
+Restart the connman service and check if the connection was successful
+
+````
+sudo systemctl restart connman
+ifconfig wlan0
+````
+
+
+*/
+
+

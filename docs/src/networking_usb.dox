@@ -1,0 +1,73 @@
+
+/** \page networking_usb Networking USB
+
+
+
+One of the more convenient features of the BeagleBone Debian image is the included USB network gadget that creates a network over a USB. This allows you to use standard network protocols such as TCP and SSH to communicate with your BeagleBone without needing a network router.
+
+
+
+Once configured, your BeagleBone will have the static IP address 192.168.7.2 and the host computer will have the address 192.168.7.1
+
+
+
+
+
+\section usb1 Linux
+
+<ol>
+	<li>Plug in your BeagleBone and wait a minute for it to be recognized.</li>
+	<li>Open a terminal and try to ping 192.168.7.2, it will likely work right away.</li>
+</ol>
+
+
+Pinging 192.168.6.2 may also work as modern Linux distributions usually detect both the Windows focused (7.2) and OSX-focused (6.2) interfaces. If you cannot successfully ping either address, manually assign it a static IP like you would for any other network.
+
+
+For network-manager based GUI applets:
+<ol>
+	<li>Open network manager and click 'edit connections'</li>
+	<li>Select the BeagleBone's connection for editing, probably called "Wired Connection 1"</li>
+	<li>In the IPv4 tab, set the static IP address '192.168.7.1', the netmast to '24' and the Gateway to '192.168.7.2'</li>
+	<li>Click the 'Routes' button and select the option called 'Use this connection only for resources on its network'</li>
+	<li>Save the network settings, wait a few seconds, and try pinging 192.168.7.2 again.</li>
+</ol>
+
+Manually specifying an IP is a relic of the past now and DHCP should set up your computer and the BeagleBone to have the proper IP address.
+
+\section usb2 Windows 7
+
+<ol>
+	<li>Download the <a href="http://beagleboard.org/static/Drivers/Windows/BONE_D64.exe">64-bit driver</a> or the <a href="http://beagleboard.org/static/Drivers/Windows/BONE_DRV.exe">32-bit driver</a>.</li>
+	<li>Run the installer and agree to any prompts.</li>
+	<li>Plug in your BeagleBone and wait a few minutes.</li>
+	<li>Check that the new network device appears in network manager.</li>
+	<li>Install <a href="https://the.earth.li/~sgtatham/putty/latest/x86/putty.exe">puTTY</a>, <a href="https://winscp.net/download/WinSCP-5.9.2-Setup.exe">WinSCP</a>, and <a href="https://www.sublimetext.com/3">Sublime Text</a>.
+	<li>Open putty and try to ssh into 192.168.7.2 as the root user with an empty password.</li>
+</ol>
+
+
+\section usb3 Windows 10
+
+NOTE, as of time of writing, Microsoft has not updated the expired signature for the USB networking gadget. As as such the driver may not install at all in Windows 10.
+
+<ol>
+	<li>Consider not using Windows 10, seriously.</li>
+	<li>Use the search bar to search "advanced startup options"</li>
+	<li>select "Change advanced startup options"</li>
+	<li>Click on "restart now" (computer will restart)</li>
+	<li>When computer boots, select advanced options, then select startup settings.</li>
+	<li>You must click restart... again</li>
+	<li>When computer reboots, press 7 (or F7) to select "disable driver signature enforcement"</li>
+	<li>Computer will boot into windows.</li>
+	<li>Follow the instructions for Windows 7 to install the drivers.</li>
+</ol>
+
+\section usb4 OSX
+
+OSX requires two drivers to be installed. Both are available along with instructions at the <a href="http://beagleboard.org/getting-started/">BeagleBoard.org Getting Started page</a>.
+
+\tableofcontents
+*/
+
+

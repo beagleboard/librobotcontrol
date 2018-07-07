@@ -3,12 +3,15 @@
  *
  * @brief Includes all librobotcontrol subsystems.
  *
- * This includes the complete Robot Control API. All functions declared here can
+ * This includes every single module in the Robot Control API so that users do
+ * not need to include each module individually.
  * be used by linking to /usr/lib/librobotcontrol.so
  *
  * @author     James Strawson
  * @date       3/7/2018
  * @addtogroup Robot_Control_All
+ *
+ * @include "robotcontrol.h"
  */
 
 #ifndef ROBOTCONTROL_H

@@ -1,0 +1,121 @@
+
+/** \page project_template Project Template
+
+We highly suggest using or at least studying the rc_project_template available at <https://github.com/StrawsonDesign/librobotcontrol/tree/master/rc_project_template>.
+
+
+
+
+\section pts1 Copying the Template
+
+The project template source is also included as part of the librobotcontrol package and in installed to /usr/share/robotcontrol/rc_project_template so it can be easily copied and modified. We suggest copying the project and modifying as follows.
+
+\subsection pts1s1 Make a Copy
+
+Make a copy of the project template, rename the folder to your desired project name, and cd to your new directory.
+
+````
+cp -r /usr/share/robotcontrol/rc_project_template ~/new_project_name
+cd new_project_name
+````
+
+\subsection pts1s2 Modify the Project Name
+
+Change the name of the C source code file to match your project name. Now edit the makefile so it knows to compile the new C file. It will also produce a compiled executable with this new name.
+
+````
+mv rc_project_template.c new_project_name.c
+nano Makefile
+````
+
+For now, you should only need to change the TARGET variable of the Makefile to match your project. As your project grows you may need to edit this Makefile further as required for your needs.
+
+````
+# This is a general use makefile for librobotcontrol projects written in C.
+# Just change the target name to match your main source code filename.
+TARGET = new_project_name
+
+# compiler and linker binaries
+CC              := gcc
+LINKER          := gcc
+.
+.
+.
+````
+
+
+\section pts2 Using the Makefile
+
+For those unfamiliar with 'make' and Makefiles, 'make' is a mature and well-documented build tool for compiling source code. If you are interested, lots of good information about the make tool can be found at <https://www.gnu.org/software/make/manual/html_node/Introduction.html>.
+
+To save the user the time and effort of learning how to create Makefiles, this template contains a simple and generic Makefile which links to the librobotcontrol library and provides the following common make commands:
+
+
+```
+make
+make clean
+make install
+make uninstall
+make runonboot
+```
+
+\subsection pts2s1 make (to compile)
+
+This will use gcc to compile the C file you renamed in section 1 and will produce an executable with the same name, but without the '.c' extention. Part of the process is linking this executable to the librobotcontrol shared object. For convenience it also links to the 'math' and 'pthread' libraries as these are most common. It can be easily modified to link to other libraries by adding to the 'LDFLAGS' list in the Makefile.
+
+\subsection pts2s2 make clean
+
+As part of compiling and building process, a '.o' object file was also created along with the final executable. If you are making a backup of your project source files, or are pushing your progress up to a git repository (as you should!!) then it's helpful to clean up these compiled binary files. Executing 'make clean' in your project source directory will clean up these binary files leaving only the source code.
+
+
+\subsection pts2s3 make install
+
+Normally you would execute your newly-compiled executable from within the same directory that it exists. For example, compiling and executing the project template would look like this:
+
+````
+debian@beaglebone:~$ cd ../rc_project_template/
+debian@beaglebone:~/rc_project_template$ make
+Made: rc_project_template
+debian@beaglebone:~/rc_project_template$ ./rc_project_template
+running...
+````
+
+Once you are satisfied with the functionality of your new program, you will want to install the executable in a place where it can be run from anywhere for easy access in the future. This location is typically '/usr/local/bin/' for executables made locally by users. Instead of making a copy there manually, the 'make install' command will do this for you. You will have to use 'sudo' as the '/usr/' directory has restricted privileges.
+
+````
+debian@beaglebone:~/rc_project_template$ sudo make install
+debian@beaglebone:~/rc_project_template$ cd ../
+debian@beaglebone:~$ rc_project_template
+running...
+````
+
+
+\subsection pts2s4 make uninstall
+
+'make uninstall' simply deletes the copy of your current project executable from '/usr/local/bin/'. It will not delete your source files.
+
+
+
+\subsection pts2s5 make runonboot
+
+This 'runonboot' command is unique to the Makefile provided in the project template, whereas 'clean' 'install' and 'uninstall' are pretty much universal amongst other Makefiles. This command sets the program to run automatically on boot if the robotcontrol systemd service is enabled, see the <a href=runonboot.html>Run on Boot section</a> for more details.
+
+
+
+\section ptS3 Structure of the Project Template
+
+Instead of try to explain how the template works line-by-line, we've tried to comment the code as informatively as possible. The complete C file is included here for easy access. We encourage the user to read it carefully to understand the structure.
+
+\include "rc_project_template.c"
+
+\tableofcontents
+
+*/
+
+
+
+
+
+
+
+

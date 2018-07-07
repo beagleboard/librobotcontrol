@@ -1,0 +1,18 @@
+
+
+
+
+
+
+/** \page version Version
+You can check which version of the package is currently installed with the rc_version program. The 2018-06-17 stable image ships with 0.4.4
+
+```
+debian@beaglebone:~$ rc_version
+0.4.4
+```
+
+Beginning with the librobotcontrol 1.0.0 release, it will adhere to <a href="https://semver.org/">semantic versioning</a>. To access the version number of the library see the <a href="group__version.html">version module</a> and its associated macros and functions.
+
+*/
+

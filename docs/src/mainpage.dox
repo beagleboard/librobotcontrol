@@ -1,0 +1,28 @@
+/*! \mainpage Manual
+
+
+This package contains the C library and example/testing programs for the Robot Control project. This project began as a hardware interface for the Robotics Cape and later the BeagleBone Blue and was originally called Robotics_Cape_Installer. It grew to include an extensive math library for discrete time feedback control, as well as a plethora of POSIX-compliant functions for timing, threads, program flow, and lots more, all aimed at developing robot control software on embedded computers.
+
+This package ships with official BeagleBone images and is focused on, but not excludive to, the BeagleBoard platform. The RCPY python interface to this package is also available at <https://github.com/mcdeoliveira/rcpy>.
+
+The master branch is always the most current but not necessarily stable. See [releases](https://github.com/StrawsonDesign/Robotics_Cape_Installer/releases) page for older stable versions or install from BeagleBoard.org repositories as described below.
+
+
+This manual is divided in the following sections:
+
+1. \subpage networking_usb
+2. \subpage networking_wifi
+3. \subpage installation
+4. \subpage version
+5. \subpage project_template
+6. \subpage background_services
+7. \subpage runonboot
+
+
+*/
+
+
+
+
+
+

@@ -7,7 +7,7 @@
  * @author     James Strawson
  * @date       3/14/2018
  *
- * @addtogroup Barometer
+ * @addtogroup Barometer_BMP
  * @{
  */
 

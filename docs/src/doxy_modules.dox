@@ -45,7 +45,13 @@
  */
 
 /**
- * @defgroup   RoboticsCape_All
+ * @defgoup Robot_Control_All
+ */
+
+/**
+ * @defgroup   Deprecated
+ *
+ * @brief      Deprecated functions and headers
  */
 
 /**

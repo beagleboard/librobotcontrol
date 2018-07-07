@@ -6,6 +6,10 @@
  * bad practice and you should include only the headers necessary for your
  * program to operate. However, this can save time while quickly prototyping and
  * remains for backwards compatability.
+ *
+ * @addtogroup Useful_Includes
+ * @ingroup Deprecated
+ * @{
  */
 
 

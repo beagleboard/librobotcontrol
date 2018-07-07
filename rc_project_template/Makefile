@@ -1,4 +1,4 @@
-# This is a general use makefile for robotics cape projects written in C.
+# This is a general use makefile for librobotcontrol projects written in C.
 # Just change the target name to match your main source code filename.
 TARGET = rc_project_template
 
