@@ -37,6 +37,7 @@
 
     <tab type="user" url="https://github.com/StrawsonDesign/librobotcontrol" title="GitHub"/>
     <tab type="user" url="https://github.com/StrawsonDesign/librobotcontrol/issues" title="Issue Tracker"/>
+   <tab type="user" url="https://librobotcontrol.slack.com" title="Slack Discussion"/>
 
   </navindex>
 
