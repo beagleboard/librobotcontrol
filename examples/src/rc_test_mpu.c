@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 	}
 
 	// print the header
-	printf("\ntry 'rc_test_imu -h' to see other options\n\n");
+	printf("\ntry 'rc_test_mpu -h' to see other options\n\n");
 	switch(a_mode){
 	case A_MODE_MS2:
 		printf("   Accel XYZ(m/s^2)  |");
