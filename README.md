@@ -6,4 +6,4 @@ This package contains the C library and example/testing programs for the Robot C
 
 Full API documentation, instruction manual, and examples at <http://strawsondesign.com/docs/librobotcontrol/>.
 
-Slack chatroom for discussion at <https://librobotcontrol.slack.com>.
+We encourage questions and discussion in the [Slack Workspace](https://join.slack.com/t/librobotcontrol/shared_invite/enQtMzk0NjkxNjk0MTE0LTliNjFmMjZiZTQxOWZmNWI3NTJkN2UwOTdjNDk2OWQwMDgxNDEyMDNkMzBkODE5ODZiMWJkYmM1M2UwOTczNmE).
