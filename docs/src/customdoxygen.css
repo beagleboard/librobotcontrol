@@ -34,7 +34,7 @@ h1, h2, h3 {
   margin: 1.75em 0 .2em 0;
   font-weight: 200;
 }
-#projectname{color:#00aff0;font-weight:300;}
+#projectname{color:#00afff;font-weight:350;}
 #projectbrief{color:#16499a;}
 h1,h2,h3{color: #000;}
 /* @group Heading Levels */
@@ -50,14 +50,14 @@ h1, h1.groupheader {
   font-weight: 200;
   color: #000000;
   letter-spacing: 0.00em;
-  font-size: 3.5rem;
+  font-size: 2.5rem;
   line-height: 3.7rem;
 }
 h2, h2.groupheader {
   font-weight: 200;
   color: #000000;
   letter-spacing: 0.00em;
-  font-size: 2.2rem;
+  font-size: 2.0rem;
   line-height: 2.3rem;
   letter-spacing: 0.01em;
   border-bottom: none;
@@ -1082,8 +1082,11 @@ tr.heading h2 {
   border: none;
 }
 .navpath ul {
-  background-image: none;
-  background-color: #16499a; /*darkblue*/
+  background-image:url('tab_a.png');
+  background-repeat:repeat-x;
+  background-position: 0 -5px;
+/*  background-image: none;*/
+/*  background-color: lightskyblue; /*lightblue*/*/
   border: none;
 }
 .navpath li {
