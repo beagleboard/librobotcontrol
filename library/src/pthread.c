@@ -33,7 +33,8 @@ int rc_pthread_create(pthread_t *thread, void*(*func)(void*), void* arg, int pol
 	// priority 0, make sure we have permission to do explicit scheduling
 	if(priority!=0 || policy!=SCHED_OTHER){
 		// print warning if no permissions
-		if(pthread_attr_setinheritsched(&pthread_attr, PTHREAD_EXPLICIT_SCHED)){
+		errno = pthread_attr_setinheritsched(&pthread_attr, PTHREAD_EXPLICIT_SCHED);
+		if(errno){
 			perror("ERROR: pthread_attr_setinheritsched: ");
 			return -1;
 		}
@@ -48,14 +49,16 @@ int rc_pthread_create(pthread_t *thread, void*(*func)(void*), void* arg, int pol
 	}
 
 	// set policy to attributes
-	if(pthread_attr_setschedpolicy(&pthread_attr, policy)){
+	errno = pthread_attr_setschedpolicy(&pthread_attr, policy);
+	if(errno){
 		perror("ERROR: pthread_attr_setschedpolicy");
 			return -1;
 	}
 
 	// set priority in attributes
 	pthread_param.sched_priority = priority;
-	if(pthread_attr_setschedparam(&pthread_attr, &pthread_param)){
+	errno = pthread_attr_setschedparam(&pthread_attr, &pthread_param);
+	if(errno){
 		perror("ERROR: pthread_attr_setschedparam");
 		return -1;
 	}
@@ -85,7 +88,8 @@ int rc_pthread_create(pthread_t *thread, void*(*func)(void*), void* arg, int pol
 	int policy_new;
 	struct sched_param params_new;
 	// get parameters from pthread_t
-	if(pthread_getschedparam(*thread, &policy_new, &params_new)){
+	errno = pthread_getschedparam(*thread, &policy_new, &params_new);
+	if(errno){
 		perror("ERROR: pthread_getschedparam");
 		return -1;
 	}
