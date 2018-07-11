@@ -290,8 +290,8 @@ int rc_filter_enable_saturation(rc_filter_t* f, double min, double max)
 		fprintf(stderr, "ERROR in rc_filter_enable_saturation, filter uninitialized\n");
 		return -1;
 	}
-	if(unlikely(min>=max)){
-		fprintf(stderr, "ERORR in rc_filter_enable_saturation, max must be > min\n");
+	if(unlikely(min>max)){
+		fprintf(stderr, "ERORR in rc_filter_enable_saturation, max must be >= min\n");
 		return -1;
 	}
 	f->sat_en	= 1;

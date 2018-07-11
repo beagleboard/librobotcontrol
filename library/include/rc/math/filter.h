@@ -203,9 +203,10 @@ int rc_filter_reset(rc_filter_t* f);
  *
  *             If saturation is enabled for a specified filter, the filter will
  *             automatically bound the output between min and max. You may
- *             ignore this function if you wish the filter to run unbounded.
- *             Maxc must be greater than min, but they can both be positive or
- *             negative.
+ *             ignore this function if you wish the filter to run unbounded. Max
+ *             must be greater than or equal to min. If max==min, the output
+ *             will be fixed at that value. Any double-precision floating point
+ *             value is allowed, positive or negative.
  *
  * @param      f     Pointer to user's rc_filter_t struct
  * @param[in]  min   The lower bound
