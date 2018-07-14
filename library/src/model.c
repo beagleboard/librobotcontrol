@@ -29,7 +29,7 @@ static rc_model_t model_from_device_tree()
 
 	fd = fopen(MODEL_DIR, "r");
 	if(fd == NULL){
-		fprintf(stderr,"ERROR: in rc_model_get, can't open %s \n", MODEL_DIR);
+		//fprintf(stderr,"ERROR: in rc_model_get, can't open %s \n", MODEL_DIR);
 		return UNKNOWN_MODEL;
 	}
 	// read model

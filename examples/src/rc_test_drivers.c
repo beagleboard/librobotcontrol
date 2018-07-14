@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h> // for system()
 #include <unistd.h> // for access()
+#include <rc/model.h>
+#include <rc/version.h>
 
 
 int main()
@@ -77,15 +79,22 @@ int main()
 		printf("ERROR:  uart5 driver not loaded\n");
 	} else printf("PASSED: uart5\n");
 
-	// i2c, spi
+	// i2c
 	if(access("/dev/i2c-1", F_OK ) != 0){
 		printf("ERROR:  i2c1 driver not loaded\n");
 	} else printf("PASSED: i2c1\n");
 	if(access("/dev/i2c-2", F_OK ) != 0){
 		printf("ERROR:  i2c2 driver not loaded\n");
 	} else printf("PASSED: i2c2\n");
+
+	// spi
 	if(access("/dev/spidev1.0", F_OK ) != 0){
-		printf("ERROR:  spi driver not loaded\n");
+		if(access("/dev/spidev2.0", F_OK ) != 0){
+			printf("ERROR: spi driver not loaded\n");
+		}
+		else{
+			printf("WARNING: SPI1 loaded but incorrectly enumerated as /dev/spidev2\n");
+		}
 	} else printf("PASSED: spi\n");
 
 	// LEDs
@@ -98,8 +107,10 @@ int main()
 		printf("ERROR:  ADC iio driver not loaded\n");
 	} else printf("PASSED: ADC iio\n");
 
-
-
+	printf("\nCurrently running on a:\n");
+	rc_model_print();
+	printf("\nRobot Control library Version:\n");
+	rc_version_print();
 	printf("\n");
 
 
