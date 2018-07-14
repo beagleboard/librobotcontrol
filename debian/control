@@ -1,7 +1,7 @@
 Source: librobotcontrol
 Section: utils
 Priority: optional
-Build-Depends: debhelper (>= 9), devscripts, debconf (>= 0.2.26), ti-pru-cgt-installer, pru-software-support-package
+Build-Depends: debhelper (>= 9), devscripts, debconf (>= 0.2.26)
 Standards-Version: 3.9.8
 Maintainer: James Strawson <james@strawsondesign.com>
 Homepage: http://www.strawsondesign.com/

@@ -5,8 +5,9 @@
 # to remoteproc.
 
 
-BIN_DIR		:= bin
+BIN_DIR		:= fw
 SRC_DIR		:= src
+BUILD_DIR	:= build
 
 PRU0_FW		:= am335x-pru0-rc-encoder-fw
 PRU1_FW		:= am335x-pru1-rc-servo-fw
@@ -14,8 +15,8 @@ PRU1_FW		:= am335x-pru1-rc-servo-fw
 TARGET0		:= $(BIN_DIR)/$(PRU0_FW)
 TARGET1		:= $(BIN_DIR)/$(PRU1_FW)
 TARGETS		:= $(TARGET0) $(TARGET1)
-LINK_PRU1_FW	:= $(BIN_DIR)/pru1-servo.object
-LINK_PRU0_FW	:= $(BIN_DIR)/pru0-encoder.object
+LINK_PRU1_FW	:= $(BUILD_DIR)/pru1-servo.object
+LINK_PRU0_FW	:= $(BUILD_DIR)/pru0-encoder.object
 
 RM		:= rm -f -r
 INSTALL		:= install -m 755
@@ -42,12 +43,12 @@ INCLUDE=--include_path=/usr/lib/ti/pru-software-support-package/include \
 endif
 
 
-LINKER_COMMAND_FILE=./AM335x_PRU.cmd
+LINKER_COMMAND_FILE=./$(SRC_DIR)/AM335x_PRU.cmd
 STACK_SIZE=0x100
 HEAP_SIZE=0x100
 
 
-CFLAGS=-v3 -O2 --display_error_number --endian=little --hardware_mac=on --obj_directory=$(BIN_DIR) --pp_directory=$(BIN_DIR) -ppd -ppa --asm_listing --c_src_interlist # --absolute_listing
+CFLAGS=-v3 -O2 --display_error_number --endian=little --hardware_mac=on --obj_directory=$(BUILD_DIR) --pp_directory=$(BUILD_DIR) -ppd -ppa --asm_listing --c_src_interlist # --absolute_listing
 LFLAGS=--reread_libs --warn_sections --stack_size=$(STACK_SIZE) --heap_size=$(HEAP_SIZE) -m file.map
 
 
@@ -56,50 +57,50 @@ all: $(TARGETS)
 	@echo "Generated: $^"
 
 
-$(TARGET0): $(BIN_DIR)/main_pru0.object $(LINK_PRU0_FW)
+$(TARGET0): $(BUILD_DIR)/main_pru0.object $(LINK_PRU0_FW)
 	@echo 'LD	$^'
+	@mkdir -p $(BIN_DIR)
 	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
 
-$(TARGET1): $(BIN_DIR)/main_pru1.object $(LINK_PRU1_FW)
+$(TARGET1): $(BUILD_DIR)/main_pru1.object $(LINK_PRU1_FW)
 	@echo 'LD	$^'
+	@mkdir -p $(BIN_DIR)
 	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
 
 
-$(BIN_DIR)/main_pru0.object: $(SRC_DIR)/main_pru0.c
-	@mkdir -p $(BIN_DIR)
+$(BUILD_DIR)/main_pru0.object: $(SRC_DIR)/main_pru0.c
+	@mkdir -p $(BUILD_DIR)
 	@echo 'CC	$<'
 	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
 
 
-$(BIN_DIR)/main_pru1.object: $(SRC_DIR)/main_pru1.c
-	@mkdir -p $(BIN_DIR)
+$(BUILD_DIR)/main_pru1.object: $(SRC_DIR)/main_pru1.c
+	@mkdir -p $(BUILD_DIR)
 	@echo 'CC	$<'
 	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
 
 
-$(BIN_DIR)/pru1-servo.object: $(SRC_DIR)/pru1-servo.asm
-	@mkdir -p $(BIN_DIR)
+$(BUILD_DIR)/pru1-servo.object: $(SRC_DIR)/pru1-servo.asm
+	@mkdir -p $(BUILD_DIR)
 	@echo 'CC	$<'
 	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
 
-$(BIN_DIR)/pru0-encoder.object: $(SRC_DIR)/pru0-encoder.asm
-	@mkdir -p $(BIN_DIR)
+$(BUILD_DIR)/pru0-encoder.object: $(SRC_DIR)/pru0-encoder.asm
+	@mkdir -p $(BUILD_DIR)
 	@echo 'CC	$<'
 	@$(CLPRU) $(INCLUDE) $(CFLAGS) -fe $@ $<
 
 
 
 install:
-	$(MAKE)
 	@$(INSTALLDIR) $(DESTDIR)/lib/firmware
-	@$(INSTALLDIR) $(DESTDIR)/etc/modprobe.d
 	@$(INSTALLNONEXEC) $(TARGET0) $(DESTDIR)/lib/firmware/
 	@$(INSTALLNONEXEC) $(TARGET1) $(DESTDIR)/lib/firmware/
 	@echo 'PRU Firmware Install Complete'
 
 
 clean:
-	@$(RM) $(BIN_DIR)
+	@$(RM) $(BUILD_DIR)
 	@$(RM) main_pru1.asm main_pru0.asm file.map
 	@echo 'PRU Firmware Cleanup Complete'
 

@@ -30,6 +30,7 @@
 *.rtf	 diff=astextplain
 *.RTF	 diff=astextplain
 
-# my edits, stop git from messing with picture files
+# my edits, stop git from messing with binary files
 *.png binary
 *.jpg binary
+*-fw binary
