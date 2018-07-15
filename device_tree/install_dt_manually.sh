@@ -31,6 +31,7 @@ esac
 
 make src/arm/am335x-boneblack-roboticscape.dtb
 make src/arm/am335x-boneblack-wireless-roboticscape.dtb
+make src/arm/am335x-boneblue.dtb
 make src/arm/
 make install
 

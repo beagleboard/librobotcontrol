@@ -94,7 +94,7 @@ int rc_uart_flush(int bus);
  *
  * @return     returns number of bytes sent or -1 on error
  */
-int rc_uart_write(int bus, uint8_t* data, int bytes);
+int rc_uart_write(int bus, uint8_t* data, size_t bytes);
 
 /**
  * @brief      reads bytes from the UART bus
@@ -112,7 +112,7 @@ int rc_uart_write(int bus, uint8_t* data, int bytes);
  *
  * @return     Returns number of bytes actually read or -1 on error.
  */
-int rc_uart_read_bytes(int bus, uint8_t* buf, int bytes);
+int rc_uart_read_bytes(int bus, uint8_t* buf, size_t bytes);
 
 /**
  * @brief      reads a line of characters ending in newline '\n'
@@ -130,7 +130,7 @@ int rc_uart_read_bytes(int bus, uint8_t* buf, int bytes);
  *
  * @return      Returns number of bytes actually read or -1 on error.
  */
-int rc_uart_read_line(int bus, uint8_t* buf, int max_bytes);
+int rc_uart_read_line(int bus, uint8_t* buf, size_t max_bytes);
 
 /**
  * @brief      Fetches the number of bytes ready to be read from a bus

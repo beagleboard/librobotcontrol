@@ -258,7 +258,7 @@ int rc_uart_flush(int bus)
 }
 
 
-int rc_uart_write(int bus, uint8_t* data, int bytes)
+int rc_uart_write(int bus, uint8_t* data, size_t bytes)
 {
 	int ret;
 	// sanity checks
@@ -280,7 +280,7 @@ int rc_uart_write(int bus, uint8_t* data, int bytes)
 }
 
 
-int rc_uart_read_bytes(int bus, uint8_t* buf, int bytes)
+int rc_uart_read_bytes(int bus, uint8_t* buf, size_t bytes)
 {
 	int bytes_to_read, ret;
 	// sanity checks
@@ -370,7 +370,7 @@ int rc_uart_read_bytes(int bus, uint8_t* buf, int bytes)
 }
 
 
-int rc_uart_read_line(int bus, uint8_t* buf, int max_bytes)
+int rc_uart_read_line(int bus, uint8_t* buf, size_t max_bytes)
 {
 	int ret;
 	char temp;
@@ -401,7 +401,7 @@ int rc_uart_read_line(int bus, uint8_t* buf, int max_bytes)
 
 	// exit the read loop once enough bytes have been read
 	// or the shutdown flag is set
-	while(bytes_read<max_bytes && rc_uart_shutdown_flag[bus]==0){
+	while(bytes_read<(signed)max_bytes && rc_uart_shutdown_flag[bus]==0){
 		FD_ZERO(&set); /* clear the set */
 		FD_SET(rc_uart_fd[bus], &set); /* add our file descriptor to the set */
 		ret = select(rc_uart_fd[bus] + 1, &set, NULL, NULL, &timeout);
