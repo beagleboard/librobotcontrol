@@ -8,6 +8,7 @@
 /dts-v1/;
 
 #include "am33xx.dtsi"
+#include "am335x-bone-common-universal-pins.dtsi"
 #include <dt-bindings/interrupt-controller/irq.h>
 
 / {
@@ -196,6 +197,146 @@
 			0x078 0x0F	/*P9.12 A2DP_CLOCK*/
 		>;
 
+	//////////////////////////////////////////////////////////////
+	// Pinmux options shared between Robotics Cape and BB Blue
+	///////////////////////////////////////////////////////////////
+	/* H18 SPI1_SS1    */
+	H18_default_pin: pinmux_H18_default_pin {
+		pinctrl-single,pins = < 0x144 ( PIN_OUTPUT | MUX_MODE2 ) >; };
+	H18_gpio_pin: pinmux_H18_gpio_pin {
+		pinctrl-single,pins = < 0x144 ( PIN_OUTPUT | MUX_MODE7 ) >; };
+	H18_gpio_pu_pin: pinmux_H18_gpio_pu_pin {
+		pinctrl-single,pins = < 0x144 ( PIN_INPUT_PULLUP | MUX_MODE7 ) >; };
+	H18_gpio_pd_pin: pinmux_H18_gpio_pd_pin {
+		pinctrl-single,pins = < 0x144 ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) >; };
+	H18_spi_pin: pinmux_H18_spi_pin {
+		pinctrl-single,pins = < 0x144 ( PIN_OUTPUT | MUX_MODE2 ) >; };
+
+	/* C18 SPI1_SS2    */
+	C18_default_pin: pinmux_C18_default_pin {
+		pinctrl-single,pins = < 0x164 ( PIN_OUTPUT | MUX_MODE2 ) >; };
+	C18_gpio_pin: pinmux_C18_gpio_pin {
+		pinctrl-single,pins = < 0x164 ( PIN_OUTPUT | MUX_MODE7 ) >; };
+	C18_gpio_pu_pin: pinmux_C18_gpio_pu_pin {
+		pinctrl-single,pins = < 0x164 ( PIN_INPUT_PULLUP | MUX_MODE7 ) >; };
+	C18_gpio_pd_pin: pinmux_C18_gpio_pd_pin {
+		pinctrl-single,pins = < 0x164 ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) >; };
+	C18_spi_pin: pinmux_C18_spi_pin {
+		pinctrl-single,pins = < 0x164 ( PIN_OUTPUT | MUX_MODE2 ) >; };
+
+
+	/* UART 2 RX GPS */
+	P9_22_pinmux {
+		compatible = "bone-pinmux-helper";
+		status = "okay";
+		pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "spi", "uart", "i2c", "pwm";
+		pinctrl-0 = <&P9_22_default_pin>;
+		pinctrl-1 = <&P9_22_gpio_pin>;
+		pinctrl-2 = <&P9_22_gpio_pu_pin>;
+		pinctrl-3 = <&P9_22_gpio_pd_pin>;
+		pinctrl-4 = <&P9_22_spi_pin>;
+		pinctrl-5 = <&P9_22_uart_pin>;
+		pinctrl-6 = <&P9_22_i2c_pin>;
+		pinctrl-7 = <&P9_22_pwm_pin>;
+	};
+
+	/* UART 2 TX GPS*/
+	P9_21_pinmux {
+		compatible = "bone-pinmux-helper";
+		status = "okay";
+		pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "spi", "uart", "i2c", "pwm";
+		pinctrl-0 = <&P9_21_default_pin>;
+		pinctrl-1 = <&P9_21_gpio_pin>;
+		pinctrl-2 = <&P9_21_gpio_pu_pin>;
+		pinctrl-3 = <&P9_21_gpio_pd_pin>;
+		pinctrl-4 = <&P9_21_spi_pin>;
+		pinctrl-5 = <&P9_21_uart_pin>;
+		pinctrl-6 = <&P9_21_i2c_pin>;
+		pinctrl-7 = <&P9_21_pwm_pin>;
+	};
+
+	/* UART 1 RX */
+	P9_26_pinmux {
+		compatible = "bone-pinmux-helper";
+		status = "okay";
+		pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "uart", "can", "i2c",  "pruin";
+		pinctrl-0 = <&P9_26_default_pin>;
+		pinctrl-1 = <&P9_26_gpio_pin>;
+		pinctrl-2 = <&P9_26_gpio_pu_pin>;
+		pinctrl-3 = <&P9_26_gpio_pd_pin>;
+		pinctrl-4 = <&P9_26_uart_pin>;
+		pinctrl-5 = <&P9_26_can_pin>;
+		pinctrl-6 = <&P9_26_i2c_pin>;
+		pinctrl-7 = <&P9_26_pruin_pin>;
+	};
+
+	/* UART 1 TX */
+	 P9_24_pinmux {
+		compatible = "bone-pinmux-helper";
+		status = "okay";
+		pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "uart", "can", "i2c",  "pruin";
+		pinctrl-0 = <&P9_24_default_pin>;
+		pinctrl-1 = <&P9_24_gpio_pin>;
+		pinctrl-2 = <&P9_24_gpio_pu_pin>;
+		pinctrl-3 = <&P9_24_gpio_pd_pin>;
+		pinctrl-4 = <&P9_24_uart_pin>;
+		pinctrl-5 = <&P9_24_can_pin>;
+		pinctrl-6 = <&P9_24_i2c_pin>;
+		pinctrl-7 = <&P9_24_pruin_pin>;
+	};
+
+	/* SPI MOSI */
+	P9_30_pinmux {
+		compatible = "bone-pinmux-helper";
+		status = "okay";
+		pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "pwm", "spi", "pruout", "pruin";
+		pinctrl-0 = <&P9_30_default_pin>;
+		pinctrl-1 = <&P9_30_gpio_pin>;
+		pinctrl-2 = <&P9_30_gpio_pu_pin>;
+		pinctrl-3 = <&P9_30_gpio_pd_pin>;
+		pinctrl-4 = <&P9_30_pwm_pin>;
+		pinctrl-5 = <&P9_30_spi_pin>;
+		pinctrl-6 = <&P9_30_pruout_pin>;
+		pinctrl-7 = <&P9_30_pruin_pin>;
+	};
+
+	/* SPI MISO */
+	P9_29_pinmux {
+		compatible = "bone-pinmux-helper";
+		status = "okay";
+		pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "pwm", "spi", "pruout", "pruin";
+		pinctrl-0 = <&P9_29_default_pin>;
+		pinctrl-1 = <&P9_29_gpio_pin>;
+		pinctrl-2 = <&P9_29_gpio_pu_pin>;
+		pinctrl-3 = <&P9_29_gpio_pd_pin>;
+		pinctrl-4 = <&P9_29_pwm_pin>;
+		pinctrl-5 = <&P9_29_spi_pin>;
+		pinctrl-6 = <&P9_29_pruout_pin>;
+		pinctrl-7 = <&P9_29_pruin_pin>;
+	};
+
+	/* SPI SCK */
+	P9_31_pinmux {
+		compatible = "bone-pinmux-helper";
+		status = "okay";
+		pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "pwm", "spi", "pruout", "pruin";
+		pinctrl-0 = <&P9_31_default_pin>;
+		pinctrl-1 = <&P9_31_gpio_pin>;
+		pinctrl-2 = <&P9_31_gpio_pu_pin>;
+		pinctrl-3 = <&P9_31_gpio_pd_pin>;
+		pinctrl-4 = <&P9_31_pwm_pin>;
+		pinctrl-5 = <&P9_31_spi_pin>;
+		pinctrl-6 = <&P9_31_pruout_pin>;
+		pinctrl-7 = <&P9_31_pruin_pin>;
+	};
+
+
+
+	////////////////////////////////////////////////////////////////////////
+	// Pinmux options only for BB BLue
+	////////////////////////////////////////////////////////////////////////
+
+
 		/* D13 BLUE_GP0_PIN_5 gpio 3_20  */
 		D13_default_pin: pinmux_D13_default_pin {
 			pinctrl-single,pins = < 0x1A8 ( PIN_INPUT_PULLUP | MUX_MODE7 ) >; };
@@ -226,69 +367,6 @@
 		J15_gpio_pd_pin: pinmux_J15_gpio_pd_pin {
 			pinctrl-single,pins = < 0x110 ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) >; };
 
-		/* P8_15 (ZCZ ball U13) */
-		P8_15_default_pin: pinmux_P8_15_default_pin {
-			pinctrl-single,pins = <0x03c  0x27>; };     /* Mode 7, Pull-Down, RxActive */
-		P8_15_gpio_pin: pinmux_P8_15_gpio_pin {
-			pinctrl-single,pins = <0x03c  0x2F>; };     /* Mode 7, RxActive */
-		P8_15_gpio_pu_pin: pinmux_P8_15_gpio_pu_pin {
-			pinctrl-single,pins = <0x03c  0x37>; };     /* Mode 7, Pull-Up, RxActive */
-		P8_15_gpio_pd_pin: pinmux_P8_15_gpio_pd_pin {
-			pinctrl-single,pins = <0x03c  0x27>; };     /* Mode 7, Pull-Down, RxActive */
-		P8_15_pruin_pin: pinmux_P8_15_pruin_pin {
-			pinctrl-single,pins = <0x03c  0x26>; };     /* Mode 6, Pull-Down, RxActive */
-		P8_15_qep_pin: pinmux_P8_15_qep_pin {
-			pinctrl-single,pins = <0x03c  0x24>; };     /* Mode 4, Pull-Down, RxActive */
-		P8_15_pruin_pu_pin: pinmux_P8_15_pruin_pu_pin {
-			pinctrl-single,pins = <0x03c  0x36>; };     /* Mode 6, Pull-Up, RxActive */
-		P8_15_pruecapin_pu_pin: pinmux_P8_15_pruecapin_pu_pin {
-			pinctrl-single,pins = <0x03c  0x35>; };     /* Mode 5, Pull-Up, RxActive */
-
-		/* P9_11 (ZCZ ball T17) */
-		P9_11_default_pin: pinmux_P9_11_default_pin {
-			pinctrl-single,pins = <0x070  0x37>; };     /* Mode 7, Pull-Up, RxActive */
-		P9_11_gpio_pin: pinmux_P9_11_gpio_pin {
-			pinctrl-single,pins = <0x070  0x2F>; };     /* Mode 7, RxActive */
-		P9_11_gpio_pu_pin: pinmux_P9_11_gpio_pu_pin {
-			pinctrl-single,pins = <0x070  0x37>; };     /* Mode 7, Pull-Up, RxActive */
-		P9_11_gpio_pd_pin: pinmux_P9_11_gpio_pd_pin {
-			pinctrl-single,pins = <0x070  0x27>; };     /* Mode 7, Pull-Down, RxActive */
-		P9_11_uart_pin: pinmux_P9_11_uart_pin {
-			pinctrl-single,pins = <0x070  0x36>; };     /* Mode 6, Pull-Up, RxActive */
-
-		/* P9_23 (ZCZ ball V14) */
-		P9_23_default_pin: pinmux_P9_23_default_pin {
-			pinctrl-single,pins = <0x044  0x27>; };     /* Mode 7, Pull-Down, RxActive */
-		P9_23_gpio_pin: pinmux_P9_23_gpio_pin {
-			pinctrl-single,pins = <0x044  0x2F>; };     /* Mode 7, RxActive */
-		P9_23_gpio_pu_pin: pinmux_P9_23_gpio_pu_pin {
-			pinctrl-single,pins = <0x044  0x37>; };     /* Mode 7, Pull-Up, RxActive */
-		P9_23_gpio_pd_pin: pinmux_P9_23_gpio_pd_pin {
-			pinctrl-single,pins = <0x044  0x27>; };     /* Mode 7, Pull-Down, RxActive */
-		P9_23_pwm_pin: pinmux_P9_23_pwm_pin {
-			pinctrl-single,pins = <0x044  0x26>; };     /* Mode 6, Pull-Down, RxActive */
-
-		/* P9_28 (ZCZ ball C12) Audio   */
-		P9_28_default_pin: pinmux_P9_28_default_pin {
-			pinctrl-single,pins = <0x19c  0x27>; };     /* Mode 7, Pull-Down, RxActive */
-		P9_28_gpio_pin: pinmux_P9_28_gpio_pin {
-			pinctrl-single,pins = <0x19c  0x2F>; };     /* Mode 7, RxActive */
-		P9_28_gpio_pu_pin: pinmux_P9_28_gpio_pu_pin {
-			pinctrl-single,pins = <0x19c  0x37>; };     /* Mode 7, Pull-Up, RxActive */
-		P9_28_gpio_pd_pin: pinmux_P9_28_gpio_pd_pin {
-			pinctrl-single,pins = <0x19c  0x27>; };     /* Mode 7, Pull-Down, RxActive */
-		P9_28_pwm_pin: pinmux_P9_28_pwm_pin {
-			pinctrl-single,pins = <0x19c  0x21>; };     /* Mode 1, Pull-Down, RxActive */
-		P9_28_spi_pin: pinmux_P9_28_spi_pin {
-			pinctrl-single,pins = <0x19c  0x23>; };     /* Mode 3, Pull-Down, RxActive */
-		P9_28_pwm2_pin: pinmux_P9_28_pwm2_pin {
-			pinctrl-single,pins = <0x19c  0x24>; };     /* Mode 4, Pull-Down, RxActive */
-		P9_28_pruout_pin: pinmux_P9_28_pruout_pin {
-			pinctrl-single,pins = <0x19c  0x25>; };     /* Mode 5, Pull-Down, RxActive */
-		P9_28_pruin_pin: pinmux_P9_28_pruin_pin {
-			pinctrl-single,pins = <0x19c  0x26>; };     /* Mode 6, Pull-Down, RxActive */
-		P9_28_audio_pin: pinmux_P9_28_audio_pin {
-			pinctrl-single,pins = <0x19c  (PIN_OUTPUT_PULLDOWN | MUX_MODE2)>; };	/* mcasp0_ahclkr.mcasp0_axr2 */
 
 		/* U16 BLUE_GP0_PIN_3 gpio 1_25   */
 		U16_default_pin: pinmux_U16_default_pin {
