@@ -159,7 +159,7 @@ int rc_pinmux_set(int pin, rc_pinmux_mode_t mode)
 			mode!=PINMUX_GPIO_PU	&& \
 			mode!=PINMUX_GPIO_PD	&& \
 			mode!=PINMUX_SPI){
-			if(rc_model()==BB_BLUE){
+			if(rc_model()==MODEL_BB_BLUE){
 				fprintf(stderr,"ERROR in rc_pinmux_set, BLUE_GP0_PIN_6 can only be put in GPIO modes\n");
 			}
 			else{
@@ -177,7 +177,7 @@ int rc_pinmux_set(int pin, rc_pinmux_mode_t mode)
 		if(	mode!=PINMUX_GPIO	&& \
 			mode!=PINMUX_GPIO_PU	&& \
 			mode!=PINMUX_GPIO_PD){
-			if(rc_model()==BB_BLUE){
+			if(rc_model()==MODEL_BB_BLUE){
 				fprintf(stderr,"ERROR in rc_pinmux_set, BLUE_GP0_PIN_4 can only be put in GPIO modes\n");
 			}
 			else{
@@ -273,7 +273,7 @@ int rc_pinmux_set(int pin, rc_pinmux_mode_t mode)
 	}
 
 	// check for board incompatibility
-	if(blue_only && rc_model()!=BB_BLUE){
+	if(blue_only && rc_model()!=MODEL_BB_BLUE){
 		fprintf(stderr,"ERROR in rc_pinmux_set, Trying to set pinmux on pin that should only used on BB Blue\n");
 		return -1;
 	}
@@ -330,7 +330,7 @@ int rc_pinmux_set_default()
 {
 	int ret = 0;
 	// bb blue available pinmux
-	if(rc_model()==BB_BLUE){
+	if(rc_model()==MODEL_BB_BLUE){
 		ret |= rc_pinmux_set(BLUE_SPI_PIN_6_SS1, PINMUX_SPI);
 		ret |= rc_pinmux_set(BLUE_SPI_PIN_6_SS2, PINMUX_SPI);
 		ret |= rc_pinmux_set(BLUE_GP0_PIN_3, PINMUX_GPIO_PU);

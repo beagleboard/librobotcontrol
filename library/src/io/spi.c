@@ -70,7 +70,7 @@ int rc_spi_init(int slave, int slave_mode, int bus_mode, int speed_hz)
 		fprintf(stderr,"ERROR in rc_spi_init, slave_mode must be SPI_SLAVE_MODE_AUTO or SPI_SLAVE_MODE_MANUAL\n");
 		return -1;
 	}
-	if(model!=BB_BLUE && slave==2 && slave_mode==SPI_SLAVE_MODE_AUTO){
+	if(model!=MODEL_BB_BLUE && slave==2 && slave_mode==SPI_SLAVE_MODE_AUTO){
 		fprintf(stderr,"ERROR in rc_spi_init, SPI_SLAVE_MODE_AUTO not available on slave 2 with Robotics Cape\n");
 		return -1;
 	}
@@ -115,7 +115,7 @@ int rc_spi_init(int slave, int slave_mode, int bus_mode, int speed_hz)
 	}
 
 	// set up slave select pins, pin definitions in <rc/pinmux.h>
-	if(model==BB_BLUE){
+	if(model==MODEL_BB_BLUE){
 		rc_spi_gpio_ss_chip[0] = BLUE_SS1_CHIP;
 		rc_spi_gpio_ss_pin[0]  = BLUE_SS1_PIN;
 		rc_spi_pinmux_id[0]    = BLUE_SPI_PIN_6_SS1;

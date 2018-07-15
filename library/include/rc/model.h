@@ -1,12 +1,12 @@
 /**
  * <rc/model.h>
  *
- * @brief      Determine the model of BeagleBone or cape in use.
+ * @brief      Determine the model of board currently being used.
  *
- *             Because we wish to support different beagleboard products with
- *             this same library, we must internally determine which board we
- *             are running on to decide which pins to use. We make these
- *             functions available to the user in case they wish to do the same.
+ *             The user may sometimes need to determine which board they
+ *             are running on to decide which pins or modules to use. These
+ *             functions are also used internally to the library for hardware
+ *             specific configuration.
  *             See the rc_model example for a demonstration.
  *
  * @author     James Strawson
@@ -25,16 +25,45 @@ extern "C" {
 #endif
 
 
+/**
+ * List of models detectable by the rc_model() function. This is not a complete
+ * list of board this library will run on. Nor is it a list of boards that the
+ * library is guaranteed to work on. Currently, MODEL_PC indicates personal
+ * computer and will be selected whenever running on an x86 or x86_64
+ * architecture machine until more specific boards are added to this list by
+ * user request.
+ */
 typedef enum rc_model_t{
-	UNKNOWN_MODEL,
-	BB_BLACK,
-	BB_BLACK_RC,
-	BB_BLACK_W,
-	BB_BLACK_W_RC,
-	BB_GREEN,
-	BB_GREEN_W,
-	BB_BLUE
+	MODEL_UNKNOWN,
+	MODEL_BB_BLACK,
+	MODEL_BB_BLACK_RC,
+	MODEL_BB_BLACK_W,
+	MODEL_BB_BLACK_W_RC,
+	MODEL_BB_GREEN,
+	MODEL_BB_GREEN_W,
+	MODEL_BB_BLUE,
+	MODEL_RPI_B,
+	MODEL_RPI_B_PLUS,
+	MODEL_RPI2_B,
+	MODEL_RPI3_B,
+	MODEL_RPI3_B_PLUS,
+	MODEL_RPI0,
+	MODEL_RPI0_W,
+	MODEL_RPI_CM,
+	MODEL_RPI_CM3,
+	MODEL_PC
 } rc_model_t;
+
+
+/**
+ * This is a list of general categories of boards.
+ */
+typedef enum rc_model_category_t{
+	CATEGORY_UNKNOWN,
+	CATEGORY_BEAGLEBONE,
+	CATEGORY_RPI,
+	CATEGORY_PC
+} rc_model_category_t;
 
 /**
  * @brief      gets the current board model name
@@ -44,9 +73,22 @@ typedef enum rc_model_t{
 rc_model_t rc_model();
 
 /**
+ * @brief      gets the general category for the current board
+ *
+ * @return     rc_model_category_t enum representation of categoy
+ */
+rc_model_category_t rc_model_category();
+
+
+/**
  * @brief      prints to the screen the human-readable version of the model name
  */
 void rc_model_print();
+
+/**
+ * @brief      prints to the screen the human-readable version of the category name
+ */
+void rc_model_category_print();
 
 
 #ifdef __cplusplus

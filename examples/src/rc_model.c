@@ -17,6 +17,8 @@
 int main(){
 	printf("\nCurrently running on a:\n");
 	rc_model_print();
+	printf("\n\nmodel category:\n");
+	rc_model_category_print();
 	printf("\n");
 	return 0;
 }

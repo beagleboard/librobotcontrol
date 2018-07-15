@@ -70,7 +70,7 @@ int rc_motor_init_freq(int pwm_frequency_hz)
 
 	// set pins for motor 1
 	// assign gpio pins for blue/black
-	if(rc_model()==BB_BLUE){
+	if(rc_model()==MODEL_BB_BLUE){
 		dirA_chip[0]=MDIR1A_CHIP_BLUE;
 		dirA_pin[0]=MDIR1A_PIN_BLUE;
 	}
@@ -86,7 +86,7 @@ int rc_motor_init_freq(int pwm_frequency_hz)
 	// motor 2
 	dirA_chip[1]=MDIR2A_CHIP;
 	dirA_pin[1]=MDIR2A_PIN;
-	if(rc_model()==BB_BLUE){
+	if(rc_model()==MODEL_BB_BLUE){
 		dirB_chip[1]=MDIR2B_CHIP_BLUE;
 		dirB_pin[1]=MDIR2B_PIN_BLUE;
 	}
