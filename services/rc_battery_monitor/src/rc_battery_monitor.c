@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 
 	// whitelist blue, black, and black wireless only when RC device tree is in use
 	model = rc_model();
-	if(model!=BB_BLACK_RC && model!=BB_BLACK_W_RC && model!=BB_BLUE){
+	if(model!=MODEL_BB_BLACK_RC && model!=MODEL_BB_BLACK_W_RC && model!=MODEL_BB_BLUE){
 		if(system("grep -q roboticscape /boot/uEnv.txt")!=0){
 			fprintf(stderr,"rc_battery_monitor can only run on BB Blue, Black, and Black wireless when the roboticscape device tree is in use.\n");
 			return 0;

@@ -59,103 +59,92 @@ static void __check_model()
 	fclose(fd);
 
 	// now do the checks for known BB models
-	if(strcmp(c, "TI AM335x BeagleBone Black")==0){
-		current_model = MODEL_BB_BLACK;
+	if(strstr(c, "BeagleBone")!=NULL){
+
 		current_category = CATEGORY_BEAGLEBONE;
-		return;
-	}
-	if(strcmp(c, "TI AM335x BeagleBone Black RoboticsCape")==0){
-		current_model = MODEL_BB_BLACK_RC;
-		current_category = CATEGORY_BEAGLEBONE;
-		return;
-	}
-	if(strcmp(c, "TI AM335x BeagleBone Black Wireless")==0){
-		current_model = MODEL_BB_BLACK_W;
-		current_category = CATEGORY_BEAGLEBONE;
-		return;
-	}
-	if(strcmp(c, "TI AM335x BeagleBone Black Wireless RoboticsCape")==0){
-		current_model = MODEL_BB_BLACK_W_RC;
-		current_category = CATEGORY_BEAGLEBONE;
-		return;
-	}
-	if(strcmp(c, "TI AM335x BeagleBone Green")==0){
-		current_model = MODEL_BB_GREEN;
-		current_category = CATEGORY_BEAGLEBONE;
-		return;
-	}
-	if(strcmp(c, "TI AM335x BeagleBone Green Wireless")==0){
-		current_model = MODEL_BB_GREEN_W;
-		current_category = CATEGORY_BEAGLEBONE;
-		return;
-	}
-	if(strcmp(c, "TI AM335x BeagleBone Blue")==0){
-		current_model = MODEL_BB_BLUE;
-		current_category = CATEGORY_BEAGLEBONE;
+
+		if(strcmp(c, "TI AM335x BeagleBone Black")==0){
+			current_model = MODEL_BB_BLACK;
+			return;
+		}
+		if(strcmp(c, "TI AM335x BeagleBone Black RoboticsCape")==0){
+			current_model = MODEL_BB_BLACK_RC;
+			return;
+		}
+		if(strcmp(c, "TI AM335x BeagleBone Black Wireless")==0){
+			current_model = MODEL_BB_BLACK_W;
+			return;
+		}
+		if(strcmp(c, "TI AM335x BeagleBone Black Wireless RoboticsCape")==0){
+			current_model = MODEL_BB_BLACK_W_RC;
+			return;
+		}
+		if(strcmp(c, "TI AM335x BeagleBone Green")==0){
+			current_model = MODEL_BB_GREEN;
+			return;
+		}
+		if(strcmp(c, "TI AM335x BeagleBone Green Wireless")==0){
+			current_model = MODEL_BB_GREEN_W;
+			return;
+		}
+		if(strcmp(c, "TI AM335x BeagleBone Blue")==0){
+			current_model = MODEL_BB_BLUE;
+			return;
+		}
 		return;
 	}
 
 	// rpi models
-	if(strstr(c, "Raspberry Pi Model B+")!=NULL){
-		current_model = MODEL_RPI_B_PLUS;
-		current_category = CATEGORY_RPI;
-		return;
-	}
-	if(strstr(c, "Raspberry Pi Model B")!=NULL){
-		current_model = MODEL_RPI_B;
-		current_category = CATEGORY_RPI;
-		return;
-	}
-
-	if(strstr(c, "Raspberry Pi 2 Model B")!=NULL){
-		current_model = MODEL_RPI2_B;
-		current_category = CATEGORY_RPI;
-		return;
-	}
-
-	if(strstr(c, "Raspberry Pi 3 Model B+")!=NULL){
-		current_model = MODEL_RPI3_B_PLUS;
-		current_category = CATEGORY_RPI;
-		return;
-	}
-	if(strstr(c, "Raspberry Pi 3 Model")!=NULL){
-		current_model = MODEL_RPI3_B;
-		current_category = CATEGORY_RPI;
-		return;
-	}
-
-	if(strstr(c, "Raspberry Pi Zero W")!=NULL){
-		current_model = MODEL_RPI0_W;
-		current_category = CATEGORY_RPI;
-		return;
-	}
-	if(strstr(c, "Raspberry Pi Zero")!=NULL){
-		current_model = MODEL_RPI0;
-		current_category = CATEGORY_RPI;
-		return;
-	}
-
-	if(strstr(c, "Raspberry Pi Computer Module 3")!=NULL){
-		current_model = MODEL_RPI_CM3;
-		current_category = CATEGORY_RPI;
-		return;
-	}
-	if(strstr(c, "Raspberry Pi Compute Module")!=NULL){
-		current_model = MODEL_RPI_CM;
-		current_category = CATEGORY_RPI;
-		return;
-	}
-
-	// if we've gotten here, no specific mode was found.
-	// but we might be able to determine category
-	if(strstr(c, "BeagleBone")!=NULL){;
-		current_category = CATEGORY_BEAGLEBONE;
-		return;
-	}
+	// use strstr instead of strcmp because the string may contain revision
+	// number as well as model name. Therefore order of checks is important.
 	if(strstr(c, "Raspberry Pi")!=NULL){
-		current_category = CATEGORY_RPI;
+
+		current_category=CATEGORY_RPI;
+
+		if(strstr(c, "Raspberry Pi Model B+")!=NULL){
+			current_model = MODEL_RPI_B_PLUS;
+			return;
+		}
+		if(strstr(c, "Raspberry Pi Model B")!=NULL){
+			current_model = MODEL_RPI_B;
+			return;
+		}
+
+		if(strstr(c, "Raspberry Pi 2 Model B")!=NULL){
+			current_model = MODEL_RPI2_B;
+			return;
+		}
+
+		if(strstr(c, "Raspberry Pi 3 Model B+")!=NULL){
+			current_model = MODEL_RPI3_B_PLUS;
+			return;
+		}
+		if(strstr(c, "Raspberry Pi 3 Model")!=NULL){
+			current_model = MODEL_RPI3_B;
+			return;
+		}
+
+		if(strstr(c, "Raspberry Pi Zero W")!=NULL){
+			current_model = MODEL_RPI0_W;
+			return;
+		}
+		if(strstr(c, "Raspberry Pi Zero")!=NULL){
+			current_model = MODEL_RPI0;
+			return;
+		}
+
+		if(strstr(c, "Raspberry Pi Computer Module 3")!=NULL){
+			current_model = MODEL_RPI_CM3;
+			return;
+		}
+		if(strstr(c, "Raspberry Pi Compute Module")!=NULL){
+			current_model = MODEL_RPI_CM;
+			return;
+		}
 		return;
 	}
+
+	// if we've gotten here, no specific model was found.
 
 	return;
 }

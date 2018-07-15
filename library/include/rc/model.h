@@ -82,11 +82,13 @@ rc_model_category_t rc_model_category();
 
 /**
  * @brief      prints to the screen the human-readable version of the model name
+ *             with no trailing newline character.
  */
 void rc_model_print();
 
 /**
- * @brief      prints to the screen the human-readable version of the category name
+ * @brief      prints to the screen the human-readable version of the category
+ *             name with no trailing newline character.
  */
 void rc_model_category_print();
 
