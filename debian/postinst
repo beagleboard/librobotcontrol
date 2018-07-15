@@ -5,7 +5,6 @@
 set -e	# exit on error
 . /usr/share/debconf/confmodule # Source debconf library.
 
-
 # enable services, but don't start yet
 systemctl daemon-reload
 systemctl enable robotcontrol
@@ -13,6 +12,8 @@ systemctl enable rc_battery_monitor
 
 # in interactive mode, ask for configuration options
 if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
+
+	set +e
 
 	# Fetching configuration from debconf
 	db_get librobotcontrol/q_enable_dt
@@ -42,7 +43,6 @@ if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
 
 
 	# try to start services, but ignore errors as this may not work
-	set +e
 	systemctl start rc_battery_monitor
 	systemctl start robotcontrol
 

@@ -7,7 +7,7 @@ Maintainer: James Strawson <james@strawsondesign.com>
 Homepage: http://www.strawsondesign.com/
 
 Package: librobotcontrol
-Architecture: armhf
+Architecture: any
 Depends: debconf, ${shlibs:Depends}, ${misc:Depends}
 Replaces: roboticscape
 Conflicts: roboticscape

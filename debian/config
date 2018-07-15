@@ -8,8 +8,14 @@ set -e
 
 # if not running in noninteractive mode, ask some questions
 if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ]; then
+
 	# check model
-	MODEL="$(cat /proc/device-tree/model)"
+	if [ -e /proc/device-tree/model ]
+	then
+		MODEL="$(cat /proc/device-tree/model)"
+	else
+		MODEL="UNKNOWN"
+	fi
 	ISBLACK=false
 	ISBLUE=false
 	ISCAPE=false
@@ -33,15 +39,14 @@ if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ]; then
 
 	# now get the answer to the last question, if the user requested to enable
 	# the DT then set ISCAPE to true as well since it will be after reboot
+	# These two lines may not be needed anymore, but they don't hurt so leaving
 	db_get librobotcontrol/q_enable_dt || true
 	if [ "$RET" = "true" ]; then ISCAPE=true; fi
 
-	# if blue or cape DT enabled, or cape DT was just requested to be enabled,
 	# ask for what should run on boot
-	if [ "$ISCAPE" = "true" ] || [ "$ISBLUE" = "true" ]; then
-		db_input critical librobotcontrol/q_runonboot || true
-		db_go || true
-	fi
+	db_input critical librobotcontrol/q_runonboot || true
+	db_go || true
+
 fi
 
 
