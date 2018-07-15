@@ -1,4 +1,14 @@
 librobotcontrol (1.0.0) stable; urgency=low
-    * first release candidate for v1, please test and submit bug reports!
+    * finally, v1.0.0 release!
+    * rename package to librobotcontrol
+    * extended SPI interface
+    * extended model interface to detect Rpi and PC
+    * add x86_64 package
+    * add more manual pages to documentation
+    * new slack workspace!
+    * update serial IO to use size_t for consistency
+    * add workaround for BB pwm frequency changes
+    * backwards compatability links for roboticscape
+    * lots of little bugfixes
 
- -- James Strawson <james@strawsondesign.com>  Sat, 12 May 2018 02:24:00 +0000
+ -- James Strawson <james@strawsondesign.com>  Sun, 15 Jul 2018 13:02:00 +0000
