@@ -1,6 +1,15 @@
 1.0.0
     * finally, v1.0.0 release!
     * rename package to librobotcontrol
+    * extended SPI interface
+    * extended model interface to detect Rpi and PC
+    * add x86_64 package
+    * add more manual pages to documentation
+    * new slack workspace!
+    * update serial IO to use size_t for consistency
+    * add workaround for BB pwm frequency changes
+    * backwards compatability links for roboticscape
+    * lots of little bugfixes
 
 0.4.4
     * go back to generic .so name to avoid conflicts
