@@ -19,216 +19,370 @@
 #include <rc/pinmux.h>
 #include <rc/spi.h>
 
-#define N_SS			2 // number of slave select lines
-#define SPI10_PATH		"/dev/spidev1.0"
-#define SPI11_PATH		"/dev/spidev1.1"
-#define SPI_MAX_SPEED		24000000	// 24mhz
-#define SPI_MIN_SPEED		1000		// 1khz
-#define SPI_BITS_PER_WORD	8
+#define MAX_BUS 5 // reasonable max spi bus should cover most platforms
 
-// Cape SS1 gpio P9_28, normally SPI mode
-#define CAPE_SS1_CHIP	3
-#define CAPE_SS1_PIN	17
-// Cape SS2 gpio P9_23, normally GPIO mode
-#define CAPE_SS2_CHIP	1
-#define CAPE_SS2_PIN	17
-// Blue SS1 gpio 0_29 pin H18
-#define BLUE_SS1_CHIP	0
-#define BLUE_SS1_PIN	29
-// Blue SS2 gpio 0_7 pin H18
-#define BLUE_SS2_CHIP	0
-#define BLUE_SS2_PIN	7
+#define SS_MODE_NONE		0
+#define SS_MODE_AUTO		1
+#define SS_MODE_MANUAL		2
 
-// Blue Only
-#define BLUE_SPI_PIN_6_SS1	29	// gpio 0_29 pin H18
-#define BLUE_SPI_PIN_6_SS2	7	// gpio 0_7  pin C18
-
-static int _rc_spi_fd[N_SS];		// file descriptor for SPI1_PATH device cs0, cs1
-static int rc_spi_init_flag[N_SS];	// set to 1 after successful initialization
-static int rc_spi_gpio_init_flag[N_SS];// init flag for manual-mode gpio SS lines
-static int rc_spi_gpio_ss_chip[N_SS];	// holds gpio pin chip for slave select lines
-static int rc_spi_gpio_ss_pin[N_SS];	// holds gpio pins offset for slave select lines
-static int rc_spi_speed[N_SS];		// speed in hz
-static int rc_spi_pinmux_id[N_SS];
+#define N_SS			12 // number of possible slave select lines
+#define SPI_BASE_PATH		"/dev/spidev"
 
 
-int rc_spi_init(int slave, int slave_mode, int bus_mode, int speed_hz)
+typedef struct rc_spi_state_t{
+	unsigned char init[N_SS];
+	unsigned char ss_mode[N_SS]; ///< See INIT_MODE_NONE, AUTO, MANUAL
+	unsigned char chip[N_SS];
+	unsigned char pin[N_SS];
+	int speed[N_SS];
+	int fd[N_SS];
+}rc_spi_state_t;
+
+// state of all busses
+static rc_spi_state_t state[MAX_BUS+1];
+
+
+// simple opening of an FD for particular bus and slave. Tries to handle the
+// case where old BeagleBone kernels enumerate spi1 as spidev2.
+// returns the opened file descriptor
+static int __open_fd(int bus, int slave)
 {
-	int bits = SPI_BITS_PER_WORD;
+	char buf[32];
+	int ret;
+
+
+	snprintf(buf,sizeof(buf), SPI_BASE_PATH "%d.%d",bus, slave);
+	// open file descriptor
+	ret=open(buf, O_RDWR);
+
+	// BeagleBones for a short while enumerated SPI1 as spidev2, if there
+	// was an error opening spidev1, try spidev2
+	if(ret==-1 && bus==1 && (slave==0 || slave==1) && rc_model_category()==CATEGORY_BEAGLEBONE){
+		snprintf(buf,sizeof(buf), SPI_BASE_PATH "%d.%d", 2, slave);
+		// open file descriptor
+		ret=open(buf, O_RDWR);
+	}
+
+	if(ret==-1){
+		perror("ERROR in rc_spi_init, failed to open /dev/spidev device");
+		if(errno!=EPERM) fprintf(stderr,"likely SPI is not enabled in the device tree or kernel\n");
+		return -1;
+	}
+	return ret;
+}
+
+
+int rc_spi_init_auto_slave(int bus, int slave, int bus_mode, int speed_hz)
+{
+	int bits = RC_SPI_BITS_PER_WORD;
 	rc_model_t model = rc_model();
+	rc_model_category_t category = rc_model_category();
+	int fd;
 
 	// sanity checks
-	if(slave!=1 && slave!=2){
-		fprintf(stderr,"ERROR in rc_spi_init, slave must be 1 or 2\n");
+	if(bus<0 || bus>MAX_BUS){
+		fprintf(stderr,"ERROR in rc_spi_init_auto_slave, bus must be between 0 and %d\n", MAX_BUS);
 		return -1;
 	}
-	if(speed_hz>SPI_MAX_SPEED || speed_hz<SPI_MIN_SPEED){
-		fprintf(stderr,"ERROR in rc_spi_init, speed_hz must be between %d & %d\n", SPI_MIN_SPEED, SPI_MAX_SPEED);
+	if(slave<0 || slave>=N_SS){
+		fprintf(stderr,"ERROR in rc_spi_init_auto_slave, slave must be between 0 and %d\n", N_SS-1);
 		return -1;
 	}
-	if(slave_mode!=SPI_SLAVE_MODE_AUTO && slave_mode!=SPI_SLAVE_MODE_MANUAL){
-		fprintf(stderr,"ERROR in rc_spi_init, slave_mode must be SPI_SLAVE_MODE_AUTO or SPI_SLAVE_MODE_MANUAL\n");
-		return -1;
-	}
-	if(model!=MODEL_BB_BLUE && slave==2 && slave_mode==SPI_SLAVE_MODE_AUTO){
-		fprintf(stderr,"ERROR in rc_spi_init, SPI_SLAVE_MODE_AUTO not available on slave 2 with Robotics Cape\n");
+	if(speed_hz>RC_SPI_MAX_SPEED || speed_hz<RC_SPI_MIN_SPEED){
+		fprintf(stderr,"ERROR in rc_spi_init_auto_slave, speed_hz must be between %d & %d\n", RC_SPI_MIN_SPEED, RC_SPI_MAX_SPEED);
 		return -1;
 	}
 	if(bus_mode!=SPI_MODE_0 && bus_mode!=SPI_MODE_1 && bus_mode!=SPI_MODE_2 && bus_mode!=SPI_MODE_3){
-		fprintf(stderr,"ERROR in rc_spi_init, bus_mode must be SPI_MODE_0, 1, 2, or 3\n");
+		fprintf(stderr,"ERROR in rc_spi_init_auto_slave, bus_mode must be SPI_MODE_0, 1, 2, or 3\n");
+		return -1;
+	}
+
+	// model_specific checks
+	if(bus==1 && slave==1 && (model==MODEL_BB_BLACK_RC || model==MODEL_BB_BLACK_W_RC)){
+		fprintf(stderr,"ERROR in rc_spi_init_auto_slave, auto slave mode not available on slave 2 with Robotics Cape\n");
+		return -1;
+	}
+	if(bus>1 && category==CATEGORY_BEAGLEBONE){
+		fprintf(stderr,"ERROR in rc_spi_init_auto_slave, can only use spi bus 0 and 1 on BeagleBones\n");
+		return -1;
+	}
+	if(slave>1 && category==CATEGORY_BEAGLEBONE){
+		fprintf(stderr,"ERROR in rc_spi_init_auto_slave, can only use slave 0 and 1 on BeagleBones\n");
 		return -1;
 	}
 
 	// get file descriptor for spi1 device
-	if(slave==1){
-		_rc_spi_fd[0]=open(SPI10_PATH, O_RDWR);
-		if(_rc_spi_fd[0]==-1){
-			perror("ERROR in rc_spi_init");
-			if(errno!=EPERM) fprintf(stderr,"likely SPI is not enabled in the device tree or kernel\n");
-			return -1;
-		}
-	}
-	else{
-		_rc_spi_fd[1]=open(SPI11_PATH, O_RDWR);
-		if(_rc_spi_fd[1]==-1){
-			perror("ERROR in rc_spi_init");
-			if(errno!=EPERM) fprintf(stderr,"likely SPI is not enabled in the device tree or kernel\n");
-			return -1;
-		}
-	}
+	fd=__open_fd(bus, slave);
+	if(fd==-1) return -1;
 
 	// set settings
-	if(ioctl(_rc_spi_fd[slave-1], SPI_IOC_WR_MODE, &bus_mode)==-1){
-		perror("ERROR in rc_spi_init setting spi mode");
-		close(_rc_spi_fd[slave-1]);
+	if(ioctl(fd, SPI_IOC_WR_MODE, &bus_mode)==-1){
+		perror("ERROR in rc_spi_init_auto_slave setting spi mode");
+		close(fd);
 		return -1;
 	}
-	if(ioctl(_rc_spi_fd[slave-1], SPI_IOC_WR_BITS_PER_WORD, &bits)==-1){
-		perror("ERROR in rc_spi_init setting bits per word");
-		close(_rc_spi_fd[slave-1]);
+	if(ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits)==-1){
+		perror("ERROR in rc_spi_init_auto_slave setting bits per word");
+		close(fd);
 		return -1;
 	}
-	if(ioctl(_rc_spi_fd[slave-1], SPI_IOC_WR_MAX_SPEED_HZ, &speed_hz)==-1){
-		perror("ERROR in rc_spi_init setting max speed hz");
-		close(_rc_spi_fd[slave-1]);
+	if(ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed_hz)==-1){
+		perror("ERROR in rc_spi_init_auto_slave setting max speed hz");
+		close(fd);
 		return -1;
 	}
 
-	// set up slave select pins, pin definitions in <rc/pinmux.h>
-	if(model==MODEL_BB_BLUE){
-		rc_spi_gpio_ss_chip[0] = BLUE_SS1_CHIP;
-		rc_spi_gpio_ss_pin[0]  = BLUE_SS1_PIN;
-		rc_spi_pinmux_id[0]    = BLUE_SPI_PIN_6_SS1;
-		rc_spi_gpio_ss_chip[1] = BLUE_SS2_CHIP;
-		rc_spi_gpio_ss_pin[1]  = BLUE_SS2_PIN;
-		rc_spi_pinmux_id[1]    = BLUE_SPI_PIN_6_SS1;
+	// setup pinmux for BeagleBones
+	if(bus==1 && slave==0 && model==MODEL_BB_BLUE){
+		if(rc_pinmux_set(BLUE_SPI_PIN_6_SS1, PINMUX_SPI)){
+			fprintf(stderr,"ERROR in rc_spi_init_auto_slave, failed to set slave select pinmux to SPI mode\n");
+			return -1;
+		}
+	}
+	else if(bus==1 && slave==1 && model==MODEL_BB_BLUE){
+		if(rc_pinmux_set(BLUE_SPI_PIN_6_SS2, PINMUX_SPI)){
+			fprintf(stderr,"ERROR in rc_spi_init_auto_slave, failed to set slave select pinmux to SPI mode\n");
+			return -1;
+		}
+	}
+	else if(bus==1 && slave==1 && (model==MODEL_BB_BLACK_RC || model==MODEL_BB_BLACK_W_RC)){
+		if(rc_pinmux_set(CAPE_SPI_PIN_6_SS2, PINMUX_SPI)){
+			fprintf(stderr,"ERROR in rc_spi_init_auto_slave, failed to set slave select pinmux to SPI mode\n");
+			return -1;
+		}
+	}
 
-	}
-	else{
-		rc_spi_gpio_ss_chip[0] = CAPE_SS1_CHIP;
-		rc_spi_gpio_ss_pin[0]  = CAPE_SS1_PIN;
-		rc_spi_pinmux_id[0]    = CAPE_SPI_PIN_6_SS1;
-		rc_spi_gpio_ss_chip[1] = CAPE_SS2_CHIP;
-		rc_spi_gpio_ss_pin[1]  = CAPE_SS2_PIN;
-		rc_spi_pinmux_id[1]    = CAPE_SPI_PIN_6_SS2;
-	}
-
-	if(slave_mode == SPI_SLAVE_MODE_AUTO){
-		if(rc_pinmux_set(rc_spi_pinmux_id[slave-1], PINMUX_SPI)){
-			fprintf(stderr,"ERROR in rc_spi_init, failed to set slave select pinmux to SPI mode\n");
-			return -1;
-		}
-	}
-	else{
-		if(rc_pinmux_set(rc_spi_pinmux_id[slave-1], PINMUX_GPIO)){
-			fprintf(stderr,"ERROR in rc_spi_init, failed to set slave select pinmux to GPIO mode\n");
-			return -1;
-		}
-		if(rc_gpio_init(rc_spi_gpio_ss_chip[slave-1],rc_spi_gpio_ss_pin[slave-1], GPIOHANDLE_REQUEST_OUTPUT)){
-			fprintf(stderr,"ERROR in rc_spi_init failed to initialize slave select gpio pin\n");
-			return -1;
-		}
-		// make sure slave begins deselected
-		if(rc_gpio_set_value(rc_spi_gpio_ss_chip[slave-1],rc_spi_gpio_ss_pin[slave-1], 1)){
-			fprintf(stderr,"ERROR in rc_spi_init, failed to write to gpio slave select pin\n");
-			return -1;
-		}
-	}
 	// all done, store speed and flag initialization
-	rc_spi_speed[slave-1] = speed_hz;
-	rc_spi_init_flag[slave-1] = 1;
-	rc_spi_gpio_init_flag[slave-1]=1;
+	state[bus].init[slave] = 1;
+	state[bus].ss_mode[slave] = SS_MODE_AUTO;
+	state[bus].chip[slave] = -1;
+	state[bus].pin[slave] = -1;
+	state[bus].fd[slave] = fd;
+	state[bus].speed[slave] = speed_hz;
+
 	return 0;
 }
 
 
-int rc_spi_fd(int slave)
+
+int rc_spi_init_manual_slave(int bus, int slave, int bus_mode, int speed_hz, int chip, int pin)
 {
+
+	int bits = RC_SPI_BITS_PER_WORD;
+	rc_model_t model = rc_model();
+	rc_model_category_t category = rc_model_category();
+	int fd;
+
 	// sanity checks
-	if(slave!=1 && slave !=2){
-		fprintf(stderr,"ERROR in rc_spi_fd, slave must be 1 or 2\n");
+	if(bus<0 || bus>MAX_BUS){
+		fprintf(stderr,"ERROR in rc_spi_init_manual_slave, bus must be between 0 and %d\n", MAX_BUS);
 		return -1;
 	}
-	if(rc_spi_init_flag[slave-1]==0){
-		fprintf(stderr,"ERROR in rc_spi_fd, call rc_spi_init first\n");
+	if(slave<0 || slave>=N_SS){
+		fprintf(stderr,"ERROR in rc_spi_init_manual_slave, slave must be between 0 and %d\n", N_SS-1);
 		return -1;
 	}
-	return _rc_spi_fd[slave-1];
-}
+	if(speed_hz>RC_SPI_MAX_SPEED || speed_hz<RC_SPI_MIN_SPEED){
+		fprintf(stderr,"ERROR in rc_spi_init_manual_slave, speed_hz must be between %d & %d\n", RC_SPI_MIN_SPEED, RC_SPI_MAX_SPEED);
+		return -1;
+	}
+	if(bus_mode!=SPI_MODE_0 && bus_mode!=SPI_MODE_1 && bus_mode!=SPI_MODE_2 && bus_mode!=SPI_MODE_3){
+		fprintf(stderr,"ERROR in rc_spi_init_manual_slave, bus_mode must be SPI_MODE_0, 1, 2, or 3\n");
+		return -1;
+	}
+
+	// model_specific checks
+	if(bus==1 && slave==1 && (model==MODEL_BB_BLACK_RC || model==MODEL_BB_BLACK_W_RC)){
+		fprintf(stderr,"ERROR in rc_spi_init_manual_slave, auto slave mode not available on slave 2 with Robotics Cape\n");
+		return -1;
+	}
+	if(bus>1 && category==CATEGORY_BEAGLEBONE){
+		fprintf(stderr,"ERROR in rc_spi_init_manual_slave, can only use spi bus 0 and 1 on BeagleBones\n");
+		return -1;
+	}
+	if(slave>1 && category==CATEGORY_BEAGLEBONE){
+		fprintf(stderr,"ERROR in rc_spi_init_manual_slave, can only use slave 0 and 1 on BeagleBones\n");
+		return -1;
+	}
+
+	// get file descriptor for spi1 device. all manual slaves share the
+	// slave 0 fd so only open it if not opened already.
+	if(state[bus].fd[0]==0){
+		fd=__open_fd(bus, 0);
+		if(fd==-1) return -1;
+
+		// set settings
+		if(ioctl(fd, SPI_IOC_WR_MODE, &bus_mode)==-1){
+			perror("ERROR in rc_spi_init_manual_slave setting spi mode");
+			close(fd);
+			return -1;
+		}
+		if(ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits)==-1){
+			perror("ERROR in rc_spi_init_manual_slave setting bits per word");
+			close(fd);
+			return -1;
+		}
+		if(ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed_hz)==-1){
+			perror("ERROR in rc_spi_init_manual_slave setting max speed hz");
+			close(fd);
+			return -1;
+		}
+	}
+	// if already open, just copy it
+	else	fd = state[bus].fd[0];
 
 
-int rc_spi_close(int slave)
-{
-	// sanity checks
-	if(slave!=1 && slave !=2){
-		fprintf(stderr,"ERROR in rc_spi_close, slave must be 1 or 2\n");
+	// setup pinmux for BeagleBones
+	if(bus==1 && slave==0 && model==MODEL_BB_BLUE){
+		if(rc_pinmux_set(BLUE_SPI_PIN_6_SS1, PINMUX_GPIO)){
+			fprintf(stderr,"ERROR in rc_spi_init_manual_slave, failed to set slave select pinmux to GPIO mode\n");
+			return -1;
+		}
+	}
+	else if(bus==1 && slave==1 && model==MODEL_BB_BLUE){
+		if(rc_pinmux_set(BLUE_SPI_PIN_6_SS2, PINMUX_GPIO)){
+			fprintf(stderr,"ERROR in rc_spi_init_manual_slave, failed to set slave select pinmux to GPIO mode\n");
+			return -1;
+		}
+	}
+	else if(bus==1 && slave==0 && (model==MODEL_BB_BLACK_RC || model==MODEL_BB_BLACK_W_RC)){
+		if(rc_pinmux_set(CAPE_SPI_PIN_6_SS1, PINMUX_GPIO)){
+			fprintf(stderr,"ERROR in rc_spi_init_manual_slave, failed to set slave select pinmux to GPIO mode\n");
+			return -1;
+		}
+	}
+	else if(bus==1 && slave==1 && (model==MODEL_BB_BLACK_RC || model==MODEL_BB_BLACK_W_RC)){
+		if(rc_pinmux_set(CAPE_SPI_PIN_6_SS2, PINMUX_GPIO)){
+			fprintf(stderr,"ERROR in rc_spi_init_manual_slave, failed to set slave select pinmux to GPIO mode\n");
+			return -1;
+		}
+	}
+
+	if(rc_gpio_init(chip, pin, GPIOHANDLE_REQUEST_OUTPUT)){
+		fprintf(stderr,"ERROR in rc_spi_init_manual_slave failed to initialize slave select gpio pin\n");
 		return -1;
 	}
-	// deselect if in manual mode
-	if(rc_spi_gpio_init_flag[slave-1]){
-		rc_spi_select((slave-1),0);
-		rc_gpio_cleanup(rc_spi_gpio_ss_chip[slave-1],rc_spi_gpio_ss_pin[slave-1]);
+	// make sure slave begins deselected
+	if(rc_gpio_set_value(chip, pin, 1)){
+		fprintf(stderr,"ERROR in rc_spi_init_manual_slave, failed to write to gpio slave select pin\n");
+		return -1;
 	}
-	close(_rc_spi_fd[slave-1]);
-	rc_spi_init_flag[slave-1]=0;
-	rc_spi_gpio_init_flag[slave-1]=0;
+
+	// all done, store speed and flag initialization
+	state[bus].init[slave] = 1;
+	state[bus].ss_mode[slave] = SS_MODE_MANUAL;
+	state[bus].chip[slave] = chip;
+	state[bus].pin[slave] = chip;
+	state[bus].fd[slave] = fd;
+	state[bus].fd[0] = fd; // just in case we are initializing a slave other than 0 first
+	state[bus].speed[slave] = speed_hz;
+
 	return 0;
 }
 
 
-int rc_spi_select(int slave, int select)
+int rc_spi_get_fd(int bus, int slave)
 {
 	// sanity checks
-	if(slave!=1 && slave !=2){
-		fprintf(stderr,"ERROR in rc_spi_select, slave must be 1 or 2\n");
+	if(bus<0 || bus>MAX_BUS){
+		fprintf(stderr,"ERROR in rc_spi_get_fd, bus must be between 0 and %d\n", MAX_BUS);
 		return -1;
 	}
-	if(rc_spi_gpio_init_flag[slave-1]==0){
-		fprintf(stderr,"ERROR in rc_spi_select, slave must be configured with SPI_SLAVE_MODE_MANUAL to use this function\n");
+	if(slave<0 || slave>=N_SS){
+		fprintf(stderr,"ERROR in rc_spi_get_fd, slave must be between 0 and %d\n", N_SS-1);
+		return -1;
+	}
+	if(state[bus].init[slave]==0){
+		fprintf(stderr,"ERROR in rc_spi_get_fd, need to initialize first\n");
+		return -1;
+	}
+	return state[bus].fd[slave];
+}
+
+
+int rc_spi_close(int bus)
+{
+	int i;
+	// sanity checks
+	if(bus<0 || bus>MAX_BUS){
+		fprintf(stderr,"ERROR in rc_spi_close, bus must be between 0 and %d\n", MAX_BUS);
+		return -1;
+	}
+
+	for(i=0;i<N_SS;i++){
+		// cleanup for manual slave
+		if(state[bus].init[i] == SS_MODE_MANUAL){
+			if(rc_gpio_set_value(state[bus].chip[i], state[bus].pin[i], 1)){
+				fprintf(stderr,"WARNING in rc_spi_close, failed to write to gpio slave select pin\n");
+				return -1;
+			}
+			rc_gpio_cleanup(state[bus].chip[i], state[bus].pin[i]);
+			// all manual slaves share slave 0's fd, so only close once when i=0
+			if(i==0) close(state[bus].fd[i]);
+		}
+		// cleanup for auto slave
+		if(state[bus].init[i] == SS_MODE_AUTO){
+			close(state[bus].fd[i]);
+		}
+
+		// make sure struct is wiped
+		state[bus].init[i] = 0;
+		state[bus].ss_mode[i] = 0;
+		state[bus].chip[i] = 0;
+		state[bus].pin[i] = 0;
+		state[bus].fd[i] = 0;
+		state[bus].speed[i] = 0;
+	}
+
+	return 0;
+}
+
+
+int rc_spi_manual_select(int bus, int slave, int select)
+{
+	// sanity checks
+	if(bus<0 || bus>MAX_BUS){
+		fprintf(stderr,"ERROR in rc_spi_manual_select, bus must be between 0 and %d\n", MAX_BUS);
+		return -1;
+	}
+	if(slave<0 || slave>=N_SS){
+		fprintf(stderr,"ERROR in rc_spi_manual_select, slave must be between 0 and %d\n", N_SS-1);
+		return -1;
+	}
+	if(state[bus].init[slave]==0){
+		fprintf(stderr,"ERROR in rc_spi_manual_select, need to initialize first\n");
+		return -1;
+	}
+	if(state[bus].ss_mode[slave]!=SS_MODE_MANUAL){
+		fprintf(stderr,"ERROR in rc_spi_manual_select, slave not configured in manual mode\n");
 		return -1;
 	}
 
 	// invert select to it's pulled low when selecting pin
-	if(rc_gpio_set_value(rc_spi_gpio_ss_chip[slave-1],rc_spi_gpio_ss_pin[slave-1], !select)==-1){
-		fprintf(stderr,"ERROR in rc_spi_select writing to gpio pin\n");
+	if(rc_gpio_set_value(state[bus].chip[slave], state[bus].pin[slave], !select)==-1){
+		fprintf(stderr,"ERROR in rc_spi_manual_select writing to gpio pin\n");
 		return -1;
 	}
 	return 0;
 }
 
 
-int rc_spi_transfer(int slave, uint8_t* tx_data, int tx_bytes, uint8_t* rx_data)
+int rc_spi_transfer(int bus, int slave, uint8_t* tx_data, size_t tx_bytes, uint8_t* rx_data)
 {
 	int ret;
 	struct spi_ioc_transfer xfer;
 
 	// sanity checks
-	if(slave!=1 && slave!=2){
-		fprintf(stderr,"ERROR in rc_spi_transfer, slave must be 1 or 2\n");
+	if(bus<0 || bus>MAX_BUS){
+		fprintf(stderr,"ERROR in rc_spi_transfer, bus must be between 0 and %d\n", MAX_BUS);
 		return -1;
 	}
-	if(rc_spi_init_flag[slave-1]==0){
-		fprintf(stderr,"ERROR: in rc_spi_transfer call rc_spi_init first\n");
+	if(slave<0 || slave>=N_SS){
+		fprintf(stderr,"ERROR in rc_spi_transfer, slave must be between 0 and %d\n", N_SS-1);
+		return -1;
+	}
+	if(state[bus].init[slave]==0){
+		fprintf(stderr,"ERROR in rc_spi_transfer, need to initialize first\n");
 		return -1;
 	}
 	if(tx_bytes<1){
@@ -239,14 +393,14 @@ int rc_spi_transfer(int slave, uint8_t* tx_data, int tx_bytes, uint8_t* rx_data)
 	// fill in send struct
 	xfer.cs_change = 1;
 	xfer.delay_usecs = 0;
-	xfer.speed_hz = rc_spi_speed[slave-1];
-	xfer.bits_per_word = SPI_BITS_PER_WORD;
+	xfer.speed_hz = state[bus].speed[slave];
+	xfer.bits_per_word = RC_SPI_BITS_PER_WORD;
 	xfer.tx_buf = (unsigned long) tx_data;
 	xfer.rx_buf = (unsigned long) rx_data;
 	xfer.len = tx_bytes;
 
 	// do ioctl transfer
-	ret=ioctl(_rc_spi_fd[slave-1], SPI_IOC_MESSAGE(1), &xfer);
+	ret=ioctl(state[bus].fd[slave], SPI_IOC_MESSAGE(1), &xfer);
 	if(ret==-1){
 		perror("ERROR in rc_spi_transfer");
 		return -1;
@@ -255,18 +409,22 @@ int rc_spi_transfer(int slave, uint8_t* tx_data, int tx_bytes, uint8_t* rx_data)
 }
 
 
-int rc_spi_write(int slave, uint8_t* data, int bytes)
+int rc_spi_write(int bus, int slave, uint8_t* data, size_t bytes)
 {
 	int ret;
 	struct spi_ioc_transfer xfer;
 
 	// sanity checks
-	if(slave!=1 && slave!=2){
-		fprintf(stderr,"ERROR in rc_spi_write, slave must be 1 or 2\n");
+	if(bus<0 || bus>MAX_BUS){
+		fprintf(stderr,"ERROR in rc_spi_write, bus must be between 0 and %d\n", MAX_BUS);
 		return -1;
 	}
-	if(rc_spi_init_flag[slave-1]==0){
-		fprintf(stderr,"ERROR: in rc_spi_write call rc_spi_init first\n");
+	if(slave<0 || slave>=N_SS){
+		fprintf(stderr,"ERROR in rc_spi_write, slave must be between 0 and %d\n", N_SS-1);
+		return -1;
+	}
+	if(state[bus].init[slave]==0){
+		fprintf(stderr,"ERROR in rc_spi_write, need to initialize first\n");
 		return -1;
 	}
 	if(bytes<1){
@@ -277,14 +435,14 @@ int rc_spi_write(int slave, uint8_t* data, int bytes)
 	// fill in send struct
 	xfer.cs_change = 1;
 	xfer.delay_usecs = 0;
-	xfer.speed_hz = rc_spi_speed[slave-1];
-	xfer.bits_per_word = SPI_BITS_PER_WORD;
+	xfer.speed_hz = state[bus].speed[slave];
+	xfer.bits_per_word = RC_SPI_BITS_PER_WORD;
 	xfer.rx_buf = 0;
 	xfer.tx_buf = (unsigned long) data;
 	xfer.len = bytes;
 
 	// send
-	ret=ioctl(_rc_spi_fd[slave-1], SPI_IOC_MESSAGE(1), &xfer);
+	ret=ioctl(state[bus].fd[slave], SPI_IOC_MESSAGE(1), &xfer);
 	if(ret==-1){
 		perror("ERROR in rc_spi_write");
 		return -1;
@@ -293,18 +451,22 @@ int rc_spi_write(int slave, uint8_t* data, int bytes)
 }
 
 
-int rc_spi_read(int slave, uint8_t* data, int bytes)
+int rc_spi_read(int bus, int slave, uint8_t* data, size_t bytes)
 {
 	int ret;
 	struct spi_ioc_transfer xfer;
 
 	// sanity checks
-	if(slave!=1 && slave!=2){
-		fprintf(stderr,"ERROR in rc_spi_read, slave must be 1 or 2\n");
+	if(bus<0 || bus>MAX_BUS){
+		fprintf(stderr,"ERROR in rc_spi_read, bus must be between 0 and %d\n", MAX_BUS);
 		return -1;
 	}
-	if(rc_spi_init_flag[slave-1]==0){
-		fprintf(stderr,"ERROR: in rc_spi_read call rc_spi_init first\n");
+	if(slave<0 || slave>=N_SS){
+		fprintf(stderr,"ERROR in rc_spi_read, slave must be between 0 and %d\n", N_SS-1);
+		return -1;
+	}
+	if(state[bus].init[slave]==0){
+		fprintf(stderr,"ERROR in rc_spi_read, need to initialize first\n");
 		return -1;
 	}
 	if(bytes<1){
@@ -315,14 +477,14 @@ int rc_spi_read(int slave, uint8_t* data, int bytes)
 	// fill in send struct
 	xfer.cs_change = 1;
 	xfer.delay_usecs = 0;
-	xfer.speed_hz = rc_spi_speed[slave-1];
-	xfer.bits_per_word = SPI_BITS_PER_WORD;
+	xfer.speed_hz = state[bus].speed[slave];
+	xfer.bits_per_word = RC_SPI_BITS_PER_WORD;
 	xfer.rx_buf = (unsigned long) data;
 	xfer.tx_buf = 0;
 	xfer.len = bytes;
 
 	// read
-	ret=ioctl(_rc_spi_fd[slave-1], SPI_IOC_MESSAGE(1), &xfer);
+	ret=ioctl(state[bus].fd[slave], SPI_IOC_MESSAGE(1), &xfer);
 	if(ret==-1){
 		perror("ERROR in rc_spi_read");
 		return -1;
