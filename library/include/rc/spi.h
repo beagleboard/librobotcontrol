@@ -34,7 +34,8 @@
  * @date       1/19/2018
  *
  * @addtogroup SPI
- * @ingroup    IO @{
+ * @ingroup    IO
+ * @{
  */
 
 

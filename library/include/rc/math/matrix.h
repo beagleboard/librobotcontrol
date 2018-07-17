@@ -3,8 +3,6 @@
  *
  * @brief      functions for masic matrix manipulation
  *
- * @author     James Strawson
- * @date       2016
  *
  * @addtogroup Matrix
  * @ingroup Math

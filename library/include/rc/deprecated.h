@@ -1,7 +1,7 @@
 /**
  * <rc/deprecated.h>
  *
- * @brief Deprecated functions that only exist for backwards compatability.
+ * Deprecated functions that only exist for backwards compatability.
  *
  * @author     James Strawson
  * @date       4/26/2018
@@ -52,13 +52,10 @@ int rc_set_motor_brake_all() __attribute__ ((deprecated));
 
 
 
-
-
-
-
 #ifdef __cplusplus
 }
 #endif
 
 #endif // RC_DEPRECATED_H
+
 /** @}  end group deprecated*/

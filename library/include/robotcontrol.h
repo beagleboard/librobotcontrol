@@ -1,8 +1,6 @@
 /**
  * <robotcontrol.h>
  *
- * @brief Includes all librobotcontrol subsystems.
- *
  * This includes every single module in the Robot Control API so that users do
  * not need to include each module individually.
  * be used by linking to /usr/lib/librobotcontrol.so

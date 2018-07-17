@@ -3,9 +3,6 @@
  *
  * @brief      advanced linear algebra functions
  *
- * @author     James Strawson
- * @date       2016
- *
  * @addtogroup Algebra
  * @ingroup Math
  * @{
