@@ -1,28 +1,28 @@
 /**
- * @headerfile mpu.h <rc/mpu.h>
+ * <rc/mpu.h>
  *
  * @brief      A userspace C interface for the invensense MPU6050, MPU6500,
- *             MPU9150, and MPU9250.
+ * MPU9150, and MPU9250.
  *
- *             This API allows the user to configure this IMU in two modes:
- *             NORMAL and DMP
+ * This API allows the user to configure this IMU in two modes: NORMAL and DMP
  *
- *             NORMAL: The accelerometer, gyroscope, magnetometer, and
- *             thermometer can be read directly at any time. To use this mode,
- *             call rc_mpu_initialize() with your imu_config and imu_data
- *             structs as arguments as defined below. You can then call
- *             rc_mpu_read_accel, rc_mpu_read_gyro, rc_mpu_read_mag, or
- *             rc_mpu_read_temp at any time to get the latest sensor values.
+ * ##Normal Mode
  *
- *             DMP: Stands for Digital Motion Processor which is a feature of
- *             the MPU9250. in this mode, the DMP will sample the sensors
- *             internally and fill a FIFO buffer with the data at a fixed rate.
- *             Furthermore, the DMP will also calculate a filtered orientation
- *             quaternion which is placed in the same buffer. When new data is
- *             ready in the buffer, the IMU sends an interrupt to the BeagleBone
- *             triggering the buffer read followed by the execution of a
- *             function of your choosing set with the rc_mpu_set_dmp_callback()
- *             function.
+ * The accelerometer, gyroscope, magnetometer, and thermometer can be
+ * read directly at any time. To use this mode, call rc_mpu_initialize() with
+ * your imu_config and imu_data structs as arguments as defined below. You can
+ * then call rc_mpu_read_accel, rc_mpu_read_gyro, rc_mpu_read_mag, or
+ * rc_mpu_read_temp at any time to get the latest sensor values.
+ *
+ * ##DMP Mode
+ *
+ * Stands for Digital Motion Processor which is a feature of the MPU9250.
+ * in this mode, the DMP will sample the sensors internally and fill a FIFO
+ * buffer with the data at a fixed rate. Furthermore, the DMP will also
+ * calculate a filtered orientation quaternion which is placed in the same
+ * buffer. When new data is ready in the buffer, the IMU sends an interrupt to
+ * the BeagleBone triggering the buffer read followed by the execution of a
+ * function of your choosing set with the rc_mpu_set_dmp_callback() function.
  *
  * @author     James Strawson
  * @date       1/19/2018
@@ -46,13 +46,13 @@ extern "C" {
 
 
 // defines for index location within TaitBryan and quaternion vectors
-#define TB_PITCH_X	0
-#define TB_ROLL_Y	1
-#define TB_YAW_Z	2
-#define QUAT_W		0
-#define QUAT_X		1
-#define QUAT_Y		2
-#define QUAT_Z		3
+#define TB_PITCH_X	0 ///< Index of the dmp_TaitBryan[] array corresponding to the Pitch (X) axis.
+#define TB_ROLL_Y	1 ///< Index of the dmp_TaitBryan[] array corresponding to the Roll (Y) axis.
+#define TB_YAW_Z	2 ///< Index of the dmp_TaitBryan[] array corresponding to the Yaw (Z) axis.
+#define QUAT_W		0 ///< First index of the dmp_quat[] quaternion vector
+#define QUAT_X		1 ///< Second index of the dmp_quat[] quaternion vector
+#define QUAT_Y		2 ///< Third index of the dmp_quat[] quaternion vector
+#define QUAT_Z		3 ///< Fourth index of the dmp_quat[] quaternion vector
 
 #define DEG_TO_RAD	0.0174532925199	///< multiply to convert degrees to radians
 #define RAD_TO_DEG	57.295779513	///< multiply to convert radians to degrees
@@ -62,10 +62,9 @@ extern "C" {
 /**
  * @brief      accelerometer full scale range options
  *
- *             The user may choose from 4 full scale ranges of the accelerometer
- *             and gyroscope. They have units of gravity (G) and degrees per
- *             second (DPS) The defaults values are A_FSR_2G and G_FSR_2000DPS
- *             respectively.
+ * The user may choose from 4 full scale ranges of the accelerometer and
+ * gyroscope. They have units of gravity (G) and degrees per second (DPS) The
+ * defaults values are A_FSR_2G and G_FSR_2000DPS respectively.
  */
 typedef enum rc_mpu_accel_fsr_t{
 	ACCEL_FSR_2G,
@@ -77,10 +76,9 @@ typedef enum rc_mpu_accel_fsr_t{
 /**
  * @brief      gyroscope full scale range options
  *
- *             The user may choose from 4 full scale ranges of the accelerometer
- *             and gyroscope. They have units of gravity (G) and degrees per
- *             second (DPS) The defaults values are A_FSR_2G and G_FSR_2000DPS
- *             respectively.
+ * The user may choose from 4 full scale ranges of the accelerometer and
+ * gyroscope. They have units of gravity (G) and degrees per second (DPS) The
+ * defaults values are A_FSR_2G and G_FSR_2000DPS respectively.
  */
 typedef enum rc_mpu_gyro_fsr_t{
 	GYRO_FSR_250DPS,
@@ -92,12 +90,11 @@ typedef enum rc_mpu_gyro_fsr_t{
 /**
  * @brief      accelerometer digital low-pass filter options
  *
- *             The user may choose from 7 digital low pass filter constants for
- *             the accelerometer and gyroscope. The filter runs at 1kz and helps
- *             to reduce sensor noise when sampling more slowly. The default
- *             values are ACCEL_DLPF_184 GYRO_DLPF_184. Lower cut-off
- *             frequencies incur phase-loss in measurements. Number is cutoff
- *             frequency in hz.
+ * The user may choose from 7 digital low pass filter constants for the
+ * accelerometer and gyroscope. The filter runs at 1kz and helps to reduce
+ * sensor noise when sampling more slowly. The default values are ACCEL_DLPF_184
+ * GYRO_DLPF_184. Lower cut-off frequencies incur phase-loss in measurements.
+ * Number is cutoff frequency in hz.
  */
 typedef enum rc_mpu_accel_dlpf_t{
 	ACCEL_DLPF_OFF,
@@ -113,12 +110,11 @@ typedef enum rc_mpu_accel_dlpf_t{
 /**
  * @brief      gyroscope digital low-pass filter options
  *
- *             The user may choose from 7 digital low pass filter constants for
- *             the accelerometer and gyroscope. The filter runs at 1kz and helps
- *             to reduce sensor noise when sampling more slowly. The default
- *             values are ACCEL_DLPF_184 GYRO_DLPF_184. Lower cut-off
- *             frequencies incur phase-loss in measurements. Number is cutoff
- *             frequency in hz.
+ * The user may choose from 7 digital low pass filter constants for the
+ * accelerometer and gyroscope. The filter runs at 1kz and helps to reduce
+ * sensor noise when sampling more slowly. The default values are ACCEL_DLPF_184
+ * GYRO_DLPF_184. Lower cut-off frequencies incur phase-loss in measurements.
+ * Number is cutoff frequency in hz.
  */
 typedef enum rc_mpu_gyro_dlpf_t{
 	GYRO_DLPF_OFF,
@@ -135,9 +131,8 @@ typedef enum rc_mpu_gyro_dlpf_t{
 /**
  * @brief      Orientation of the sensor.
  *
- *             This is only applicable when operating in DMP mode. This is the
- *             orientation that the DMP consideres neutral, aka where
- *             roll/pitch/yaw are zero.
+ * This is only applicable when operating in DMP mode. This is the orientation
+ * that the DMP consideres neutral, aka where roll/pitch/yaw are zero.
  */
 typedef enum rc_mpu_orientation_t{
 	ORIENTATION_Z_UP	= 136,
@@ -153,9 +148,9 @@ typedef enum rc_mpu_orientation_t{
 /**
  * @brief      configuration of the mpu sensor
  *
- *             Configuration struct passed to rc_mpu_initialize and
- *             rc_mpu_initialize_dmp. It is best to get the default config with
- *             rc_mpu_default_config() function first and modify from there.
+ * Configuration struct passed to rc_mpu_initialize and rc_mpu_initialize_dmp.
+ * It is best to get the default config with rc_mpu_default_config() function
+ * first and modify from there.
  */
 typedef struct rc_mpu_config_t{
 	/** @name physical connection configuration */
@@ -192,13 +187,14 @@ typedef struct rc_mpu_config_t{
 
 } rc_mpu_config_t;
 
+
 /**
  * @brief      data struct populated with new sensor data
  *
- *             This is the container for holding the sensor data. The user is
- *             intended to make their own instance of this struct and pass its
- *             pointer to imu read functions. new data will then be written back
- *             into the user's instance of the data struct.
+ * This is the container for holding the sensor data. The user is intended to
+ * make their own instance of this struct and pass its pointer to imu read
+ * functions. new data will then be written back into the user's instance of the
+ * data struct.
  */
 typedef struct rc_mpu_data_t{
 	/** @name base sensor readings in real units */
@@ -242,7 +238,7 @@ typedef struct rc_mpu_data_t{
 /**
  * @brief      Returns an rc_mpu_config_t struct with default settings.
  *
- *             Use this as a starting point and modify as you wish.
+ * Use this as a starting point and modify as you wish.
  *
  * @return     Returns an rc_mpu_config_t struct with default settings.
  */
@@ -260,9 +256,9 @@ int rc_mpu_set_config_to_default(rc_mpu_config_t* conf);
 /**
  * @brief      Powers off the MPU
  *
- *             Only call this after powering on the MPU with rc_mpu_initialize
- *             or rc_mpu_initialize_dmp. This should geenrally be called at the
- *             end of your main function to make sure the MPU is put to sleep.
+ * Only call this after powering on the MPU with rc_mpu_initialize or
+ * rc_mpu_initialize_dmp. This should geenrally be called at the end of your
+ * main function to make sure the MPU is put to sleep.
  *
  * @return     0 on success or -1 on failure.
  */
@@ -276,23 +272,21 @@ int rc_mpu_power_off();
 /**
  * @brief      Sets up the MPU in normal one-shot sampling mode.
  *
- *             First create an instance of the rc_mpu_data_t struct and pass its
- *             pointer to rc_mpu_initialize which will then write to. Also pass
- *             an rc_mpu_config_t struct with your configruation settings.
+ * First create an instance of the rc_mpu_data_t struct and pass its pointer to
+ * rc_mpu_initialize which will then write to. Also pass an rc_mpu_config_t
+ * struct with your configruation settings.
  *
- *             This function will populate the  accel_to_ms2 and gyro_to_deg
- *             fields of the rc_mpu_data_t struct appropriately based on the
- *             user-configured full scale ranges.
+ * This function will populate the  accel_to_ms2 and gyro_to_deg fields of the
+ * rc_mpu_data_t struct appropriately based on the user-configured full scale
+ * ranges.
  *
- *             After this, you may read sensor data at any time with the
- *             functions rc_mpu_read_accel, rc_mpu_read_gyro, and
- *             rc_mpu_read_temp. The magentometer can also be read with
- *             rc_mpu_read_mag if using an MPU9150 or MPU9250 and the
- *             enable_magnetometer field in the rc_mpu_config_t struct has been
- *             set to 1.
+ * After this, you may read sensor data at any time with the functions
+ * rc_mpu_read_accel(), rc_mpu_read_gyro(), and rc_mpu_read_temp(). The magentometer
+ * can also be read with rc_mpu_read_mag() if using an MPU9150 or MPU9250 and the
+ * enable_magnetometer field in the rc_mpu_config_t struct has been set to 1.
  *
- *             Be sure to power off the MPU at the end of your program with
- *             rc_mpu_power_off.
+ * Be sure to power off the MPU at the end of your program with
+ * rc_mpu_power_off().
  *
  * @param      data  pointer to user's data struct
  * @param[in]  conf  user congiguration data
@@ -301,49 +295,52 @@ int rc_mpu_power_off();
  */
 int rc_mpu_initialize(rc_mpu_data_t* data, rc_mpu_config_t conf);
 
+
 /**
  * @brief      Reads accelerometer data from the MPU
  *
  * @param      data  Pointer to user's data struct where new data will be
- *                   written
+ * written
  *
  * @return     0 on success or -1 on failure.
  */
 int rc_mpu_read_accel(rc_mpu_data_t* data);
 
+
 /**
  * @brief      Reads gyroscope data from the MPU
  *
  * @param      data  Pointer to user's data struct where new data will be
- *                   written
+ * written
  *
  * @return     0 on success or -1 on failure.
  */
 int rc_mpu_read_gyro(rc_mpu_data_t* data);
 
+
 /**
  * @brief      Reads thermometer data from the MPU
  *
- *             Note this is the internal termperature of the chip, not abient
- *             temperature.
+ * Note this is the internal termperature of the chip, not abient temperature.
  *
  * @param      data  Pointer to user's data struct where new data will be
- *                   written
+ * written
  *
  * @return     0 on success or -1 on failure.
  */
 int rc_mpu_read_temp(rc_mpu_data_t* data);
 
+
 /**
  * @brief      Reads magnetometer data from the MPU
  *
- *             Note this requires use of an MPU9150 or MPU9250, the MPU6050 and
- *             MPU6500 do not have magnetometers. Additionally, the
- *             enable_magnetometer flag must has been set in the user's
- *             rc_mpu_config_t when it was passed to rc_mpu_initialize()
+ * Note this requires use of an MPU9150 or MPU9250, the MPU6050 and MPU6500 do
+ * not have magnetometers. Additionally, the enable_magnetometer flag must has
+ * been set in the user's rc_mpu_config_t when it was passed to
+ * rc_mpu_initialize()
  *
  * @param      data  Pointer to user's data struct where new data will be
- *                   written
+ * written
  *
  * @return     0 on success or -1 on failure.
  */
@@ -357,23 +354,23 @@ int rc_mpu_read_mag(rc_mpu_data_t* data);
 /**
  * @brief      Initializes the MPU in DMP mode, see rc_test_dmp example
  *
- *             After calling this the user does not need to call the normal read
- *             functions rc_mpu_read_accel, rc_mpu_read_gyro, or rc_mpu_read
- *             mag. Instead the data will automatically be read into the user's
- *             data struct at the dmp_sample_rate set in the config struct.
- *
+ * After calling this the user does not need to call the normal read functions
+ * rc_mpu_read_accel(), rc_mpu_read_gyro(), or rc_mpu_read mag(). Instead the
+ * data will automatically be read into the user's data struct at the
+ * dmp_sample_rate set in the config struct.
  *
  * @param      data  Pointer to user's data struct where new data will be
- *                   written
+ * written
  * @param[in]  conf  User's configuration struct
  *
  * @return     0 on success or -1 on failure.
  */
 int rc_mpu_initialize_dmp(rc_mpu_data_t* data, rc_mpu_config_t conf);
 
+
 /**
  * @brief      Sets the callback function that will be triggered when new DMP
- *             data is ready.
+ * data is ready.
  *
  * @param[in]  func  user's callback function
  *
@@ -381,21 +378,24 @@ int rc_mpu_initialize_dmp(rc_mpu_data_t* data, rc_mpu_config_t conf);
  */
 int rc_mpu_set_dmp_callback(void (*func)(void));
 
+
 /**
  * @brief      blocking function that returns once new DMP data is available
  *
  * @return     Returns 0 once new data is available, 1 if the MPU is shutting
- *             down due to rc_mpu_power_off, or -1 on error.
+ * down due to rc_mpu_power_off, or -1 on error.
  */
 int rc_mpu_block_until_dmp_data();
+
 
 /**
  * @brief      calculates number of nanoseconds since the last DMP interrupt
  *
  * @return     nanoseconds since last interrupt, or -1 if no interrupt received
- *             yet.
+ * yet.
  */
 int64_t rc_mpu_nanos_since_last_dmp_interrupt();
+
 
 /**
  * @brief      sets the callback function triggered when a tap is detected
@@ -406,19 +406,21 @@ int64_t rc_mpu_nanos_since_last_dmp_interrupt();
  */
 int rc_mpu_set_tap_callback(void (*func)(int direction, int counter));
 
+
 /**
  * @brief      blocking function that returns when a tap is detected
  *
  * @return     Returns 0 once a tap is detected, 1 if the MPU is shutting down
- *             due to rc_mpu_power_off, or -1 on error.
+ * due to rc_mpu_power_off(), or -1 on error.
  */
 int rc_mpu_block_until_tap();
+
 
 /**
  * @brief      calculates nanoseconds since last tap was detected
  *
  * @return     nanoseconds since last tap, or -1 if no tap has been detected
- *             yet.
+ * yet.
  */
 int64_t rc_mpu_nanos_since_last_tap();
 ///@} end interrupt-driven DMP mode functions
@@ -431,9 +433,9 @@ int64_t rc_mpu_nanos_since_last_tap();
 /**
  * @brief      Runs gyroscope calibration routine
  *
- *             This should generally not be used by the user unless they
- *             absolutely want to calibrate the gyroscope inside their own
- *             program. Instead call the rc_calibrate_gyro example program.
+ * This should generally not be used by the user unless they absolutely want to
+ * calibrate the gyroscope inside their own program. Instead call the
+ * rc_calibrate_gyro example program.
  *
  * @param[in]  conf  Config struct, only used to configure i2c bus and address.
  *
@@ -441,12 +443,13 @@ int64_t rc_mpu_nanos_since_last_tap();
  */
 int rc_mpu_calibrate_gyro_routine(rc_mpu_config_t conf);
 
+
 /**
  * @brief      Runs magnetometer calibration routine
  *
- *             This should generally not be used by the user unless they
- *             absolutely want to calibrate the magnetometer inside their own
- *             program. Instead call the rc_calibrate_mag example program.
+ * This should generally not be used by the user unless they absolutely want to
+ * calibrate the magnetometer inside their own program. Instead call the
+ * rc_calibrate_mag example program.
  *
  * @param[in]  conf  Config struct, only used to configure i2c bus and address.
  *
@@ -454,12 +457,13 @@ int rc_mpu_calibrate_gyro_routine(rc_mpu_config_t conf);
  */
 int rc_mpu_calibrate_mag_routine(rc_mpu_config_t conf);
 
+
 /**
  * @brief      Runs accelerometer calibration routine
  *
- *             This should generally not be used by the user unless they
- *             absolutely want to calibrate the accelerometer inside their own
- *             program. Instead call the rc_calibrate_accel example program.
+ * This should generally not be used by the user unless they absolutely want to
+ * calibrate the accelerometer inside their own program. Instead call the
+ * rc_calibrate_accel example program.
  *
  * @param[in]  conf  Config struct, only used to configure i2c bus and address.
  *
@@ -467,34 +471,37 @@ int rc_mpu_calibrate_mag_routine(rc_mpu_config_t conf);
  */
 int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf);
 
+
 /**
  * @brief      Checks if a gyro calibration file is saved to disk
  *
- *             generally used to warn the user that they are running a program
- *             without calibration. Can also be used to decide if calibration
- *             should be done at the beginning of user's program.
+ * generally used to warn the user that they are running a program without
+ * calibration. Can also be used to decide if calibration should be done at the
+ * beginning of user's program.
  *
  * @return     1 if calibrated, 0 if not
  */
 int rc_mpu_is_gyro_calibrated();
 
+
 /**
  * @brief      Checks if a magnetometer calibration file is saved to disk
  *
- *             generally used to warn the user that they are running a program
- *             without calibration. Can also be used to decide if calibration
- *             should be done at the beginning of user's program.
+ * generally used to warn the user that they are running a program without
+ * calibration. Can also be used to decide if calibration should be done at the
+ * beginning of user's program.
  *
  * @return     1 if calibrated, 0 if not
  */
 int rc_mpu_is_mag_calibrated();
 
+
 /**
  * @brief      Checks if an accelerometer calibration file is saved to disk
  *
- *             generally used to warn the user that they are running a program
- *             without calibration. Can also be used to decide if calibration
- *             should be done at the beginning of user's program.
+ * generally used to warn the user that they are running a program without
+ * calibration. Can also be used to decide if calibration should be done at the
+ * beginning of user's program.
  *
  * @return     1 if calibrated, 0 if not
  */
@@ -504,7 +511,7 @@ int rc_mpu_is_accel_calibrated();
 
 ///@} end calibration functions
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 

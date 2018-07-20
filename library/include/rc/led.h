@@ -17,7 +17,21 @@
 extern "C" {
 #endif
 
-
+/**
+ * @brief      Availabe LEDs on the BeagleBone platform.
+ *
+ * This list may expand for future boards. Note that the WIFI and USR LEDs are
+ * normally controlled by separate processes. They can be controlled, but may
+ * conflict as other processes continue to try to write to them simultaneously.
+ *
+ * The BAT LED's are controlled by the rc_battery_monitor service. If you want
+ * to control these LEDs yourself please stop the service first.
+ *
+ * ```bash
+ * sudo systemctl stop rc_battery_monitor
+ * sudo systemctl disable rc_battery_monitor
+ * ```
+ */
 typedef enum rc_led_t{
 	RC_LED_GREEN,
 	RC_LED_RED,
@@ -32,6 +46,7 @@ typedef enum rc_led_t{
 	RC_LED_WIFI
 } rc_led_t;
 
+
 /**
  * @brief      sets the state of an LED
  *
@@ -43,7 +58,14 @@ typedef enum rc_led_t{
 int rc_led_set(rc_led_t led, int value);
 
 
+/**
+ * @brief      closes file descriptors to all opened LEDs
+ *
+ * This does NOT turn off the LEDs, it is up to the user to leave the LEDs in
+ * the desired state before closing.
+ */
 void rc_led_cleanup();
+
 
 /**
  * @brief      gets the current state of an LED
@@ -54,12 +76,13 @@ void rc_led_cleanup();
  */
 int rc_led_get(rc_led_t led);
 
+
 /**
  * @brief      blinks an led at specified frequency and duration.
  *
- *             This is a blocking function call, it does not return until either
- *             the specified duration has completed or rc_led_stop_blink has
- *             been called from another thread.
+ * This is a blocking function call, it does not return until either the
+ * specified duration has completed or rc_led_stop_blink has been called from
+ * another thread.
  *
  * @param[in]  led       rc_led_t enum
  * @param[in]  hz        blink frequency in HZ
@@ -69,28 +92,30 @@ int rc_led_get(rc_led_t led);
  */
 int rc_led_blink(rc_led_t led, float hz, float duration);
 
+
 /**
  * @brief      Stops an LED from blinking.
  *
- *             Since rc_led_blink is a blocking function, it's obviously
- *             necessary to call rc_led_stop_blink from a separate thread or
- *             signal handler. This will cause rc_led_blink to return 1 if
- *             blinking was stopped mid-way. Also see
- *             rc_led_stop_blink_all
+ * Since rc_led_blink is a blocking function, it's obviously necessary to call
+ * rc_led_stop_blink from a separate thread or signal handler. This will cause
+ * rc_led_blink to return 1 if blinking was stopped mid-way. Also see
+ * rc_led_stop_blink_all
  *
  * @param[in]  led   rc_led_t enum
  */
 void rc_led_stop_blink(rc_led_t led);
 
+
 /**
  * @brief      stops all LEDs from blinking
  *
- *             Since rc_led_blink is a blocking function, it's obviously
- *             necessary to call rc_led_stop_blink from a separate thread or
- *             signal handler. This will cause rc_led_blink to return 1 if
- *             blinking was stopped mid-way.
+ * Since rc_led_blink is a blocking function, it's obviously necessary to call
+ * rc_led_stop_blink from a separate thread or signal handler. This will cause
+ * rc_led_blink to return 1 if blinking was stopped mid-way.
  */
 void rc_led_stop_blink_all();
+
+
 
 #ifdef __cplusplus
 }
@@ -98,4 +123,4 @@ void rc_led_stop_blink_all();
 
 #endif // RC_LED_H
 
-/** @}  end group LED */
+/** @} end group LED */

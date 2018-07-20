@@ -1,7 +1,7 @@
 /**
  * <rc/bmp.h>
  *
- * @brief Interface to the BMP280 barometer
+ * @brief      Interface to the BMP280 barometer
  *
  *
  * @author     James Strawson
@@ -62,10 +62,10 @@ typedef struct rc_bmp_data_t{
 
 /**
  * @brief      powers on the barometer and initializes it with the given
- *             oversample and filter settings.
+ * oversample and filter settings.
  *
- *             Optionally call rc_bmp_set_sea_level_pressure_pa afterwards to
- *             change the sea level pressure from default.
+ * Optionally call rc_bmp_set_sea_level_pressure_pa afterwards to change the sea
+ * level pressure from default.
  *
  * @param[in]  oversample  see rc_bmp_oversample_t
  * @param[in]  filter      see rc_bmp_filter_t
@@ -77,11 +77,10 @@ int rc_bmp_init(rc_bmp_oversample_t oversample, rc_bmp_filter_t filter);
 
 /**
  * @brief      If you know the current sea level pressure for your region and
- *             weather, you can use this to correct the altititude reading.
+ * weather, you can use this to correct the altititude reading.
  *
- *             This is not necessary if you only care about differential
- *             altitude from a starting point. Must be called after rc_bmp_init
- *             to have an effect.
+ * This is not necessary if you only care about differential altitude from a
+ * starting point. Must be called after rc_bmp_init to have an effect.
  *
  * @param[in]  pa    sea level pressure in pascals
  *
@@ -91,8 +90,8 @@ int rc_bmp_set_sea_level_pressure_pa(double pa);
 
 
 /**
- * @brief      Puts the barometer into a low power state, should be called at the end of
-* your program before close.
+ * @brief      Puts the barometer into a low power state, should be called at
+ * the end of your program before close.
  *
  * @return     0 on success, -1 on failure
  */
@@ -100,8 +99,8 @@ int rc_bmp_power_off();
 
 
 /**
- * @brief      Reads the newest temperature and pressure measurments from the barometer over
-* the I2C bus.
+ * @brief      Reads the newest temperature and pressure measurments from the
+ * barometer over the I2C bus.
  *
  * @param      data  pointer to data struct where new data will be written.
  *

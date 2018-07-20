@@ -29,13 +29,13 @@ extern "C" {
 /**
  * @brief      get an integer representation of the library version
  *
- *             8 bits are used for each component, with the patch number stored
- *             in the 8 least significant bits. E.g. for version 1.2.3 this
- *             would be 0x010203.
+ * 8 bits are used for each component, with the patch number stored in the 8
+ * least significant bits. E.g. for version 1.2.3 this would be 0x010203.
  *
  * @return     integer representation of the library version
  */
 unsigned int rc_version();
+
 
 /**
  * @brief      gets a string representation of the current library version.
@@ -44,17 +44,18 @@ unsigned int rc_version();
  */
 const char* rc_version_string();
 
+
 /**
  * @brief      prints a string representation of the current library version to
- *             stdout with no trailing newline character.
+ * stdout with no trailing newline character.
  */
 void rc_version_print();
 
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif // RC_VERSION_H
+#endif //RC_VERSION_H
 
-/** @}  end group version*/
+/** @} end group version*/

@@ -22,18 +22,19 @@ extern "C" {
 /**
  * @brief      Returns a random floating point number between -1 and 1.
  *
- *             Uses standard C rand function and bitwise operations which is
- *             much faster than doing floating point arithmetic.
+ * Uses standard C rand function and bitwise operations which is much faster
+ * than doing floating point arithmetic.
  *
  * @return     random floating point number between -1 and 1
  */
 float rc_get_random_float();
 
 /**
- * @brief      Returns a random double-precision floating point number between -1 and 1.
+ * @brief      Returns a random double-precision floating point number between
+ * -1 and 1.
  *
- *             Uses standard C rand function and bitwise operations which is
- *             much faster than doing floating point arithmetic.
+ * Uses standard C rand function and bitwise operations which is much faster
+ * than doing floating point arithmetic.
  *
  * @return     random double-precision floating point number between -1 and 1
  */
@@ -47,7 +48,7 @@ double rc_get_random_double();
  * @param[in]  max   The upper bound
  *
  * @return     Returns 1 if saturation occurred, 0 if val was already in bound,
- *             and -1 if min was falsely larger than max.
+ * and -1 if min was falsely larger than max.
  */
 int rc_saturate_float(float* val, float min, float max);
 
@@ -59,7 +60,7 @@ int rc_saturate_float(float* val, float min, float max);
  * @param[in]  max   The upper bound
  *
  * @return     Returns 1 if saturation occurred, 0 if val was already in bound,
- *             and -1 if min was falsely larger than max.
+ * and -1 if min was falsely larger than max.
  */
 int rc_saturate_double(double* val, double min, double max);
 

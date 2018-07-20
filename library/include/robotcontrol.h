@@ -1,13 +1,17 @@
 /**
  * <robotcontrol.h>
  *
+ * @brief Single header that includes all modules
+ *
  * This includes every single module in the Robot Control API so that users do
  * not need to include each module individually.
- * be used by linking to /usr/lib/librobotcontrol.so
+ *
+ * Use these modules by linking to /usr/lib/librobotcontrol.so
  *
  * @author     James Strawson
  * @date       3/7/2018
  * @addtogroup Robot_Control_All
+ * @{
  *
  * @include "robotcontrol.h"
  */

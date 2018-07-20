@@ -4,7 +4,7 @@
   <navindex>
     <tab type="mainpage" visible="yes" title="Home"/>
 
-    <!-- <tab type="pages" visible="yes" title="Manual" intro=""/> -->
+    <!-- <tab type="pages" visible="yes" title="Related Pages" intro=""/> -->
 
     <tab type="usergroup" url="@ref manual" title="Manual">
       <tab type="user" url="@ref networking_usb" title="Networking USB"/>
@@ -18,21 +18,23 @@
 
     <tab type="modules" visible="yes" title="API Modules" intro=""/>
 
-    <!-- <tab type="namespaces" visible="yes" title="">
+<!--     <tab type="namespaces" visible="yes" title="">
       <tab type="namespacelist" visible="yes" title="" intro=""/>
       <tab type="namespacemembers" visible="yes" title="" intro=""/>
     </tab> -->
-   <!--  <tab type="classes" visible="yes" title="">
+<!--
+    <tab type="classes" visible="yes" title="Data Structures">
       <tab type="classlist" visible="yes" title="" intro=""/>
       <tab type="classindex" visible="$ALPHABETICAL_INDEX" title=""/>
       <tab type="hierarchy" visible="yes" title="" intro=""/>
       <tab type="classmembers" visible="yes" title="" intro=""/>
     </tab> -->
-    <tab type="filelist" visible="yes" title="" intro=""/>
-    <!-- <tab type="files" visible="yes" title="">
+
+<!--     <tab type="files" visible="yes" title="Files">
       <tab type="filelist" visible="yes" title="" intro=""/>
       <tab type="globals" visible="yes" title="" intro=""/>
     </tab> -->
+
     <tab type="examples" visible="yes" title="" intro=""/>
 
     <tab type="user" url="https://github.com/StrawsonDesign/librobotcontrol" title="GitHub"/>
@@ -168,7 +170,7 @@
       <classes visible="yes" title=""/>
       <defines title=""/>
       <typedefs title=""/>
-      <enums title=""/>
+<!--       <enums title="Enums"/> -->
       <enumvalues title=""/>
       <functions title=""/>
       <variables title=""/>
@@ -185,7 +187,7 @@
       <pagedocs/>
       <inlineclasses title=""/>
       <defines title=""/>
-      <typedefs title=""/>
+<!--       <typedefs title=""/> -->
       <enums title=""/>
       <enumvalues title=""/>
       <functions title=""/>

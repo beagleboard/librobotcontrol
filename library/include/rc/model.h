@@ -3,11 +3,10 @@
  *
  * @brief      Determine the model of board currently being used.
  *
- *             The user may sometimes need to determine which board they
- *             are running on to decide which pins or modules to use. These
- *             functions are also used internally to the library for hardware
- *             specific configuration.
- *             See the rc_model example for a demonstration.
+ * The user may sometimes need to determine which board they are running on to
+ * decide which pins or modules to use. These functions are also used internally
+ * to the library for hardware specific configuration. See the rc_model example
+ * for a demonstration.
  *
  * @author     James Strawson
  * @date       1/31/2018
@@ -65,12 +64,14 @@ typedef enum rc_model_category_t{
 	CATEGORY_PC
 } rc_model_category_t;
 
+
 /**
  * @brief      gets the current board model name
  *
  * @return     rc_model_t enum representation of model
  */
 rc_model_t rc_model();
+
 
 /**
  * @brief      gets the general category for the current board
@@ -82,13 +83,14 @@ rc_model_category_t rc_model_category();
 
 /**
  * @brief      prints to the screen the human-readable version of the model name
- *             with no trailing newline character.
+ * with no trailing newline character.
  */
 void rc_model_print();
 
+
 /**
  * @brief      prints to the screen the human-readable version of the category
- *             name with no trailing newline character.
+ * name with no trailing newline character.
  */
 void rc_model_category_print();
 
@@ -99,4 +101,4 @@ void rc_model_category_print();
 
 #endif // RC_MODEL_H
 
-/** @}  end group Model*/
+/** @} end group Model*/

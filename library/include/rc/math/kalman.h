@@ -3,54 +3,57 @@
  *
  * @brief      Kalman filter implementation
  *
- *             This may be used to implement a discrete time linear or extended
- *             kalman filter.
+ * This may be used to implement a discrete time linear or extended kalman
+ * filter.
  *
- *             For the linear case, initialize the filter with
- *             rc_kalman_alloc_lin() which takes in the linear state matrices.
- *             These are then saved and used by rc_kalman_update_lin to
- *             calculate the predicted state x_pre and predicted sensor
- *             measurements h internally each step.
- *
- *
- *             Basic loop structure for Linear case:
- *
- *             - rc_kalman_t kf = rc_kalman_empty();
- *             - rc_kalman_alloc_lin(&kf,F,G,H,Q,R,Pi);
- *             - BEGIN LOOP
- *                  - measure sensors, calculate y;
- *                  - rc_kalman_update_lin(&kf, u, y);
- *                  - calculate new actuator control output u;
- *                  - save u for next loop;
- *             - END LOOP
- *             - rc_kalman_free(&kf);
- *             - return;
- *
- *             For the non-linear EKF case, the user should initialize the
- *             filter with rc_kalman_alloc_ekf() which does NOT take in the
- *             state transition matrices F,G,H. Instead it's up to the user to
- *             calculate the new predicted state x_pre and predicted sensor
- *             measurement h for their own non-linear system model each step.
- *             Those user-calculated predictions are then given to the
- *             non-linear rc_kalman_update_ekf() function.
+ * For the linear case, initialize the filter with rc_kalman_alloc_lin() which
+ * takes in the linear state matrices. These are then saved and used by
+ * rc_kalman_update_lin to calculate the predicted state x_pre and predicted
+ * sensor measurements h internally each step.
  *
  *
- *             Basic loop structure for non-linear EKF case:
+ * Basic loop structure for Linear case:
  *
- *             - rc_kalman_t kf = rc_kalman_empty();
- *             - rc_kalman_alloc_ekf(&kf,Q,R,Pi);
- *             - BEGIN LOOP
- *                  - measure sensors, calculate y
- *                  - calculate new Jacobian F given x_est from previous loop;
- *                  - calculate new predicted x_pre using x_est from previous loop;
- *                  - calulate new predicted sensor readings h from x_pre above;
- *                  - calculate new Jacobian H given x_pre;
- *                  - rc_kalman_update_ekf(&kf, F, x_pre, H, y, h);
- *                  - calculate new actuator control output u;
- *                  - save u for next loop;
- *             - END LOOP
- *             - rc_kalman_free(&kf);
- *             - return;
+ * ```C
+ * rc_kalman_t kf = rc_kalman_empty();
+ * rc_kalman_alloc_lin(&kf,F,G,H,Q,R,Pi);
+ * while(running){
+ *      measure sensors, calculate y;
+ *      rc_kalman_update_lin(&kf, u, y);
+ *      calculate new actuator control output u;
+ *      save u for next loop;
+ * }
+ * rc_kalman_free(&kf);
+ * return;
+ * ```
+ *
+ * For the non-linear EKF case, the user should initialize the filter with
+ * rc_kalman_alloc_ekf() which does NOT take in the state transition matrices
+ * F,G,H. Instead it's up to the user to calculate the new predicted state x_pre
+ * and predicted sensor measurement h for their own non-linear system model each
+ * step. Those user-calculated predictions are then given to the non-linear
+ * rc_kalman_update_ekf() function.
+ *
+ *
+ * Basic loop structure for non-linear EKF case:
+ *
+ * ```C
+ * rc_kalman_t kf = rc_kalman_empty();
+ * rc_kalman_alloc_ekf(&kf,Q,R,Pi);
+ * while(running){
+ *      measure sensors, calculate y
+ *      calculate new Jacobian F given x_est from previous loop;
+ *      calculate new predicted x_pre using x_est from previous
+ *      loop;
+ *      calulate new predicted sensor readings h from x_pre above;
+ *      calculate new Jacobian H given x_pre;
+ *      rc_kalman_update_ekf(&kf, F, x_pre, H, y, h);
+ *      calculate new actuator control output u;
+ *      save u for next loop;
+ * }
+ * rc_kalman_free(&kf);
+ * return;
+ * ```
  *
  * @date       April 2018
  * @author     Eric Nauli Sihite & James Strawson

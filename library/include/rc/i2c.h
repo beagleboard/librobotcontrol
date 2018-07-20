@@ -1,17 +1,17 @@
 /**
- * @headerfile i2c.h <rc/i2c.h>
+ * <rc/i2c.h>
  *
  * @brief      C interface for the the Linux I2C driver
  *
- *             Developed and tested on the BeagleBone Black but should work fine
- *             on any Linux system.
+ * Developed and tested on the BeagleBone Black but should work fine on any
+ * Linux system.
  *
  * @author     James Strawson
  *
  * @date       1/19/2018
  *
  * @addtogroup I2C
- * @ingroup IO
+ * @ingroup    IO
  * @{
  */
 
