@@ -27,7 +27,7 @@
  * @author     James Strawson
  * @date       1/19/2018
  *
- * @addtogroup MPU
+ * @addtogroup IMU_MPU
  * @{
  */
 
@@ -517,5 +517,5 @@ int rc_mpu_is_accel_calibrated();
 
 #endif // RC_MPU_H
 
-/** @}  end group Sensor*/
+/** @}  end group IMU_MPU*/
 
