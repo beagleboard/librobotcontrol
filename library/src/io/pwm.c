@@ -115,18 +115,18 @@ int __export_channels(int ss)
 		if(access(buf,F_OK)==0) mode=1;
 		else{
 			fprintf(stderr, "ERROR in rc_pwm_init, export failed for subsystem %d channel %d\n", ss, 0);
-			fprintf(stderr,"tried accessing to %s\n", buf);
+			fprintf(stderr,"tried accessing %s\n", buf);
 			return -1;
 		}
 	}
 
 	// check channel B
-	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm_chip%d/pwm1/enable", ss*2); // mode 0
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/enable", ss*2); // mode 0
 	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:1/enable",ssindex[ss]); // mode 1
 	// if it exists, mode is 0
 	if(access(buf,F_OK)!=0){
 		fprintf(stderr, "ERROR in rc_pwm_init, export failed for subsystem %d channel %d\n", ss, 0);
-		fprintf(stderr,"tried accessing to %s\n", buf);
+		fprintf(stderr,"tried accessing %s\n", buf);
 		return -1;
 	}
 	#ifdef DEBUG
