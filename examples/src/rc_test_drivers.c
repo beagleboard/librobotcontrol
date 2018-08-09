@@ -38,12 +38,16 @@ int main()
 		printf("ERROR:  gpio 3 driver not loaded\n");
 	} else printf("PASSED: gpio 3\n");
 
-	// pwm 1,2
-	if(access("/sys/class/pwm/pwmchip2/export", F_OK ) != 0){
+	// pwm 0, 1, 2
+	if(access("/sys/devices/platform/ocp/48300000.epwmss/48300200.pwm/pwm/", F_OK ) != 0){
+		printf("ERROR:  ti-pwm driver not loaded for hrpwm0\n");
+	} else printf("PASSED: pwm0\n");
+
+	if(access("/sys/devices/platform/ocp/48302000.epwmss/48302200.pwm/pwm/", F_OK ) != 0){
 		printf("ERROR:  ti-pwm driver not loaded for hrpwm1\n");
 	} else printf("PASSED: pwm1\n");
 
-	if(access("/sys/class/pwm/pwmchip4/export", F_OK ) != 0){
+	if(access("/sys/devices/platform/ocp/48304000.epwmss/48304200.pwm/pwm/", F_OK ) != 0){
 		printf("ERROR:  ti-pwm driver not loaded for hrpwm2\n");
 	} else printf("PASSED: pwm2\n");
 
