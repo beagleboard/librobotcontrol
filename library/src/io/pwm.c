@@ -1,23 +1,30 @@
 /**
- * @file rc_pwm.c
+ * @file pwm.c
  *
  * C pwm interface for Beaglebone boards
  */
 
 
 #include <stdio.h>
+#include <stdlib.h> // for atoi
 #include <dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <glob.h>
 #include <rc/pwm.h>
 #include <rc/time.h>
 
 #define MIN_HZ 1
 #define MAX_HZ 1000000000
-#define MAXBUF 64
-#define BASE_DIR "/sys/class/pwm/pwmchip"
+#define MAXBUF 128
+#define SYS_DIR "/sys/class/pwm"
+
+// ocp only used for exporting right now, everything else through SYS_DIR
+// to allow for shorter strings and neater code.
+#define OCP_DIR "/sys/devices/platform/ocp/4830%d000.epwmss/4830%d200.pwm/pwm"
+#define OCP_OFFSET	66
 
 // preposessor macros
 #define unlikely(x)	__builtin_expect (!!(x), 0)
@@ -27,7 +34,17 @@ static int dutyA_fd[3];			// pointers to duty cycle file descriptor
 static int dutyB_fd[3];			// pointers to duty cycle file descriptor
 static unsigned int period_ns[3];	// one period per subsystem
 static int init_flag[3] = {0,0,0};
-static int mode; // 0 for "pwmx", 1 for "pwmx:y" versions of driver
+
+// The ti pwm driver has gone through several revisions and it presents devices
+// in the file system differently every version. For example, subsytem 2 channel A
+// showed up as the following files:
+// in 4.9:            /sys/class/pwm/pwmchip4/pwm0/
+// in 4.14.54-ti-r63: /sys/class/pwm/pwm-4:0/
+// in 4.14.61-ti-r68: /sys/class/pwm/pwm-7:0/
+// depending on kernel, mode is set to 0 or 1 on export, index is used for 4.14
+static int mode; // 0 for "pwmx", 1 for "pwm-x:y" versions of driver
+static int ssindex[3]; // index given by the kernel to each pwm chip when in mode 1
+
 
 /**
  * @brief      exports A and B pwm channels
@@ -41,15 +58,40 @@ int __export_channels(int ss)
 	int export_fd=0;
 	char buf[MAXBUF];
 	int len;
+	glob_t globbuf; // for finding wildcard directories
 
-	// open export file for that subsystem
-	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/export", ss*2);
-	export_fd = open(buf, O_WRONLY);
-	if(unlikely(export_fd<0)){
-		perror("ERROR in rc_pwm_init, can't open pwm export file for writing");
-		fprintf(stderr,"Probably kernel or BeagleBone image is too old\n");
+	// construct glob pattern to search
+	len = snprintf(buf, sizeof(buf), OCP_DIR "/pwmchip*/export", ss*2, ss*2);
+	glob(buf, 0, NULL, &globbuf);
+
+	// no pwmchipx directory found
+	if(globbuf.gl_pathc == 0){
+		perror("ERROR in rc_pwm_init, can't find pwm export file");
+		fprintf(stderr,"Probably not running on BeagleBone or device tree not configured\n");
+		globfree(&globbuf);
 		return -1;
 	}
+	// should never be more than 1, something really weird happening
+	if(globbuf.gl_pathc > 1){
+		perror("ERROR in rc_pwm_init, too many pwmchipx diectories found");
+		fprintf(stderr,"please report this issue on robotcontrol github\n");
+		globfree(&globbuf);
+		return -1;
+	}
+	// if we got here, exactly one found, excellent!
+	export_fd = open(globbuf.gl_pathv[0], O_WRONLY);
+	if(unlikely(export_fd<0)){
+		perror("ERROR in rc_pwm_init, can't open pwm export file for writing");
+		fprintf(stderr, "tried opening: %s\n", globbuf.gl_pathv[0]);
+		globfree(&globbuf);
+		return -1;
+	}
+
+	// fetch index which is what the wildcard was
+	ssindex[ss]=atoi(globbuf.gl_pathv[0]+OCP_OFFSET);
+	globfree(&globbuf);
+
+	// now write to export file for both channels 0&1 A&B
 	len=write(export_fd, "0", 2);
 	if(unlikely(len<0 && errno!=EBUSY)){
 		perror("ERROR: in rc_pwm_init, failed to write 0 to export file");
@@ -64,25 +106,27 @@ int __export_channels(int ss)
 
 	// determine mode
 	// start with channel A and also check both versions of driver
-	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/enable", ss*2); // mode 0
+	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/enable", ss*2); // mode 0
 	// if it exists, mode is 0
 	if(access(buf,F_OK)==0) mode=0;
 	else{
-		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:0/enable", ss*2, ss*2); // mode 1
+		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:0/enable", ssindex[ss]); // mode 1
 		// if it exists, mode is 1
 		if(access(buf,F_OK)==0) mode=1;
 		else{
 			fprintf(stderr, "ERROR in rc_pwm_init, export failed for subsystem %d channel %d\n", ss, 0);
+			fprintf(stderr,"tried accessing to %s\n", buf);
 			return -1;
 		}
 	}
 
 	// check channel B
-	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/enable", ss*2); // mode 0
-	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:1/enable", ss*2, ss*2); // mode 1
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm_chip%d/pwm1/enable", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:1/enable",ssindex[ss]); // mode 1
 	// if it exists, mode is 0
 	if(access(buf,F_OK)!=0){
 		fprintf(stderr, "ERROR in rc_pwm_init, export failed for subsystem %d channel %d\n", ss, 0);
+		fprintf(stderr,"tried accessing to %s\n", buf);
 		return -1;
 	}
 	#ifdef DEBUG
@@ -103,15 +147,36 @@ int __unexport_channels(int ss)
 	int unexport_fd=0;
 	char buf[MAXBUF];
 	int len;
+	glob_t globbuf; // for finding wildcard directories
 
-	// open export file for that subsystem
-	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/unexport", ss*2);
-	unexport_fd = open(buf, O_WRONLY);
-	if(unlikely(unexport_fd<0)){
-		perror("ERROR in rc_pwm_init, can't open pwm unexport file for writing");
-		fprintf(stderr,"Probably kernel or BeagleBone image is too old\n");
+	// construct glob pattern to search
+	len = snprintf(buf, sizeof(buf), OCP_DIR "/pwmchip*/unexport", ss*2, ss*2);
+	glob(buf, 0, NULL, &globbuf);
+
+	// no pwmchipx directory found
+	if(globbuf.gl_pathc == 0){
+		perror("ERROR in rc_pwm_init, can't find pwm unexport file");
+		fprintf(stderr,"Probably not running on BeagleBone or device tree not configured\n");
+		globfree(&globbuf);
 		return -1;
 	}
+	// should never be more than 1, something really weird happening
+	if(globbuf.gl_pathc > 1){
+		perror("ERROR in rc_pwm_init, too many pwmchipx diectories found");
+		fprintf(stderr,"please report this issue on robotcontrol github\n");
+		globfree(&globbuf);
+		return -1;
+	}
+	// if we got here, exactly one found, excellent!
+	unexport_fd = open(globbuf.gl_pathv[0], O_WRONLY);
+	if(unlikely(unexport_fd<0)){
+		perror("ERROR in rc_pwm_init, can't open pwm unexport file for writing");
+		fprintf(stderr, "tried opening: %s\n", globbuf.gl_pathv[0]);
+		globfree(&globbuf);
+		return -1;
+	}
+
+	// now write to the unexport file
 	len=write(unexport_fd, "0", 2);
 	if(unlikely(len<0 && errno!=EBUSY && errno!=ENODEV)){
 		perror("ERROR: in rc_pwm_init, failed to write 0 to unexport file");
@@ -164,8 +229,8 @@ int rc_pwm_init(int ss, int frequency)
 	#endif
 
 	// open file descriptors for duty cycles
-	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/duty_cycle", ss*2); // mode 0
-	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:0/duty_cycle", ss*2, ss*2); // mode 1
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/duty_cycle", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:0/duty_cycle", ssindex[ss]); // mode 1
 	dutyA_fd[ss] = open(buf,O_WRONLY);
 
 	if(unlikely(dutyA_fd[ss]==-1)){
@@ -179,8 +244,8 @@ int rc_pwm_init(int ss, int frequency)
 		}
 	}
 
-	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/duty_cycle", ss*2); // mode 0
-	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:1/duty_cycle", ss*2, ss*2); // mode 1
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/duty_cycle", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:1/duty_cycle", ssindex[ss]); // mode 1
 	dutyB_fd[ss] = open(buf,O_WRONLY);
 	if(unlikely(dutyB_fd[ss]==-1)){
 		perror("ERROR in rc_pwm_init, failed to open duty_cycle channel B FD");
@@ -189,48 +254,48 @@ int rc_pwm_init(int ss, int frequency)
 	}
 
 	// now open enable, polarity, and period FDs for setup
-	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/enable", ss*2); // mode 0
-	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:0/enable", ss*2, ss*2); // mode 1
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/enable", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:0/enable", ssindex[ss]); // mode 1
 	enableA_fd = open(buf,O_WRONLY);
 	if(unlikely(enableA_fd==-1)){
 		perror("ERROR in rc_pwm_init, failed to open pwm A enable fd");
 		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
-	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/enable", ss*2); // mode 0
-	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:1/enable", ss*2, ss*2); // mode 1
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/enable", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:1/enable", ssindex[ss]); // mode 1
 	enableB_fd = open(buf,O_WRONLY);
 	if(unlikely(enableB_fd==-1)){
 		perror("ERROR in rc_pwm_init, failed to open pwm B enable fd");
 		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
-	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/period", ss*2); // mode 0
-	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:0/period", ss*2, ss*2); // mode 1
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/period", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:0/period", ssindex[ss]); // mode 1
 	periodA_fd = open(buf,O_WRONLY);
 	if(unlikely(periodA_fd==-1)){
 		perror("ERROR in rc_pwm_init, failed to open pwm A period fd");
 		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
-	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/period", ss*2); // mode 0
-	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:1/period", ss*2, ss*2); // mode 1
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/period", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:1/period", ssindex[ss]); // mode 1
 	periodB_fd = open(buf,O_WRONLY);
 	if(unlikely(periodB_fd==-1)){
 		perror("ERROR in rc_pwm_init, failed to open pwm B period fd");
 		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
-	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/polarity", ss*2); // mode 0
-	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:0/polarity", ss*2, ss*2); // mode 1
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/polarity", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:0/polarity", ssindex[ss]); // mode 1
 	polarityA_fd = open(buf,O_WRONLY);
 	if(unlikely(polarityA_fd==-1)){
 		perror("ERROR in rc_pwm_init, failed to open pwm A polarity fd");
 		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
-	if(mode==0)	len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/polarity", ss*2); // mode 0
-	else		len = snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:1/polarity", ss*2, ss*2); // mode 1
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/polarity", ss*2); // mode 0
+	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:1/polarity", ssindex[ss]); // mode 1
 	polarityB_fd = open(buf,O_WRONLY);
 	if(unlikely(polarityB_fd==-1)){
 		perror("ERROR in rc_pwm_init, failed to open pwm B polarity fd");
@@ -309,15 +374,15 @@ int rc_pwm_cleanup(int ss)
 	}
 
 	// now open enable FDs
-	if(mode==0)	snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm0/enable", ss*2); // mode 0
-	else		snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:0/enable", ss*2, ss*2); // mode 1
+	if(mode==0)	snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/enable", ss*2); // mode 0
+	else		snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:0/enable", ssindex[ss]); // mode 1
 	enableA_fd = open(buf,O_WRONLY);
 	if(unlikely(enableA_fd==-1)){
 		perror("ERROR in rc_pwm_cleanup, failed to open pwm A enable fd");
 		return -1;
 	}
-	if(mode==0)	snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm1/enable", ss*2); // mode 0
-	else		snprintf(buf, sizeof(buf), BASE_DIR "%d/pwm-%d:1/enable", ss*2, ss*2); // mode 1
+	if(mode==0)	snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/enable", ss*2); // mode 0
+	else		snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:1/enable", ssindex[ss]); // mode 1
 	enableB_fd = open(buf,O_WRONLY);
 	if(unlikely(enableB_fd==-1)){
 		perror("ERROR in rc_pwm_cleanup, failed to open pwm B enable fd");
