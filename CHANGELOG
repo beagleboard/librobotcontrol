@@ -1,3 +1,7 @@
+1.0.1
+    * Support pwm driver changes introduced in 4.14.61-ti-r68
+    * documentation improvements
+
 1.0.0
     * finally, v1.0.0 release!
     * rename package to librobotcontrol
