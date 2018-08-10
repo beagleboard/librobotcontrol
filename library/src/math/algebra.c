@@ -74,7 +74,7 @@ int __householder_reflection(int step, rc_matrix_t* Q, rc_matrix_t* R)
 
 	// pre-calculate matrix multiplication coefficient tau
 	// doing this on one line causes a compiler optimization error :-/
-	dot = __vectorized_mult_accumulate(x,x,n);
+	dot = __vectorized_square_accumulate(x,n);
 	tau = -2.0/dot;
 
 	// fill in diagonal and upper triangle of H

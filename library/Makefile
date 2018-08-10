@@ -25,7 +25,7 @@ OPT_FLAGS	:= -O1
 LDFLAGS		:= -lm -lrt -pthread -shared -Wl,-soname,$(SONAME)
 
 # different compile flags for math libs
-MATH_OPT_FLAGS	:= -O3 -ffast-math -ftree-vectorize -Wno-restrict
+MATH_OPT_FLAGS	:= -O3 -ffast-math -ftree-vectorize
 
 # commands
 RM		:= rm -rf
