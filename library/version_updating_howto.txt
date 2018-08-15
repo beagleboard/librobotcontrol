@@ -1,0 +1,9 @@
+These are the steps to increment the library version. This is here as a reminder to myself and to help any future developers.
+
+1. Increment version macro in library/include/rc/version.h
+2. Increment .so name in library/Makefile
+3. Add changes to CHANGELOG file
+4. copy those changes to debian/changelog
+5. make sure new date/time is set in debian/changelog
+6. run 'make package' on BBB and desktop to make armhf and amd64 binary packages
+7. mark new release tag on github and upload deb packages.
