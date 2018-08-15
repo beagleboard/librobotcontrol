@@ -45,7 +45,7 @@
  */
 
 /**
- * @defgoup Robot_Control_All
+ * @defgroup Robot_Control_All All Modules
  */
 
 /**

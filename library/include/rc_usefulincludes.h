@@ -74,3 +74,5 @@
 #endif
 
 #endif // RC_USEFUL_INCLUDES
+
+///@} end group Deprecated

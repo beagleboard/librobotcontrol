@@ -111,15 +111,14 @@ typedef struct rc_kalman_t {
 /**
  * @brief      Critical function for initializing rc_kalman_t structs
  *
- *             This is a very important function. If your rc_kalman_t struct is
- *             not a global variable, then its initial contents cannot be
- *             guaranteed to be anything in particular. Therefore it could
- *             contain problematic contents which could interfere with functions
- *             in this library. Therefore, you should always initialize your
- *             filters with rc_kalman_empty() before using with any other
- *             function in this library such as rc_kalman_alloc. This serves the
- *             same purpose as rc_matrix_empty, rc_vector_empty,
- *             rc_filter_empty, and rc_ringbuf_empty.
+ * This is a very important function. If your rc_kalman_t struct is not a global
+ * variable, then its initial contents cannot be guaranteed to be anything in
+ * particular. Therefore it could contain problematic contents which could
+ * interfere with functions in this library. Therefore, you should always
+ * initialize your filters with rc_kalman_empty() before using with any other
+ * function in this library such as rc_kalman_alloc. This serves the same
+ * purpose as rc_matrix_empty, rc_vector_empty, rc_filter_empty, and
+ * rc_ringbuf_empty.
  *
  * @return     Empty zero-filled rc_kalman_t struct
  */
@@ -129,6 +128,9 @@ rc_kalman_t rc_kalman_empty(void);
  * @brief      Allocates memory for a Kalman filter of given dimensions
  *
  * @param      kf    pointer to struct to be allocated
+ * @param[in]  F     undriven state-transition model
+ * @param[in]  G     control input model
+ * @param[in]  H     observation model
  * @param[in]  Q     Process noise covariance, can be updated later
  * @param[in]  R     Measurement noise covariance, can be updated later
  * @param[in]  Pi    Initial P matrix
@@ -141,9 +143,6 @@ int rc_kalman_alloc_lin(rc_kalman_t* kf, rc_matrix_t F, rc_matrix_t G, rc_matrix
  * @brief      Allocates memory for a Kalman filter of given dimensions
  *
  * @param      kf    pointer to struct to be allocated
- * @param[in]  Nx    state vector length
- * @param[in]  Ny    measurement vector length
- * @param[in]  Nu    input vector length
  * @param[in]  Q     Process noise covariance, can be updated later
  * @param[in]  R     Measurement noise covariance, can be updated later
  * @param[in]  Pi    Initial P matrix
@@ -167,8 +166,7 @@ int rc_kalman_free(rc_kalman_t* kf);
 /**
  * @brief      reset state and dynamics of the filter to 0
  *
- *             Q and R are constant, and therefore not reset. P is set to
- *             identity*P_init.
+ * Q and R are constant, and therefore not reset. P is set to identity*P_init.
  *
  * @param      kf    pointer to struct to be reset
  *
@@ -178,24 +176,26 @@ int rc_kalman_reset(rc_kalman_t* kf);
 
 
 /**
- * @brief     Kalman Filter state prediction step based on physical model.
+ * @brief      Kalman Filter state prediction step based on physical model.
  *
- *            Uses the state estimate and control input from the previous timestep to produce an
- *            estimate of the state at the current timestep. This step pdates P and the estimated state x. Assume that you have calculated f(x[k|k],u[k]) and
- *            F(x[k|k],u[k]) before calling this function.
+ * Uses the state estimate and control input from the previous timestep to
+ * produce an estimate of the state at the current timestep. This step pdates P
+ * and the estimated state x. Assume that you have calculated f(x[k|k],u[k]) and
+ * F(x[k|k],u[k]) before calling this function.
  *
- *            - Kalman linear state prediction
- *              - x_pre[k|k-1] = F*x[k-1|k-1] +  G*u[k-1]
- *              - P[k|k-1] = F*P[k-1|k-1]*F^T + Q
- *            - Kalman measurement Update:
- *              - h[k] = H * x_pre[k]
- *              - S = H*P*H^T + R
- *              - L = P*(H^T)*(S^-1)
- *              - x_est[k|k] = x[k|k-1] + L*(y[k]-h[k])
- *              - P[k|k] = (I - L*H)*P[k|k-1]
+ * - Kalman linear state prediction
+ *   - x_pre[k|k-1] = F*x[k-1|k-1] +  G*u[k-1]
+ *   - P[k|k-1] = F*P[k-1|k-1]*F^T + Q
+ * - Kalman measurement Update:
+ *   - h[k] = H * x_pre[k]
+ *   - S = H*P*H^T + R
+ *   - L = P*(H^T)*(S^-1)
+ *   - x_est[k|k] = x[k|k-1] + L*(y[k]-h[k])
+ *   - P[k|k] = (I - L*H)*P[k|k-1]
  *
  * @param      kf    pointer to struct to be updated
  * @param      u     control input
+ * @param[in]  y     sensor measurement
  *
  * @return     0 on success, -1 on failure
  */
@@ -205,19 +205,19 @@ int rc_kalman_update_lin(rc_kalman_t* kf, rc_vector_t u, rc_vector_t y);
 /**
  * @brief      Kalman Filter measurement update step.
  *
- *             Updates L, P, & x_est. Assumes that you have done the non-linear
- *             prediction step in your own function which should calculate the
- *             Jacobians F(x[k|k-1]) & H(x[k|k-1]), the predicted sensor value
- *             h(x[k|k-1]), and of course the predicted state x_pre[k|k-1]
+ * Updates L, P, & x_est. Assumes that you have done the non-linear prediction
+ * step in your own function which should calculate the Jacobians F(x[k|k-1]) &
+ * H(x[k|k-1]), the predicted sensor value h(x[k|k-1]), and of course the
+ * predicted state x_pre[k|k-1]
  *
- *             -Kalman measurement Update:
- *              - P[k|k-1] = F*P[k-1|k-1]*F^T + Q
- *              - S = H*P*H^T + R
- *              - L = P*(H^T)*(S^-1)
- *              - x[k|k] = x[k|k-1] + L*y
- *              - P[k|k] = (I - L*H)*P
+ * -Kalman measurement Update:
+ * - P[k|k-1] = F*P[k-1|k-1]*F^T + Q
+ * - S = H*P*H^T + R
+ * - L = P*(H^T)*(S^-1)
+ * - x[k|k] = x[k|k-1] + L*y
+ * - P[k|k] = (I - L*H)*P
  *
- *             Also updates the step counter in the rc_kalman_t struct
+ * Also updates the step counter in the rc_kalman_t struct
  *
  * @param      kf     pointer to struct to be updated
  * @param[in]  F      Jacobian of state transition matrix linearized at x_pre
