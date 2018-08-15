@@ -42,11 +42,11 @@ int rc_kalman_alloc_lin(rc_kalman_t* kf, rc_matrix_t F, rc_matrix_t G, rc_matrix
 		fprintf(stderr, "ERROR in rc_kalman_alloc_lin, received NULL pointer\n");
 		return -1;
 	}
-	if(F.initialized!=1 || H.initialized!=1){
+	if(!F.initialized || !H.initialized){
 		fprintf(stderr, "ERROR in rc_kalman_alloc, received uninitialized F or H\n");
 		return -1;
 	}
-	if(Q.initialized!=1 || R.initialized!=1){
+	if(!Q.initialized || !R.initialized){
 		fprintf(stderr, "ERROR in rc_kalman_alloc, received initialized P or Q\n");
 		return -1;
 	}
@@ -99,7 +99,7 @@ int rc_kalman_alloc_ekf(rc_kalman_t* kf, rc_matrix_t Q, rc_matrix_t R, rc_matrix
 		fprintf(stderr, "ERROR in rc_kalman_alloc_ekf, received NULL pointer\n");
 		return -1;
 	}
-	if(Q.initialized!=1 || R.initialized!=1 || Pi.initialized){
+	if(!Q.initialized || !R.initialized || !Pi.initialized){
 		fprintf(stderr, "ERROR in rc_kalman_alloc_ekf, received uninitialized matrix\n");
 		return -1;
 	}
@@ -122,7 +122,7 @@ int rc_kalman_alloc_ekf(rc_kalman_t* kf, rc_matrix_t Q, rc_matrix_t R, rc_matrix
 	rc_matrix_duplicate(Pi, &kf->P);
 	rc_vector_zeros(&kf->x_est, Q.rows);
 	rc_vector_zeros(&kf->x_pre, Q.rows);
-
+	kf->initialized = 1;
 	return 0;
 }
 
