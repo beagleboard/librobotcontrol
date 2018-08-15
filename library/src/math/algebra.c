@@ -27,7 +27,7 @@ double zero_tolerance=DEFAULT_ZERO_TOLERANCE;
 
 
 // used by QR decomposition
-int __householder_reflection(int step, rc_matrix_t* Q, rc_matrix_t* R)
+static int __householder_reflection(int step, rc_matrix_t* Q, rc_matrix_t* R)
 {
 	int i,j,k;
 	double norm, tau, taui, dot;

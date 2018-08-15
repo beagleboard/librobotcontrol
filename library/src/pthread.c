@@ -165,7 +165,7 @@ int rc_pthread_set_properties_self(int policy, int priority)
 
 
 
-int rc_pthread_get_process_niceness()
+int rc_pthread_get_process_niceness(void)
 {
 	int which = PRIO_PROCESS;
 	id_t pid;

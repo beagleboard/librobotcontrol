@@ -242,7 +242,7 @@ typedef struct rc_mpu_data_t{
  *
  * @return     Returns an rc_mpu_config_t struct with default settings.
  */
-rc_mpu_config_t rc_mpu_default_config();
+rc_mpu_config_t rc_mpu_default_config(void);
 
 /**
  * @brief      Resets a config struct to defaults.
@@ -262,7 +262,7 @@ int rc_mpu_set_config_to_default(rc_mpu_config_t* conf);
  *
  * @return     0 on success or -1 on failure.
  */
-int rc_mpu_power_off();
+int rc_mpu_power_off(void);
 ///@} end common functions
 
 
@@ -385,7 +385,7 @@ int rc_mpu_set_dmp_callback(void (*func)(void));
  * @return     Returns 0 once new data is available, 1 if the MPU is shutting
  * down due to rc_mpu_power_off, or -1 on error.
  */
-int rc_mpu_block_until_dmp_data();
+int rc_mpu_block_until_dmp_data(void);
 
 
 /**
@@ -394,7 +394,7 @@ int rc_mpu_block_until_dmp_data();
  * @return     nanoseconds since last interrupt, or -1 if no interrupt received
  * yet.
  */
-int64_t rc_mpu_nanos_since_last_dmp_interrupt();
+int64_t rc_mpu_nanos_since_last_dmp_interrupt(void);
 
 
 /**
@@ -413,7 +413,7 @@ int rc_mpu_set_tap_callback(void (*func)(int direction, int counter));
  * @return     Returns 0 once a tap is detected, 1 if the MPU is shutting down
  * due to rc_mpu_power_off(), or -1 on error.
  */
-int rc_mpu_block_until_tap();
+int rc_mpu_block_until_tap(void);
 
 
 /**
@@ -422,7 +422,7 @@ int rc_mpu_block_until_tap();
  * @return     nanoseconds since last tap, or -1 if no tap has been detected
  * yet.
  */
-int64_t rc_mpu_nanos_since_last_tap();
+int64_t rc_mpu_nanos_since_last_tap(void);
 ///@} end interrupt-driven DMP mode functions
 
 
@@ -481,7 +481,7 @@ int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf);
  *
  * @return     1 if calibrated, 0 if not
  */
-int rc_mpu_is_gyro_calibrated();
+int rc_mpu_is_gyro_calibrated(void);
 
 
 /**
@@ -493,7 +493,7 @@ int rc_mpu_is_gyro_calibrated();
  *
  * @return     1 if calibrated, 0 if not
  */
-int rc_mpu_is_mag_calibrated();
+int rc_mpu_is_mag_calibrated(void);
 
 
 /**
@@ -505,7 +505,7 @@ int rc_mpu_is_mag_calibrated();
  *
  * @return     1 if calibrated, 0 if not
  */
-int rc_mpu_is_accel_calibrated();
+int rc_mpu_is_accel_calibrated(void);
 
 
 

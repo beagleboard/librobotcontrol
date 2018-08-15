@@ -71,7 +71,7 @@ typedef enum rc_state_t {
  *
  * @return     current process state
  */
-rc_state_t rc_get_state();
+rc_state_t rc_get_state(void);
 
 
 /**
@@ -90,7 +90,7 @@ void rc_set_state(rc_state_t new_state);
  *
  * @return     0 on success, -1 on failure
  */
-int rc_print_state();
+int rc_print_state(void);
 
 
 /**
@@ -102,7 +102,7 @@ int rc_print_state();
  * rc_kill_exising_process() to kill that process. Returns -1 if there is some
  * other problem writing to the file.
  */
-int rc_make_pid_file();
+int rc_make_pid_file(void);
 
 
 /**
@@ -136,7 +136,7 @@ int rc_kill_existing_process(float timeout_s);
  * @return     Returns 0 whether or not the file was actually there. Returns -1
  * if there was a file system error.
  */
-int rc_remove_pid_file();
+int rc_remove_pid_file(void);
 
 
 /**
@@ -157,7 +157,7 @@ int rc_remove_pid_file();
  *
  * @return     Returns 0 on success or -1 on error
  */
-int rc_enable_signal_handler();
+int rc_enable_signal_handler(void);
 
 
 /**
@@ -167,7 +167,7 @@ int rc_enable_signal_handler();
  *
  * @return     Returns 0 on success or -1 on error
  */
-int rc_disable_signal_handler();
+int rc_disable_signal_handler(void);
 
 
 #ifdef __cplusplus

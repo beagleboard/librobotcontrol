@@ -108,22 +108,31 @@ static double startMagYaw = 0.0;
 /**
 * functions for internal use only
 **/
-static int __reset_mpu();
-static int __check_who_am_i();
+static int __reset_mpu(void);
+static int __check_who_am_i(void);
 static int __set_gyro_fsr(rc_mpu_gyro_fsr_t fsr, rc_mpu_data_t* data);
 static int __set_accel_fsr(rc_mpu_accel_fsr_t, rc_mpu_data_t* data);
 static int __set_gyro_dlpf(rc_mpu_gyro_dlpf_t dlpf);
 static int __set_accel_dlpf(rc_mpu_accel_dlpf_t dlpf);
 static int __init_magnetometer(int cal_mode);
-static int __power_off_magnetometer();
+static int __power_off_magnetometer(void);
 static int __mpu_set_bypass(unsigned char bypass_on);
 static int __mpu_write_mem(unsigned short mem_addr, unsigned short length, unsigned char *data);
 static int __mpu_read_mem(unsigned short mem_addr, unsigned short length, unsigned char *data);
-static int __dmp_load_motion_driver_firmware();
+static int __dmp_load_motion_driver_firmware(void);
 static int __dmp_set_orientation(unsigned short orient);
 static int __dmp_enable_gyro_cal(unsigned char enable);
 static int __dmp_enable_lp_quat(unsigned char enable);
 static int __dmp_enable_6x_lp_quat(unsigned char enable);
+static int __dmp_set_tap_thresh(unsigned char axis, unsigned short thresh);
+static int __dmp_set_tap_axes(unsigned char axis);
+static int __dmp_set_tap_count(unsigned char min_taps);
+static int __dmp_set_tap_time(unsigned short time);
+static int __dmp_set_tap_time_multi(unsigned short time);
+static int __dmp_set_shake_reject_thresh(long sf, unsigned short thresh);
+static int __dmp_set_shake_reject_time(unsigned short time);
+static int __dmp_set_shake_reject_timeout(unsigned short time);
+static int __collect_accel_samples(int* avg_raw);
 static int __mpu_reset_fifo(void);
 static int __mpu_set_sample_rate(int rate);
 static int __dmp_set_fifo_rate(unsigned short rate);
@@ -131,9 +140,9 @@ static int __dmp_enable_feature(unsigned short mask);
 static int __mpu_set_dmp_state(unsigned char enable);
 static int __set_int_enable(unsigned char enable);
 static int __dmp_set_interrupt_mode(unsigned char mode);
-static int __load_gyro_calibration();
-static int __load_mag_calibration();
-static int __load_accel_calibration();
+static int __load_gyro_calibration(void);
+static int __load_mag_calibration(void);
+static int __load_accel_calibration(void);
 static int __write_gyro_cal_to_disk(int16_t offsets[3]);
 static int __write_mag_cal_to_disk(double offsets[3], double scale[3]);
 static int __write_accel_cal_to_disk(double* center, double* lengths);
@@ -143,7 +152,7 @@ static int __data_fusion(rc_mpu_data_t* data);
 static int __mag_correct_orientation(double mag_vec[3]);
 
 
-rc_mpu_config_t rc_mpu_default_config()
+rc_mpu_config_t rc_mpu_default_config(void)
 {
 	rc_mpu_config_t conf;
 
@@ -408,7 +417,7 @@ int rc_mpu_read_temp(rc_mpu_data_t* data)
 }
 
 
-int __reset_mpu()
+int __reset_mpu(void)
 {
 	// disable the interrupt to prevent it from doing things while we reset
 	imu_shutdown_flag = 1;
@@ -431,7 +440,8 @@ int __reset_mpu()
 }
 
 
-int __check_who_am_i(){
+int __check_who_am_i(void)
+{
 	uint8_t c;
 	//check the who am i register to make sure the chip is alive
 	if(rc_i2c_read_byte(config.i2c_bus, WHO_AM_I_MPU9250, &c)<0){
@@ -641,7 +651,7 @@ int __init_magnetometer(int cal_mode)
 }
 
 
-int __power_off_magnetometer()
+int __power_off_magnetometer(void)
 {
 	rc_i2c_set_device_address(config.i2c_bus, config.i2c_addr);
 	// Enable i2c bypass to allow talking to magnetometer
@@ -662,7 +672,7 @@ int __power_off_magnetometer()
 }
 
 
-int rc_mpu_power_off()
+int rc_mpu_power_off(void)
 {
 	imu_shutdown_flag = 1;
 	// wait for the interrupt thread to exit if it hasn't already
@@ -1028,7 +1038,7 @@ int __mpu_read_mem(unsigned short mem_addr, unsigned short length, unsigned char
 *
 * loads pre-compiled firmware binary from invensense onto dmp
 **/
-int __dmp_load_motion_driver_firmware()
+int __dmp_load_motion_driver_firmware(void)
 {
 	unsigned short ii;
 	unsigned short this_write;
@@ -2227,7 +2237,7 @@ int __data_fusion(rc_mpu_data_t* data)
  *
  * @return     0 on success, -1 on failure
  */
-int __load_gyro_calibration()
+int __load_gyro_calibration(void)
 {
 	FILE* fd;
 	uint8_t data[6];
@@ -2286,7 +2296,7 @@ int __load_gyro_calibration()
  *
  * @return     0 on success, -1 on failure
  */
-int __load_mag_calibration()
+int __load_mag_calibration(void)
 {
 	FILE *fd;
 	double x,y,z,sx,sy,sz;
@@ -2339,7 +2349,7 @@ int __load_mag_calibration()
  *
  * @return     0 on success, -1 on failure
  */
-int __load_accel_calibration()
+int __load_accel_calibration(void)
 {
 	FILE* fd;
 	uint8_t raw[6] = {0,0,0,0,0,0};
@@ -3216,139 +3226,39 @@ int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf)
 }
 
 
-int rc_mpu_is_gyro_calibrated()
+int rc_mpu_is_gyro_calibrated(void)
 {
 	if(!access(CALIBRATION_DIR GYRO_CAL_FILE, F_OK)) return 1;
 	else return 0;
 }
 
-int rc_mpu_is_mag_calibrated()
+int rc_mpu_is_mag_calibrated(void)
 {
 	if(!access(CALIBRATION_DIR MAG_CAL_FILE, F_OK)) return 1;
 	else return 0;
 }
 
-int rc_mpu_is_accel_calibrated()
+int rc_mpu_is_accel_calibrated(void)
 {
 	if(!access(CALIBRATION_DIR ACCEL_CAL_FILE, F_OK)) return 1;
 	else return 0;
 }
 
 
-/**
- * takes a single row on a rotation matrix and returns the associated scalar for
- * use by __inv_orientation_matrix_to_scalar.
- *
- * @param      row   The row
- *
- * @return     { description_of_the_return_value }
- */
-unsigned short __inv_row_2_scale(signed char row[])
-{
-	unsigned short b;
 
-	if (row[0] > 0)
-		b = 0;
-	else if (row[0] < 0)
-		b = 4;
-	else if (row[1] > 0)
-		b = 1;
-	else if (row[1] < 0)
-		b = 5;
-	else if (row[2] > 0)
-		b = 2;
-	else if (row[2] < 0)
-		b = 6;
-	else
-		b = 7;      // error
-	return b;
-}
-
-/**
- * This take in a rotation matrix and returns the corresponding 16 bit short
- * which is sent to the DMP to set the orientation. This function is actually
- * not used in normal operation and only served to retrieve the orientation
- * scalars once to populate the rc_mpu_orientation_t enum during development.
- *
- * @param      mtx   The mtx
- *
- * @return     { description_of_the_return_value }
- */
-unsigned short __inv_orientation_matrix_to_scalar(signed char mtx[])
-{
-	unsigned short scalar;
-
-	scalar = __inv_row_2_scale(mtx);
-	scalar |= __inv_row_2_scale(mtx + 3) << 3;
-	scalar |= __inv_row_2_scale(mtx + 6) << 6;
-	return scalar;
-}
-
-/**
- * this function purely serves to print out orientation values and rotation
- * matrices which form the rc_imu_orientation_t enum. This is not called inside
- * this C file and is not exposed to the user.
- */
-void __print_orientation_info()
-{
-	printf("\n");
-	//char mtx[9];
-	unsigned short orient;
-
-	// Z-UP (identity matrix)
-	signed char zup[] = {1,0,0, 0,1,0, 0,0,1};
-	orient = __inv_orientation_matrix_to_scalar(zup);
-	printf("Z-UP: %d\n", orient);
-
-	// Z-down
-	signed char zdown[] = {-1,0,0, 0,1,0, 0,0,-1};
-	orient = __inv_orientation_matrix_to_scalar(zdown);
-	printf("Z-down: %d\n", orient);
-
-	// X-up
-	signed char xup[] = {0,0,-1, 0,1,0, 1,0,0};
-	orient = __inv_orientation_matrix_to_scalar(xup);
-	printf("x-up: %d\n", orient);
-
-	// X-down
-	signed char xdown[] = {0,0,1, 0,1,0, -1,0,0};
-	orient = __inv_orientation_matrix_to_scalar(xdown);
-	printf("x-down: %d\n", orient);
-
-	// Y-up
-	signed char yup[] = {1,0,0, 0,0,-1, 0,1,0};
-	orient = __inv_orientation_matrix_to_scalar(yup);
-	printf("y-up: %d\n", orient);
-
-	// Y-down
-	signed char ydown[] = {1,0,0, 0,0,1, 0,-1,0};
-	orient = __inv_orientation_matrix_to_scalar(ydown);
-	printf("y-down: %d\n", orient);
-
-	// X-forward
-	signed char xforward[] = {0,-1,0, 1,0,0, 0,0,1};
-	orient = __inv_orientation_matrix_to_scalar(xforward);
-	printf("x-forward: %d\n", orient);
-
-	// X-back
-	signed char xback[] = {0,1,0, -1,0,0, 0,0,1};
-	orient = __inv_orientation_matrix_to_scalar(xback);
-	printf("yx-back: %d\n", orient);
-}
-
-int64_t rc_mpu_nanos_since_last_dmp_interrupt()
+int64_t rc_mpu_nanos_since_last_dmp_interrupt(void)
 {
 	if(last_interrupt_timestamp_nanos==0) return -1;
 	return rc_nanos_since_epoch() - last_interrupt_timestamp_nanos;
 }
 
-int64_t rc_mpu_nanos_since_last_tap()
+int64_t rc_mpu_nanos_since_last_tap(void)
 {
 	if(last_tap_timestamp_nanos==0) return -1;
 	return rc_nanos_since_epoch() - last_tap_timestamp_nanos;
 }
 
-int rc_mpu_block_until_dmp_data()
+int rc_mpu_block_until_dmp_data(void)
 {
 	if(imu_shutdown_flag!=0){
 		fprintf(stderr,"ERROR: call to rc_mpu_block_until_dmp_data after shutting down mpu\n");
@@ -3368,7 +3278,7 @@ int rc_mpu_block_until_dmp_data()
 	return 0;
 }
 
-int rc_mpu_block_until_tap()
+int rc_mpu_block_until_tap(void)
 {
 	if(imu_shutdown_flag!=0){
 		fprintf(stderr,"ERROR: call to rc_mpu_block_until_tap after shutting down mpu\n");

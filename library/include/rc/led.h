@@ -64,7 +64,7 @@ int rc_led_set(rc_led_t led, int value);
  * This does NOT turn off the LEDs, it is up to the user to leave the LEDs in
  * the desired state before closing.
  */
-void rc_led_cleanup();
+void rc_led_cleanup(void);
 
 
 /**
@@ -113,7 +113,7 @@ void rc_led_stop_blink(rc_led_t led);
  * rc_led_stop_blink from a separate thread or signal handler. This will cause
  * rc_led_blink to return 1 if blinking was stopped mid-way.
  */
-void rc_led_stop_blink_all();
+void rc_led_stop_blink_all(void);
 
 
 

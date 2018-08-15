@@ -27,7 +27,7 @@
 
 
 
-rc_ringbuf_t rc_ringbuf_empty()
+rc_ringbuf_t rc_ringbuf_empty(void)
 {
 	rc_ringbuf_t out;
 	// zero-out piecemeal instead of with memset to avoid issues with padding

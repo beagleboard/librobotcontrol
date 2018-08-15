@@ -80,7 +80,7 @@ int rc_led_set(rc_led_t led, int value)
 	return 0;
 }
 
-void rc_led_cleanup()
+void rc_led_cleanup(void)
 {
 	int i;
 	for(i=0;i<NUM_LEDS;i++) close(fd[i]);
@@ -157,7 +157,7 @@ void rc_led_stop_blink(rc_led_t led)
 }
 
 
-void rc_led_stop_blink_all()
+void rc_led_stop_blink_all(void)
 {
 	int i;
 	for(i=0;i<NUM_LEDS;i++) stop_blinking_flag[i]=0;

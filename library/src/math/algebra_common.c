@@ -4,6 +4,7 @@
  * see algebra_common.h
  **/
 
+#include "algebra_common.h"
 
 double __vectorized_mult_accumulate(double * __restrict__ a, double * __restrict__ b, int n)
 {

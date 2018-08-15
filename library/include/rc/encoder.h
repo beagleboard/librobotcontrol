@@ -33,7 +33,7 @@ extern "C" {
  *
  * @return     0 on success or -1 on failure
  */
-int rc_encoder_init();
+int rc_encoder_init(void);
 
 /**
  * @brief      Stops the encoder counters and closes file descriptors. This is
@@ -42,7 +42,7 @@ int rc_encoder_init();
  *
  * @return     0 on success or -1 on failure.
  */
-int rc_encoder_cleanup();
+int rc_encoder_cleanup(void);
 
 /**
  * @brief      Reads the current position of an encoder channel.

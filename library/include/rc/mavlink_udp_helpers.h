@@ -42,7 +42,7 @@ extern "C" {
  *
  * @return     0 on success or -1 on failure.
  */
-int rc_mav_send_heartbeat_abbreviated();
+int rc_mav_send_heartbeat_abbreviated(void);
 
 /**
  * @brief      Constructs and sends a heartbeat packet of type

@@ -58,7 +58,7 @@ typedef struct rc_vector_t{
  * @return     rc_vector_t with no allocated memory and the initialized flag set
  * to 0.
  */
-rc_vector_t rc_vector_empty();
+rc_vector_t rc_vector_empty(void);
 
 /**
  * @brief      Allocates memory for vector v to have specified length.

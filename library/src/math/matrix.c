@@ -64,7 +64,7 @@ int rc_matrix_alloc(rc_matrix_t* A, int rows, int cols)
 		return -1;
 	}
 	// manually fill in the pointer to each row
-	for(i=0;i<rows;i++) A->d[i]=(double*)(ptr+i*cols*sizeof(double));
+	for(i=0;i<rows;i++) A->d[i]=(double*)(((char*)ptr) + (i*cols*sizeof(double)));
 	A->rows = rows;
 	A->cols = cols;
 	A->initialized = 1;
@@ -115,7 +115,7 @@ int rc_matrix_zeros(rc_matrix_t* A, int rows, int cols)
 		return -1;
 	}
 	// manually fill in the pointer to each row
-	for(i=0;i<rows;i++) A->d[i]=(double*)(ptr+i*cols*sizeof(double));
+	for(i=0;i<rows;i++) A->d[i]=(double*)(((char*)ptr) + (i*cols*sizeof(double)));
 	A->rows = rows;
 	A->cols = cols;
 	A->initialized = 1;

@@ -11,7 +11,7 @@
 #include <rc/math/kalman.h>
 #include "algebra_common.h"
 
-rc_kalman_t rc_kalman_empty()
+rc_kalman_t rc_kalman_empty(void)
 {
 	rc_kalman_t kf;
 	// set struct to zeros

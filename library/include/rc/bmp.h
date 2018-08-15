@@ -95,7 +95,7 @@ int rc_bmp_set_sea_level_pressure_pa(double pa);
  *
  * @return     0 on success, -1 on failure
  */
-int rc_bmp_power_off();
+int rc_bmp_power_off(void);
 
 
 /**
@@ -116,4 +116,4 @@ int rc_bmp_read(rc_bmp_data_t* data);
 
 #endif // RC_BMP_H
 
-/** @}  end group Barometer */
+/** @} end group Barometer */

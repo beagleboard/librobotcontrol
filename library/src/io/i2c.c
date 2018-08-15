@@ -35,7 +35,7 @@ static rc_i2c_state_t i2c[I2C_MAX_BUS+1];
 
 
 // local function
-int __check_bus_range(int bus)
+static int __check_bus_range(int bus)
 {
 	if(unlikely(bus<0 || bus>I2C_MAX_BUS)){
 		fprintf(stderr,"ERROR: i2c bus must be between 0 & %d\n", I2C_MAX_BUS);
@@ -428,7 +428,9 @@ int rc_i2c_get_fd(int bus) {
 }
 
 
+#ifdef RC_AUTOPILOT_EXT
 int rc_i2c_read_data(int bus, uint8_t regAddr, size_t length, uint8_t *data)
 {
 	return rc_i2c_read_bytes(bus, regAddr, length, data);
 }
+#endif // RC_AUTOPILOT_EXT

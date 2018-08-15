@@ -115,7 +115,7 @@ int rc_pru_start(int ch, const char* fw_name)
 }
 
 
-volatile uint32_t* rc_pru_shared_mem_ptr()
+volatile uint32_t* rc_pru_shared_mem_ptr(void)
 {
 	int fd;
 	volatile unsigned int* map;

@@ -35,7 +35,7 @@ static int init_flag = 0; // boolean to check if mem mapped
 static int fd[CHANNELS]; // file descriptors for 8 channels
 
 
-int rc_adc_init()
+int rc_adc_init(void)
 {
 	char buf[MAX_BUF];
 	int i, temp_fd;
@@ -55,7 +55,7 @@ int rc_adc_init()
 	return 0;
 }
 
-int rc_adc_cleanup()
+int rc_adc_cleanup(void)
 {
 	int i;
 	for(i=0;i<CHANNELS;i++){
@@ -104,7 +104,7 @@ double rc_adc_read_volt(int ch)
 }
 
 
-double rc_adc_batt()
+double rc_adc_batt(void)
 {
 	double v = (rc_adc_read_volt(LIPO_ADC_CH)*V_DIV_RATIO)+LIPO_OFFSET;
 	// add in a little dead zone to make disconnected battery easier to detect
@@ -113,7 +113,7 @@ double rc_adc_batt()
 }
 
 
-double rc_adc_dc_jack()
+double rc_adc_dc_jack(void)
 {
 	double v = (rc_adc_read_volt(DC_JACK_ADC_CH)*V_DIV_RATIO)+DC_JACK_OFFSET;
 	if(v<BATT_DEADZONE) v = 0.0;

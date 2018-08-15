@@ -112,7 +112,7 @@ int rc_pinmux_set(int pin, rc_pinmux_mode_t mode);
  *
  * @return     0 on success, -1 on failure
  */
-int rc_pinmux_set_default();
+int rc_pinmux_set_default(void);
 
 
 #ifdef __cplusplus

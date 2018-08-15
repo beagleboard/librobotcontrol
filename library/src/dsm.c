@@ -73,7 +73,8 @@ static int init_flag=0;
  *
  * @return     { description_of_the_return_value }
  */
-char* __byte_to_binary(unsigned char c)
+#ifdef DEBUG
+static char* __byte_to_binary(unsigned char c)
 {
 	static char b[9];
 	unsigned char x = (unsigned char)c; //cast to unsigned
@@ -85,6 +86,7 @@ char* __byte_to_binary(unsigned char c)
 	}
 	return b;
 }
+#endif
 
 /**
  * This is a blocking function which returns 1 if the user presses ENTER. it
@@ -94,7 +96,7 @@ char* __byte_to_binary(unsigned char c)
  *
  * @return     { description_of_the_return_value }
  */
-int __continue_or_quit()
+static int __continue_or_quit(void)
 {
 	// set stdin to non-canonical raw mode to capture all button presses
 	fflush(stdin);
@@ -133,7 +135,7 @@ int __continue_or_quit()
  *
  * @return     { description_of_the_return_value }
  */
-void* __parser_func(__attribute__ ((unused)) void* ptr){
+static void* __parser_func(__attribute__ ((unused)) void* ptr){
 	uint8_t buf[DSM_PACKET_SIZE];
 	int i, ret;
 	int new_values[RC_MAX_DSM_CHANNELS]; // hold new values before committing
@@ -188,7 +190,8 @@ DETECTION_START:
 			// last few words in buffer are often all 1's, ignore those
 			if((buf[2*i]!=0xFF) || (buf[(2*i)+1]!=0xFF)){
 				// grab channel id from first byte assuming 1024 mode
-				ch_id = (buf[i*2]&0b01111100)>>2;
+				// 0x7C is 0b01111100
+				ch_id = (buf[i*2]&0x7C)>>2;
 				if(ch_id>max_channel_id_1024){
 					max_channel_id_1024 = ch_id;
 				}
@@ -209,7 +212,8 @@ DETECTION_START:
 			// last few words in buffer are often all 1's, ignore those
 			if((buf[2*i]!=0xFF) || (buf[(2*i)+1]!=0xFF)){
 				// now grab assuming 2048 mode
-				ch_id = (buf[i*2]&0b01111000)>>3;
+				// 0x78 is 0b01111000
+				ch_id = (buf[i*2]&0x78)>>3;
 				if(ch_id>max_channel_id_2048){
 					 max_channel_id_2048 = ch_id;
 				}
@@ -338,15 +342,18 @@ START_NORMAL_LOOP:
 				// grab channel id from first byte
 				// and value from both bytes
 				if(resolution == 1024){
-					ch_id = (buf[i*2]&0b01111100)>>2;
+					// 0x7c is 0b01111100
+					ch_id = (buf[i*2]&0x7C)>>2;
 					// grab value from least 11 bytes
-					value = ((buf[i*2]&0b00000011)<<8) + buf[(2*i)+1];
+					value = ((buf[i*2]&0x03)<<8) + buf[(2*i)+1];
 					value += 989; // shift range so 1500 is neutral
 				}
 				else if(resolution == 2048){
-					ch_id = (buf[i*2]&0b01111000)>>3;
+					// 0x78 is 0b01111000
+					ch_id = (buf[i*2]&0x78)>>3;
 					// grab value from least 11 bytes
-					value = ((buf[i*2]&0b00000111)<<8) + buf[(2*i)+1];
+					// 0x07 is 0b00000111
+					value = ((buf[i*2]&0x07)<<8) + buf[(2*i)+1];
 					// extra bit of precision means scale is off by factor of
 					// two, also add 989 to center channels around 1500
 					value = (value/2) + 989;
@@ -424,7 +431,7 @@ START_NORMAL_LOOP:
  *
  * @return     NULL
  */
-void* __calibration_listen_func(__attribute__ ((unused)) void *ptr)
+static void* __calibration_listen_func(__attribute__ ((unused)) void *ptr)
 {
 	int j, raw;
 	//wait for data to start
@@ -475,7 +482,7 @@ void* __calibration_listen_func(__attribute__ ((unused)) void *ptr)
 }
 
 
-int rc_dsm_init()
+int rc_dsm_init(void)
 {
 	int i;
 	//if calibration file exists, load it and start spektrum thread
@@ -572,7 +579,7 @@ int rc_dsm_init()
 }
 
 
-int rc_dsm_cleanup()
+int rc_dsm_cleanup(void)
 {
 	int ret;
 	// just return if not running
@@ -633,7 +640,7 @@ double rc_dsm_ch_normalized(int ch)
 }
 
 
-int rc_dsm_is_new_data()
+int rc_dsm_is_new_data(void)
 {
 	if(init_flag==0){
 		fprintf(stderr,"ERROR in rc_dsm_is_new_data, call rc_dsm_init first\n");
@@ -662,7 +669,7 @@ void rc_dsm_set_disconnect_callback(void (*func)(void))
 }
 
 
-int rc_dsm_is_connection_active()
+int rc_dsm_is_connection_active(void)
 {
 	if(init_flag==0){
 		fprintf(stderr,"ERROR in rc_dsm_is_connection_active, call rc_dsm_init first\n");
@@ -672,7 +679,7 @@ int rc_dsm_is_connection_active()
 }
 
 
-int64_t rc_dsm_nanos_since_last_packet(){
+int64_t rc_dsm_nanos_since_last_packet(void){
 	if(init_flag==0){
 		fprintf(stderr,"ERROR in rc_dsm_nanos_since_last_packet, call rc_dsm_init first\n");
 		return -1;
@@ -683,7 +690,7 @@ int64_t rc_dsm_nanos_since_last_packet(){
 }
 
 
-int rc_dsm_resolution()
+int rc_dsm_resolution(void)
 {
 	if(init_flag==0){
 		fprintf(stderr,"ERROR in rc_dsm_resolution, call rc_dsm_init first\n");
@@ -693,7 +700,7 @@ int rc_dsm_resolution()
 }
 
 
-int rc_dsm_channels()
+int rc_dsm_channels(void)
 {
 	if(init_flag==0){
 		fprintf(stderr,"ERROR in rc_dsm_channels, call rc_dsm_init first\n");
@@ -706,7 +713,7 @@ int rc_dsm_channels()
 
 
 
-int rc_dsm_bind_routine()
+int rc_dsm_bind_routine(void)
 {
 	int value, delay, i;
 	char c = 0; // for reading user input
@@ -842,7 +849,7 @@ enter:
 }
 
 
-int rc_dsm_calibrate_routine()
+int rc_dsm_calibrate_routine(void)
 {
 	int i,ret;
 	FILE* fd;

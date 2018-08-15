@@ -123,7 +123,7 @@ typedef struct rc_kalman_t {
  *
  * @return     Empty zero-filled rc_kalman_t struct
  */
-rc_kalman_t rc_kalman_empty();
+rc_kalman_t rc_kalman_empty(void);
 
 /**
  * @brief      Allocates memory for a Kalman filter of given dimensions

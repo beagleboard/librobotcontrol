@@ -68,7 +68,6 @@ static int listening_flag=0;
 
 // private local function declarations;
 static uint64_t __us_since_boot();
-static void* __listen_thread_func();
 static int __address_init(struct sockaddr_in* address, const char* dest_ip, uint16_t port);
 int __get_msg_common_checks(int msg_id);
 
@@ -83,7 +82,7 @@ static uint64_t __us_since_boot()
 }
 
 // background thread for handling packets
-void* __listen_thread_func()
+static void* __listen_thread_func(__attribute__((unused)) void* ptr)
 {
 	int i;
 	uint64_t time;
@@ -287,7 +286,7 @@ int rc_mav_set_system_id(uint8_t sys_id)
 }
 
 
-int rc_mav_cleanup()
+int rc_mav_cleanup(void)
 {
 	int ret = 0;
 	if(init_flag==0 || listening_flag==0){
@@ -416,7 +415,7 @@ uint8_t rc_mav_get_sys_id_of_last_msg(int msg_id)
 	return messages[msg_id].sysid;
 }
 
-uint8_t rc_mav_get_sys_id_of_last_msg_any()
+uint8_t rc_mav_get_sys_id_of_last_msg_any(void)
 {
 	if(init_flag==0){
 		fprintf(stderr, "ERROR in rc_mav_get_sys_id_of_last_msg_any, call rc_mav_init first\n");
@@ -441,7 +440,7 @@ int64_t rc_mav_ns_since_last_msg(int msg_id)
 	return __us_since_boot()-us_of_last_msg[msg_id];
 }
 
-int64_t rc_mav_ns_since_last_msg_any()
+int64_t rc_mav_ns_since_last_msg_any(void)
 {
 	if(init_flag==0){
 		fprintf(stderr, "ERROR in rc_mav_ns_since_last_msg_any, call rc_mav_init first\n");
@@ -453,7 +452,7 @@ int64_t rc_mav_ns_since_last_msg_any()
 	return __us_since_boot()-us_of_last_msg_any;
 }
 
-int rc_mav_msg_id_of_last_msg()
+int rc_mav_msg_id_of_last_msg(void)
 {
 	if(init_flag==0){
 		fprintf(stderr, "ERROR in rc_mav_msg_id_of_last_msg, call rc_mav_init first\n");
@@ -465,7 +464,7 @@ int rc_mav_msg_id_of_last_msg()
 
 
 
-int rc_mav_send_heartbeat_abbreviated()
+int rc_mav_send_heartbeat_abbreviated(void)
 {
 	// sanity check
 	mavlink_message_t msg;

@@ -22,7 +22,7 @@ typedef union {
 	float f;
 }rc_int_float_t;
 
-float rc_get_random_float()
+float rc_get_random_float(void)
 {
 	rc_int_float_t new;
 	// get random 32-bit int, mask out all but the mantissa (right 23 bits)
@@ -37,7 +37,7 @@ typedef union {
 	double d;
 }rc_int_double_t;
 
-double rc_get_random_double()
+double rc_get_random_double(void)
 {
 	rc_int_double_t new;
 	// get random 64-bit int, mask out all but the mantissa (right 52 bits)

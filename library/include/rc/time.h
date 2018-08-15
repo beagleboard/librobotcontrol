@@ -63,7 +63,7 @@ void rc_usleep(unsigned int us);
  *
  * @return     nanoseconds since epoch
  */
-uint64_t rc_nanos_since_epoch();
+uint64_t rc_nanos_since_epoch(void);
 
 
 /**
@@ -75,7 +75,7 @@ uint64_t rc_nanos_since_epoch();
  *
  * @return     nanoseconds since system boot
  */
-uint64_t rc_nanos_since_boot();
+uint64_t rc_nanos_since_boot(void);
 
 
 /**
@@ -90,7 +90,7 @@ uint64_t rc_nanos_since_boot();
  *
  * @return     nanoseconds of CPU time since thread started
  */
-uint64_t rc_nanos_thread_time();
+uint64_t rc_nanos_thread_time(void);
 
 
 /**

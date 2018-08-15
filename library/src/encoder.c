@@ -3,11 +3,12 @@
  */
 
 #include <stdio.h>
+#include <rc/encoder.h>
 #include <rc/encoder_pru.h>
 #include <rc/encoder_eqep.h>
 
 
-int rc_encoder_init()
+int rc_encoder_init(void)
 {
 	if(rc_encoder_eqep_init()){
 		fprintf(stderr,"ERROR: failed to run rc_encoder_eqep_init\n");
@@ -20,7 +21,7 @@ int rc_encoder_init()
 	return 0;
 }
 
-int rc_encoder_cleanup()
+int rc_encoder_cleanup(void)
 {
 	rc_encoder_eqep_cleanup();
 	rc_encoder_pru_cleanup();

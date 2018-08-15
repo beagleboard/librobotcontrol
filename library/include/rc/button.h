@@ -55,7 +55,7 @@ int rc_button_init(int chip, int pin, char polarity, int debounce_us);
  * @brief      Closes all button handlers. Call at the end of your program
  * before returning.
  */
-void rc_button_cleanup();
+void rc_button_cleanup(void);
 
 
 /**

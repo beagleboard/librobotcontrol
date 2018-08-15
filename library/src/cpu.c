@@ -54,7 +54,7 @@ int rc_cpu_set_governor(rc_governor_t gov)
 }
 
 
-int rc_cpu_get_freq()
+int rc_cpu_get_freq(void)
 {
 	int freq;
 	FILE* fd = fopen(CURFREQ_PATH, "r");
@@ -73,7 +73,7 @@ int rc_cpu_get_freq()
 }
 
 
-int rc_cpu_print_freq()
+int rc_cpu_print_freq(void)
 {
 	int freq= rc_cpu_get_freq();
 	if(freq==-1) return -1;

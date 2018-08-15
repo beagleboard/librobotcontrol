@@ -29,7 +29,7 @@ static int init_flag = 0; // boolean to check if mem mapped
 
 
 
-int rc_encoder_eqep_init()
+int rc_encoder_eqep_init(void)
 {
 	int temp_fd;
 	if(init_flag) return 0;
@@ -113,7 +113,7 @@ int rc_encoder_eqep_init()
 	return 0;
 }
 
-int rc_encoder_eqep_cleanup()
+int rc_encoder_eqep_cleanup(void)
 {
 	int i;
 	for(i=0;i<3;i++){

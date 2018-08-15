@@ -27,7 +27,7 @@ extern "C" {
  *
  * @return     random floating point number between -1 and 1
  */
-float rc_get_random_float();
+float rc_get_random_float(void);
 
 /**
  * @brief      Returns a random double-precision floating point number between
@@ -38,7 +38,7 @@ float rc_get_random_float();
  *
  * @return     random double-precision floating point number between -1 and 1
  */
-double rc_get_random_double();
+double rc_get_random_double(void);
 
 /**
  * @brief      Modifies val to be bounded between between min and max.

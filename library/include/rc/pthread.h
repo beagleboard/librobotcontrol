@@ -90,7 +90,7 @@ int rc_pthread_set_properties_self(int policy, int priority);
  *
  * @return     niceness (-20 to 20) or -1 on failure and sets errno
  */
-int rc_pthread_get_process_niceness();
+int rc_pthread_get_process_niceness(void);
 
 
 /**

@@ -70,7 +70,7 @@ typedef enum rc_model_category_t{
  *
  * @return     rc_model_t enum representation of model
  */
-rc_model_t rc_model();
+rc_model_t rc_model(void);
 
 
 /**
@@ -78,21 +78,21 @@ rc_model_t rc_model();
  *
  * @return     rc_model_category_t enum representation of categoy
  */
-rc_model_category_t rc_model_category();
+rc_model_category_t rc_model_category(void);
 
 
 /**
  * @brief      prints to the screen the human-readable version of the model name
  * with no trailing newline character.
  */
-void rc_model_print();
+void rc_model_print(void);
 
 
 /**
  * @brief      prints to the screen the human-readable version of the category
  * name with no trailing newline character.
  */
-void rc_model_category_print();
+void rc_model_category_print(void);
 
 
 #ifdef __cplusplus

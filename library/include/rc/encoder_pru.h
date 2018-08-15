@@ -35,14 +35,14 @@ extern "C" {
  *
  * @return     0 on success or -1 on failure
  */
-int rc_encoder_pru_init();
+int rc_encoder_pru_init(void);
 
 /**
  * @brief      Stops the PRU encoder counter and closes file descriptors. This
  * is not strictly necessary but is recommended that the user calls this
  * function at the end of their program.
  */
-void rc_encoder_pru_cleanup();
+void rc_encoder_pru_cleanup(void);
 
 /**
  * @brief      Reads the current position of encoder channel 4.
@@ -53,7 +53,7 @@ void rc_encoder_pru_cleanup();
  * @return     The current position (signed 32-bit integer) or -1 and prints an
  * error message is there is a problem.
  */
-int rc_encoder_pru_read();
+int rc_encoder_pru_read(void);
 
 /**
  * @brief      Sets the current position of encoder channel 4. Usually for

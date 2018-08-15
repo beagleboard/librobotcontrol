@@ -58,7 +58,7 @@ static int pwmch[CHANNELS];
 
 
 
-int rc_motor_init()
+int rc_motor_init(void)
 {
 	return rc_motor_init_freq(RC_MOTOR_DEFAULT_PWM_FREQ);
 }
@@ -160,7 +160,7 @@ int rc_motor_init_freq(int pwm_frequency_hz)
 
 
 
-int rc_motor_cleanup()
+int rc_motor_cleanup(void)
 {
 	int i;
 	if(!init_flag) return 0;

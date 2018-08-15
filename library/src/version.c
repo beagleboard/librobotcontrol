@@ -13,18 +13,18 @@
 				RC_STRINGIFY(RC_LIB_VERSION_PATCH)
 
 
-unsigned int rc_version()
+unsigned int rc_version(void)
 {
 	return RC_LIB_VERSION_HEX;
 }
 
 
-const char* rc_version_string()
+const char* rc_version_string(void)
 {
 	return RC_LIB_VERSION_STRING;
 }
 
-void rc_version_print()
+void rc_version_print(void)
 {
 	printf(RC_LIB_VERSION_STRING);
 	return;

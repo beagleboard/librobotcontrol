@@ -25,7 +25,7 @@ static void shutdown_signal_handler(int signum);
 static void segfault_handler(int signum, siginfo_t *info, void *context);
 
 
-rc_state_t rc_get_state()
+rc_state_t rc_get_state(void)
 {
 	return rc_state;
 }
@@ -38,7 +38,7 @@ void rc_set_state(rc_state_t new_state)
 }
 
 
-int rc_print_state()
+int rc_print_state(void)
 {
 	switch(rc_state){
 	case UNINITIALIZED:
@@ -61,7 +61,7 @@ int rc_print_state()
 }
 
 
-int rc_make_pid_file()
+int rc_make_pid_file(void)
 {
 	FILE *fd;
 	DIR* dir;
@@ -203,7 +203,7 @@ int rc_kill_existing_process(float timeout_s)
 }
 
 
-int rc_remove_pid_file()
+int rc_remove_pid_file(void)
 {
 	// if PID file exists, remove it
 	if(access(RC_PID_FILE, F_OK ) == 0) return remove(RC_PID_FILE);
@@ -211,7 +211,7 @@ int rc_remove_pid_file()
 }
 
 
-int rc_enable_signal_handler()
+int rc_enable_signal_handler(void)
 {
 	// make the sigaction struct for shutdown signals
 	struct sigaction action;
@@ -244,7 +244,7 @@ int rc_enable_signal_handler()
 }
 
 
-int rc_disable_signal_handler()
+int rc_disable_signal_handler(void)
 {
 	// reset all to defaults
 	struct sigaction action;

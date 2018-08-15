@@ -37,19 +37,19 @@ void rc_usleep(unsigned int us){
 	return;
 }
 
-uint64_t rc_nanos_since_epoch(){
+uint64_t rc_nanos_since_epoch(void){
 	struct timespec ts;
 	clock_gettime(CLOCK_REALTIME, &ts);
 	return ((uint64_t)ts.tv_sec*1000000000)+ts.tv_nsec;
 }
 
-uint64_t rc_nanos_since_boot(){
+uint64_t rc_nanos_since_boot(void){
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	return ((uint64_t)ts.tv_sec*1000000000)+ts.tv_nsec;
 }
 
-uint64_t rc_nanos_thread_time(){
+uint64_t rc_nanos_thread_time(void){
 	struct timespec ts;
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
 	return ((uint64_t)ts.tv_sec*1000000000)+ts.tv_nsec;

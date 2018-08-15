@@ -53,14 +53,14 @@ int rc_cpu_set_governor(rc_governor_t gov);
  *
  * @return     frequency in hz
  */
-int rc_cpu_get_freq();
+int rc_cpu_get_freq(void);
 
 /**
  * @brief      Prints the current frequency to the screen. For example "600mhz".
  *
  * @return     0 on success or -1 on failure.
  */
-int rc_cpu_print_freq();
+int rc_cpu_print_freq(void);
 
 
 

@@ -103,7 +103,7 @@ int rc_mav_set_system_id(uint8_t system_id);
  *
  * @return     0 on success, -1 on failure
  */
-int rc_mav_cleanup();
+int rc_mav_cleanup(void);
 
 
 /**
@@ -201,7 +201,7 @@ int rc_mav_set_callback_connection_lost(void (*func)(void));
  *
  * @return     Returns current connection state.
  */
-rc_mav_connection_state_t rc_mav_get_connection_state();
+rc_mav_connection_state_t rc_mav_get_connection_state(void);
 
 
 /**
@@ -222,7 +222,7 @@ uint8_t rc_mav_get_sys_id_of_last_msg(int msg_id);
  * @return     Returns the system ID on success. Returns -1 on failure, for
  * example if no message has been received.
  */
-uint8_t rc_mav_get_sys_id_of_last_msg_any();
+uint8_t rc_mav_get_sys_id_of_last_msg_any(void);
 
 /**
  * @brief      Fetches the number of nanoseconds since the last message of type
@@ -243,7 +243,7 @@ int64_t rc_mav_ns_since_last_msg(int msg_id);
  * @return     Returns the number of nanoseconds since any message has been
  * received. Returns -1 on failure, for example if no message has been received.
  */
-int64_t rc_mav_ns_since_last_msg_any();
+int64_t rc_mav_ns_since_last_msg_any(void);
 
 /**
  * @brief      Returns the msg_id of the last received packet.
@@ -251,7 +251,7 @@ int64_t rc_mav_ns_since_last_msg_any();
  * @return     Returns the msg_id of the last received packet. Returns -1 on
  * failure, for example if no message has been received.
  */
-int rc_mav_msg_id_of_last_msg();
+int rc_mav_msg_id_of_last_msg(void);
 
 /**
  * @brief      Prints to stdout a human-readable name for a message type.

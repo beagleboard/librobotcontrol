@@ -58,9 +58,9 @@ static int shutdown_flag = 0;
 
 /**
  * poll a gpio edge with debounce check. When the button changes state spawn off
- * teh user-defined callback in its own thread.
+ * the user-defined callback in its own thread.
  */
-void* poll_thread_func(void* arg)
+static void* poll_thread_func(void* arg)
 {
 	int val, event, chip, pin, pol, debounce;
 	int press_expected_event, release_expected_event;
@@ -221,7 +221,7 @@ int rc_button_init(int chip, int pin, char polarity, int debounce_us)
 }
 
 
-void rc_button_cleanup()
+void rc_button_cleanup(void)
 {
 	int i,j, ret;
 	// signal threads to close

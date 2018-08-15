@@ -39,7 +39,7 @@ extern "C" {
  *
  * @return     0 on success, -1 on failure
  */
-int rc_dsm_init();
+int rc_dsm_init(void);
 
 
 /**
@@ -48,7 +48,7 @@ int rc_dsm_init();
  * @return     0 on success, -1 on failure. 1 if there was a timeout due to user
  * callback function not returning.
  */
-int rc_dsm_cleanup();
+int rc_dsm_cleanup(void);
 
 
 /**
@@ -94,7 +94,7 @@ double rc_dsm_ch_normalized(int ch);
  * @return     returns 1 if new data is ready to be read by the user. otherwise
  * returns 0
  */
-int rc_dsm_is_new_data();
+int rc_dsm_is_new_data(void);
 
 
 /**
@@ -122,7 +122,7 @@ void rc_dsm_set_disconnect_callback(void (*func)(void));
  * @return     returns 1 if packets are arriving in good health without
  * timeouts. returns 0 otherwise.
  */
-int rc_dsm_is_connection_active();
+int rc_dsm_is_connection_active(void);
 
 
 /**
@@ -131,7 +131,7 @@ int rc_dsm_is_connection_active();
  * @return     Returns the number of nanoseconds since the last dsm packet was
  * received. Return -1 on error or if no packet has ever been received.
  */
-int64_t rc_dsm_nanos_since_last_packet();
+int64_t rc_dsm_nanos_since_last_packet(void);
 
 
 /**
@@ -141,7 +141,7 @@ int64_t rc_dsm_nanos_since_last_packet();
  * @return     returns 10 or 11 indicating 10-bit or 11-bit resolution returns a
  * 0 if no packet has been received yet or -1 on error
  */
-int rc_dsm_resolution();
+int rc_dsm_resolution(void);
 
 
 /**
@@ -150,7 +150,7 @@ int rc_dsm_resolution();
  * @return     Returns number of channels being received, 0 if no packet has
  * been received yet or -1 on error.
  */
-int rc_dsm_channels();
+int rc_dsm_channels(void);
 
 
 /**
@@ -189,7 +189,7 @@ int rc_dsm_channels();
  *
  * @return     0 on success, -1 on failure
  */
-int rc_dsm_bind_routine();
+int rc_dsm_bind_routine(void);
 
 
 /**
@@ -202,7 +202,7 @@ int rc_dsm_bind_routine();
  *
  * @return     0 on success, -1 on failure
  */
-int rc_dsm_calibrate_routine();
+int rc_dsm_calibrate_routine(void);
 
 
 #ifdef __cplusplus

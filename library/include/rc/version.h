@@ -34,7 +34,7 @@ extern "C" {
  *
  * @return     integer representation of the library version
  */
-unsigned int rc_version();
+unsigned int rc_version(void);
 
 
 /**
@@ -42,14 +42,14 @@ unsigned int rc_version();
  *
  * @return     const char* string
  */
-const char* rc_version_string();
+const char* rc_version_string(void);
 
 
 /**
  * @brief      prints a string representation of the current library version to
  * stdout with no trailing newline character.
  */
-void rc_version_print();
+void rc_version_print(void);
 
 
 #ifdef __cplusplus

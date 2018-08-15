@@ -92,7 +92,7 @@ typedef struct rc_filter_t{
  *
  * @return     Empty zero-filled rc_filter_t struct
  */
-rc_filter_t rc_filter_empty();
+rc_filter_t rc_filter_empty(void);
 
 /**
  * @brief      Allocate memory for a discrete-time filter & populates it with

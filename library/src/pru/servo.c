@@ -27,7 +27,7 @@ static int init_flag=0;
 static int esc_max_us =  RC_ESC_DEFAULT_MAX_US;
 static int esc_min_us =  RC_ESC_DEFAULT_MIN_US;
 
-int rc_servo_init()
+int rc_servo_init(void)
 {
 	int i;
 	// start gpio power rail pin
@@ -72,7 +72,7 @@ int rc_servo_init()
 }
 
 
-void rc_servo_cleanup()
+void rc_servo_cleanup(void)
 {
 	int i;
 	// zero out shared memory

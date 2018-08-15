@@ -156,7 +156,7 @@ int rc_bmp_init(rc_bmp_oversample_t oversample, rc_bmp_filter_t filter)
 
 
 
-int rc_bmp_power_off()
+int rc_bmp_power_off(void)
 {
 	// make sure the bus is not currently in use by another thread
 	// do not proceed to prevent interfering with that process
@@ -266,7 +266,7 @@ int rc_bmp_read(rc_bmp_data_t* data)
 }
 
 
-int rc_set_sea_level_pressure_pa(double pa)
+int rc_bmp_set_sea_level_pressure_pa(double pa)
 {
 	// sanity checks
 	if(rc_bmp280_init_flag==0){

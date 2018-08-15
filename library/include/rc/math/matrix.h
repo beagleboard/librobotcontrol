@@ -49,7 +49,7 @@ typedef struct rc_matrix_t{
  *
  * @return     Returns an empty rc_matrix_t
  */
-rc_matrix_t rc_matrix_empty();
+rc_matrix_t rc_matrix_empty(void);
 
 /**
  * @brief      Allocates memory for matrix A to have size rows&cols.

@@ -108,14 +108,14 @@ extern "C" {
  *
  * @return     0 on success, -1 on failure
  */
-int rc_servo_init();
+int rc_servo_init(void);
 
 /**
  * @brief      Cleans up servo functionality and turns off the power rail.
  *
  * @return     0 on success, -1 on failure
  */
-void rc_servo_cleanup();
+void rc_servo_cleanup(void);
 
 /**
  * @brief      enables or disables the 6V power rail to drive servos.

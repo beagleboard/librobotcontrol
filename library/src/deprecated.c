@@ -10,7 +10,7 @@
 #include <rc/encoder_eqep.h>
 
 
-int rc_initialize()
+int rc_initialize(void)
 {
 	// initialize pause and mode buttons
 	if(rc_button_init(RC_BTN_PIN_PAUSE, RC_BTN_POLARITY_NORM_HIGH,
@@ -39,7 +39,7 @@ int rc_initialize()
 	return 0;
 }
 
-int rc_cleanup()
+int rc_cleanup(void)
 {
 	rc_button_cleanup();
 	rc_encoder_eqep_cleanup();
@@ -88,7 +88,7 @@ int rc_set_mode_released_func(void (*func)(void)){
 	return rc_button_set_callbacks(RC_BTN_PIN_MODE, mode_pressed_func, mode_released_func);
 }
 
-rc_button_state_t rc_get_pause_button()
+rc_button_state_t rc_get_pause_button(void)
 {
 	int ret = rc_button_get_state(RC_BTN_PIN_PAUSE);
 	if(ret == RC_BTN_STATE_PRESSED) return PRESSED;
@@ -96,7 +96,7 @@ rc_button_state_t rc_get_pause_button()
 	return -1;
 }
 
-rc_button_state_t rc_get_mode_button()
+rc_button_state_t rc_get_mode_button(void)
 {
 	int ret = rc_button_get_state(RC_BTN_PIN_MODE);
 	if(ret == RC_BTN_STATE_PRESSED) return PRESSED;
@@ -117,12 +117,12 @@ int rc_set_encoder_pos(int ch, int value)
 
 
 
-int rc_enable_motors()
+int rc_enable_motors(void)
 {
 	return rc_motor_standby(0);
 }
 
-int rc_disable_motors()
+int rc_disable_motors(void)
 {
 	return rc_motor_standby(1);
 }
@@ -142,7 +142,7 @@ int rc_set_motor_free_spin(int motor)
 	return rc_motor_free_spin(motor);
 }
 
-int rc_set_motor_free_spin_all()
+int rc_set_motor_free_spin_all(void)
 {
 	return rc_motor_free_spin(0);
 
@@ -154,7 +154,7 @@ int rc_set_motor_brake(int motor)
 
 }
 
-int rc_set_motor_brake_all()
+int rc_set_motor_brake_all(void)
 {
 	return rc_motor_brake(0);
 }

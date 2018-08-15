@@ -1,0 +1,120 @@
+/**
+ * @file mpu_dev_functions.c
+ *
+ * these functions are not actually part of the library but where used in the
+ * development of the mpu module. They remain here in case they become useful in
+ * the future.
+ *
+ * I repeat, these are NOT part of the mpu module and are NOT accessible by the
+ * user.
+ */
+
+
+
+/**
+ * takes a single row on a rotation matrix and returns the associated scalar for
+ * use by __inv_orientation_matrix_to_scalar.
+ *
+ * @param      row   The row
+ *
+ * @return     { description_of_the_return_value }
+ */
+/*
+static unsigned short __inv_row_2_scale(signed char row[])
+{
+	unsigned short b;
+
+	if (row[0] > 0)
+		b = 0;
+	else if (row[0] < 0)
+		b = 4;
+	else if (row[1] > 0)
+		b = 1;
+	else if (row[1] < 0)
+		b = 5;
+	else if (row[2] > 0)
+		b = 2;
+	else if (row[2] < 0)
+		b = 6;
+	else
+		b = 7;      // error
+	return b;
+}
+*/
+
+/**
+ * This take in a rotation matrix and returns the corresponding 16 bit short
+ * which is sent to the DMP to set the orientation. This function is actually
+ * not used in normal operation and only served to retrieve the orientation
+ * scalars once to populate the rc_mpu_orientation_t enum during development.
+ *
+ * @param      mtx   The mtx
+ *
+ * @return     { description_of_the_return_value }
+ */
+/*
+static unsigned short __inv_orientation_matrix_to_scalar(signed char mtx[])
+{
+	unsigned short scalar;
+
+	scalar = __inv_row_2_scale(mtx);
+	scalar |= __inv_row_2_scale(mtx + 3) << 3;
+	scalar |= __inv_row_2_scale(mtx + 6) << 6;
+	return scalar;
+}
+*/
+
+/**
+ * this was a debugging and development function and purely serves to print out
+ * orientation values and rotation matrices which form the rc_imu_orientation_t
+ * enum. This is not called inside this C file and is not exposed to the user.
+ * left here for future reference.
+ */
+/*
+static void __print_orientation_info(void)
+{
+	printf("\n");
+	//char mtx[9];
+	unsigned short orient;
+
+	// Z-UP (identity matrix)
+	signed char zup[] = {1,0,0, 0,1,0, 0,0,1};
+	orient = __inv_orientation_matrix_to_scalar(zup);
+	printf("Z-UP: %d\n", orient);
+
+	// Z-down
+	signed char zdown[] = {-1,0,0, 0,1,0, 0,0,-1};
+	orient = __inv_orientation_matrix_to_scalar(zdown);
+	printf("Z-down: %d\n", orient);
+
+	// X-up
+	signed char xup[] = {0,0,-1, 0,1,0, 1,0,0};
+	orient = __inv_orientation_matrix_to_scalar(xup);
+	printf("x-up: %d\n", orient);
+
+	// X-down
+	signed char xdown[] = {0,0,1, 0,1,0, -1,0,0};
+	orient = __inv_orientation_matrix_to_scalar(xdown);
+	printf("x-down: %d\n", orient);
+
+	// Y-up
+	signed char yup[] = {1,0,0, 0,0,-1, 0,1,0};
+	orient = __inv_orientation_matrix_to_scalar(yup);
+	printf("y-up: %d\n", orient);
+
+	// Y-down
+	signed char ydown[] = {1,0,0, 0,0,1, 0,-1,0};
+	orient = __inv_orientation_matrix_to_scalar(ydown);
+	printf("y-down: %d\n", orient);
+
+	// X-forward
+	signed char xforward[] = {0,-1,0, 1,0,0, 0,0,1};
+	orient = __inv_orientation_matrix_to_scalar(xforward);
+	printf("x-forward: %d\n", orient);
+
+	// X-back
+	signed char xback[] = {0,1,0, -1,0,0, 0,0,1};
+	orient = __inv_orientation_matrix_to_scalar(xback);
+	printf("yx-back: %d\n", orient);
+}
+*/

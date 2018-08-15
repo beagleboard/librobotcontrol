@@ -20,9 +20,9 @@ extern "C" {
 
 
 
-int rc_initialize() __attribute__ ((deprecated));
+int rc_initialize(void) __attribute__ ((deprecated));
 
-int rc_cleanup() __attribute__ ((deprecated));
+int rc_cleanup(void) __attribute__ ((deprecated));
 
 typedef enum rc_button_state_t {
 	RELEASED,
@@ -33,21 +33,21 @@ int rc_set_pause_pressed_func(void (*func)(void)) __attribute__ ((deprecated));
 int rc_set_pause_released_func(void (*func)(void)) __attribute__ ((deprecated));
 int rc_set_mode_pressed_func(void (*func)(void)) __attribute__ ((deprecated));
 int rc_set_mode_released_func(void (*func)(void)) __attribute__ ((deprecated));
-rc_button_state_t rc_get_pause_button() __attribute__ ((deprecated));
-rc_button_state_t rc_get_mode_button() __attribute__ ((deprecated));
+rc_button_state_t rc_get_pause_button(void) __attribute__ ((deprecated));
+rc_button_state_t rc_get_mode_button(void) __attribute__ ((deprecated));
 
 
 int rc_get_encoder_pos(int ch) __attribute__ ((deprecated));
 int rc_set_encoder_pos(int ch, int value) __attribute__ ((deprecated));
 
-int rc_enable_motors() __attribute__ ((deprecated));
-int rc_disable_motors() __attribute__ ((deprecated));
+int rc_enable_motors(void) __attribute__ ((deprecated));
+int rc_disable_motors(void) __attribute__ ((deprecated));
 int rc_set_motor(int motor, float duty) __attribute__ ((deprecated));
 int rc_set_motor_all(float duty) __attribute__ ((deprecated));
 int rc_set_motor_free_spin(int motor) __attribute__ ((deprecated));
-int rc_set_motor_free_spin_all() __attribute__ ((deprecated));
+int rc_set_motor_free_spin_all(void) __attribute__ ((deprecated));
 int rc_set_motor_brake(int motor) __attribute__ ((deprecated));
-int rc_set_motor_brake_all() __attribute__ ((deprecated));
+int rc_set_motor_brake_all(void) __attribute__ ((deprecated));
 
 
 

@@ -42,7 +42,7 @@ extern "C" {
  * @return     0 on success, -1 on failure which is usually due to lack of user
  * permissions to access the gpio and pwm systems.
  */
-int rc_motor_init();
+int rc_motor_init(void);
 
 
 /**
@@ -71,7 +71,7 @@ int rc_motor_init_freq(int pwm_frequency_hz);
  *
  * @return     0 on success, -1 on failure.
  */
-int rc_motor_cleanup();
+int rc_motor_cleanup(void);
 
 
 /**

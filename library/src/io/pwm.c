@@ -53,7 +53,7 @@ static int ssindex[3]; // index given by the kernel to each pwm chip when in mod
  *
  * @return     0 on succcess, -1 on failure
  */
-int __export_channels(int ss)
+static int __export_channels(int ss)
 {
 	int export_fd=0;
 	char buf[MAXBUF];
@@ -142,7 +142,7 @@ int __export_channels(int ss)
  *
  * @return     0 on succcess, -1 on failure
  */
-int __unexport_channels(int ss)
+static int __unexport_channels(int ss)
 {
 	int unexport_fd=0;
 	char buf[MAXBUF];

@@ -20,7 +20,7 @@
 static volatile unsigned int* shared_mem_32bit_ptr = NULL;
 static int init_flag=0;
 
-int rc_encoder_pru_init()
+int rc_encoder_pru_init(void)
 {
 	int i;
 	// map memory
@@ -56,7 +56,7 @@ int rc_encoder_pru_init()
 }
 
 
-void rc_encoder_pru_cleanup()
+void rc_encoder_pru_cleanup(void)
 {
 	// zero out shared memory
 	if(shared_mem_32bit_ptr != NULL){
@@ -69,7 +69,7 @@ void rc_encoder_pru_cleanup()
 }
 
 
-int rc_encoder_pru_read()
+int rc_encoder_pru_read(void)
 {
 	if(shared_mem_32bit_ptr==NULL || init_flag==0){
 		fprintf(stderr, "ERROR in rc_encoder_pru_read, call rc_encoder_pru_init first\n");

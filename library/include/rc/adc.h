@@ -43,7 +43,7 @@ extern "C" {
  *
  * @return     0 on success, -1 on failure.
  */
-int rc_adc_init();
+int rc_adc_init(void);
 
 /**
  * @brief      Cleans up the ADC subsystem.
@@ -52,7 +52,7 @@ int rc_adc_init();
  *
  * @return     0 on success, -1 on failure.
  */
-int rc_adc_cleanup();
+int rc_adc_cleanup(void);
 
 /**
  * @brief      reads the raw integer ADC value for a particular channel
@@ -77,14 +77,14 @@ double rc_adc_read_volt(int ch);
  *
  * @return     voltage of battery or -1 on failure
  */
-double rc_adc_batt();
+double rc_adc_batt(void);
 
 /**
  * @brief      Reads the voltage of the 9-18v DC jack
  *
  * @return     Voltage at DC jack or -1 on failure
  */
-double rc_adc_dc_jack();
+double rc_adc_dc_jack(void);
 
 
 

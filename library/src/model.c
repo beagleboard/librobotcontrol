@@ -23,7 +23,7 @@ static int has_checked = 0;
 
 
 
-static void __check_model()
+static void __check_model(void)
 {
 	char c[BUF_SIZE];
 	int ret;
@@ -150,7 +150,7 @@ static void __check_model()
 }
 
 
-rc_model_t rc_model()
+rc_model_t rc_model(void)
 {
 	if(has_checked) return current_model;
 
@@ -159,7 +159,7 @@ rc_model_t rc_model()
 	return current_model;
 }
 
-rc_model_category_t rc_model_category()
+rc_model_category_t rc_model_category(void)
 {
 	if(has_checked) return current_category;
 
@@ -171,7 +171,7 @@ rc_model_category_t rc_model_category()
 
 #define caseprint(X) case(X): printf(#X); break;
 
-void rc_model_print()
+void rc_model_print(void)
 {
 	rc_model_t model = rc_model();
 
@@ -203,7 +203,7 @@ void rc_model_print()
 	return;
 }
 
-void rc_model_category_print()
+void rc_model_category_print(void)
 {
 	rc_model_category_t category = rc_model_category();
 

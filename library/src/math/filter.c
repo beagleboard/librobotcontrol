@@ -37,7 +37,7 @@ static int print_poly_z(rc_vector_t v)
 }
 
 
-rc_filter_t rc_filter_empty()
+rc_filter_t rc_filter_empty(void)
 {
 	rc_filter_t f;
 	f.order		= 0;

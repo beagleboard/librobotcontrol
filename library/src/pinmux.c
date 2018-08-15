@@ -326,7 +326,7 @@ int rc_pinmux_set(int pin, rc_pinmux_mode_t mode)
 }
 
 
-int rc_pinmux_set_default()
+int rc_pinmux_set_default(void)
 {
 	int ret = 0;
 	// bb blue available pinmux

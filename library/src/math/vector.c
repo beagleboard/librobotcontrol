@@ -67,7 +67,7 @@ int rc_vector_free(rc_vector_t* v)
 }
 
 
-rc_vector_t rc_vector_empty()
+rc_vector_t rc_vector_empty(void)
 {
 	rc_vector_t out;
 	out.d = NULL;

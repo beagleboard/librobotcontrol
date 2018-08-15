@@ -49,7 +49,7 @@ typedef struct rc_ringbuf_t {
  *
  * @return     empty and ready-to-allocate rc_ringbuf_t
  */
-rc_ringbuf_t rc_ringbuf_empty();
+rc_ringbuf_t rc_ringbuf_empty(void);
 
 /**
  * @brief      Allocates memory for a ring buffer and initializes an
