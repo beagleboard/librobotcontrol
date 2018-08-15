@@ -300,7 +300,7 @@ int rc_kalman_update_ekf(rc_kalman_t* kf, rc_matrix_t F, rc_matrix_t H, rc_vecto
 		fprintf(stderr, "ERROR in rc_kalman_ekf_update x_pre must have same dimension as columns of H\n");
 		return -1;
 	}
-	if(unlikely(y.len != kf->H.rows)){
+	if(unlikely(y.len != H.rows)){
 		fprintf(stderr, "ERROR in rc_kalman_ekf_update y must have same dimension as rows of H\n");
 		return -1;
 	}
