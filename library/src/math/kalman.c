@@ -336,10 +336,10 @@ int rc_kalman_update_ekf(rc_kalman_t* kf, rc_matrix_t F, rc_matrix_t H, rc_vecto
 	rc_algebra_invert_matrix_inplace(&S);		// S2^(-1) = S^(-1)
 	rc_matrix_right_multiply_inplace(&L, S);	// L = (P*H^T)*(S^-1)
 
-	// x[k|k] = x[k|k-1] + K[k]*(y[k]-h[k])
+	// x[k|k] = x[k|k-1] + L[k]*(y[k]-h[k])
 	rc_vector_subtract(y,h,&z);			// z = k-h
 	rc_matrix_times_col_vec(L, z, &tmp1);		// temp = L*z
-	rc_vector_sum(kf->x_pre, tmp1, &kf->x_est);	// x_est = x + K*y
+	rc_vector_sum(kf->x_pre, tmp1, &kf->x_est);	// x_est = x + L*y
 
 	// P[k|k] = (I - L*H)*P = P - L*H*P, reuse the matrix S.
 	rc_matrix_multiply(kf->H, newP, &S);		// S = H*P
