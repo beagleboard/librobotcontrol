@@ -11,7 +11,7 @@
 #include <rc/math/kalman.h>
 #include "algebra_common.h"
 
-rc_kalman_t rc_kalman_empty(void)
+rc_kalman_t rc_kalman_empty()
 {
 	rc_kalman_t kf;
 	// set struct to zeros
@@ -42,11 +42,11 @@ int rc_kalman_alloc_lin(rc_kalman_t* kf, rc_matrix_t F, rc_matrix_t G, rc_matrix
 		fprintf(stderr, "ERROR in rc_kalman_alloc_lin, received NULL pointer\n");
 		return -1;
 	}
-	if(!F.initialized || !H.initialized){
+	if(F.initialized!=1 || H.initialized!=1){
 		fprintf(stderr, "ERROR in rc_kalman_alloc, received uninitialized F or H\n");
 		return -1;
 	}
-	if(!Q.initialized || !R.initialized){
+	if(Q.initialized!=1 || R.initialized!=1){
 		fprintf(stderr, "ERROR in rc_kalman_alloc, received initialized P or Q\n");
 		return -1;
 	}
@@ -99,7 +99,7 @@ int rc_kalman_alloc_ekf(rc_kalman_t* kf, rc_matrix_t Q, rc_matrix_t R, rc_matrix
 		fprintf(stderr, "ERROR in rc_kalman_alloc_ekf, received NULL pointer\n");
 		return -1;
 	}
-	if(!Q.initialized || !R.initialized || !Pi.initialized){
+	if(Q.initialized!=1 || R.initialized!=1 || Pi.initialized!=1){
 		fprintf(stderr, "ERROR in rc_kalman_alloc_ekf, received uninitialized matrix\n");
 		return -1;
 	}
@@ -122,6 +122,7 @@ int rc_kalman_alloc_ekf(rc_kalman_t* kf, rc_matrix_t Q, rc_matrix_t R, rc_matrix
 	rc_matrix_duplicate(Pi, &kf->P);
 	rc_vector_zeros(&kf->x_est, Q.rows);
 	rc_vector_zeros(&kf->x_pre, Q.rows);
+	
 	kf->initialized = 1;
 	return 0;
 }
@@ -300,7 +301,7 @@ int rc_kalman_update_ekf(rc_kalman_t* kf, rc_matrix_t F, rc_matrix_t H, rc_vecto
 		fprintf(stderr, "ERROR in rc_kalman_ekf_update x_pre must have same dimension as columns of H\n");
 		return -1;
 	}
-	if(unlikely(y.len != kf->H.rows)){
+	if(unlikely(y.len != H.rows)){
 		fprintf(stderr, "ERROR in rc_kalman_ekf_update y must have same dimension as rows of H\n");
 		return -1;
 	}
@@ -311,8 +312,10 @@ int rc_kalman_update_ekf(rc_kalman_t* kf, rc_matrix_t F, rc_matrix_t H, rc_vecto
 
 	// copy in new jacobians and x prediction
 	rc_matrix_duplicate(F, &kf->F);
-	rc_vector_duplicate(x_pre, &kf->x_pre);
 	rc_matrix_duplicate(H, &kf->H);
+	rc_vector_duplicate(x_pre, &kf->x_pre);
+	rc_vector_duplicate(y, &kf->y);
+	rc_vector_duplicate(h, &kf->h);
 
 	// F is new now in non-linear case
 	// P[k|k-1] = F*P[k-1|k-1]*F^T + Q
@@ -337,9 +340,9 @@ int rc_kalman_update_ekf(rc_kalman_t* kf, rc_matrix_t F, rc_matrix_t H, rc_vecto
 	rc_matrix_right_multiply_inplace(&L, S);	// L = (P*H^T)*(S^-1)
 
 	// x[k|k] = x[k|k-1] + K[k]*(y[k]-h[k])
-	rc_vector_subtract(y,h,&z);			// z = k-h
+	rc_vector_subtract(kf->y,kf->h,&z);			// z = k-h
 	rc_matrix_times_col_vec(L, z, &tmp1);		// temp = L*z
-	rc_vector_sum(kf->x_pre, tmp1, &kf->x_est);	// x_est = x + K*y
+	rc_vector_sum(kf->x_pre, tmp1, &kf->x_est);	// x_est = x + L*z
 
 	// P[k|k] = (I - L*H)*P = P - L*H*P, reuse the matrix S.
 	rc_matrix_multiply(kf->H, newP, &S);		// S = H*P
