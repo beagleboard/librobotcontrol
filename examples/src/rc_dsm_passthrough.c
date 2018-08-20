@@ -19,7 +19,7 @@
 #include <rc/time.h>
 #include <rc/adc.h>
 
-int running;
+static int running;
 
 typedef enum p_mode_t{
 	NONE,
@@ -28,7 +28,7 @@ typedef enum p_mode_t{
 } p_mode_t;
 
 // function to be called every time new a new DSM packet is received.
-void send_pulses()
+static void __send_pulses(void)
 {
 	int i, ch, val;
 
@@ -49,7 +49,7 @@ void send_pulses()
 }
 
 // interrupt handler to catch ctrl-c
-void signal_handler(__attribute__ ((unused)) int dummy)
+static void __signal_handler(__attribute__ ((unused)) int dummy)
 {
 	running=0;
 	return;
@@ -57,13 +57,14 @@ void signal_handler(__attribute__ ((unused)) int dummy)
 
 
 // printed if some invalid argument was given
-void print_usage()
+static void __print_usage(void)
 {
 	printf("\n");
 	printf(" Options\n");
 	printf(" -s   Enable 6V power rail for servos.\n");
 	printf(" -e   Disable 6V power rail for ESCs.\n");
 	printf(" -h   Print this messege.\n\n");
+	return;
 }
 
 // main routine
@@ -86,20 +87,20 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'h': // show help messege
-			print_usage();
+			__print_usage();
 			return -1;
 			break;
 
 		default:
 			fprintf(stderr,"Invalid Argument \n");
-			print_usage();
+			__print_usage();
 			return -1;
 		}
 	}
 
 	if(mode == NONE){
 		fprintf(stderr,"You must select a power mode -s or -e\n");
-		print_usage();
+		__print_usage();
 		return -1;
 	}
 
@@ -138,10 +139,10 @@ int main(int argc, char *argv[])
 	fflush(stdout);
 
 	// set signal handler so the loop can exit cleanly
-	signal(SIGINT, signal_handler);
+	signal(SIGINT, __signal_handler);
 	running=1;
 
-	rc_dsm_set_callback(&send_pulses);
+	rc_dsm_set_callback(&__send_pulses);
 	while(running){
 		if(rc_dsm_is_connection_active()==0){
 			printf("\rSeconds since last DSM packet: ");

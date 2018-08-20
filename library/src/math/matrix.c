@@ -18,16 +18,9 @@
 #include "algebra_common.h"
 
 
-rc_matrix_t rc_matrix_empty()
+rc_matrix_t rc_matrix_empty(void)
 {
-	rc_matrix_t out;
-	// zero out the contents of the struct piecemeal instead of with memset
-	// in case the struct changes in the future or if compiled with different
-	// padding on other architectures.
-	out.d = NULL;
-	out.rows = 0;
-	out.cols = 0;
-	out.initialized = 0;
+	rc_matrix_t out = RC_MATRIX_INITIALIZER;
 	return out;
 }
 
@@ -74,6 +67,7 @@ int rc_matrix_alloc(rc_matrix_t* A, int rows, int cols)
 
 int rc_matrix_free(rc_matrix_t* A)
 {
+	rc_matrix_t new = RC_MATRIX_INITIALIZER;
 	if(unlikely(A==NULL)){
 		fprintf(stderr,"ERROR in rc_matrix_free, received NULL pointer\n");
 		return -1;
@@ -82,7 +76,7 @@ int rc_matrix_free(rc_matrix_t* A)
 	if(A->d!=NULL && A->initialized==1) free(A->d[0]);
 	free(A->d);
 	// zero out the struct
-	*A = rc_matrix_empty();
+	*A = new;
 	return 0;
 }
 
@@ -287,7 +281,7 @@ int rc_matrix_multiply(rc_matrix_t A, rc_matrix_t B, rc_matrix_t* C)
 
 int rc_matrix_left_multiply_inplace(rc_matrix_t A, rc_matrix_t* B)
 {
-	rc_matrix_t tmp = rc_matrix_empty();
+	rc_matrix_t tmp = RC_MATRIX_INITIALIZER;
 	// Sanity Checks
 	if(unlikely(A.initialized!=1 || B->initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_left_multiply_inplace, matrix not initialized\n");
@@ -311,7 +305,7 @@ int rc_matrix_left_multiply_inplace(rc_matrix_t A, rc_matrix_t* B)
 
 int rc_matrix_right_multiply_inplace(rc_matrix_t* A, rc_matrix_t B)
 {
-	rc_matrix_t tmp = rc_matrix_empty();
+	rc_matrix_t tmp = RC_MATRIX_INITIALIZER;
 	// Sanity Checks
 	if(unlikely(A->initialized!=1 || B.initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_right_multiply_inplace, matrix not initialized\n");
@@ -408,6 +402,7 @@ int rc_matrix_transpose(rc_matrix_t A, rc_matrix_t* T)
 
 int rc_matrix_transpose_inplace(rc_matrix_t* A)
 {
+	rc_matrix_t tmp = RC_MATRIX_INITIALIZER;
 	if(unlikely(A==NULL)){
 		fprintf(stderr,"ERROR in rc_transpose_matrix_inplace, received NULL pointer\n");
 		return -1;
@@ -420,7 +415,6 @@ int rc_matrix_transpose_inplace(rc_matrix_t* A)
 	if(A->rows==1 && A->cols==1) return 0;
 	// allocate memory for new A, easier than doing it in place since A will
 	// change size if non-square
-	rc_matrix_t tmp = rc_matrix_empty();
 	if(unlikely(rc_matrix_transpose(*A, &tmp))){
 		fprintf(stderr,"ERROR in rc_transpose_matrix_inplace, can't transpose\n");
 		rc_matrix_free(&tmp);
@@ -513,7 +507,7 @@ double rc_matrix_determinant(rc_matrix_t A)
 {
 	int i,j,k;
 	double ratio, det;
-	rc_matrix_t tmp = rc_matrix_empty();
+	rc_matrix_t tmp = RC_MATRIX_INITIALIZER;
 	// sanity checks
 	if(unlikely(A.initialized!=1)){
 		fprintf(stderr,"ERROR in rc_matrix_determinant, received uninitialized matrix\n");

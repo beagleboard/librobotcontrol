@@ -55,6 +55,7 @@ int rc_vector_alloc(rc_vector_t* v, int length)
 
 int rc_vector_free(rc_vector_t* v)
 {
+	rc_vector_t new = RC_VECTOR_INITIALIZER;
 	if(unlikely(v==NULL)){
 		fprintf(stderr,"ERROR rc_vector_free, received NULL pointer\n");
 		return -1;
@@ -62,17 +63,14 @@ int rc_vector_free(rc_vector_t* v)
 	// free memory
 	if(v->initialized)free(v->d);
 	// zero out the struct
-	*v = rc_vector_empty();
+	*v = new;
 	return 0;
 }
 
 
 rc_vector_t rc_vector_empty(void)
 {
-	rc_vector_t out;
-	out.d = NULL;
-	out.len = 0;
-	out.initialized = 0;
+	rc_vector_t out = RC_VECTOR_INITIALIZER;
 	return out;
 }
 

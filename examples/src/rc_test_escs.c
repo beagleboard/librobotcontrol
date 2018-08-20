@@ -39,7 +39,7 @@
 #include <rc/dsm.h>
 #include <rc/servo.h>
 
-static int running;
+static int running = 0;
 
 typedef enum test_mode_t{
 	DISABLED,
@@ -50,7 +50,7 @@ typedef enum test_mode_t{
 }test_mode_t;
 
 
-void print_usage()
+static void __print_usage(void)
 {
 	printf("\n");
 	printf(" Options\n");
@@ -80,7 +80,7 @@ void print_usage()
 }
 
 // interrupt handler to catch ctrl-c
-void signal_handler(__attribute__ ((unused)) int dummy)
+static void __signal_handler(__attribute__ ((unused)) int dummy)
 {
 	running=0;
 	return;
@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
 			// make sure only one mode in requested
 			if(mode!=DISABLED){
 				fprintf(stderr,"ERROR please select only one mode to use\n");
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			thr = atof(optarg);
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 			// make sure only one mode in requested
 			if(mode!=DISABLED){
 				fprintf(stderr,"ERROR please select only one mode to use\n");
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			if(oneshot_en){
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 			// make sure only one mode in requested
 			if(mode!=DISABLED){
 				fprintf(stderr,"ERROR please select only one mode to use\n");
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			sweep_limit = atof(optarg);
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
 			// make sure only one mode in requested
 			if(mode!=DISABLED){
 				fprintf(stderr,"ERROR please select only one mode to use\n");
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			radio_ch = atoi(optarg);
@@ -237,12 +237,12 @@ int main(int argc, char *argv[])
 
 		// help mode
 		case 'h':
-			print_usage();
+			__print_usage();
 			return 0;
 
 		default:
 			printf("\nInvalid Argument \n");
-			print_usage();
+			__print_usage();
 			return -1;
 		}
 	}
@@ -250,12 +250,12 @@ int main(int argc, char *argv[])
 	// if the user didn't give enough arguments, exit
 	if(mode==DISABLED){
 		fprintf(stderr,"\nNot enough input arguments\n");
-		print_usage();
+		__print_usage();
 		return -1;
 	}
 
 	// set signal handler so the loop can exit cleanly
-	signal(SIGINT, signal_handler);
+	signal(SIGINT, __signal_handler);
 	running=1;
 
 	// initialize PRU and make sure power rail is OFF

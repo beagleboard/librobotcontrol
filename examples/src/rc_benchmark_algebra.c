@@ -32,7 +32,8 @@
 #define TIMER_DELAY 2100
 
 
-void print_usage(){
+static void __print_usage(void)
+{
 	printf("\n");
 	printf("-d         use default matrix size (%dx%d)\n",DEFAULT_DIM,DEFAULT_DIM);
 	printf("-s {size}  use custom matrix size\n");
@@ -41,29 +42,31 @@ void print_usage(){
 }
 
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[])
+{
 	int dim = 0;
 	int c,diff,mflops;
 	uint64_t t1, t2, flops;
-	rc_vector_t b = rc_vector_empty();
-	rc_matrix_t A = rc_matrix_empty();
-	rc_matrix_t AA = rc_matrix_empty();
-	rc_matrix_t B = rc_matrix_empty();
-	rc_matrix_t L = rc_matrix_empty();
-	rc_matrix_t U = rc_matrix_empty();
-	rc_matrix_t P = rc_matrix_empty();
-	rc_matrix_t Q = rc_matrix_empty();
-	rc_matrix_t R = rc_matrix_empty();
-	rc_vector_t x = rc_vector_empty();
+	rc_vector_t b = RC_VECTOR_INITIALIZER;
+	rc_vector_t x = RC_VECTOR_INITIALIZER;
+	rc_matrix_t A =  RC_MATRIX_INITIALIZER;
+	rc_matrix_t AA =  RC_MATRIX_INITIALIZER;
+	rc_matrix_t B =  RC_MATRIX_INITIALIZER;
+	rc_matrix_t L =  RC_MATRIX_INITIALIZER;
+	rc_matrix_t U =  RC_MATRIX_INITIALIZER;
+	rc_matrix_t P =  RC_MATRIX_INITIALIZER;
+	rc_matrix_t Q =  RC_MATRIX_INITIALIZER;
+	rc_matrix_t R =  RC_MATRIX_INITIALIZER;
+
 	// make sure user gave an argument
 	if(argc>3){
 		printf("Too many arguments given.\n");
-		print_usage();
+		__print_usage();
 		return -1;
 	}
 	if(argc<2){
 		printf("Not enough arguments given.\n");
-		print_usage();
+		__print_usage();
 		return -1;
 	}
 	// parse arguments
@@ -73,7 +76,7 @@ int main(int argc, char *argv[]){
 		case 'd': // default size option
 			if(dim!=0){
 				printf("invalid combination of arguments\n");
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			dim = DEFAULT_DIM;
@@ -81,22 +84,22 @@ int main(int argc, char *argv[]){
 		case 's': // custom size option
 			if(dim!=0){
 				printf("invalid combination of arguments\n");
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			dim = atoi(optarg);
 			if(dim>MAX_DIM || dim<MIN_DIM){
 				printf("requested size out of bounds\n");
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			break;
 		case 'h':
-			print_usage();
+			__print_usage();
 			return 0;
 		default:
 			printf("inavlid argument\n");
-			print_usage();
+			__print_usage();
 			return -1;
 		}
 	}

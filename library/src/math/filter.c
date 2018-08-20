@@ -19,7 +19,7 @@
 #include "algebra_common.h"
 
 // local function
-static int print_poly_z(rc_vector_t v)
+static int __print_poly_z(rc_vector_t v)
 {
 	int i;
 	// utf8 characters for superscript digits
@@ -39,24 +39,7 @@ static int print_poly_z(rc_vector_t v)
 
 rc_filter_t rc_filter_empty(void)
 {
-	rc_filter_t f;
-	f.order		= 0;
-	f.dt		= 0.0;
-	f.gain		= 1.0;
-	f.num		= rc_vector_empty();
-	f.den		= rc_vector_empty();
-	f.sat_en	= 0;
-	f.sat_min	= 0.0;
-	f.sat_max	= 0.0;
-	f.sat_flag	= 0;
-	f.ss_en		= 0;
-	f.ss_steps	= 0;
-	f.in_buf	= rc_ringbuf_empty();
-	f.out_buf	= rc_ringbuf_empty();
-	f.newest_input	= 0.0;
-	f.newest_output = 0.0;
-	f.step		= 0;
-	f.initialized	= 0;
+	rc_filter_t f = RC_FILTER_INITIALIZER;
 	return f;
 }
 
@@ -172,6 +155,7 @@ int rc_filter_alloc_from_arrays(rc_filter_t* f,double dt,double* num,int numlen,
 
 int rc_filter_free(rc_filter_t* f)
 {
+	rc_filter_t new = RC_FILTER_INITIALIZER;
 	if(unlikely(f==NULL)){
 		fprintf(stderr, "ERROR in rc_filter_free, received NULL pointer\n");
 		return -1;
@@ -180,7 +164,7 @@ int rc_filter_free(rc_filter_t* f)
 	rc_ringbuf_free(&f->out_buf);
 	rc_vector_free(&f->num);
 	rc_vector_free(&f->den);
-	*f = rc_filter_empty();
+	*f = new;
 	return 0;
 }
 
@@ -274,11 +258,11 @@ int rc_filter_print(rc_filter_t f)
 	printf("timestep dt: %0.4f\n", f.dt);
 
 	// print numerator
-	print_poly_z(f.num);
+	__print_poly_z(f.num);
 	printf("--------");
 	for(i=0;i<f.order;i++) printf("------------");
 	printf("\n");
-	print_poly_z(f.den);
+	__print_poly_z(f.den);
 
 	return 0;
 }
@@ -384,8 +368,8 @@ int rc_filter_prefill_outputs(rc_filter_t* f, double out)
 
 int rc_filter_multiply(rc_filter_t f1, rc_filter_t f2, rc_filter_t* f3)
 {
-	rc_vector_t newnum = rc_vector_empty();
-	rc_vector_t newden = rc_vector_empty();
+	rc_vector_t newnum = RC_VECTOR_INITIALIZER;
+	rc_vector_t newden = RC_VECTOR_INITIALIZER;
 	// sanity checks
 	if(unlikely(!f1.initialized||!f2.initialized)){
 		fprintf(stderr,"ERROR in rc_filter_multiply, filter uninitialized\n");
@@ -418,9 +402,9 @@ int rc_filter_multiply(rc_filter_t f1, rc_filter_t f2, rc_filter_t* f3)
 
 int rc_filter_multiply_three(rc_filter_t f1, rc_filter_t f2, rc_filter_t f3, rc_filter_t* out)
 {
-	rc_vector_t newnum = rc_vector_empty();
-	rc_vector_t newden = rc_vector_empty();
-	rc_vector_t tmp = rc_vector_empty();
+	rc_vector_t newnum = RC_VECTOR_INITIALIZER;
+	rc_vector_t newden = RC_VECTOR_INITIALIZER;
+	rc_vector_t tmp = RC_VECTOR_INITIALIZER;
 
 	// sanity checks
 	if(unlikely(!f1.initialized||!f2.initialized||!f3.initialized)){
@@ -473,13 +457,13 @@ int rc_filter_c2d_tustin(rc_filter_t* f,double dt,rc_vector_t num,rc_vector_t de
 {
 	int i,j,m,n;
 	double a,c, A0;
-	rc_vector_t numZ	= rc_vector_empty();
-	rc_vector_t denZ	= rc_vector_empty();
-	rc_vector_t p1		= rc_vector_empty();
-	rc_vector_t p2		= rc_vector_empty();
-	rc_vector_t temp	= rc_vector_empty();
-	rc_vector_t v1		= rc_vector_empty();
-	rc_vector_t v2		= rc_vector_empty();
+	rc_vector_t numZ	= RC_VECTOR_INITIALIZER;
+	rc_vector_t denZ	= RC_VECTOR_INITIALIZER;
+	rc_vector_t p1		= RC_VECTOR_INITIALIZER;
+	rc_vector_t p2		= RC_VECTOR_INITIALIZER;
+	rc_vector_t temp	= RC_VECTOR_INITIALIZER;
+	rc_vector_t v1		= RC_VECTOR_INITIALIZER;
+	rc_vector_t v2		= RC_VECTOR_INITIALIZER;
 	// sanity checks
 	if(unlikely(!num.initialized||!den.initialized)){
 		fprintf(stderr,"ERROR in rc_filter_c2d_tustin, vector uninitialized\n");
@@ -626,8 +610,8 @@ int rc_filter_first_order_highpass(rc_filter_t* f, double dt, double time_consta
 
 int rc_filter_butterworth_lowpass(rc_filter_t* f, int order, double dt, double wc)
 {
-	rc_vector_t num = rc_vector_empty();
-	rc_vector_t den = rc_vector_empty();
+	rc_vector_t num = RC_VECTOR_INITIALIZER;
+	rc_vector_t den = RC_VECTOR_INITIALIZER;
 	if(unlikely(order<1)){
 		fprintf(stderr, "ERROR in rc_filter_butterworth_lowpass, order must be >=1\n");
 		return -1;
@@ -652,8 +636,8 @@ int rc_filter_butterworth_lowpass(rc_filter_t* f, int order, double dt, double w
 
 int rc_filter_butterworth_highpass(rc_filter_t* f, int order, double dt, double wc)
 {
-	rc_vector_t num = rc_vector_empty();
-	rc_vector_t den = rc_vector_empty();
+	rc_vector_t num = RC_VECTOR_INITIALIZER;
+	rc_vector_t den = RC_VECTOR_INITIALIZER;
 	if(unlikely(order<1)){
 		fprintf(stderr, "ERROR in rc_filter_butterworth_highpass, order must be >=1\n");
 		return -1;
@@ -681,8 +665,8 @@ int rc_filter_butterworth_highpass(rc_filter_t* f, int order, double dt, double 
 int rc_filter_moving_average(rc_filter_t* f, int samples, double dt)
 {
 	int i;
-	rc_vector_t num = rc_vector_empty();
-	rc_vector_t den = rc_vector_empty();
+	rc_vector_t num = RC_VECTOR_INITIALIZER;
+	rc_vector_t den = RC_VECTOR_INITIALIZER;
 	// sanity checks
 	if(unlikely(samples<2)){
 		fprintf(stderr,"ERROR in rc_filter_moving_average, samples must be >=2\n");
@@ -716,8 +700,8 @@ int rc_filter_moving_average(rc_filter_t* f, int samples, double dt)
 
 int rc_filter_integrator(rc_filter_t *f, double dt)
 {
-	rc_vector_t num = rc_vector_empty();
-	rc_vector_t den = rc_vector_empty();
+	rc_vector_t num = RC_VECTOR_INITIALIZER;
+	rc_vector_t den = RC_VECTOR_INITIALIZER;
 	// sanity checks
 	if(unlikely(dt<=0.0)){
 		fprintf(stderr, "ERROR in rc_filter_integrator, dt must be >0\n");
@@ -743,8 +727,8 @@ int rc_filter_integrator(rc_filter_t *f, double dt)
 
 int rc_filter_double_integrator(rc_filter_t* f, double dt)
 {
-	rc_vector_t num = rc_vector_empty();
-	rc_vector_t den = rc_vector_empty();
+	rc_vector_t num = RC_VECTOR_INITIALIZER;
+	rc_vector_t den = RC_VECTOR_INITIALIZER;
 	// sanity checks
 	if(unlikely(dt<=0.0)){
 		fprintf(stderr, "ERROR in rc_filter_double_integrator, dt must be >0\n");
@@ -770,8 +754,8 @@ int rc_filter_double_integrator(rc_filter_t* f, double dt)
 
 int rc_filter_pid(rc_filter_t* f,double kp,double ki,double kd,double Tf,double dt)
 {
-	rc_vector_t num = rc_vector_empty();
-	rc_vector_t den = rc_vector_empty();
+	rc_vector_t num = RC_VECTOR_INITIALIZER;
+	rc_vector_t den = RC_VECTOR_INITIALIZER;
 	// sanity checks
 	if(unlikely(dt<0.0)){
 		fprintf(stderr,"ERROR in rc_filter_pid, dt must be >0\n");
@@ -817,9 +801,9 @@ int rc_filter_third_order_complement(rc_filter_t* lp, rc_filter_t* hp, double fr
 {
 	int i;
 	double a,b,c,t;
-	rc_vector_t den = rc_vector_empty();
-	rc_vector_t numlp = rc_vector_empty();
-	rc_vector_t numhp = rc_vector_empty();
+	rc_vector_t den = RC_VECTOR_INITIALIZER;
+	rc_vector_t numlp = RC_VECTOR_INITIALIZER;
+	rc_vector_t numhp = RC_VECTOR_INITIALIZER;
 
 	// sanity checks
 	if(unlikely(freq<=0.0)){

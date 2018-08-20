@@ -45,11 +45,17 @@ typedef struct rc_vector_t{
 } rc_vector_t;
 
 
+#define RC_VECTOR_INITIALIZER {\
+	.len = 0,\
+	.d = NULL,\
+	.initialized = 0}
+
+
 /**
  * @brief      Returns an rc_vector_t with no allocated memory and the
  * initialized flag set to 0.
  *
- * This is esssential for initializing vectors when they are declared since
+ * This is essential for initializing vectors when they are declared since
  * local variables declared in a function without global variable scope in C are
  * not guaranteed to be zeroed out which can lead to bad memory pointers and
  * segfaults if not handled carefully. We recommend initializing all vectors

@@ -13,10 +13,10 @@
 #include <rc/encoder_eqep.h>
 #include <rc/time.h>
 
-int running;
+static int running = 0;
 
 // interrupt handler to catch ctrl-c
-void signal_handler(__attribute__ ((unused)) int dummy)
+static void __signal_handler(__attribute__ ((unused)) int dummy)
 {
 	running=0;
 	return;
@@ -33,7 +33,7 @@ int main()
 	}
 
 	// set signal handler so the loop can exit cleanly
-	signal(SIGINT, signal_handler);
+	signal(SIGINT, __signal_handler);
 	running=1;
 
 	printf("\nRaw encoder positions\n");

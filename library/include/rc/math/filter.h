@@ -79,6 +79,25 @@ typedef struct rc_filter_t{
 	///@}
 } rc_filter_t;
 
+#define RC_FILTER_INITIALIZER {\
+	.order		= 0,\
+	.dt		= 0.0,\
+	.gain		= 1.0,\
+	.num		= RC_VECTOR_INITIALIZER,\
+	.den		= RC_VECTOR_INITIALIZER,\
+	.sat_en		= 0,\
+	.sat_min	= 0.0,\
+	.sat_max	= 0.0,\
+	.sat_flag	= 0,\
+	.ss_en		= 0,\
+	.ss_steps	= 0,\
+	.in_buf		= RC_RINGBUF_INITIALIZER,\
+	.out_buf	= RC_RINGBUF_INITIALIZER,\
+	.newest_input	= 0.0,\
+	.newest_output	= 0.0,\
+	.step		= 0,\
+	.initialized	= 0}
+
 /**
  * @brief      Critical function for initializing rc_filter_t structs.
  *

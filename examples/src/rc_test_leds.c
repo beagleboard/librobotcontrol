@@ -14,7 +14,8 @@
 
 #define WAIT_US 500000 // time to light each LED in microseconds
 
-int main(){
+int main()
+{
 	rc_led_set(RC_LED_GREEN,1);
 	rc_usleep(WAIT_US);
 	rc_led_set(RC_LED_GREEN,0);

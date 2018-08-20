@@ -67,30 +67,33 @@ typedef enum m_input_mode_t{
 } m_input_mode_t;
 
 
-void balance_controller();		///< mpu interrupt routine
-void* setpoint_manager(void* ptr);	///< background thread
-void* battery_checker(void* ptr);	///< background thread
-void* printf_loop(void* ptr);		///< background thread
-int zero_out_controller();
-int disarm_controller();
-int arm_controller();
-int wait_for_starting_condition();
-void on_pause_press();
-void on_mode_release();
-int blink_green();
-int blink_red();
+static void __print_usage(void);
+static void __balance_controller(void);		///< mpu interrupt routine
+static void* __setpoint_manager(void* ptr);	///< background thread
+static void* __battery_checker(void* ptr);	///< background thread
+static void* __printf_loop(void* ptr);		///< background thread
+static int __zero_out_controller(void);
+static int __disarm_controller(void);
+static int __arm_controller(void);
+static int __wait_for_starting_condition(void);
+static void __on_pause_press(void);
+static void __on_mode_release(void);
+
 
 // global variables
 core_state_t cstate;
 setpoint_t setpoint;
-rc_filter_t D1, D2, D3;
+rc_filter_t D1 = RC_FILTER_INITIALIZER;
+rc_filter_t D2 = RC_FILTER_INITIALIZER;
+rc_filter_t D3 = RC_FILTER_INITIALIZER;
 rc_mpu_data_t mpu_data;
 m_input_mode_t m_input_mode = DSM;
 
 /*
  * printed if some invalid argument was given
  */
-void print_usage(){
+static void __print_usage(void)
+{
 	printf("\n");
 	printf("-i {dsm|stdin|none}     specify input\n");
 	printf("-h                      print this help message\n");
@@ -121,16 +124,16 @@ int main(int argc, char *argv[])
 			} else if(!strcmp("none", optarg)){
 				m_input_mode = NONE;
 			} else {
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			break;
 		case 'h':
-			print_usage();
+			__print_usage();
 			return -1;
 			break;
 		default:
-			print_usage();
+			__print_usage();
 			return -1;
 			break;
 		}
@@ -162,8 +165,8 @@ int main(int argc, char *argv[])
 	}
 
 	// Assign functions to be called when button events occur
-	rc_button_set_callbacks(RC_BTN_PIN_PAUSE,on_pause_press,NULL);
-	rc_button_set_callbacks(RC_BTN_PIN_MODE,NULL,on_mode_release);
+	rc_button_set_callbacks(RC_BTN_PIN_PAUSE,__on_pause_press,NULL);
+	rc_button_set_callbacks(RC_BTN_PIN_MODE,NULL,__on_mode_release);
 
 	// initialize enocders
 	if(rc_encoder_eqep_init()==-1){
@@ -226,10 +229,6 @@ int main(int argc, char *argv[])
 	setpoint.arm_state = DISARMED;
 	setpoint.drive_mode = NOVICE;
 
-	D1=rc_filter_empty();
-	D2=rc_filter_empty();
-	D3=rc_filter_empty();
-
 	// set up D1 Theta controller
 	double D1_num[] = D1_NUM;
 	double D1_den[] = D1_DEN;
@@ -265,7 +264,7 @@ int main(int argc, char *argv[])
 	rc_filter_enable_saturation(&D3, -STEERING_INPUT_MAX, STEERING_INPUT_MAX);
 
 	// start a thread to slowly sample battery
-	if(rc_pthread_create(&battery_thread, battery_checker, (void*) NULL, SCHED_OTHER, 0)){
+	if(rc_pthread_create(&battery_thread, __battery_checker, (void*) NULL, SCHED_OTHER, 0)){
 		fprintf(stderr, "failed to start battery thread\n");
 		return -1;
 	}
@@ -275,7 +274,7 @@ int main(int argc, char *argv[])
 	// start printf_thread if running from a terminal
 	// if it was started as a background process then don't bother
 	if(isatty(fileno(stdout))){
-		if(rc_pthread_create(&printf_thread, printf_loop, (void*) NULL, SCHED_OTHER, 0)){
+		if(rc_pthread_create(&printf_thread, __printf_loop, (void*) NULL, SCHED_OTHER, 0)){
 			fprintf(stderr, "failed to start battery thread\n");
 			return -1;
 		}
@@ -289,14 +288,14 @@ int main(int argc, char *argv[])
 	}
 
 	// start balance stack to control setpoints
-	if(rc_pthread_create(&setpoint_thread, setpoint_manager, (void*) NULL, SCHED_OTHER, 0)){
+	if(rc_pthread_create(&setpoint_thread, __setpoint_manager, (void*) NULL, SCHED_OTHER, 0)){
 		fprintf(stderr, "failed to start battery thread\n");
 		return -1;
 	}
 
 	// this should be the last step in initialization
 	// to make sure other setup functions don't interfere
-	rc_mpu_set_dmp_callback(&balance_controller);
+	rc_mpu_set_dmp_callback(&__balance_controller);
 
 	// start in the RUNNING state, pressing the pause button will swap to
 	// the PAUSED state then back again.
@@ -337,14 +336,14 @@ int main(int argc, char *argv[])
  *
  * @return     { description_of_the_return_value }
  */
-void* setpoint_manager(__attribute__ ((unused)) void* ptr)
+void* __setpoint_manager(__attribute__ ((unused)) void* ptr)
 {
 	double drive_stick, turn_stick; // input sticks
 	int i, ch, chan, stdin_timeout = 0; // for stdin input
 	char in_str[11];
 
 	// wait for mpu to settle
-	disarm_controller();
+	__disarm_controller();
 	rc_usleep(2500000);
 	rc_set_state(RUNNING);
 	rc_led_set(RC_LED_RED,0);
@@ -364,9 +363,9 @@ void* setpoint_manager(__attribute__ ((unused)) void* ptr)
 		// necessarily armed. If DISARMED, wait for the user to pick MIP up
 		// which will we detected by wait_for_starting_condition()
 		if(setpoint.arm_state == DISARMED){
-			if(wait_for_starting_condition()==0){
-				zero_out_controller();
-				arm_controller();
+			if(__wait_for_starting_condition()==0){
+				__zero_out_controller();
+				__arm_controller();
 			}
 			else continue;
 		}
@@ -457,7 +456,7 @@ void* setpoint_manager(__attribute__ ((unused)) void* ptr)
 	}
 
 	// if state becomes EXITING the above loop exists and we disarm here
-	disarm_controller();
+	__disarm_controller();
 	return NULL;
 }
 
@@ -465,7 +464,7 @@ void* setpoint_manager(__attribute__ ((unused)) void* ptr)
  * discrete-time balance controller operated off mpu interrupt Called at
  * SAMPLE_RATE_HZ
  */
-void balance_controller()
+static void __balance_controller(void)
 {
 	static int inner_saturation_counter = 0;
 	double dutyL, dutyR;
@@ -499,7 +498,7 @@ void balance_controller()
 	}
 	// if controller is still ARMED while state is PAUSED, disarm it
 	if(rc_get_state()!=RUNNING && setpoint.arm_state==ARMED){
-		disarm_controller();
+		__disarm_controller();
 		return;
 	}
 	// exit if the controller is disarmed
@@ -509,7 +508,7 @@ void balance_controller()
 
 	// check for a tipover
 	if(fabs(cstate.theta) > TIP_ANGLE){
-		disarm_controller();
+		__disarm_controller();
 		printf("tip detected \n");
 		return;
 	}
@@ -540,10 +539,10 @@ void balance_controller()
 	*************************************************************/
 	if(fabs(cstate.d1_u)>0.95) inner_saturation_counter++;
 	else inner_saturation_counter = 0;
- 	// if saturate for a second, disarm for safety
+	// if saturate for a second, disarm for safety
 	if(inner_saturation_counter > (SAMPLE_RATE_HZ*D1_SATURATION_TIMEOUT)){
 		printf("inner loop controller saturated\n");
-		disarm_controller();
+		__disarm_controller();
 		inner_saturation_counter = 0;
 		return;
 	}
@@ -573,7 +572,7 @@ void balance_controller()
  *
  * @return     { description_of_the_return_value }
  */
-int zero_out_controller()
+static int __zero_out_controller(void)
 {
 	rc_filter_reset(&D1);
 	rc_filter_reset(&D2);
@@ -590,7 +589,7 @@ int zero_out_controller()
  *
  * @return     { description_of_the_return_value }
  */
-int disarm_controller()
+static int __disarm_controller(void)
 {
 	rc_motor_standby(1);
 	rc_motor_free_spin(0);
@@ -603,9 +602,9 @@ int disarm_controller()
  *
  * @return     0 on success, -1 on failure
  */
-int arm_controller()
+static int __arm_controller(void)
 {
-	zero_out_controller();
+	__zero_out_controller();
 	rc_encoder_eqep_write(ENCODER_CHANNEL_L,0);
 	rc_encoder_eqep_write(ENCODER_CHANNEL_R,0);
 	// prefill_filter_inputs(&D1,cstate.theta);
@@ -620,7 +619,7 @@ int arm_controller()
  * @return     0 if successful, -1 if the wait process was interrupted by pause
  *             button or shutdown signal.
  */
-int wait_for_starting_condition()
+static int __wait_for_starting_condition(void)
 {
 	int checks = 0;
 	const int check_hz = 20;	// check 20 times per second
@@ -659,7 +658,8 @@ int wait_for_starting_condition()
  *
  * @return     nothing, NULL poitner
  */
-void* battery_checker(__attribute__ ((unused)) void* ptr){
+static void* __battery_checker(__attribute__ ((unused)) void* ptr)
+{
 	double new_v;
 	while(rc_get_state()!=EXITING){
 		new_v = rc_adc_batt();
@@ -677,7 +677,8 @@ void* battery_checker(__attribute__ ((unused)) void* ptr){
  *
  * @return     nothing, NULL pointer
  */
-void* printf_loop(__attribute__ ((unused)) void* ptr){
+static void* __printf_loop(__attribute__ ((unused)) void* ptr)
+{
 	rc_state_t last_rc_state, new_rc_state; // keep track of last state
 	last_rc_state = rc_get_state();
 	while(rc_get_state()!=EXITING){
@@ -726,7 +727,7 @@ void* printf_loop(__attribute__ ((unused)) void* ptr){
  * Disarm the controller and set system state to paused. If the user holds the
  * pause button for 2 seconds, exit cleanly
  */
-void on_pause_press()
+static void __on_pause_press(void)
 {
 	int i=0;
 	const int samples = 100;	// check for release 100 times in this period
@@ -738,13 +739,13 @@ void on_pause_press()
 		return;
 	case RUNNING:
 		rc_set_state(PAUSED);
-		disarm_controller();
+		__disarm_controller();
 		rc_led_set(RC_LED_RED,1);
 		rc_led_set(RC_LED_GREEN,0);
 		break;
 	case PAUSED:
 		rc_set_state(RUNNING);
-		disarm_controller();
+		__disarm_controller();
 		rc_led_set(RC_LED_GREEN,1);
 		rc_led_set(RC_LED_RED,0);
 		break;
@@ -770,7 +771,7 @@ void on_pause_press()
 /**
  * toggle between position and angle modes if MiP is paused
  */
-void on_mode_release()
+static void __on_mode_release(void)
 {
 	// toggle between position and angle modes
 	if(setpoint.drive_mode == NOVICE){

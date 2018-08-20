@@ -53,7 +53,7 @@ typedef enum test_mode_t{
 }test_mode_t;
 
 
-void print_usage()
+static void __print_usage(void)
 {
 	printf("\n");
 	printf(" Options\n");
@@ -71,7 +71,7 @@ void print_usage()
 }
 
 // interrupt handler to catch ctrl-c
-void signal_handler(__attribute__ ((unused)) int dummy)
+static void __signal_handler(__attribute__ ((unused)) int dummy)
 {
 	running=0;
 	return;
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 		case 'p':
 			// make sure only one mode in requested
 			if(mode!=DISABLED){
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			servo_pos = atof(optarg);
@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
 		case 'w':
 			// make sure only one mode in requested
 			if(mode!=DISABLED){
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			width_us = atof(optarg);
@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
 		case 's':
 			// make sure only one mode in requested
 			if(mode!=DISABLED){
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			sweep_limit = atof(optarg);
@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
 		case 'r':
 			// make sure only one mode in requested
 			if(mode!=DISABLED){
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			radio_ch = atoi(optarg);
@@ -174,12 +174,12 @@ int main(int argc, char *argv[])
 
 		// help mode
 		case 'h':
-			print_usage();
+			__print_usage();
 			return 0;
 
 		default:
 			printf("\nInvalid Argument \n");
-			print_usage();
+			__print_usage();
 			return -1;
 		}
 	}
@@ -187,12 +187,12 @@ int main(int argc, char *argv[])
 	// if the user didn't give enough arguments, exit
 	if(mode==DISABLED){
 		fprintf(stderr,"\nNot enough input arguments\n");
-		print_usage();
+		__print_usage();
 		return -1;
 	}
 
 	// set signal handler so the loop can exit cleanly
-	signal(SIGINT, signal_handler);
+	signal(SIGINT, __signal_handler);
 	running=1;
 
 	// read adc to make sure battery is connected

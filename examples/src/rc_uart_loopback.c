@@ -18,7 +18,7 @@
 #define TIMEOUT_S	0.5
 #define BAUDRATE	115200
 
-void print_usage()
+static void __print_usage(void)
 {
 	printf("\n");
 	printf("Usage: rc_uart_loopback {bus}\n");
@@ -39,13 +39,13 @@ int main(int argc, char *argv[])
 
 	// Parse arguments
 	if(argc!=2){ //argc==2 actually means one argument given
-		print_usage();
+		__print_usage();
 		return -1;
 	}
 	else bus = atoi(argv[1]);
 
 	if(!(bus==0||bus==1||bus==2||bus==5)){
-		print_usage();
+		__print_usage();
 		return -1;
 	}
 

@@ -25,29 +25,29 @@
 #define GPIO_INT_PIN_PIN  21
 
 // Global Variables
-int running;
-int silent_mode = 0;
-int show_accel = 0;
-int show_gyro  = 0;
-int enable_mag = 0;
-int show_compass = 0;
-int show_temp  = 0;
-int show_quat  = 0;
-int show_tb = 0;
-int orientation_menu = 0;
-rc_mpu_data_t data;
+static int running = 0;
+static int silent_mode = 0;
+static int show_accel = 0;
+static int show_gyro  = 0;
+static int enable_mag = 0;
+static int show_compass = 0;
+static int show_temp  = 0;
+static int show_quat  = 0;
+static int show_tb = 0;
+static int orientation_menu = 0;
+static rc_mpu_data_t data;
 
 // local functions
-rc_mpu_orientation_t orientation_prompt();
-void print_usage();
-void print_data();
-void print_header();
+static rc_mpu_orientation_t __orientation_prompt(void);
+static void __print_usage(void);
+static void __print_data(void);
+static void __print_header(void);
 
 
 /**
  * Printed if some invalid argument was given, or -h option given.
  */
-void print_usage()
+static void __print_usage(void)
 {
 	printf("\n Options\n");
 	printf("-r {rate}	Set sample rate in HZ (default 100)\n");
@@ -71,7 +71,7 @@ void print_usage()
 /**
  * This is the IMU interrupt function.
  */
-void print_data()
+static void __print_data(void)
 {
 	printf("\r");
 	printf(" ");
@@ -128,7 +128,8 @@ void print_data()
  * Based on which data is marked to be printed, print the correct labels. this
  * is printed only once and the actual data is updated on the next line.
  */
-void print_header(){
+static void __print_header(void)
+{
 	printf(" ");
 	if(show_compass){
 		printf("Raw Compass |");
@@ -151,7 +152,7 @@ void print_header(){
 /**
  * @brief      interrupt handler to catch ctrl-c
  */
-void signal_handler(__attribute__ ((unused)) int dummy)
+static void __signal_handler(__attribute__ ((unused)) int dummy)
 {
 	running=0;
 	return;
@@ -165,7 +166,7 @@ void signal_handler(__attribute__ ((unused)) int dummy)
  *
  * @return     the orientation enum chosen by user
  */
-rc_mpu_orientation_t orientation_prompt(){
+rc_mpu_orientation_t __orientation_prompt(){
 	int c;
 
 	printf("\n");
@@ -305,29 +306,29 @@ int main(int argc, char *argv[])
 			orientation_menu=1;
 			break;
 		case 'h': // show help option
-			print_usage();
+			__print_usage();
 			return -1;
 			break;
 		default:
 			printf("opt: %c\n",c);
 			printf("invalid argument\n");
-			print_usage();
+			__print_usage();
 			return -1;
 			break;
 		}
 	}
 	// user didn't give an option to show anything. Print warning and return.
 	if(show_something==0){
-		print_usage();
+		__print_usage();
 		printf("please enable an option to print some data\n");
 		return -1;
 	}
 	// If the user gave the -o option to select an orientation then prompt them
 	if(orientation_menu){
-		conf.orient=orientation_prompt();
+		conf.orient=__orientation_prompt();
 	}
 	// set signal handler so the loop can exit cleanly
-	signal(SIGINT, signal_handler);
+	signal(SIGINT, __signal_handler);
 	running = 1;
 
 	// now set up the imu for dmp interrupt operation
@@ -337,8 +338,8 @@ int main(int argc, char *argv[])
 	}
 	// write labels for what data will be printed and associate the interrupt
 	// function to print data immediately after the header.
-	print_header();
-	if(!silent_mode) rc_mpu_set_dmp_callback(&print_data);
+	__print_header();
+	if(!silent_mode) rc_mpu_set_dmp_callback(&__print_data);
 	//now just wait, print_data() will be called by the interrupt
 	while(running)	rc_usleep(100000);
 

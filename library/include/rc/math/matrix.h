@@ -36,6 +36,11 @@ typedef struct rc_matrix_t{
 	int initialized;///< set to 1 once memory has been allocated
 } rc_matrix_t;
 
+#define RC_MATRIX_INITIALIZER {\
+	.rows = 0,\
+	.cols = 0,\
+	.d = NULL,\
+	.initialized = 0}
 
 /**
  * @brief      Returns an rc_matrix_t with no allocated memory and the

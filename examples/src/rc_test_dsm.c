@@ -25,11 +25,11 @@ typedef enum p_mode_t{
 	P_MODE_NORM
 } p_mode_t;
 
-int running;
-p_mode_t print_mode;
+static int running = 0;
+static p_mode_t print_mode;
 
 // printed if some invalid argument was given
-void print_usage()
+static void __print_usage(void)
 {
 	printf("\n");
 	printf("-r	print raw channel values in microseconds\n");
@@ -39,13 +39,13 @@ void print_usage()
 }
 
 // interrupt handler to catch ctrl-c
-void signal_handler(__attribute__ ((unused)) int dummy)
+static void __signal_handler(__attribute__ ((unused)) int dummy)
 {
 	running=0;
 	return;
 }
 
-void new_dsm_data_callback()
+static void __new_dsm_data_callback(void)
 {
 	int i;
 	printf("\r");// keep printing on same line
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 		case 'r':
 			if(print_mode!=P_MODE_NONE){
 				printf("\ntoo many arguments given\n");
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			print_mode = P_MODE_RAW;
@@ -88,25 +88,25 @@ int main(int argc, char *argv[])
 		case 'n':
 			if(print_mode!=P_MODE_NONE){
 				printf("\ntoo many arguments given\n");
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			print_mode = P_MODE_NORM;
 			break;
 			break;
 		case 'h':
-			print_usage();
+			__print_usage();
 			return 0;
 		default:
 			fprintf(stderr,"Invalid Argument\n");
-			print_usage();
+			__print_usage();
 			return -1;
 		}
 	}
 
 	if(print_mode==P_MODE_NONE){
 		fprintf(stderr, "Please select raw or normalized mode\n");
-		print_usage();
+		__print_usage();
 		return -1;
 	}
 
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 	printf("\n");
 
 	// set signal handler so the loop can exit cleanly
-	signal(SIGINT, signal_handler);
+	signal(SIGINT, __signal_handler);
 	running =1;
 
 	printf("Waiting for first packet");
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 	}
 
 	// first packet arrived, set the callback and run
-	rc_dsm_set_callback(new_dsm_data_callback);
+	rc_dsm_set_callback(__new_dsm_data_callback);
 
 	// main loop monitor if connection is active or now
 	while(running){

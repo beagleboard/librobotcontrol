@@ -38,6 +38,12 @@ typedef struct rc_ringbuf_t {
 	int initialized;///< flag indicating if memory has been allocated for the buffer
 } rc_ringbuf_t;
 
+#define RC_RINGBUF_INITIALIZER {\
+	.d = NULL,\
+	.size = 0,\
+	.index = 0,\
+	.initialized = 0}
+
 /**
  * @brief      Returns an rc_ringbuf_t struct which is completely zero'd out
  * with no memory allocated for it.

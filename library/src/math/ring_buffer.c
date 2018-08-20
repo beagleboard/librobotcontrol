@@ -29,12 +29,7 @@
 
 rc_ringbuf_t rc_ringbuf_empty(void)
 {
-	rc_ringbuf_t out;
-	// zero-out piecemeal instead of with memset to avoid issues with padding
-	out.d=NULL;
-	out.size=0;
-	out.index=0;
-	out.initialized=0;
+	rc_ringbuf_t out = RC_RINGBUF_INITIALIZER;
 	return out;
 }
 
@@ -72,12 +67,13 @@ int rc_ringbuf_alloc(rc_ringbuf_t* buf, int size)
 
 int rc_ringbuf_free(rc_ringbuf_t* buf)
 {
+	rc_ringbuf_t new = RC_RINGBUF_INITIALIZER;
 	if(unlikely(buf==NULL)){
 		fprintf(stderr, "ERROR in rc_ringbuf_free, received NULL pointer\n");
 		return -1;
 	}
 	if(buf->initialized) free(buf->d);
-	*buf=rc_ringbuf_empty();
+	*buf = new;
 	return 0;
 }
 

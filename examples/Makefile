@@ -17,7 +17,9 @@ CC		:= gcc
 LINKER		:= gcc
 
 # compile flags
-WFLAGS		:= -Wall -Wextra -Werror=float-equal -Wuninitialized -Wunused-variable -Wdouble-promotion
+WFLAGS		:= -Wall -Wextra -Werror=float-equal -Wuninitialized \
+	-Wunused-variable -Wdouble-promotion -pedantic -Wmissing-prototypes \
+	-Wmissing-declarations -Werror=undef
 CFLAGS		:= -g -pthread -I $(INCLUDEDIR)
 LDFLAGS		:= -lm -lrt -pthread -L $(LIBDIR) -l:librobotcontrol.so.1
 

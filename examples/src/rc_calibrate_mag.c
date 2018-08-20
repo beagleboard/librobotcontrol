@@ -22,7 +22,6 @@
 
 int main()
 {
-
 	printf("\n");
 	printf("This will sample the magnetometer for the next 15 seconds\n");
 	printf("Rotate the board around in the air through as many orientations\n");

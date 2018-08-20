@@ -26,11 +26,11 @@
 #include <rc/pthread.h>
 
 
-int running = 1;
-pthread_t thread;
-int thread_ret_val;
+static int running = 1;
+static pthread_t thread;
+static int thread_ret_val;
 
-void* thread_func(void* arg)
+static void* __thread_func(void* arg)
 {
 	int received_argument = *(int*)arg;
 	printf("thread received argument value: %d\n",received_argument);
@@ -47,13 +47,13 @@ void* thread_func(void* arg)
 }
 
 // interrupt handler to catch ctrl-c
-void signal_handler(__attribute__ ((unused)) int dummy)
+static void __signal_handler(__attribute__ ((unused)) int dummy)
 {
 	running=0;
 	return;
 }
 
-void print_usage()
+static void __print_usage(void)
 {
 	fprintf(stderr, "Usage:\n");
 
@@ -68,9 +68,11 @@ void print_usage()
 	fpe("\n");
 	fpe("For example, to run with SCHED_FIFO at priority 50 run:\n");
 	fpe(" rc_test_pthread -p f50\n")
+	#undef fpe
+	return;
 }
 
-int get_policy(char p, int *policy)
+static int __get_policy(char p, int *policy)
 {
 	switch (p) {
 	case 'f': *policy = SCHED_FIFO;     return 0;
@@ -103,11 +105,11 @@ int main(int argc, char *argv[])
 			use_default = 1;
 			break;
 		case 'h':
-			print_usage();
+			__print_usage();
 			break;
 		default:
 			fprintf(stderr,"invalid option\n");
-			print_usage();
+			__print_usage();
 			return -1;
 		}
 	}
@@ -118,23 +120,23 @@ int main(int argc, char *argv[])
 	}
 	if(!use_custom && !use_default){
 		fprintf(stderr, "one argument must be given\n");
-		print_usage();
+		__print_usage();
 		return -1;
 	}
 	if(use_custom){
-		if(get_policy(attr_sched_str[0], &policy)){
-			print_usage();
+		if(__get_policy(attr_sched_str[0], &policy)){
+			__print_usage();
 			return -1;
 		}
 		priority = strtol(&attr_sched_str[1], NULL, 0);
 	}
 
 	// set signal handler so the loop can exit cleanly
-	signal(SIGINT, signal_handler);
+	signal(SIGINT, __signal_handler);
 
 	// start thread
 	printf("starting thread with argument: %d\n",arg);
-	if(rc_pthread_create(&thread, thread_func, (void*)&arg, policy, priority)){
+	if(rc_pthread_create(&thread, __thread_func, (void*)&arg, policy, priority)){
 		fprintf(stderr, "failed to start thread\n");
 		return -1;
 	}

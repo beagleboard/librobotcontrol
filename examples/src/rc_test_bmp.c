@@ -28,10 +28,10 @@
 #define BMP_CHECK_HZ	25
 #define	DT		1.0f/BMP_CHECK_HZ
 
-int running;
+static int running = 0;
 
 // interrupt handler to catch ctrl-c
-void signal_handler(__attribute__ ((unused)) int dummy)
+static void signal_handler(__attribute__ ((unused)) int dummy)
 {
 	running=0;
 	return;
@@ -41,7 +41,7 @@ int main()
 {
 	rc_bmp_data_t data;
 	double filtered_alt;
-	rc_filter_t lowpass = rc_filter_empty();
+	rc_filter_t lowpass = RC_FILTER_INITIALIZER;
 
 	// set signal handler so the loop can exit cleanly
 	signal(SIGINT, signal_handler);

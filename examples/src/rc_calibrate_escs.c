@@ -20,12 +20,12 @@
 #include <rc/pthread.h>
 #include <rc/time.h>
 
-int running;
-float width; // global variable for normalized pulse width to send
+static int running;
+static float width; // global variable for normalized pulse width to send
 
 
 // background thread to send pulses at 50hz to ESCs
-void *send_pulses(__attribute__ ((unused)) void *params)
+static void* __send_pulses(__attribute__ ((unused)) void *params)
 {
 	while(running){
 		rc_servo_send_esc_pulse_normalized(0, width);
@@ -49,7 +49,7 @@ int main()
 	//Send full throttle until the user hits enter
 	width = 1;
 	running = 1;
-	if(rc_pthread_create(&send_pulse_thread, send_pulses, (void*) NULL, SCHED_OTHER,0)==-1){
+	if(rc_pthread_create(&send_pulse_thread, __send_pulses, (void*) NULL, SCHED_OTHER,0)==-1){
 		return -1;
 	}
 	printf("\n");

@@ -23,10 +23,10 @@
 #define TIME_CONSTANT	2.0
 #define DAMP		1.0
 
-int running;
+static int running = 0;
 
 // interrupt handler to catch ctrl-c
-void signal_handler(__attribute__ ((unused)) int dummy)
+static void signal_handler(__attribute__ ((unused)) int dummy)
 {
 	running=0;
 	return;
@@ -34,10 +34,10 @@ void signal_handler(__attribute__ ((unused)) int dummy)
 
 int main()
 {
-	rc_filter_t lp_first = rc_filter_empty();
-	rc_filter_t hp_first = rc_filter_empty();
-	rc_filter_t lp_third = rc_filter_empty();
-	rc_filter_t hp_third = rc_filter_empty();
+	rc_filter_t lp_first = RC_FILTER_INITIALIZER;
+	rc_filter_t hp_first = RC_FILTER_INITIALIZER;
+	rc_filter_t lp_third = RC_FILTER_INITIALIZER;
+	rc_filter_t hp_third = RC_FILTER_INITIALIZER;
 
 	const double dt = 1.0/SAMPLE_RATE;
 	double lpf,hpf,lpt,hpt,u;
@@ -110,5 +110,9 @@ int main()
 	}
 
 	printf("\n");
+	rc_filter_free(&lp_first);
+	rc_filter_free(&hp_first);
+	rc_filter_free(&lp_third);
+	rc_filter_free(&hp_third);
 	return 0;
 }

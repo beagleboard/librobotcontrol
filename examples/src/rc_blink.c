@@ -24,15 +24,15 @@
 #define QUIT_CHECK_US	100000	// check every 1/10 second
 
 // mode=0,1,2 corresponds to us_delay index for slow,medium,fast
-const int us_delay[] = {400000, 170000, 100000};
-int mode;
-int toggle; // toggles between 0&1 for led blink
+static const int us_delay[] = {400000, 170000, 100000};
+static int mode;
+static int toggle; // toggles between 0&1 for led blink
 
 
 /**
  * Make the Pause button toggle between paused and running states.
  */
-void on_pause_release()
+static void __on_pause_release(void)
 {
 	// toggle betewen paused and running modes
 	if(rc_get_state()==RUNNING){
@@ -51,7 +51,7 @@ void on_pause_release()
 * If the user holds the pause button for 2 seconds, set state to exiting which
 * triggers the rest of the program to exit cleanly.
 */
-void on_pause_press()
+static void __on_pause_press(void)
 {
 	int i=0;
 	const int samples = QUIT_TIMEOUT_US/QUIT_CHECK_US;
@@ -72,7 +72,7 @@ void on_pause_press()
  * If the user holds the pause button for 2 seconds, set state to exiting which
  * triggers the rest of the program to exit cleanly.
  */
-void on_mode_release()
+static void __on_mode_release(void)
 {
 	if(mode<2)	mode++;
 	else		mode=0;
@@ -112,8 +112,8 @@ int main()
 	}
 
 	// Assign functions to be called when button events occur
-	rc_button_set_callbacks(RC_BTN_PIN_PAUSE,on_pause_press,on_pause_release);
-	rc_button_set_callbacks(RC_BTN_PIN_MODE,NULL,on_mode_release);
+	rc_button_set_callbacks(RC_BTN_PIN_PAUSE, __on_pause_press, __on_pause_release);
+	rc_button_set_callbacks(RC_BTN_PIN_MODE, NULL, __on_mode_release);
 
 	// start with both LEDs off
 	if(rc_led_set(RC_LED_GREEN, 0)==-1){

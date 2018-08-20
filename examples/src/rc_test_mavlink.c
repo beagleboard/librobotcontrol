@@ -30,19 +30,19 @@
 #define LOCALHOST_IP	"127.0.0.1"
 #define DEFAULT_SYS_ID	1
 
-const char* dest_ip;
-uint8_t my_sys_id;
-uint16_t port;
-int running;
+static const char* dest_ip;
+static uint8_t my_sys_id;
+static uint16_t port;
+static int running = 0;
 
 
-void print_usage()
+static void __print_usage(void)
 {
 	fprintf(stderr,"usage: rc_test_mavlink [-h] [-a dest_ip_addr] [-p port] [-s sys_id]\n");
 	return;
 }
 
-int parse_args(int argc, char * argv[])
+static int __parse_args(int argc, char * argv[])
 {
 	int c,tmp;
 	opterr = 0;
@@ -51,7 +51,7 @@ int parse_args(int argc, char * argv[])
 		switch (c)
 		{
 		case 'h':
-			print_usage();
+			__print_usage();
 			exit(0);
 			break;
 		case 'a':
@@ -87,17 +87,17 @@ int parse_args(int argc, char * argv[])
 				fprintf (stderr, "Unknown option `-%c'.\n", optopt);
 			else
 				fprintf (stderr,"Unknown option `\\x%x'.\n",optopt);
-			print_usage();
+			__print_usage();
 			exit(-1);
 		default:
-			print_usage();
+			__print_usage();
 			exit(-1);
 		}
 	return 0;
 }
 
 // called by the rc_mav lib whenever a packet is received
-void callback_func_any()
+static void __callback_func_any(void)
 {
 	int sysid = rc_mav_get_sys_id_of_last_msg_any();
 	int msg_id = rc_mav_msg_id_of_last_msg();
@@ -108,7 +108,7 @@ void callback_func_any()
 	return;
 }
 
-void callback_func_connection_lost()
+static void __callback_func_connection_lost(void)
 {
 	fprintf(stderr,"CONNECTION LOST\n");
 	return;
@@ -116,7 +116,7 @@ void callback_func_connection_lost()
 
 
 // interrupt handler to catch ctrl-c
-void signal_handler(__attribute__ ((unused)) int dummy)
+static void __signal_handler(__attribute__ ((unused)) int dummy)
 {
 	running=0;
 	return;
@@ -130,7 +130,7 @@ int main(int argc, char * argv[])
 	port=RC_MAV_DEFAULT_UDP_PORT;
 
 	// parse arguments
-	if(parse_args(argc,argv)){
+	if(__parse_args(argc,argv)){
 		fprintf(stderr,"failed to parse arguments\n");
 		return -1;
 	}
@@ -145,7 +145,7 @@ int main(int argc, char * argv[])
 	printf("\n");
 
 	// set signal handler so the loop can exit cleanly
-	signal(SIGINT, signal_handler);
+	signal(SIGINT, __signal_handler);
 
 	// initialize the UDP port and listening thread with the rc_mav lib
 	if(rc_mav_init(my_sys_id, dest_ip, port,RC_MAV_DEFAULT_CONNECTION_TIMEOUT_US)<0){
@@ -153,8 +153,8 @@ int main(int argc, char * argv[])
 	}
 
 	// set the heartbeat callback to print something when receiving
-	rc_mav_set_callback_all(callback_func_any);
-	rc_mav_set_callback_connection_lost(callback_func_connection_lost);
+	rc_mav_set_callback_all(__callback_func_any);
+	rc_mav_set_callback_connection_lost(__callback_func_connection_lost);
 	running=1;
 	while(running){
 		sleep(1);

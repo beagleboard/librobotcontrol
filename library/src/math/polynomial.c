@@ -69,7 +69,7 @@ int rc_poly_conv(rc_vector_t a, rc_vector_t b, rc_vector_t* c)
 int rc_poly_power(rc_vector_t a, int n, rc_vector_t* b)
 {
 	int i;
-	rc_vector_t tmp = rc_vector_empty();
+	rc_vector_t tmp = RC_VECTOR_INITIALIZER;
 	// sanity checks
 	if(unlikely(!a.initialized)){
 		fprintf(stderr,"ERROR in rc_poly_power, vector uninitialized\n");
@@ -141,7 +141,7 @@ int rc_poly_add(rc_vector_t a, rc_vector_t b, rc_vector_t* c)
 
 int rc_poly_add_inplace(rc_vector_t* a, rc_vector_t b)
 {
-	rc_vector_t tmp = rc_vector_empty();
+	rc_vector_t tmp = RC_VECTOR_INITIALIZER;
 	// sanity checks
 	if(unlikely(!a->initialized || !b.initialized)){
 		fprintf(stderr,"ERROR in rc_poly_add_in_place, vector uninitialized\n");
@@ -187,7 +187,7 @@ int rc_poly_subtract(rc_vector_t a, rc_vector_t b, rc_vector_t* c)
 
 int rc_poly_subtract_inplace(rc_vector_t* a, rc_vector_t b)
 {
-	rc_vector_t tmp = rc_vector_empty();
+	rc_vector_t tmp = RC_VECTOR_INITIALIZER;
 	// sanity checks
 	if(unlikely(!a->initialized || !b.initialized)){
 		fprintf(stderr,"ERROR in rc_poly_subtract_in_place, vector uninitialized\n");
@@ -205,8 +205,8 @@ int rc_poly_subtract_inplace(rc_vector_t* a, rc_vector_t b)
 
 int rc_poly_differentiate(rc_vector_t a, int d, rc_vector_t* b)
 {
-	rc_vector_t tmp = rc_vector_empty();
-	rc_vector_t tmp_r = rc_vector_empty();
+	rc_vector_t tmp = RC_VECTOR_INITIALIZER;
+	rc_vector_t tmp_r = RC_VECTOR_INITIALIZER;
 	int i, new_order;
 	// sanity checks
 	if(unlikely(!a.initialized)){
@@ -251,7 +251,7 @@ int rc_poly_differentiate(rc_vector_t a, int d, rc_vector_t* b)
 int rc_poly_divide(rc_vector_t n, rc_vector_t d, rc_vector_t* div, rc_vector_t* rem)
 {
 	int i, j, diff;
-	rc_vector_t tmp = rc_vector_empty();
+	rc_vector_t tmp = RC_VECTOR_INITIALIZER;
 	// sanity checks
 	if(unlikely(!n.initialized || !d.initialized)){
 		fprintf(stderr,"ERROR in rc_poly_divide, vector uninitialized\n");
@@ -299,9 +299,9 @@ int rc_poly_butter(int N, double wc, rc_vector_t* b)
 {
 	int i;
 	int ret=0;
-	rc_vector_t P2	= rc_vector_empty();
-	rc_vector_t P3	= rc_vector_empty();
-	rc_vector_t tmp	= rc_vector_empty();
+	rc_vector_t P2	= RC_VECTOR_INITIALIZER;
+	rc_vector_t P3	= RC_VECTOR_INITIALIZER;
+	rc_vector_t tmp	= RC_VECTOR_INITIALIZER;
 	// sanity checks
 	if(unlikely(N<1)){
 		fprintf(stderr,"ERROR in rc_poly_butter, order must be >1\n");

@@ -15,14 +15,13 @@
 int main()
 {
 	double det;
-	rc_matrix_t A = rc_matrix_empty();
-	rc_matrix_t A_dup = rc_matrix_empty();
-	rc_matrix_t B = rc_matrix_empty();
-	rc_matrix_t B_dup = rc_matrix_empty();
-	rc_matrix_t C = rc_matrix_empty();
-
-	rc_vector_t b = rc_vector_empty();
-	rc_vector_t y = rc_vector_empty();
+	rc_matrix_t A		= RC_MATRIX_INITIALIZER;
+	rc_matrix_t A_dup	= RC_MATRIX_INITIALIZER;
+	rc_matrix_t B		= RC_MATRIX_INITIALIZER;
+	rc_matrix_t B_dup	= RC_MATRIX_INITIALIZER;
+	rc_matrix_t C		= RC_MATRIX_INITIALIZER;
+	rc_vector_t b		= RC_VECTOR_INITIALIZER;
+	rc_vector_t y		= RC_VECTOR_INITIALIZER;
 
 	printf("Let's test some matrix functions....\n\n");
 

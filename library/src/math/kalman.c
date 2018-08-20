@@ -13,22 +13,7 @@
 
 rc_kalman_t rc_kalman_empty(void)
 {
-	rc_kalman_t kf;
-	// set struct to zeros
-	kf.F = rc_matrix_empty();
-	kf.G = rc_matrix_empty();
-	kf.H = rc_matrix_empty();
-
-	kf.Q = rc_matrix_empty();
-	kf.R = rc_matrix_empty();
-	kf.P = rc_matrix_empty();
-	kf.Pi = rc_matrix_empty();
-
-	kf.x_est = rc_vector_empty();
-	kf.x_pre = rc_vector_empty();
-
-	kf.initialized = 0;
-	kf.step = 0;
+	rc_kalman_t kf = RC_KALMAN_INITIALIZER;
 	return kf;
 }
 
@@ -129,6 +114,7 @@ int rc_kalman_alloc_ekf(rc_kalman_t* kf, rc_matrix_t Q, rc_matrix_t R, rc_matrix
 
 int rc_kalman_free(rc_kalman_t* kf)
 {
+	rc_kalman_t new = RC_KALMAN_INITIALIZER;
 	// sanity checks
 	if(kf==NULL){
 		fprintf(stderr, "ERROR in rc_kalman_free, received NULL pointer\n");
@@ -146,7 +132,7 @@ int rc_kalman_free(rc_kalman_t* kf)
 	rc_vector_free(&kf->x_est);
 	rc_vector_free(&kf->x_pre);
 
-	*kf = rc_kalman_empty();
+	*kf = new;
 	return 0;
 }
 
@@ -172,14 +158,14 @@ int rc_kalman_reset(rc_kalman_t* kf)
 
 int rc_kalman_update_lin(rc_kalman_t* kf, rc_vector_t u, rc_vector_t y)
 {
-	rc_matrix_t L = rc_matrix_empty();
-	rc_matrix_t newP = rc_matrix_empty();
-	rc_matrix_t S = rc_matrix_empty();
-	rc_matrix_t FT = rc_matrix_empty();
-	rc_vector_t h = rc_vector_empty();
-	rc_vector_t z = rc_vector_empty();
-	rc_vector_t tmp1 = rc_vector_empty();
-	rc_vector_t tmp2 = rc_vector_empty();
+	rc_matrix_t L = RC_MATRIX_INITIALIZER;
+	rc_matrix_t newP = RC_MATRIX_INITIALIZER;
+	rc_matrix_t S = RC_MATRIX_INITIALIZER;
+	rc_matrix_t FT = RC_MATRIX_INITIALIZER;
+	rc_vector_t h = RC_VECTOR_INITIALIZER;
+	rc_vector_t z = RC_VECTOR_INITIALIZER;
+	rc_vector_t tmp1 = RC_VECTOR_INITIALIZER;
+	rc_vector_t tmp2 = RC_VECTOR_INITIALIZER;
 
 	// sanity checks
 	if(unlikely(kf==NULL)){
@@ -263,13 +249,13 @@ int rc_kalman_update_lin(rc_kalman_t* kf, rc_vector_t u, rc_vector_t y)
 
 int rc_kalman_update_ekf(rc_kalman_t* kf, rc_matrix_t F, rc_matrix_t H, rc_vector_t x_pre, rc_vector_t y, rc_vector_t h)
 {
-	rc_matrix_t L = rc_matrix_empty();
-	rc_matrix_t newP = rc_matrix_empty();
-	rc_matrix_t S = rc_matrix_empty();
-	rc_matrix_t FT = rc_matrix_empty();
-	rc_vector_t z = rc_vector_empty();
-	rc_vector_t tmp1 = rc_vector_empty();
-	rc_vector_t tmp2 = rc_vector_empty();
+	rc_matrix_t L = RC_MATRIX_INITIALIZER;
+	rc_matrix_t newP = RC_MATRIX_INITIALIZER;
+	rc_matrix_t S = RC_MATRIX_INITIALIZER;
+	rc_matrix_t FT = RC_MATRIX_INITIALIZER;
+	rc_vector_t z = RC_VECTOR_INITIALIZER;
+	rc_vector_t tmp1 = RC_VECTOR_INITIALIZER;
+	rc_vector_t tmp2 = RC_VECTOR_INITIALIZER;
 
 	// sanity checks
 	if(unlikely(kf==NULL)){

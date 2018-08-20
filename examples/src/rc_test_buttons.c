@@ -11,34 +11,34 @@
 #include <rc/button.h>
 #include <rc/time.h>
 
-int running;
+static int running = 0;
 
-void on_pause_press()
+static void __on_pause_press(void)
 {
 	printf("Pause Pressed\n");
 	return;
 }
 
-void on_pause_release()
+static void __on_pause_release(void)
 {
 	printf("Pause Released\n");
 	return;
 }
 
-void on_mode_press()
+static void __on_mode_press(void)
 {
 	printf("Mode Pressed\n");
 	return;
 }
 
-void on_mode_release()
+static void __on_mode_release(void)
 {
 	printf("Mode Released\n");
 	return;
 }
 
 // interrupt handler to catch ctrl-c
-void signal_handler(__attribute__ ((unused)) int dummy)
+static void __signal_handler(__attribute__ ((unused)) int dummy)
 {
 	running=0;
 	return;
@@ -59,12 +59,12 @@ int main()
 	}
 
 	// set signal handler so the loop can exit cleanly
-	signal(SIGINT, signal_handler);
+	signal(SIGINT, __signal_handler);
 	running = 1;
 
 	// Assign callback functions
-	rc_button_set_callbacks(RC_BTN_PIN_PAUSE,on_pause_press,on_pause_release);
-	rc_button_set_callbacks(RC_BTN_PIN_MODE,on_mode_press,on_mode_release);
+	rc_button_set_callbacks(RC_BTN_PIN_PAUSE, __on_pause_press, __on_pause_release);
+	rc_button_set_callbacks(RC_BTN_PIN_MODE, __on_mode_press, __on_mode_release);
 
 
 	//toggle leds till the program state changes

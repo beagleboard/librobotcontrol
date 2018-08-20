@@ -108,6 +108,19 @@ typedef struct rc_kalman_t {
 	///@}
 } rc_kalman_t;
 
+#define RC_KALMAN_INITIALIZER {\
+	.F = RC_MATRIX_INITIALIZER,\
+	.G = RC_MATRIX_INITIALIZER,\
+	.H = RC_MATRIX_INITIALIZER,\
+	.Q = RC_MATRIX_INITIALIZER,\
+	.R = RC_MATRIX_INITIALIZER,\
+	.P = RC_MATRIX_INITIALIZER,\
+	.Pi = RC_MATRIX_INITIALIZER,\
+	.x_est = RC_VECTOR_INITIALIZER,\
+	.x_pre = RC_VECTOR_INITIALIZER,\
+	.initialized = 0,\
+	.step = 0}
+
 /**
  * @brief      Critical function for initializing rc_kalman_t structs
  *

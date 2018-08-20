@@ -15,12 +15,11 @@
 int main()
 {
 	int i;
-
-	rc_vector_t a = rc_vector_empty();
-	rc_vector_t b = rc_vector_empty();
-	rc_vector_t c = rc_vector_empty();
-	rc_vector_t d = rc_vector_empty();
-	rc_vector_t e = rc_vector_empty();
+	rc_vector_t a = RC_VECTOR_INITIALIZER;
+	rc_vector_t b = RC_VECTOR_INITIALIZER;
+	rc_vector_t c = RC_VECTOR_INITIALIZER;
+	rc_vector_t d = RC_VECTOR_INITIALIZER;
+	rc_vector_t e = RC_VECTOR_INITIALIZER;
 
 	printf("\nRandom polynomials of orders 0-9\n");
 	for(i=1;i<=10;i++){
@@ -28,15 +27,16 @@ int main()
 		rc_poly_print(a);
 	}
 
-	// test convolution
-	rc_vector_ones(&a, 2);
-	rc_vector_ones(&b, 3);
 	printf("\npolynomial of ones a:\n");
+	rc_vector_ones(&a, 2);
 	rc_poly_print(a);
+
 	printf("polynomial of ones b:\n");
+	rc_vector_ones(&b, 3);
 	rc_poly_print(b);
-	rc_poly_conv(a,b,&c);
+
 	printf("Polynomial convolution a*b:\n");
+	rc_poly_conv(a,b,&c);
 	rc_poly_print(c);
 
 	// test powers
@@ -99,6 +99,11 @@ int main()
 		rc_poly_print(a);
 	}
 
+	rc_vector_free(&a);
+	rc_vector_free(&b);
+	rc_vector_free(&c);
+	rc_vector_free(&d);
+	rc_vector_free(&e);
 	printf("\nDONE\n");
 	return 0;
 }

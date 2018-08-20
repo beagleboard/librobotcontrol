@@ -29,10 +29,10 @@
 #define DT 0.05
 #define REVERSE_TIME 2.0
 
-int running=1;
+static int running = 1;
 
 // interrupt handler to catch ctrl-c
-void signal_handler(__attribute__ ((unused)) int dummy)
+static void __signal_handler(__attribute__ ((unused)) int dummy)
 {
 	running=0;
 	return;
@@ -43,15 +43,15 @@ int main()
 	// declare variables
 	int counter;
 
-	rc_kalman_t kf = rc_kalman_empty();
-	rc_matrix_t F = rc_matrix_empty();
-	rc_matrix_t G = rc_matrix_empty();
-	rc_matrix_t H = rc_matrix_empty();
-	rc_matrix_t Q = rc_matrix_empty();
-	rc_matrix_t R = rc_matrix_empty();
-	rc_matrix_t Pi = rc_matrix_empty();
-	rc_vector_t u = rc_vector_empty();
-	rc_vector_t y = rc_vector_empty();
+	rc_kalman_t kf	= RC_KALMAN_INITIALIZER;
+	rc_matrix_t F	= RC_MATRIX_INITIALIZER;
+	rc_matrix_t G	= RC_MATRIX_INITIALIZER;
+	rc_matrix_t H	= RC_MATRIX_INITIALIZER;
+	rc_matrix_t Q	= RC_MATRIX_INITIALIZER;
+	rc_matrix_t R	= RC_MATRIX_INITIALIZER;
+	rc_matrix_t Pi	= RC_MATRIX_INITIALIZER;
+	rc_vector_t u	= RC_VECTOR_INITIALIZER;
+	rc_vector_t y	= RC_VECTOR_INITIALIZER;
 
 	// allocate appropriate memory for system
 	rc_matrix_zeros(&F, Nx, Nx);
@@ -86,7 +86,7 @@ int main()
 	if(rc_kalman_alloc_lin(&kf,F,G,H,Q,R,Pi)==-1) return -1;
 
 	// set signal handler so the loop can exit cleanly
-	signal(SIGINT, signal_handler);
+	signal(SIGINT, __signal_handler);
 	running = 1;
 	counter = REVERSE_TIME/(DT*2.0);
 	u.d[0]=1.0;

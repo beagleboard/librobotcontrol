@@ -22,10 +22,10 @@
 #define SAMPLE_RATE	50
 #define TIME_CONSTANT	2.0
 
-int running;
+static int running = 0;
 
 // interrupt handler to catch ctrl-c
-void signal_handler(__attribute__ ((unused)) int dummy)
+static void __signal_handler(__attribute__ ((unused)) int dummy)
 {
 	running=0;
 	return;
@@ -33,11 +33,11 @@ void signal_handler(__attribute__ ((unused)) int dummy)
 
 int main()
 {
-	rc_filter_t low_pass = rc_filter_empty();
-	rc_filter_t high_pass = rc_filter_empty();
-	rc_filter_t integrator = rc_filter_empty();
-	rc_filter_t lp_butter = rc_filter_empty();
-	rc_filter_t hp_butter = rc_filter_empty();
+	rc_filter_t low_pass	= RC_FILTER_INITIALIZER;
+	rc_filter_t high_pass	= RC_FILTER_INITIALIZER;
+	rc_filter_t integrator	= RC_FILTER_INITIALIZER;
+	rc_filter_t lp_butter	= RC_FILTER_INITIALIZER;
+	rc_filter_t hp_butter	= RC_FILTER_INITIALIZER;
 
 	const double dt = 1.0/SAMPLE_RATE;
 	double lp,hp,i,u,lpb,hpb;
@@ -75,7 +75,7 @@ int main()
 	printf("\n");
 
 	// set signal handler so the loop can exit cleanly
-	signal(SIGINT, signal_handler);
+	signal(SIGINT, __signal_handler);
 	running = 1;
 
 	// start filter input at 1, the loop will toggle this later

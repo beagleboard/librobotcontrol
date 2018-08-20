@@ -19,17 +19,17 @@
 // change this for your platform
 #define I2C_BUS 2
 
-int running;
+static int running = 0;
 
 // interrupt handler to catch ctrl-c
-void signal_handler(__attribute__ ((unused)) int dummy)
+static void __signal_handler(__attribute__ ((unused)) int dummy)
 {
 	running=0;
 	return;
 }
 
-void tap_callback_func(int direction, int counter){
-
+static void __tap_callback_func(int direction, int counter)
+{
 	switch(direction){
 		case 1:
 			printf("received tap in direction: X+");
@@ -57,11 +57,12 @@ void tap_callback_func(int direction, int counter){
 	return;
 }
 
-int main(){
+int main()
+{
 	rc_mpu_data_t data; //struct to hold new data
 
 	// set signal handler so the loop can exit cleanly
-	signal(SIGINT, signal_handler);
+	signal(SIGINT, __signal_handler);
 	running = 1;
 
 	// use defaults for now, except also enable magnetometer.
@@ -74,7 +75,7 @@ int main(){
 	}
 
 	// attach callback
-	rc_mpu_set_tap_callback(tap_callback_func);
+	rc_mpu_set_tap_callback(__tap_callback_func);
 
 	//now just wait, print_data will run
 	while(running){

@@ -1,7 +1,9 @@
 /**
  * @file quaternion.c <rc/math/quaternion.h>
  *
- * @brief      Collection of quaternion manipulation functions
+ * @brief      Collection of quaternion manipulation functions.
+ *
+ * Arrays are assumed to contain the quaternion components in the order [Wijk]
  *
  * @author     James Strawson
  * @date       2016
@@ -249,7 +251,7 @@ int rc_quaternion_imaginary_part(rc_vector_t q, rc_vector_t* img)
 
 int rc_quaternion_multiply(rc_vector_t a, rc_vector_t b, rc_vector_t* c)
 {
-	rc_matrix_t tmp = rc_matrix_empty();
+	rc_matrix_t tmp = RC_MATRIX_INITIALIZER;
 	// sanity checks
 	if(unlikely(!a.initialized || !b.initialized)){
 		fprintf(stderr, "ERROR in rc_quaternion_multiply, vector uninitialized\n");
@@ -328,8 +330,8 @@ int rc_quaternion_multiply_array(double a[4], double b[4], double c[4])
 
 int rc_quaternion_rotate(rc_vector_t* p, rc_vector_t q)
 {
-	rc_vector_t conj = rc_vector_empty();
-	rc_vector_t tmp  = rc_vector_empty();
+	rc_vector_t conj = RC_VECTOR_INITIALIZER;
+	rc_vector_t tmp  = RC_VECTOR_INITIALIZER;
 	// sanity checks
 	if(unlikely(!q.initialized || !p->initialized)){
 		fprintf(stderr, "ERROR in rc_quaternion_rotate_inplace, vector uninitialized\n");
@@ -384,7 +386,7 @@ int rc_quaternion_rotate_array(double p[4], double q[4])
 
 int rc_quaternion_rotate_vector(rc_vector_t* v, rc_vector_t q)
 {
-	rc_vector_t vq = rc_vector_empty();
+	rc_vector_t vq = RC_VECTOR_INITIALIZER;
 	// sanity checks
 	if(unlikely(!q.initialized || !v->initialized)){
 		fprintf(stderr, "ERROR in rc_quaternion_rotate_vector, vector uninitialized\n");

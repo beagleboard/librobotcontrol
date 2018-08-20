@@ -177,7 +177,7 @@ int rc_algebra_lup_decomp(rc_matrix_t A, rc_matrix_t* L, rc_matrix_t* U, rc_matr
 	double s1, s2;
 	int* ptmp;
 	void* rowtmp;
-	rc_matrix_t Adup = rc_matrix_empty();
+	rc_matrix_t Adup = RC_MATRIX_INITIALIZER;
 	// sanity checks
 	if(unlikely(!A.initialized)){
 		fprintf(stderr,"ERROR in rc_algebra_lup_decomp, matrix not initialized yet\n");
@@ -263,11 +263,11 @@ int rc_algebra_lup_decomp(rc_matrix_t A, rc_matrix_t* L, rc_matrix_t* U, rc_matr
 int rc_algebra_invert_matrix(rc_matrix_t A, rc_matrix_t* Ainv)
 {
 	int i,j,k;
-	rc_matrix_t L = rc_matrix_empty();
-	rc_matrix_t U = rc_matrix_empty();
-	rc_matrix_t P = rc_matrix_empty();
-	rc_matrix_t D = rc_matrix_empty();
-	rc_matrix_t tmp = rc_matrix_empty();
+	rc_matrix_t L = RC_MATRIX_INITIALIZER;
+	rc_matrix_t U = RC_MATRIX_INITIALIZER;
+	rc_matrix_t P = RC_MATRIX_INITIALIZER;
+	rc_matrix_t D = RC_MATRIX_INITIALIZER;
+	rc_matrix_t tmp = RC_MATRIX_INITIALIZER;
 	// sanity checks
 	if(unlikely(!A.initialized)){
 		fprintf(stderr,"ERROR in rc_matrix_inverse, matrix uninitialized\n");
@@ -334,7 +334,7 @@ int rc_algebra_invert_matrix(rc_matrix_t A, rc_matrix_t* Ainv)
 
 int rc_algebra_invert_matrix_inplace(rc_matrix_t* A)
 {
-	rc_matrix_t Atmp = rc_matrix_empty();
+	rc_matrix_t Atmp = RC_MATRIX_INITIALIZER;
 	if(unlikely(rc_algebra_invert_matrix(*A,&Atmp))){
 		fprintf(stderr, "ERROR in rc_algebra_invert_matrix_inplace, failed to invert\n");
 		return -1;
@@ -353,8 +353,8 @@ int rc_algebra_lin_system_solve(rc_matrix_t A, rc_vector_t b, rc_vector_t* x)
 	*/
 	double fMaxElem, fAcc;
 	int nDim,i,j,k,m;
-	rc_matrix_t Atemp = rc_matrix_empty();
-	rc_vector_t btemp = rc_vector_empty();
+	rc_matrix_t Atemp = RC_MATRIX_INITIALIZER;
+	rc_vector_t btemp = RC_VECTOR_INITIALIZER;
 	// sanity checks
 	if(!A.initialized || !b.initialized){
 		fprintf(stderr,"ERROR in rc_algebra_lin_system_solve, matrix or vector uninitialized\n");
@@ -442,9 +442,9 @@ void rc_algebra_set_zero_tolerance(double tol){
 int rc_algebra_lin_system_solve_qr(rc_matrix_t A, rc_vector_t b, rc_vector_t* x)
 {
 	int i,k;
-	rc_vector_t temp = rc_vector_empty();
-	rc_matrix_t Q = rc_matrix_empty();
-	rc_matrix_t R = rc_matrix_empty();
+	rc_vector_t temp = RC_VECTOR_INITIALIZER;
+	rc_matrix_t Q = RC_MATRIX_INITIALIZER;
+	rc_matrix_t R = RC_MATRIX_INITIALIZER;
 	if(unlikely(!A.initialized || !b.initialized)){
 		fprintf(stderr,"ERROR in rc_algebra_lin_system_solve_qr, matrix or vector uninitialized\n");
 		return -1;
@@ -491,9 +491,9 @@ int rc_algebra_lin_system_solve_qr(rc_matrix_t A, rc_vector_t b, rc_vector_t* x)
 int rc_algebra_fit_ellipsoid(rc_matrix_t pts, rc_vector_t* ctr, rc_vector_t* lens)
 {
 	int i,p;
-	rc_matrix_t A = rc_matrix_empty();
-	rc_vector_t b = rc_vector_empty();
-	rc_vector_t f = rc_vector_empty();
+	rc_matrix_t A = RC_MATRIX_INITIALIZER;
+	rc_vector_t b = RC_VECTOR_INITIALIZER;
+	rc_vector_t f = RC_VECTOR_INITIALIZER;
 	// sanity checks
 	if(unlikely(!pts.initialized)){
 		fprintf(stderr,"ERROR in rc_fit_ellipsoid, matrix not initialized\n");

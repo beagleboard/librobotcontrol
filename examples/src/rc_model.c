@@ -14,7 +14,8 @@
 #include <stdio.h>
 #include <rc/model.h>
 
-int main(){
+int main()
+{
 	printf("\nCurrently running on a:\n");
 	rc_model_print();
 	printf("\n\nmodel category:\n");

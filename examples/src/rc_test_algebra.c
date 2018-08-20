@@ -14,17 +14,17 @@
 
 int main()
 {
-	rc_matrix_t A = rc_matrix_empty();
-	rc_matrix_t Ainv = rc_matrix_empty();
-	rc_matrix_t AA = rc_matrix_empty();
-	rc_matrix_t L = rc_matrix_empty();
-	rc_matrix_t U = rc_matrix_empty();
-	rc_matrix_t P = rc_matrix_empty();
-	rc_matrix_t Q = rc_matrix_empty();
-	rc_matrix_t R = rc_matrix_empty();
-	rc_vector_t b = rc_vector_empty();
-	rc_vector_t x = rc_vector_empty();
-	rc_vector_t y = rc_vector_empty();
+	rc_matrix_t A	= RC_MATRIX_INITIALIZER;
+	rc_matrix_t Ainv= RC_MATRIX_INITIALIZER;
+	rc_matrix_t AA	= RC_MATRIX_INITIALIZER;
+	rc_matrix_t L	= RC_MATRIX_INITIALIZER;
+	rc_matrix_t U	= RC_MATRIX_INITIALIZER;
+	rc_matrix_t P	= RC_MATRIX_INITIALIZER;
+	rc_matrix_t Q	= RC_MATRIX_INITIALIZER;
+	rc_matrix_t R	= RC_MATRIX_INITIALIZER;
+	rc_vector_t b	= RC_VECTOR_INITIALIZER;
+	rc_vector_t x	= RC_VECTOR_INITIALIZER;
+	rc_vector_t y	= RC_VECTOR_INITIALIZER;
 
 	printf("Let's test some linear algebra functions....\n\n");
 
@@ -80,7 +80,18 @@ int main()
 	rc_algebra_lin_system_solve_qr(A,b,&y);
 	rc_vector_print(y);
 
-
+	// free memory
+	rc_matrix_free(&A);
+	rc_matrix_free(&Ainv);
+	rc_matrix_free(&AA);
+	rc_matrix_free(&L);
+	rc_matrix_free(&U);
+	rc_matrix_free(&P);
+	rc_matrix_free(&Q);
+	rc_matrix_free(&R);
+	rc_vector_free(&b);
+	rc_vector_free(&x);
+	rc_vector_free(&y);
 	printf("\nDONE\n");
 	return 0;
 }

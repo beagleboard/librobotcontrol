@@ -17,27 +17,27 @@
 int main()
 {
 	int i;
-	rc_vector_t a = rc_vector_empty();
-	rc_vector_t b = rc_vector_empty();
+	rc_vector_t a = RC_VECTOR_INITIALIZER;
+	rc_vector_t b = RC_VECTOR_INITIALIZER;
 
 	printf("Testing vector functions\n\n");
 
-	//  create ones vector
+	// create ones vector
 	rc_vector_ones(&a, LEN);
 	printf("\nVector of ones:\n");
 	rc_vector_print(a);
 
-	//  create zero vector
+	// create zero vector
 	rc_vector_zeros(&a, LEN);
 	printf("\nVector of Zeros:\n");
 	rc_vector_print(a);
 
-	//  create random vector
+	// create random vector
 	rc_vector_random(&a, LEN);
 	printf("\nRandom Vector:\n");
 	rc_vector_print(a);
 
-	//  duplicate vector
+	// duplicate vector
 	rc_vector_duplicate(a,&b);
 	printf("\nDuplicate vector:\n");
 	rc_vector_print(b);
@@ -80,7 +80,9 @@ int main()
 	// mean
 	printf("%7f mean\n", rc_vector_mean(a));
 
-	// projection
+	// cleanup
+	rc_vector_free(&a);
+	rc_vector_free(&b);
 
 	printf("\nDONE\n");
 	return 0;

@@ -20,7 +20,7 @@ typedef enum mode_t{
 
 
 // printed if some invalid argument was given
-void print_usage()
+static void __print_usage(void)
 {
 	printf("\n");
 	printf(" Options\n");
@@ -34,7 +34,7 @@ void print_usage()
 }
 
 
-int run_test()
+static int __run_test(void)
 {
 	printf("setting governor to POWERSAVE\n");
 	if(rc_cpu_set_governor(RC_GOV_POWERSAVE)<0){
@@ -74,12 +74,12 @@ int main(int argc, char *argv[])
 
 	if(argc>3){
 		fprintf(stderr,"ERROR: too many arguments\n");
-		print_usage();
+		__print_usage();
 		return -1;
 	}
 	if(argc<2){
 		fprintf(stderr,"ERROR: not enough arguments\n");
-		print_usage();
+		__print_usage();
 		return -1;
 	}
 
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 		case 'g':
 			if(mode!=NONE){
 				fprintf(stderr,"Invalid Argument\n");
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			mode = SET;
@@ -101,14 +101,14 @@ int main(int argc, char *argv[])
 			else if(!strcmp(optarg, "conservative")) gov=RC_GOV_CONSERVATIVE;
 			else{
 				fprintf(stderr,"ERROR invalid governor\n");
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			break;
 		case 'r':
 			if(mode!=NONE){
 				fprintf(stderr,"Invalid Argument\n");
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			mode = READ;
@@ -117,26 +117,26 @@ int main(int argc, char *argv[])
 		case 't':
 			if(mode!=NONE){
 				fprintf(stderr,"Invalid Argument\n");
-				print_usage();
+				__print_usage();
 				return -1;
 			}
 			mode = TEST;
 			break;
 
 		case 'h':
-			print_usage();
+			__print_usage();
 			return 0;
 
 		default:
 			fprintf(stderr,"Invalid Argument\n");
-			print_usage();
+			__print_usage();
 			return -1;
 		}
 	}
 
 	switch(mode){
 	case NONE:
-		print_usage();
+		__print_usage();
 		return 0;
 	case READ:
 		printf("Current Frequency: ");
@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
 		printf("\n");
 		return 0;
 	case TEST:
-		return run_test();
+		return __run_test();
 	case SET:
 		return rc_cpu_set_governor(gov);
 	default:

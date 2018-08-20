@@ -35,13 +35,13 @@ typedef enum a_mode_t{
 	A_MODE_RAW
 } a_mode_t;
 
-int enable_magnetometer = 0;
-int enable_thermometer = 0;
-int enable_warnings=0;
-int running;
+static int enable_magnetometer = 0;
+static int enable_thermometer = 0;
+static int enable_warnings = 0;
+static int running = 0;
 
 // printed if some invalid argument was given
-void print_usage()
+static void __print_usage(void)
 {
 	printf("\n");
 	printf("-a	print raw adc values instead of radians\n");
@@ -55,7 +55,7 @@ void print_usage()
 }
 
 // interrupt handler to catch ctrl-c
-void signal_handler(__attribute__ ((unused)) int dummy)
+static void __signal_handler(__attribute__ ((unused)) int dummy)
 {
 	running=0;
 	return;
@@ -93,16 +93,16 @@ int main(int argc, char *argv[])
 			enable_warnings = 1;
 			break;
 		case 'h':
-			print_usage();
+			__print_usage();
 			return 0;
 		default:
-			print_usage();
+			__print_usage();
 			return -1;
 		}
 	}
 
 	// set signal handler so the loop can exit cleanly
-	signal(SIGINT, signal_handler);
+	signal(SIGINT, __signal_handler);
 	running = 1;
 
 	// use defaults for now, except also enable magnetometer.

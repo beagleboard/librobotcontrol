@@ -14,7 +14,7 @@
 #include <rc/motor.h>
 #include <rc/time.h>
 
-int running;
+static int running = 0;
 
 // possible modes, user selected with command line arguments
 typedef enum m_mode_t{
@@ -26,7 +26,7 @@ typedef enum m_mode_t{
 } m_mode_t;
 
 // printed if some invalid argument was given
-void print_usage()
+static void __print_usage(void)
 {
 	printf("\n");
 	printf("-d {duty}   define a duty cycle from -1.0 to 1.0\n");
@@ -41,7 +41,7 @@ void print_usage()
 }
 
 // interrupt handler to catch ctrl-c
-void signal_handler(__attribute__ ((unused)) int dummy)
+static void __signal_handler(__attribute__ ((unused)) int dummy)
 {
 	running=0;
 	return;
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 			}
 			break;
 		case 'd': // duty cycle option
-			if(m_mode!=DISABLED) print_usage();
+			if(m_mode!=DISABLED) __print_usage();
 			duty = atof(optarg);
 			if(duty<=1 && duty >=-1){
 				m_mode = NORMAL;
@@ -88,15 +88,15 @@ int main(int argc, char *argv[])
 			}
 			break;
 		case 'f':
-			if(m_mode!=DISABLED) print_usage();
+			if(m_mode!=DISABLED) __print_usage();
 			m_mode = FREE;
 			break;
 		case 'b':
-			if(m_mode!=DISABLED) print_usage();
+			if(m_mode!=DISABLED) __print_usage();
 			m_mode = BRAKE;
 			break;
 		case 's':
-			if(m_mode!=DISABLED) print_usage();
+			if(m_mode!=DISABLED) __print_usage();
 			duty = atof(optarg);
 			if(duty<=1 && duty >=-1){
 				m_mode = SWEEP;
@@ -107,11 +107,11 @@ int main(int argc, char *argv[])
 			}
 			break;
 		case 'h':
-			print_usage();
+			__print_usage();
 			return -1;
 			break;
 		default:
-			print_usage();
+			__print_usage();
 			return -1;
 			break;
 		}
@@ -119,12 +119,12 @@ int main(int argc, char *argv[])
 
 	// if the user didn't give enough arguments, print usage
 	if(m_mode==DISABLED){
-		print_usage();
+		__print_usage();
 		return -1;
 	}
 
 	// set signal handler so the loop can exit cleanly
-	signal(SIGINT, signal_handler);
+	signal(SIGINT, __signal_handler);
 	running =1;
 
 	// initialize hardware first
