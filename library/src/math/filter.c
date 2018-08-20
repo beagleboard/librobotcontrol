@@ -153,6 +153,26 @@ int rc_filter_alloc_from_arrays(rc_filter_t* f,double dt,double* num,int numlen,
 }
 
 
+int rc_filter_duplicate(rc_filter_t* f, rc_filter_t old)
+{
+	if(unlikely(old.initialized)){
+		fprintf(stderr, "ERROR in rc_filter_duplicate, old filter not initialized\n");
+		return -1;
+	}
+	if(rc_filter_alloc(f, old.num, old.den, old.dt)){
+		fprintf(stderr, "ERROR in rc_filter_duplicate, failed to alloc memory\n");
+		return -1;
+	}
+	f->gain		= old.gain;
+	f->sat_en	= old.sat_en;
+	f->sat_min	= old.sat_min;
+	f->sat_max	= old.sat_max;
+	f->ss_en	= old.ss_en;
+	f->ss_steps	= old.ss_steps;
+	return 0;
+}
+
+
 int rc_filter_free(rc_filter_t* f)
 {
 	rc_filter_t new = RC_FILTER_INITIALIZER;

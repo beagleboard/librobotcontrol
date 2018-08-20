@@ -158,6 +158,19 @@ int rc_filter_alloc_from_arrays(rc_filter_t* f,double dt,double* num,int numlen,
 							double* den,int denlen);
 
 /**
+ * @brief      duplicates a filter
+ *
+ * This allocates new memory in filter f so it can be used independently from
+ * the old filter but with the same configuration.
+ *
+ * @param      f     new filter to allocate
+ * @param[in]  old   old filter to copy
+ *
+ * @return     { description_of_the_return_value }
+ */
+int rc_filter_duplicate(rc_filter_t* f, rc_filter_t old);
+
+/**
  * @brief      Frees the memory allocated by a filter's buffers and coefficient
  * vectors. Also resets all filter properties back to 0.
  *
