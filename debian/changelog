@@ -1,3 +1,14 @@
+librobotcontrol (1.0.2) stable; urgency=low
+    * Add function rc_filter_duplicate()
+    * add macro RC_VECTOR_INITIALIZER
+    * add macro RC_MATRIX_INITIALIZER
+    * add macro RC_RINGBUF_INITIALIZER
+    * add macro RC_FILTER_INITIALIZER
+    * add macro RC_KALMAN_INITIALIZER
+    * fix broken rc_kalman_alloc_ekf and rc_kalman_update_ekf
+ -- James Strawson <james@strawsondesign.com>  Thu, 23 Aug 2018 16:58:00 +0000
+
+
 librobotcontrol (1.0.1) stable; urgency=low
     * Support pwm driver changes introduced in 4.14.61-ti-r68
     * documentation improvements
