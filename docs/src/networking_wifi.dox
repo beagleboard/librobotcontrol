@@ -6,7 +6,7 @@ Configuring Wifi to work in Debian from the command line is now quite easy thank
 Once you have restarted your BeagleBone with a wifi dongle plugged in, SSH in with the USB network conenction. Then use ifconfig to confirm the dongle is recognized. Note that no ipv4 address is assigned yet as we haven't yet set up a connection.
 
 
-\section basiccommands Basic Commands
+\section wifi_s1 Basic Commands
 
 ````
 root@beaglebone:~# ifconfig wlan0
@@ -45,7 +45,7 @@ connmanctl>
 
 
 
-\section connecting1 Connecting with Passkey
+\section wifi_s2 Connecting with Passkey
 
 
 To connect to a network with WPA/WPA2 security you need to enable the WPA agent. Then connect to your desired networking using the long name listed instead of the SSID. Don't worry, you can use the tab key to autocomplete the name.
@@ -86,7 +86,7 @@ root@beaglebone:~#
 Here you can see my beaglebone was assigned the address 192.168.1.172 which can now be used to SSH in over the network.
 
 
-\section connecting2 Networks with Enterprise Login
+\section wifi_s3 Networks with Enterprise Login
 
 Many wifi networks such as those found at universities and enterprises, require a user login instead of a shared passphrase. To demonstrate how to configure connman to connect to such networks, we will use the UCSD campus-wide network as an example.
 

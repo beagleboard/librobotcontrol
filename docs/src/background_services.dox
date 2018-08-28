@@ -1,18 +1,18 @@
 
 /**
-\page background_services Background Services
+\page services Background Services
 
 
 The librobotcontrol package sets up two systemd services which the user can enable/disable at will.
-The BeagleBoard 2018-06-17 image has these services installed but disabled by default. Enable manually like any systemd service or with `sudo dpkg-reconfigure librobotcontrol`.
+Older BeagleBoard images have these services installed but disabled by default. Enable manually like any systemd service or with `sudo dpkg-reconfigure librobotcontrol`.
 
-\section services1 rc_battery_monitor service
+\section services_s1 rc_battery_monitor service
 This service runs in the background and illuminates the 4 battery monitor LEDs on the Robotics Cape and BeagleBone Blue based on the state of a 2-cell lithium battery connected to the white balance connector, or a 3 or 4 cell pack connected to the DC input jack.
 
-If you wish to control those LEDs manually (probably through the <rc/led.h> interface) then please disable this service first to avoid conflicts.
+If you wish to control those LEDs manually through the [LED module](group___l_e_d.html), then please disable this service first to avoid conflicts.
 
 
-\section services2 robotcontrol service
+\section services_s2 robotcontrol service
 This service does some preliminary startup checks on boot to ensure the hardware is configured correctly. A short log file of this process is written to /var/log/robotcontrol/startup_log.txt on boot.
 
 After completing the startup checks, this service will then start any program the user as elected to run automatically on boot. If the user's startup program has a problem, closes, or doesn't exist then the librobotcontrol service will show up as failed when calling `systemctl status robotcontrol`. This allows the user to treat their own robot control program like a systemd service, starting and stopping it with `systemctl`. See the <a href="runonboot.html">run on boot page</a> for how to configure this startup program.

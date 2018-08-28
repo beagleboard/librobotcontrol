@@ -3,13 +3,14 @@
 
 This manual is divided in the following sections. It is not necessary to go through them in order, but it is recommended for a new user.
 
-1. \subpage networking_usb
-2. \subpage networking_wifi
-3. \subpage installation
-4. \subpage version
-5. \subpage project_template
-6. \subpage background_services
-7. \subpage runonboot
+1. \subpage flashing
+2. \subpage networking_usb
+3. \subpage networking_wifi
+4. \subpage installation
+5. \subpage version
+6. \subpage project_template
+7. \subpage services
+8. \subpage runonboot
 
 
 */

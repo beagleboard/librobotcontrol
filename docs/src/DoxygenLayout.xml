@@ -7,12 +7,13 @@
     <!-- <tab type="pages" visible="yes" title="Related Pages" intro=""/> -->
 
     <tab type="usergroup" url="@ref manual" title="Manual">
+      <tab type="user" url="@ref flashing" title="Updating BeagleBone Image"/>
       <tab type="user" url="@ref networking_usb" title="Networking USB"/>
       <tab type="user" url="@ref networking_wifi" title="Networking WiFi"/>
       <tab type="user" url="@ref installation" title="Installation"/>
       <tab type="user" url="@ref version" title="Version"/>
       <tab type="user" url="@ref project_template" title="Project Template"/>
-      <tab type="user" url="@ref background_services" title="Background Services"/>
+      <tab type="user" url="@ref services" title="Background Services"/>
       <tab type="user" url="@ref runonboot" title="Making a Program Run on Boot"/>
     </tab>
 

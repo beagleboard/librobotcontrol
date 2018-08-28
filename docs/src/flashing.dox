@@ -1,0 +1,57 @@
+
+
+
+/*! \page flashing Updating BeagleBone Image
+
+
+We recommend BeagleBone Black and Black Wireless users run a Debian Stretch IOT image from 2018-7-15 or newer. When updating your BeagleBone image, you have the choice of booting from an SD card or flashing the built-in eMMC memory on the BeagleBone.
+
+We highly recommend flashing the internal memory as the eMMC will generally provide better performance than booting from an SD card. Furthermore, flashing the eMMC will also update the bootloader which is necessary if the BeagleBone was shipped from the factory with an outdated bootloader which is usually the case.
+
+\section flashing_s1 Flashing the Built-In eMMC Storage (recommended)
+
+The [BeagleBoard.org latest-images page](http://beagleboard.org/latest-images) is not always up to date. Here are the recommended images to use for BeagleBone Black and BeagleBone Blue along with checksums you can optionally use to check the download integrity:
+
+[2018-8-23 BeagleBone Black Flasher Image](http://strawsondesign.com/docs/images/BBB-blank-debian-9.5-iot-armhf-2018-08-23-4gb.img.xz) ([checksum](http://strawsondesign.com/docs/images/BBB-blank-debian-9.5-iot-armhf-2018-08-23-4gb.img.xz.sha256sum))
+
+[2018-8-23 BeagleBone Blue Flasher Image](http://strawsondesign.com/docs/images/BBBL-blank-debian-9.5-iot-armhf-2018-08-23-4gb.img.xz) ([checksum](http://strawsondesign.com/docs/images/BBBL-blank-debian-9.5-iot-armhf-2018-08-23-4gb.img.xz.sha256sum))
+
+These links are .xz compressed archives (like a .zip file). You must un-archive (extract) them before writing to a microSD card. The extracted .img file should be about 4GB in size. Do not just write the .xz archive to an SD card, it will not work.
+
+You will need a microSD card with at least 4GB of space. We suggest using [Etcher](https://etcher.io/) to write the image to the microSD card. Feel free to use other tools like dd if you prefer.
+
+When you are done writing the image to the SD card, make sure your BeagleBone is powered off completely and insert the SD card. Now apply power through either USB or the DC power jack and watch the Blue USR LEDs. After a few seconds the USR LEDs should start blinking in a regular pattern, bouncing back and forth like a game of pong. When flashing is complete all 4 USR LEDs will stay on for a minute before turning off completely.
+
+If the BeagleBone appears to power on with the SD card inserted but the LEDs flashing pattern does not start, it's possible the eMMC bootloader is old or somehow not configured to favor booting from the SD card automatically. In this case, force the BeagleBone to favor booting from the SD card by applying power while holding the SD button (on blue) or BOOT button (on Black).
+
+At this point flashing is complete and you must remove the microSD card before accidentally starting the flashing process again. Reapply power and let your BeagleBone boot from the fresh eMMC image.
+
+
+
+
+\section flashing_s2 Booting from SD Card Without Flashing
+
+You can boot a BeagleBone Blue or Black from an SD card without flashing over the eMMC memory in the BeagleBone by writing this non-flashing bootable image to an SD card:
+
+[2018-8-23 BeagleBone SD image](http://strawsondesign.com/docs/images/bone-debian-9.5-iot-armhf-2018-08-23-4gb.img.xz) ([checksum](http://strawsondesign.com/docs/images/bone-debian-9.5-iot-armhf-2018-08-23-4gb.img.xz.sha256sum))
+
+This link is a .xz compressed archive (like a .zip file). You must un-archive (extract) it before writing to a microSD card. The extracted .img file should be about 4GB in size. Do not just write the .xz archive to an SD card, it will not work.
+
+You will need a microSD card with at least 4GB of space. We suggest using [Etcher](https://etcher.io/) to write the image to the microSD card. Feel free to use other tools like dd if you prefer.
+
+This does NOT update the BeagleBone Bootloader which may result in non-functioning PRU and ADC modules. It is safer to just flash the BeagleBone as described in the previous section.
+
+Once booted, you can check if everything is functioning correctly with the rc_test_drivers program as described in the section \ref installation. If this test indicates that the PRU and ADC are malfunctioning then the bootloader need to be updated by flashing the built-in eMMC storage as described in the previous section.
+
+
+
+
+\section flashing_s3 Additional step for BB Black and Black Wireless with Robotics Cape
+
+After flashing a BeagleBone Black or Black Wireless with a clean image it is necessary to tell it use the Robotics Cape device tree so all of the header pins are configured correctly and all of the necessary drivers will load. Continue to the \ref installation page of the manual for how to do this.
+
+
+
+
+\tableofcontents
+*/

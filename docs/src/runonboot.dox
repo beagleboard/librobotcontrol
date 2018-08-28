@@ -9,19 +9,19 @@ After rc_startup_routine has completed successfully, the service will then launc
 
 To make YOUR program start on boot, simply make a symbolic link to your program with the name /etc/librobotcontrol/link_to_startup_program. You will have to be root to change this link, and the program itself will run as root when started by the systemd service. For example, to set the eduMiP rc_balance program example to run on boot, run:
 
-```
+~~~{shell}
 sudo ln -s -f /usr/bin/rc_balance /etc/robotcontrol/link_to_startup_program
-```
+~~~
 
 If using the makefile from the rc_project_template (see the <a href="project_template.html">project template page</a>) you can form that link with:
 
-```
+~~~{shell}
 sudo make runonboot
-```
+~~~
 
 After making the symbolic link, you can start, stop, restart, and check the status of your own robot program with the systemctl tool just like you would with apache2 and other common services.
 
-```
+~~~{shell}
 debian@beaglebone:~$ sudo systemctl status robotcontrol
 ● robotcontrol.service - robotcontrol
    Loaded: loaded (/lib/systemd/system/robotcontrol.service; enabled; vendor preset: enabled)
@@ -34,7 +34,7 @@ debian@beaglebone:~$ sudo systemctl status robotcontrol
 
 debian@beaglebone:~$ sudo systemctl stop robotcontrol
 debian@beaglebone:~$ sudo systemctl start robotcontrol
-```
+~~~
 
 Note that while your program is running in the background it is likely using hardware resources. If you try doing something simple like rc_test_leds while another project is running in the background then you WILL get conflicts, if not errors. Make sure to stop the background service as described above.
 

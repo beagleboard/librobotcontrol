@@ -1,59 +1,96 @@
 
 
 
-/*! \page installation Installation
+/*! \page installation Installation & Checking Functionality
 
-\section s1 Method 1: Installing on BeagleBone Blue and Black from Clean Image (Recommended)
-Stable Robot Control library releases are pre-installed with the BeagleBoard images. We recommend BeagleBone Black and Black Wireless users run the 2018-7-15 image or newer. Flasher SD card images available here:
+\section installation_s1 Method 1: Use Official BeagleBone Image (recommended)
 
+BeagleBoard.org official images come with the librobotcontrol package preinstalled. Follow the instructions at \ref flashing to make sure you are running the correct image.
 
-[2018-7-15 BeagleBone Blue Flasher Image](https://rcn-ee.net/rootfs/bb.org/testing/2018-07-15/stretch-iot/BBBL-blank-debian-9.5-iot-armhf-2018-07-15-4gb.img.xz)
+After flashing a new image simply reconfigure the package to set the the device tree and configure which program you may want to [start automatically on boot](runonboot.html).
 
-[2018-7-15 BeagleBone Black Flasher Image](https://rcn-ee.net/rootfs/bb.org/testing/2018-07-15/stretch-iot/BBB-blank-debian-9.5-iot-armhf-2018-07-15-4gb.img.xz)
-
-
-On first boot after flashing a clean image the package will be installed but not configured yet. Manually configure the package with:
-
-````
+~~~{shell}
 sudo dpkg-reconfigure roboticscape
-````
+~~~
 
-This reconfiguration step will let you configure a program to run on boot.
+BeagleBoard.org graciously hosts the latest stable librobotcontrol package in their repositories. On a BeagleBoard product, the package can easily be updated:
 
-\subsection s1ss1 (Method 1 continued) Additional step for BB Black and Black wireless running Robotics Cape
-The reconfiguration step also promps the user for permission to perform the necessary step of setting up the Robotics Cape device tree for BeagleBone Black and Black Wireless.
+~~~{shell}
+sudo apt update && sudo apt upgrade librobotcontrol
+~~~
 
-After the reconfiguration step, reboot to load the new device tree. After reboot, check that the right device tree is loaded with the rc_model program which will print something like this:
 
-```
-debian@beaglebone:~$ sudo reboot
-.
-.
-.
+\section installation_s2 Method 2: Install from Debian Package or Repository
+
+For installation on other platforms, we provide 32bit armhf and 64-bit x86_64 Debian packages on the [GitHub releases page](https://github.com/StrawsonDesign/librobotcontrol/releases). These can be downloaded and installed like any other debian package. Obviously change the name of the file in the command below to match that of the file you downloaded.
+
+~~~{shell}
+sudo dpkg -i librobotcontrol_1.0.2_amd64.deb
+or...
+sudo dpkg -i librobotcontrol_1.0.2_armhf.deb
+~~~
+
+This package installation will also configure the device tree if you are installing on a BeagleBone Black or Black Wireless. Remember this package is still BeagleBone-focused and many of the functions are not applicable to other platforms. However many of them are platform-independent so we provide these packages.
+
+
+\section installation_s3 Method 3: Installing From Source (not recommended)
+
+If you insist on compiling and installing from source instead of using the debian packages above, or are king enough to help beta-test and contribute source code then you are welcome to fork the [librobotcontrol repository](https://github.com/StrawsonDesign/librobotcontrol).
+
+An installer script exists to help compile and install from source.
+
+~~~{shell}
+debian@beaglebone:~/librobotcontrol$ ./install.sh
+
+To continue, enter 1 to compile and install on BeagleBone
+enter 2 for other platforms (Raspberry Pi, x86, etc..)
+~~~
+
+Option 2 will only install the library and examples, whereas option 1 will also do the following beaglebone-specific steps: compile and install PRU binaries, enable systemd services, and setup the Robotics Cape device tree if necessary.
+
+Each section of the source code (library, examples, project_template, pru_firmware, & services) have their own independent Makefile. If you only want to compile and test one section such as the library itself, just cd to the library folder and make && sudo make install in just that one directory to avoid recompiling everything unnecessarily.
+
+
+
+
+
+\section installation_s4 Additional step for BB Black and Black Wireless with Robotics Cape
+
+After flashing a BeagleBone Black or Black Wireless with a clean image it is necessary to tell it use the Robotics Cape device tree so all of the header pins are configured correctly and all of the necessary drivers will load. This is not necessary for the BeagleBone Blue or when installing a debian package manually.
+
+You can manually setup the device tree following command.
+
+~~~{shell}
+sudo configure_robotics_dt.sh
+sudo reboot
+~~~
+
+This step is automatically performed when using the install.sh helper script described above as well as when installing, updating, or reconfiguring the debian package which you likely did if installing from source or installing the debian package manually. It is, however, safe to run in all conditions if you are unsure of whether you need to configure the device tree or not.
+
+To revert to the standard device tree, replace uEnv.txt with the backup that was created by the previous step.
+
+~~~{shell}
+sudo cp /boot/uEnv.txt.backup /boot/uEnv.txt
+sudo reboot
+~~~
+After reboot, check that the right device tree is loaded with the rc_model program which will print something like this:
+
+~~~{shell}
 debian@beaglebone:~$ rc_model
 
 Currently running on a:
 BB_BLACK_RC
-```
+~~~
 
-On the BeagleBone Blue, expect it to say BB_BLUE. If you are using the RoboticsCape on a BealgeBone Black or Black Wireless, make sure it says BB_BLACK_RC or BB_BLACK_W_RC. If it doesn't show the RC suffix then you either did not reboot after reconfiguring the package, or something weird happened and you should manually set the device tree with the following.
+On the BeagleBone Blue, expect it to say BB_BLUE. If you are using the RoboticsCape on a BealgeBone Black or Black Wireless, make sure it says BB_BLACK_RC or BB_BLACK_W_RC.
 
-```
-debian@beaglebone:~$ sudo configure_robotics_dt
-debian@beaglebone:~$ sudo reboot
-```
 
-\subsection s1ss2 (Method 1 continued) Booting from SD Card Without Flashing
 
-You can boot a BeagleBone Blue or Black from an SD card without flashing over the eMMC memory in the BeagleBone by writing this non-flashing image to an SD card:
+\section installation_s5 Checking Functionality
 
-[2018-7-15 BeagleBone SD image](https://rcn-ee.net/rootfs/bb.org/testing/2018-07-15/stretch-iot/bone-debian-9.5-iot-armhf-2018-07-15-4gb.img.xz)
+Once everything is installed, run the rc_test_drivers program to confirm functionality.
 
-However, this does NOT update the BeagleBone Bootloader which may result in non-functioning PRU and ADC modules. It is safer to just flash the BeagleBone as described above.
-
-You can check if everything is functioning correctly with the rc_test_drivers program.
-
-```
+~~~{shell}
 debian@beaglebone:~$ rc_test_drivers
 
 Kernel: 4.14.54-ti-r63
@@ -79,62 +116,14 @@ PASSED: i2c2
 PASSED: spi
 PASSED: LED
 PASSED: ADC iio
-```
 
-\section s2 Method 2: Install from Debian Package or Repository
-BeagleBoard.org graciously hosts the latest stable librobotcontrol package in their repositories. On a BeagleBoard product, install like any other package with:
+Currently running on a:
+MODEL_BB_BLUE
+Robot Control library Version:
+1.0.0
+~~~
 
-```
-sudo apt update && sudo apt install librobotcontrol
-```
-
-The package can easily be updated from there with:
-
-```
-sudo apt update && sudo apt upgrade librobotcontrol
-```
-
-On other platforms, we provide 32bit armhf and 64-bit x86_64 debian packages on the [releases page](https://github.com/StrawsonDesign/librobotcontrol/releases). These can be downloaded and installed like any debian package. Obviuosly change the name of the file in the command below to match that of the file you downloaded.
-
-```
-sudo dpkg -i librobotcontrol_1.0.0_amd64.deb
-```
-
-\section s3 Method 3: Installing From Source
-
-To help beta-test and to stay with the latest library version you can either clone this repo and run 'make && sudo make install', or download and install the latest debian package from the [releases](https://github.com/StrawsonDesign/librobotcontrol/releases) page. A debian package is the safer option.
-
-An installer script exists to help compile and install from source.
-
-```
-debian@beaglebone:~/librobotcontrol$ ./install.sh
-
-This install script is just to help install from source.
-If you are running this on a BeagleBone we recommend running
-the version which comes packaged and preinstalled in the
-official BeagleBone images. Please visit this link for details:
-
-http://strawsondesign.com/docs/robotcontrol/
-
-To continue, enter 1 to compile and install on BeagleBone
-enter 2 for other platforms (Raspberry Pi, x86, etc..)
-```
-
-Option 2 will only install the library and examples, whereas option 1 will also do the following beaglebone-specific steps: compile and install PRU binaries, enable systemd services, setup uEnv.txt to enable the Robotics Cape device tree if running on a beaglebone black or black wireless.
-
-You can manually setup the device tree outside of this script with the following command, although this is not necessary when using the install.sh helper script. This is not necessary for the BeagleBone Blue or when installing a debian package.
-
-```
-sudo configure_robotics_dt.sh
-sudo reboot
-```
-
-To revert to the standard device tree, replace uEnv.txt with the backup that was created by the previous step.
-
-```
-sudo cp /boot/uEnv.txt.backup /boot/uEnv.txt
-sudo reboot
-```
+Any image after 7-15-2018 should pass all tests. If this test indicates that the PRU and ADC are malfunctioning then the bootloader need to be updated by flashing the built-in eMMC storage as described in \ref flashing section.
 
 
 \tableofcontents
