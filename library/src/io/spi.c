@@ -370,7 +370,7 @@ int rc_spi_manual_select(int bus, int slave, int select)
 int rc_spi_transfer(int bus, int slave, uint8_t* tx_data, size_t tx_bytes, uint8_t* rx_data)
 {
 	int ret;
-	struct spi_ioc_transfer xfer;
+	struct spi_ioc_transfer xfer = {0}; // zero-initialize per docs
 
 	// sanity checks
 	if(bus<0 || bus>MAX_BUS){
@@ -391,13 +391,13 @@ int rc_spi_transfer(int bus, int slave, uint8_t* tx_data, size_t tx_bytes, uint8
 	}
 
 	// fill in send struct
-	xfer.cs_change = 1;
-	xfer.delay_usecs = 0;
-	xfer.speed_hz = state[bus].speed[slave];
-	xfer.bits_per_word = RC_SPI_BITS_PER_WORD;
 	xfer.tx_buf = (unsigned long) tx_data;
 	xfer.rx_buf = (unsigned long) rx_data;
 	xfer.len = tx_bytes;
+	xfer.speed_hz = state[bus].speed[slave];
+	xfer.delay_usecs = 0;
+	xfer.bits_per_word = RC_SPI_BITS_PER_WORD;
+	xfer.cs_change = 1;
 
 	// do ioctl transfer
 	ret=ioctl(state[bus].fd[slave], SPI_IOC_MESSAGE(1), &xfer);
@@ -412,7 +412,7 @@ int rc_spi_transfer(int bus, int slave, uint8_t* tx_data, size_t tx_bytes, uint8
 int rc_spi_write(int bus, int slave, uint8_t* data, size_t bytes)
 {
 	int ret;
-	struct spi_ioc_transfer xfer;
+	struct spi_ioc_transfer xfer = {0}; // zero-initialize per docs
 
 	// sanity checks
 	if(bus<0 || bus>MAX_BUS){
@@ -433,13 +433,13 @@ int rc_spi_write(int bus, int slave, uint8_t* data, size_t bytes)
 	}
 
 	// fill in send struct
-	xfer.cs_change = 1;
-	xfer.delay_usecs = 0;
-	xfer.speed_hz = state[bus].speed[slave];
-	xfer.bits_per_word = RC_SPI_BITS_PER_WORD;
-	xfer.rx_buf = 0;
 	xfer.tx_buf = (unsigned long) data;
+	xfer.rx_buf = 0;
 	xfer.len = bytes;
+	xfer.speed_hz = state[bus].speed[slave];
+	xfer.delay_usecs = 0;
+	xfer.bits_per_word = RC_SPI_BITS_PER_WORD;
+	xfer.cs_change = 1;
 
 	// send
 	ret=ioctl(state[bus].fd[slave], SPI_IOC_MESSAGE(1), &xfer);
@@ -454,7 +454,7 @@ int rc_spi_write(int bus, int slave, uint8_t* data, size_t bytes)
 int rc_spi_read(int bus, int slave, uint8_t* data, size_t bytes)
 {
 	int ret;
-	struct spi_ioc_transfer xfer;
+	struct spi_ioc_transfer xfer = {0}; // zero-initialize per docs
 
 	// sanity checks
 	if(bus<0 || bus>MAX_BUS){
@@ -475,13 +475,13 @@ int rc_spi_read(int bus, int slave, uint8_t* data, size_t bytes)
 	}
 
 	// fill in send struct
-	xfer.cs_change = 1;
-	xfer.delay_usecs = 0;
-	xfer.speed_hz = state[bus].speed[slave];
-	xfer.bits_per_word = RC_SPI_BITS_PER_WORD;
-	xfer.rx_buf = (unsigned long) data;
 	xfer.tx_buf = 0;
+	xfer.rx_buf = (unsigned long) data;
 	xfer.len = bytes;
+	xfer.speed_hz = state[bus].speed[slave];
+	xfer.delay_usecs = 0;
+	xfer.bits_per_word = RC_SPI_BITS_PER_WORD;
+	xfer.cs_change = 1;
 
 	// read
 	ret=ioctl(state[bus].fd[slave], SPI_IOC_MESSAGE(1), &xfer);
