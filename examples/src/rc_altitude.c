@@ -88,7 +88,12 @@ static void __dmp_handler(void)
 int main(void)
 {
 	rc_mpu_config_t mpu_conf;
-	rc_matrix_t F, G, H, Q, R, Pi = RC_MATRIX_INITIALIZER;
+	rc_matrix_t F = RC_MATRIX_INITIALIZER;
+	rc_matrix_t G = RC_MATRIX_INITIALIZER;
+	rc_matrix_t H = RC_MATRIX_INITIALIZER;
+	rc_matrix_t Q = RC_MATRIX_INITIALIZER;
+	rc_matrix_t R = RC_MATRIX_INITIALIZER;
+	rc_matrix_t Pi = RC_MATRIX_INITIALIZER;
 
 	// allocate appropirate memory for system
 	rc_matrix_zeros(&F, Nx, Nx);
