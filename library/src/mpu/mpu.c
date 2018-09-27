@@ -3316,12 +3316,12 @@ static int __mag_correct_orientation(double mag_vec[3])
 		mag_vec[2] = -data_ptr->mag[TB_YAW_Z];
 		break;
 	case ORIENTATION_X_UP:
-		mag_vec[0] = data_ptr->mag[TB_YAW_Z];
+		mag_vec[0] = -data_ptr->mag[TB_YAW_Z];
 		mag_vec[1] = data_ptr->mag[TB_ROLL_Y];
 		mag_vec[2] = data_ptr->mag[TB_PITCH_X];
 		break;
 	case ORIENTATION_X_DOWN:
-		mag_vec[0] = -data_ptr->mag[TB_YAW_Z];
+		mag_vec[0] = data_ptr->mag[TB_YAW_Z];
 		mag_vec[1] = data_ptr->mag[TB_ROLL_Y];
 		mag_vec[2] = -data_ptr->mag[TB_PITCH_X];
 		break;
@@ -3336,13 +3336,13 @@ static int __mag_correct_orientation(double mag_vec[3])
 		mag_vec[2] = -data_ptr->mag[TB_ROLL_Y];
 		break;
 	case ORIENTATION_X_FORWARD:
-		mag_vec[0] = data_ptr->mag[TB_ROLL_Y];
-		mag_vec[1] = -data_ptr->mag[TB_PITCH_X];
+		mag_vec[0] = -data_ptr->mag[TB_ROLL_Y];
+		mag_vec[1] = data_ptr->mag[TB_PITCH_X];
 		mag_vec[2] = data_ptr->mag[TB_YAW_Z];
 		break;
 	case ORIENTATION_X_BACK:
-		mag_vec[0] = -data_ptr->mag[TB_ROLL_Y];
-		mag_vec[1] = data_ptr->mag[TB_PITCH_X];
+		mag_vec[0] = data_ptr->mag[TB_ROLL_Y];
+		mag_vec[1] = -data_ptr->mag[TB_PITCH_X];
 		mag_vec[2] = data_ptr->mag[TB_YAW_Z];
 		break;
 	default:
