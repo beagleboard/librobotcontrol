@@ -511,14 +511,15 @@ int rc_filter_double_integrator(rc_filter_t* f, double dt);
 
 /**
  * @brief      Creates a discrete-time implementation of a parallel PID
- * controller with high-frequency rolloff.
+ * controller with high-frequency rolloff using the forward-Euler integration
+ * method.
  *
  * This is equivalent to the Matlab function: C = pid(Kp,Ki,Kd,Tf,Ts)
  *
- * We cannot implement a pure differentiator with a discrete transfer function
- * so this filter has high frequency rolloff with time constant Tf. Smaller Tf
- * results in less rolloff, but Tf must be greater than dt/2 for stability.
- * Returns 0 on success or -1 on failure.
+ * It is not possible to implement a pure differentiator with a discrete
+ * transfer function so this filter has high frequency rolloff with time
+ * constant Tf. Smaller Tf results in less rolloff, but Tf must be greater than
+ * dt/2 for stability. Returns 0 on success or -1 on failure.
  *
  * @param      f     Pointer to user's rc_filter_t struct
  * @param[in]  kp    Proportional constant

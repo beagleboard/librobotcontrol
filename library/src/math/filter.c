@@ -74,14 +74,16 @@ int rc_filter_alloc(rc_filter_t* f, rc_vector_t num, rc_vector_t den, double dt)
 		rc_vector_free(&f->num);
 		return -1;
 	}
-	// allocate buffers
-	if(unlikely(rc_ringbuf_alloc(&f->in_buf,den.len))){
+	// allocate buffers making sure they are at least 2 in length
+	int buflen = den.len;
+	if(buflen<2) buflen=2;
+	if(unlikely(rc_ringbuf_alloc(&f->in_buf,buflen))){
 		fprintf(stderr,"ERROR in rc_filter_alloc, failed to allocate ring buffer\n");
 		rc_vector_free(&f->num);
 		rc_vector_free(&f->den);
 		return -1;
 	}
-	if(unlikely(rc_ringbuf_alloc(&f->out_buf,den.len))){
+	if(unlikely(rc_ringbuf_alloc(&f->out_buf,buflen))){
 		fprintf(stderr,"ERROR in rc_filter_alloc, failed to allocate ring buffer\n");
 		rc_vector_free(&f->num);
 		rc_vector_free(&f->den);
@@ -785,14 +787,31 @@ int rc_filter_pid(rc_filter_t* f,double kp,double ki,double kd,double Tf,double 
 		printf("ERROR in rc_filter_pid, Tf must be > dt/2 for stability\n");
 		return -1;
 	}
-	// if ki==0, return a 1st order PD filter with rolloff
-	if(fabs(ki) < zero_tolerance){
+
+	// 1st order PD filter with rolloff
+	if((fabs(ki)<zero_tolerance) && (fabs(kd)>zero_tolerance)){
 		rc_vector_alloc(&num,2);
 		rc_vector_alloc(&den,2);
-		num.d[0] = (kp*Tf+kd)/Tf;
-		num.d[1] = -(((ki*dt-kp)*(dt-Tf))+kd)/Tf;
+		num.d[0] = ((kp*Tf)+kd)/Tf;
+		num.d[1] = ((kp*(dt-Tf))-kd)/Tf;
 		den.d[0] = 1.0;
 		den.d[1] = -(Tf-dt)/Tf;
+	}
+	// 1st order PI filter
+	else if((fabs(ki)>zero_tolerance) && (fabs(kd)<zero_tolerance)){
+		rc_vector_alloc(&num,2);
+		rc_vector_alloc(&den,2);
+		num.d[0] = kp;
+		num.d[1] = ((ki*dt)-kp);
+		den.d[0] = 1.0;
+		den.d[1] = -1.0;
+	}
+	// 0th order proportional gain only
+	else if((fabs(ki)<zero_tolerance) && (fabs(kd)<zero_tolerance)){
+		rc_vector_alloc(&num,1);
+		rc_vector_alloc(&den,1);
+		num.d[0] = kp;
+		den.d[0] = 1.0;
 	}
 	//otherwise 2nd order PID with roll off
 	else{
