@@ -272,7 +272,7 @@ int rc_spi_init_manual_slave(int bus, int slave, int bus_mode, int speed_hz, int
 	state[bus].init[slave] = 1;
 	state[bus].ss_mode[slave] = SS_MODE_MANUAL;
 	state[bus].chip[slave] = chip;
-	state[bus].pin[slave] = chip;
+	state[bus].pin[slave] = pin;
 	state[bus].fd[slave] = fd;
 	state[bus].fd[0] = fd; // just in case we are initializing a slave other than 0 first
 	state[bus].speed[slave] = speed_hz;

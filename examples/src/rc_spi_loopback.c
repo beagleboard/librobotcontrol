@@ -18,7 +18,6 @@
 #define SLAVE		0
 
 
-#define SLAVE_MODE	SPI_SLAVE_MODE_AUTO
 #define BUS_MODE	SPI_MODE_0
 #define SPI_SPEED	24000000
 
@@ -26,7 +25,7 @@ int main()
 {
 	char* test_str = "Hello World";
 	int bytes = strlen(test_str);	// get number of bytes in test string
-	uint8_t buf[bytes];		// read buffer
+	uint8_t buf[32];		// read buffer
 	int ret;			// return value
 
 	printf("Make sure the MISO and MOSI lines are connected with\n");
@@ -38,13 +37,26 @@ int main()
 
 	// attempt a string send/receive test
 	printf("Sending  %d bytes: %s\n", bytes, test_str);
-	ret = rc_spi_transfer(BUS, SLAVE, (uint8_t*)test_str, bytes, buf);
-	if(ret<0){
-		printf("send failed\n");
-		rc_spi_close(SLAVE);
-		return -1;
+
+	while(1){
+		//ret = rc_spi_transfer(BUS, SLAVE, (uint8_t*)test_str, bytes, buf);
+		ret = rc_spi_write(BUS, SLAVE, (uint8_t*)test_str, bytes);
+		if(ret<0){
+			printf("send failed\n");
+			rc_spi_close(SLAVE);
+			return -1;
+		}
+		else printf("sent %d bytes: %s\n",bytes, test_str);
+		// read back
+		ret = rc_spi_read(BUS, SLAVE, buf, bytes);
+		if(ret<0){
+			printf("read failed\n");
+			rc_spi_close(SLAVE);
+			return -1;
+		}
+		else printf("Received %d bytes: %s\n",ret, (char*)buf);
+		rc_usleep(10000);
 	}
-	else printf("Received %d bytes: %s\n",ret, buf);
 
 	rc_spi_close(BUS);
 	return 0;

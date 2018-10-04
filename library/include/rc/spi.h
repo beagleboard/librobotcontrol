@@ -21,6 +21,15 @@
  *                          RC_SPI_MAX_SPEED, RC_BLUE_SS1_GPIO);
  * ```
  *
+ * pinout on Robotics Cape and BeagleBone Blue:
+ * 1. GND
+ * 2. 3.3V
+ * 3. MOSI (P9_30)
+ * 4. MISO (P9_29)
+ * 5. SCK  (P9_31)
+ * 6. Slave Select
+ *
+ *
  * The slaves can be selected automatically by the SPI Linux driver or manually
  * with rc_spi_select() function. On the Robotics Cape, slave 1 can be used in
  * either mode, but slave 2 must be selected manually. On the BB Blue either
