@@ -5,7 +5,7 @@ BUILDDIR	:= build
 INCLUDEDIR	:= include
 SHORTNAME	:= librobotcontrol.so
 SONAME		:= librobotcontrol.so.1
-FULLNAME	:= librobotcontrol.so.1.0.2
+FULLNAME	:= librobotcontrol.so.1.0.3
 TARGET		:= $(LIBDIR)/$(FULLNAME)
 RC_VAR_DIR	:= var/lib/robotcontrol
 

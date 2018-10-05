@@ -1,3 +1,12 @@
+1.0.3
+    * correct default pinmux value for UART and SPI to those functions
+    * fix string length error in rc_spi_loopback_test
+    * add minimum realization case for PI and P controller in rc_filter_pid
+    * fix compass heading in 2 DMP orientation options
+    * fix uninitialized matrix in rc_altitude example
+    * fix spi randomly breaking due to non-initialized struct
+    * small documentation improvements
+
 1.0.2
     * Add function rc_filter_duplicate()
     * add macro RC_VECTOR_INITIALIZER

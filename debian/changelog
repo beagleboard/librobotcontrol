@@ -1,3 +1,14 @@
+librobotcontrol (1.0.3) stable; urgency=low
+    * correct default pinmux value for UART and SPI to those functions
+    * fix string length error in rc_spi_loopback_test
+    * add minimum realization case for PI and P controller in rc_filter_pid
+    * fix compass heading in 2 DMP orientation options
+    * fix uninitialized matrix in rc_altitude example
+    * fix spi randomly breaking due to non-initialized struct
+    * small documentation improvements
+ -- James Strawson <james@strawsondesign.com>  Fri, 5 Oct 2018 13:59:00 +0000
+
+
 librobotcontrol (1.0.2) stable; urgency=low
     * Add function rc_filter_duplicate()
     * add macro RC_VECTOR_INITIALIZER
@@ -13,7 +24,6 @@ librobotcontrol (1.0.1) stable; urgency=low
     * Support pwm driver changes introduced in 4.14.61-ti-r68
     * documentation improvements
  -- James Strawson <james@strawsondesign.com>  Thu, 9 Aug 2018 16:58:00 +0000
-
 
 
 librobotcontrol (1.0.0) stable; urgency=low
