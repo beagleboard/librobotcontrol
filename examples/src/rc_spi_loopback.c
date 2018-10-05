@@ -24,9 +24,13 @@
 int main()
 {
 	char* test_str = "Hello World";
-	int bytes = strlen(test_str);	// get number of bytes in test string
-	uint8_t buf[32];		// read buffer
-	int ret;			// return value
+
+	// get number of bytes in test string, add 1 for the terminating null
+	// character which strlen omits
+	int bytes = strlen(test_str)+1;
+
+	char buf[32];	// read buffer
+	int ret;	// return value
 
 	printf("Make sure the MISO and MOSI lines are connected with\n");
 	printf("a loopback jumper which is necessary for this test.\n");
@@ -35,28 +39,17 @@ int main()
 		return -1;
 	}
 
-	// attempt a string send/receive test
-	printf("Sending  %d bytes: %s\n", bytes, test_str);
-
-	while(1){
-		//ret = rc_spi_transfer(BUS, SLAVE, (uint8_t*)test_str, bytes, buf);
-		ret = rc_spi_write(BUS, SLAVE, (uint8_t*)test_str, bytes);
-		if(ret<0){
-			printf("send failed\n");
-			rc_spi_close(SLAVE);
-			return -1;
-		}
-		else printf("sent %d bytes: %s\n",bytes, test_str);
-		// read back
-		ret = rc_spi_read(BUS, SLAVE, buf, bytes);
-		if(ret<0){
-			printf("read failed\n");
-			rc_spi_close(SLAVE);
-			return -1;
-		}
-		else printf("Received %d bytes: %s\n",ret, (char*)buf);
-		rc_usleep(10000);
+	// attempt a string send/receive transfer
+	printf("transfer test:\n");
+	printf("Sending %d bytes: %s\n", bytes, test_str);
+	ret = rc_spi_transfer(BUS, SLAVE, (uint8_t*)test_str, bytes, (uint8_t*)buf);
+	if(ret<0){
+		printf("send failed\n");
+		rc_spi_close(SLAVE);
+		return -1;
 	}
+	else printf("Received %d bytes: %s\n",ret, buf);\
+
 
 	rc_spi_close(BUS);
 	return 0;
