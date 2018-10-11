@@ -4,17 +4,17 @@
 /*! \page flashing Updating BeagleBone Image
 
 
-We recommend BeagleBone Black and Black Wireless users run a Debian Stretch IOT image from 2018-7-15 or newer. When updating your BeagleBone image, you have the choice of booting from an SD card or flashing the built-in eMMC memory on the BeagleBone.
+We recommend BeagleBone Black and Black Wireless users run a Debian Stretch IOT image from 2018-7-15 or newer. Newer stable images are available in this page below. When updating your BeagleBone image, you have the choice of booting from an SD card or flashing the built-in eMMC memory on the BeagleBone.
 
 We highly recommend flashing the internal memory as the eMMC will generally provide better performance than booting from an SD card. Furthermore, flashing the eMMC will also update the bootloader which is necessary if the BeagleBone was shipped from the factory with an outdated bootloader which is usually the case.
 
 \section flashing_s1 Flashing the Built-In eMMC Storage (recommended)
 
-The [BeagleBoard.org latest-images page](http://beagleboard.org/latest-images) is not always up to date. Here are the recommended images to use for BeagleBone Black and BeagleBone Blue along with checksums you can optionally use to check the download integrity:
+The [BeagleBoard.org latest-images page](http://beagleboard.org/latest-images) is currently up to date with the 2018-10-07 stable image, but does not provide a version which will flash the built-in emmc memory. Here are the flasher images we recommend using for BeagleBone Black and BeagleBone Blue along with checksums you can optionally use to check the download integrity:
 
-[2018-8-23 BeagleBone Black Flasher Image](http://strawsondesign.com/docs/images/BBB-blank-debian-9.5-iot-armhf-2018-08-23-4gb.img.xz) ([checksum](http://strawsondesign.com/docs/images/BBB-blank-debian-9.5-iot-armhf-2018-08-23-4gb.img.xz.sha256sum))
+[2018-10-07 BeagleBone Black Flasher Image](http://strawsondesign.com/docs/images/BBB-blank-debian-9.5-iot-armhf-2018-10-07-4gb.img.xz) ([checksum](http://strawsondesign.com/docs/images/BBB-blank-debian-9.5-iot-armhf-2018-10-07-4gb.img.xz.sha256sum))
 
-[2018-8-23 BeagleBone Blue Flasher Image](http://strawsondesign.com/docs/images/BBBL-blank-debian-9.5-iot-armhf-2018-08-23-4gb.img.xz) ([checksum](http://strawsondesign.com/docs/images/BBBL-blank-debian-9.5-iot-armhf-2018-08-23-4gb.img.xz.sha256sum))
+[2018-10-07 BeagleBone Blue Flasher Image](http://strawsondesign.com/docs/images/BBBL-blank-debian-9.5-iot-armhf-2018-10-07-4gb.img.xz) ([checksum](http://strawsondesign.com/docs/images/BBBL-blank-debian-9.5-iot-armhf-2018-10-07-4gb.img.xz.sha256sum))
 
 These links are .xz compressed archives (like a .zip file). You must un-archive (extract) them before writing to a microSD card. The extracted .img file should be about 4GB in size. Do not just write the .xz archive to an SD card, it will not work.
 
@@ -33,7 +33,7 @@ At this point flashing is complete and you must remove the microSD card before a
 
 You can boot a BeagleBone Blue or Black from an SD card without flashing over the eMMC memory in the BeagleBone by writing this non-flashing bootable image to an SD card:
 
-[2018-8-23 BeagleBone SD image](http://strawsondesign.com/docs/images/bone-debian-9.5-iot-armhf-2018-08-23-4gb.img.xz) ([checksum](http://strawsondesign.com/docs/images/bone-debian-9.5-iot-armhf-2018-08-23-4gb.img.xz.sha256sum))
+[2018-10-07 BeagleBone SD image](http://strawsondesign.com/docs/images/bone-debian-9.5-iot-armhf-2018-10-07-4gb.img.xz) ([checksum](http://strawsondesign.com/docs/images/bone-debian-9.5-iot-armhf-2018-10-07-4gb.img.xz.sha256sum))
 
 This link is a .xz compressed archive (like a .zip file). You must un-archive (extract) it before writing to a microSD card. The extracted .img file should be about 4GB in size. Do not just write the .xz archive to an SD card, it will not work.
 
