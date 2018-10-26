@@ -48,10 +48,7 @@
 
 ; Encoder counting definitions
 ; these pin definitions are specific to SD-101D Robotics Cape
-	.asg	r31,		CH		; CHA: P8_16, CHB: P8_15
 	.asg	r0,			OLD		; keep last known values of chA and B in memory
-	.asg	r0.t14,		OLD_A
-	.asg	r0.t15,		OLD_B
 	.asg	r1,			EXOR	; place to store the XOR of old with new AB vals
 	.asg	14,			A
 	.asg	15,			B
@@ -95,23 +92,24 @@ CHECKPINS:
 
 
 A_CHANGED:
-	MOV OLD, r31		; update old value now that something changed
-	QBBC A_FELL,  CH, A	; Branch if CHA has fallen
-	QBBS DECREMENT, CH, B	; A has risen, if B is HIGH, decrement
+	XOR OLD, OLD, EXOR	; update old value now that something changed
+	QBBS CHECKPINS, EXOR, B ; Branch if CHA and CHB have both toggled
+	QBBC A_FELL,  OLD, A	; Branch if CHA has fallen
+	QBBS DECREMENT, OLD, B	; A has risen, if B is HIGH, decrement
 	increment		; otherwise increment
 
 B_CHANGED:
-	MOV OLD, r31		; update old value now that something changed
-	QBBC B_FELL,  CH, B	; Branch if CHB has fallen
-	QBBS INCREMENT, CH, A	; ch B has risen, if A is HIGH, increment
+	XOR OLD, OLD, EXOR	; update old value now that something changed
+	QBBC B_FELL,  OLD, B	; Branch if CHB has fallen
+	QBBS INCREMENT, OLD, A	; ch B has risen, if A is HIGH, increment
 	decrement		; otherwise decrement
 
 A_FELL:				; CHA has fallen, check CHB
-	QBBC DECREMENT, CH, B	; if CHB is clear (low) decrement
+	QBBC DECREMENT, OLD, B	; if CHB is clear (low) decrement
 	increment		; CHB must be high, so decrement counter
 
 B_FELL:				; CHB has fallen, check CHA
-	QBBC INCREMENT, CH, A	; if CHA is clear (low) decrement
+	QBBC INCREMENT, OLD, A	; if CHA is clear (low) decrement
 	decrement
 
 
