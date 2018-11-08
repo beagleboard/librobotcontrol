@@ -10,7 +10,7 @@ BeagleBoard.org official images come with the librobotcontrol package preinstall
 After flashing a new image simply reconfigure the package to set the the device tree and configure which program you may want to [start automatically on boot](runonboot.html).
 
 ~~~{shell}
-sudo dpkg-reconfigure roboticscape
+sudo dpkg-reconfigure librobotcontrol
 ~~~
 
 BeagleBoard.org graciously hosts the latest stable librobotcontrol package in their repositories. On a BeagleBoard product, the package can easily be updated:
