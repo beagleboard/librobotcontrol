@@ -1,3 +1,8 @@
+1.0.4
+    * fix missing stddef.h include in i2c.h
+    * add kmartin36's PRU encoder robustness improvement
+    * fix rc_startup_routine not completing in some configurations
+
 1.0.3
     * correct default pinmux value for UART and SPI to those functions
     * fix string length error in rc_spi_loopback_test
