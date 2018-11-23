@@ -20,13 +20,14 @@
 #include <rc/start_stop.h>
 
 #define MAXBUF 128
-#define TIMEOUT_S 15
+#define TIMEOUT_S 30
 #define START_LOG "/var/log/robotcontrol/startup_log.txt"
 
 static int set_gpio_permissions();
 static int check_timeout();
 static int check_pwm();
 static int check_eqep();
+static int check_pru();
 
 static uint64_t start_us;
 
@@ -99,6 +100,18 @@ int main()
 	sprintf(buf, "echo 'time (s): %4.2f eQEP loaded' >> %s",time,START_LOG);
 	system(buf);
 
+	// wait for PRU to load
+	while(check_pru()!=0){
+		if(check_timeout()){
+			system("echo 'timeout reached while waiting for PRU remoteproc driver' >> " START_LOG);
+			fprintf(stderr,"timeout reached while waiting for PRU remoteproc driver\n");
+			return -1;
+		}
+		rc_usleep(500000);
+	}
+	time = rc_nanos_since_boot()/1000000000.0;
+	sprintf(buf, "echo 'time (s): %4.2f PRU loaded' >> %s",time,START_LOG);
+	system(buf);
 
 	printf("robotcontrol startup routine complete\n");
 	system("echo 'startup routine complete' >> " START_LOG);
@@ -200,3 +213,16 @@ int check_eqep()
 	return 0;
 }
 
+
+/**
+ * @brief      just check if pru remoteproc is loaded
+ *
+ * @return     0 if loaded, otherwise -1
+ */
+int check_pru()
+{
+	if(access("/sys/class/remoteproc/remoteproc1/state", F_OK)){
+		return -1;
+	}
+	return 0;
+}
