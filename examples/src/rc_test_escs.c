@@ -72,11 +72,11 @@ static void __print_usage(void)
 	printf(" -d             Disable the wakeup period for ESCs which do not require it\n");
 	printf("\n");
 	printf("sample use to control blheli ESC channel 2 with DSM radio channel 1:\n");
-	printf("   rc_test_esc -c 2 -r 1\n\n");
+	printf("   rc_test_escs -c 2 -r 1\n\n");
 	printf("sample use to control DJI ESC channel 2 with DSM radio channel 1:\n");
-	printf("   rc_test_esc -c 2 -r 1 -m 1120,1920 -p 1.0,0.0\n\n");
+	printf("   rc_test_escs -c 2 -r 1 -m 1120,1920 -p 1.0,0.0\n\n");
 	printf("sample use to sweep all ESC channels from 0 to quarter throttle with oneshot mode\n");
-	printf("   rc_test_esc -o -s 0.25\n\n");
+	printf("   rc_test_escs -o -s 0.25\n\n");
 }
 
 // interrupt handler to catch ctrl-c
