@@ -81,13 +81,14 @@ static void __on_mode_release(void);
 
 
 // global variables
-core_state_t cstate;
-setpoint_t setpoint;
-rc_filter_t D1 = RC_FILTER_INITIALIZER;
-rc_filter_t D2 = RC_FILTER_INITIALIZER;
-rc_filter_t D3 = RC_FILTER_INITIALIZER;
-rc_mpu_data_t mpu_data;
-m_input_mode_t m_input_mode = DSM;
+// Must be declared static so they get zero initalized
+static core_state_t cstate;
+static setpoint_t setpoint;
+static rc_filter_t D1 = RC_FILTER_INITIALIZER;
+static rc_filter_t D2 = RC_FILTER_INITIALIZER;
+static rc_filter_t D3 = RC_FILTER_INITIALIZER;
+static rc_mpu_data_t mpu_data;
+static m_input_mode_t m_input_mode = DSM;
 
 /*
  * printed if some invalid argument was given
@@ -96,6 +97,7 @@ static void __print_usage(void)
 {
 	printf("\n");
 	printf("-i {dsm|stdin|none}     specify input\n");
+	printf("-q                      Don't print diagnostic info\n");
 	printf("-h                      print this help message\n");
 	printf("\n");
 }
@@ -111,10 +113,12 @@ int main(int argc, char *argv[])
 	pthread_t setpoint_thread = 0;
 	pthread_t battery_thread = 0;
 	pthread_t printf_thread = 0;
+	bool adc_ok = true;
+	bool quiet = false;
 
 	// parse arguments
 	opterr = 0;
-	while ((c = getopt(argc, argv, "i:")) != -1){
+	while ((c = getopt(argc, argv, "i:qh")) != -1){
 		switch (c){
 		case 'i': // input option
 			if(!strcmp("dsm", optarg)) {
@@ -127,6 +131,9 @@ int main(int argc, char *argv[])
 				__print_usage();
 				return -1;
 			}
+			break;
+		case 'q':
+			quiet = true;
 			break;
 		case 'h':
 			__print_usage();
@@ -192,6 +199,7 @@ int main(int argc, char *argv[])
 	// initialize adc
 	if(rc_adc_init()==-1){
 		fprintf(stderr, "failed to initialize adc\n");
+		adc_ok = false;
 	}
 
 	// make PID file to indicate your project is running
@@ -264,16 +272,22 @@ int main(int argc, char *argv[])
 	rc_filter_enable_saturation(&D3, -STEERING_INPUT_MAX, STEERING_INPUT_MAX);
 
 	// start a thread to slowly sample battery
-	if(rc_pthread_create(&battery_thread, __battery_checker, (void*) NULL, SCHED_OTHER, 0)){
-		fprintf(stderr, "failed to start battery thread\n");
-		return -1;
+	if (adc_ok) {
+		if(rc_pthread_create(&battery_thread, __battery_checker, (void*) NULL, SCHED_OTHER, 0)){
+			fprintf(stderr, "failed to start battery thread\n");
+			return -1;
+		}
 	}
+	else { // If we can't get the battery voltage
+		cstate.vBatt = V_NOMINAL; // Set to a nominal value
+	}
+
 	// wait for the battery thread to make the first read
 	while(cstate.vBatt<1.0 && rc_get_state()!=EXITING) rc_usleep(10000);
 
 	// start printf_thread if running from a terminal
 	// if it was started as a background process then don't bother
-	if(isatty(fileno(stdout))){
+	if(isatty(fileno(stdout)) && (quiet == false)){
 		if(rc_pthread_create(&printf_thread, __printf_loop, (void*) NULL, SCHED_OTHER, 0)){
 			fprintf(stderr, "failed to start battery thread\n");
 			return -1;
@@ -310,8 +324,8 @@ int main(int argc, char *argv[])
 
 	// join threads
 	rc_pthread_timed_join(setpoint_thread, NULL, 1.5);
-	rc_pthread_timed_join(battery_thread, NULL, 1.5);
-	rc_pthread_timed_join(printf_thread, NULL, 1.5);
+	if (battery_thread) rc_pthread_timed_join(battery_thread, NULL, 1.5);
+	if (printf_thread) rc_pthread_timed_join(printf_thread, NULL, 1.5);
 
 	// cleanup
 	rc_filter_free(&D1);
@@ -417,13 +431,14 @@ void* __setpoint_manager(__attribute__ ((unused)) void* ptr)
 				stdin_timeout = 0;
 				if(ch == 'n' || ch == '\n'){
 					if(i > 2){
+						in_str[i-2] = '\0'; // Null terminate string in case this command is shorter than last one
 						if(chan == DSM_TURN_CH){
-							turn_stick = strtof(in_str, NULL)* DSM_TURN_POL;
-							setpoint.phi_dot = drive_stick;
-						}
-						else if(chan == DSM_TURN_CH){
-							drive_stick = strtof(in_str, NULL)* DSM_DRIVE_POL;
+							turn_stick = strtof(in_str, NULL) * DSM_TURN_POL;
 							setpoint.gamma_dot = turn_stick;
+						}
+						else if(chan == DSM_DRIVE_CH){
+							drive_stick = strtof(in_str, NULL) * DSM_DRIVE_POL;
+							setpoint.phi_dot = drive_stick;
 						}
 					}
 					if(ch == 'n') i = 1;
@@ -435,6 +450,7 @@ void* __setpoint_manager(__attribute__ ((unused)) void* ptr)
 				}
 				else{
 					in_str[i-2] = ch;
+					i++;
 				}
 			}
 
