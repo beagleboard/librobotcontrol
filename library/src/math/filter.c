@@ -157,7 +157,7 @@ int rc_filter_alloc_from_arrays(rc_filter_t* f,double dt,double* num,int numlen,
 
 int rc_filter_duplicate(rc_filter_t* f, rc_filter_t old)
 {
-	if(unlikely(old.initialized)){
+	if(unlikely(!old.initialized)){
 		fprintf(stderr, "ERROR in rc_filter_duplicate, old filter not initialized\n");
 		return -1;
 	}
