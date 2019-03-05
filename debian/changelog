@@ -1,3 +1,8 @@
+librobotcontrol (1.0.5) stable; urgency=low
+    * add support for Taranis SBUS remote control.
+ -- Per Dalgas Jakobsen <pdj@knaldgas.dk>  Mon, 4 Mar 2019 16:04:00 +0000
+
+
 librobotcontrol (1.0.4) stable; urgency=low
     * fix missing stddef.h include in i2c.h
     * add kmartin36's PRU encoder robustness improvement
