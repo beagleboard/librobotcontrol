@@ -98,9 +98,11 @@ static volatile int centers[RC_MAX_SBUS_ANALOG_CHANNELS];
 static volatile double range_up[RC_MAX_SBUS_ANALOG_CHANNELS];
 static volatile double range_down[RC_MAX_SBUS_ANALOG_CHANNELS];
 
-static pthread_t parse_thread;
 static void (*new_data_callback)();
 static void (*disconnect_callback)();
+
+static pthread_t parse_thread;
+
 
 /**
  * This returns a string (char*) of '1' and '0' representing a character. For
