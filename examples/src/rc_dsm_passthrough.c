@@ -118,6 +118,11 @@ int main(int argc, char *argv[])
 			return -1;
 		}
 		rc_adc_cleanup();
+
+		if(rc_servo_init ()){
+			fprintf(stderr,"failed to initialize servos\n");
+			return -1;
+		}
 		if(rc_servo_power_rail_en(1)){
 			fprintf(stderr,"failed to enable power rail\n");
 			return -1;
@@ -153,6 +158,11 @@ int main(int argc, char *argv[])
 		rc_usleep(25000);
 	}
 	printf("\n");
+
+	if(mode == POWERON){
+		rc_servo_cleanup ();
+	}
 	rc_dsm_cleanup();
+	
 	return 0;
 }
