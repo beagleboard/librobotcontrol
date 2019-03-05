@@ -77,29 +77,30 @@
 #define SBUS_FOOTER_VALUE	0x00
 
 
-static int running;
-static int analog_channels[RC_MAX_SBUS_ANALOG_CHANNELS];
-static int binary_channels[RC_MAX_SBUS_BINARY_CHANNELS];
-static int frame_lost = 1;
-static int failsafe = 1;
+static volatile int running;
+static volatile int analog_channels[RC_MAX_SBUS_ANALOG_CHANNELS];
+static volatile int binary_channels[RC_MAX_SBUS_BINARY_CHANNELS];
+static volatile int frame_lost = 1;
+static volatile int failsafe = 1;
 
-static int maxes[RC_MAX_SBUS_ANALOG_CHANNELS];
-static int mins[RC_MAX_SBUS_ANALOG_CHANNELS];
-static int centers[RC_MAX_SBUS_ANALOG_CHANNELS];
-static double range_up[RC_MAX_SBUS_ANALOG_CHANNELS];
-static double range_down[RC_MAX_SBUS_ANALOG_CHANNELS];
+static volatile int new_sbus_flag;
+static volatile uint64_t last_time;
+static volatile int listening; // for calibration routine only
+static volatile int active_flag=0;
+static volatile int init_flag=0;
+static volatile uint32_t total_errors=0;
+static volatile uint32_t lost_frames=0;
+static volatile uint32_t signal_quality=0;
 
-static int new_sbus_flag;
-static uint64_t last_time;
+static volatile int maxes[RC_MAX_SBUS_ANALOG_CHANNELS];
+static volatile int mins[RC_MAX_SBUS_ANALOG_CHANNELS];
+static volatile int centers[RC_MAX_SBUS_ANALOG_CHANNELS];
+static volatile double range_up[RC_MAX_SBUS_ANALOG_CHANNELS];
+static volatile double range_down[RC_MAX_SBUS_ANALOG_CHANNELS];
+
 static pthread_t parse_thread;
-static int listening; // for calibration routine only
 static void (*new_data_callback)();
 static void (*disconnect_callback)();
-static int active_flag=0;
-static int init_flag=0;
-static uint32_t total_errors=0;
-static uint32_t lost_frames=0;
-static uint32_t signal_quality=0;
 
 /**
  * This returns a string (char*) of '1' and '0' representing a character. For
@@ -284,7 +285,7 @@ static void* __parser_func(__attribute__ ((unused)) void* ptr){
 				signal_quality += 2;
 			}
 		}
-		
+
 		new_sbus_flag=1;
 		active_flag=1;
 		last_time = rc_nanos_since_boot();
