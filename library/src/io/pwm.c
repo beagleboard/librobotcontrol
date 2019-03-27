@@ -144,6 +144,9 @@ static int __export_channels(int ss)
  */
 static int __unexport_channels(int ss)
 {
+	/* At a minimum, the channels need to be disabled prior to being unexported */
+	return 0;
+
 	int unexport_fd=0;
 	char buf[MAXBUF];
 	int len;
