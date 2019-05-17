@@ -44,6 +44,9 @@ int main()
 		return -1;
 	}
 
+	// capture start time for check_timeout
+	start_us = rc_nanos_since_boot()/1000;
+
 	// log start time
 	time = rc_nanos_since_boot()/1000000000.0;
 	sprintf(buf, "echo 'start time (s): %6.2f' > %s",time,START_LOG);
