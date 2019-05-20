@@ -1,12 +1,12 @@
 /**
- * @example    rc_dsm_passthrough.c
+ * @example    rc_sbus_passthrough.c
  *
- * This sends all dsm2 data straight out the servo channels
- * as they come in. When running this program the BBB acts exactly like a normal
- * DSM receiver.
+ * This sends all sbus data straight out the servo channels as they
+ * come in. When running this program the BBB acts exactly like a
+ * normal SBUS receiver.
  *
- * You must specify SERVO or ESC mode with -s or -e to turn om or off the 6V
- * power rail. Sending 6V into an ESC may damage it!!!
+ * You must specify SERVO or ESC mode with -s or -e to turn om or off
+ * the 6V power rail. Sending 6V into an ESC may damage it!!!
  *
  * Raw data is also printed to the terminal for monitoring.
  */
@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <signal.h>
-#include <rc/dsm.h>
+#include <rc/sbus.h>
 #include <rc/servo.h>
 #include <rc/time.h>
 #include <rc/adc.h>
@@ -27,22 +27,27 @@ typedef enum p_mode_t{
 	POWEROFF
 } p_mode_t;
 
-// function to be called every time new a new DSM packet is received.
+// function to be called every time new a new SBUS packet is received.
 static void __send_pulses(void)
 {
-	int i, ch, val;
+	int i, val;
 
 	// send single to working channels
 	for(i=1; i<=8; i++){
-		val=rc_dsm_ch_raw(i);
+		val=rc_sbus_ch_raw(i);
 		if(val>0) rc_servo_send_pulse_us(i,val);
 	}
 
 	// print all channels
 	printf("\r");
-	ch = rc_dsm_channels();
-	for(i=1;i<=ch;i++){
-		printf("% 4d   ", rc_dsm_ch_raw(i));
+	for(i=1;i<=RC_MAX_SBUS_ANALOG_CHANNELS;i++){
+		val = rc_sbus_ch_raw(i);
+		if (val != 0) {
+			printf("% 4d   ", val);
+		}
+	}
+	for(i=1;i<=RC_MAX_SBUS_BINARY_CHANNELS;i++){
+		printf("% 1d   ", rc_sbus_ch_binary(i));
 	}
 	fflush(stdout);
 	return;
@@ -104,7 +109,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if(rc_dsm_init()==-1) return -1;
+	if(rc_sbus_init()==-1) return -1;
 
 	// if power has been requested, make sure battery is connected!
 	if(mode == POWERON){
@@ -140,29 +145,29 @@ int main(int argc, char *argv[])
 	printf("8:Aux2  ");
 	printf("\n");
 
-	printf("Waiting for DSM Connection");
+	printf("Waiting for SBUS Connection");
 	fflush(stdout);
 
 	// set signal handler so the loop can exit cleanly
 	signal(SIGINT, __signal_handler);
 	running=1;
 
-	rc_dsm_set_callback(&__send_pulses);
+	rc_sbus_set_callback(&__send_pulses);
 	while(running){
-		if(rc_dsm_is_connection_active()==0){
-			printf("\rSeconds since last DSM packet: ");
-			printf("%0.1f ", rc_dsm_nanos_since_last_packet()/1000000000.0);
+		if(rc_sbus_is_connection_active()==0){
+			printf("\rSeconds since last SBUS packet: ");
+			printf("%0.1f ", rc_sbus_nanos_since_last_packet()/1000000000.0);
 			printf("                             ");
 			fflush(stdout);
 		}
 		rc_usleep(25000);
 	}
 	printf("\n");
-
+	
 	if(mode == POWERON){
-		rc_servo_cleanup ();
+	  	rc_servo_cleanup ();
 	}
-	rc_dsm_cleanup();
+	rc_sbus_cleanup();
 	
 	return 0;
 }

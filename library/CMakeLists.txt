@@ -58,6 +58,7 @@ px4_add_library(robotics_cape
 	other/rc_bb_model.c
 	other/rc_cpu_freq.c
 	other/rc_dsm.c
+	other/rc_sbus.c
 	other/rc_other.c
 	other/rc_pinmux.c
 	other/rc_pru.c
@@ -77,6 +78,7 @@ px4_add_library(robotics_cape
 	src/button.c
 	src/cpu.c
 	src/dsm.c
+	src/sbus.c
 	src/led.c
 	src/mavlink_udp.c
 	src/model.c

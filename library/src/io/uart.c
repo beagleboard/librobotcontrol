@@ -19,6 +19,7 @@
 #include <math.h>
 
 #include <rc/uart.h>
+#include <rc/uart_set_custom_baudrate.h>
 
 #define MAX_BUS		16
 #define STRING_BUF	64
@@ -38,6 +39,7 @@ int rc_uart_init(int bus, int baudrate, float timeout_s, int canonical_en, int s
 	char buf[STRING_BUF];
 	struct termios config;
 	speed_t speed; //baudrate
+	int Custom_Baudrate = 0;
 
 	// sanity checks
 	if(bus<0 || bus>MAX_BUS){
@@ -108,8 +110,13 @@ int rc_uart_init(int bus, int baudrate, float timeout_s, int canonical_en, int s
 		speed=B50;
 		break;
 	default:
-		fprintf(stderr,"ERROR: int rc_uart_init, invalid baudrate. Please use a standard baudrate\n");
-		return -1;
+		/* Not quite sure how to set custom speed "the right way".
+		   Setting a standard speed, followed by a call to the
+		   set custom speed seems to work.  Please fix if you know
+		   how to do it right. 
+		*/
+		speed=B115200;
+		Custom_Baudrate = 1;
 	}
 
 	// close the bus in case it was already open
@@ -159,6 +166,7 @@ int rc_uart_init(int bus, int baudrate, float timeout_s, int canonical_en, int s
 	config.c_cc[VMIN]=MAX_READ_LEN;
 	config.c_cc[VTIME] = tenths+1;
 
+	// Standard speed
 	// set speed in config struct
 	if(cfsetispeed(&config, speed)==-1){
 		perror("ERROR: in rc_uart_init calling cfsetispeed");
@@ -193,6 +201,15 @@ int rc_uart_init(int bus, int baudrate, float timeout_s, int canonical_en, int s
 		close(tmpfd);
 		return -1;
 	}
+	if (Custom_Baudrate) {
+		// Custom speed
+		if (rc_uart_set_custom_baudrate (tmpfd, baudrate) != 0) {
+			perror("ERROR in rc_sbus_init, failed to set custom baudrate");
+			close(tmpfd);
+			return -1;
+		}
+	}
+	
 	if(tcflush(tmpfd,TCIOFLUSH)==-1){
 		perror("ERROR: in rc_uart_init calling tcflush");
 		close(tmpfd);

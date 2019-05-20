@@ -45,24 +45,26 @@
 #define UART_TIMEOUT_S	0.2
 #define CONNECTION_LOST_TIMEOUT_NS 300000000
 
-static int running;
-static int channels[RC_MAX_DSM_CHANNELS];
-static int maxes[RC_MAX_DSM_CHANNELS];
-static int mins[RC_MAX_DSM_CHANNELS];
-static int centers[RC_MAX_DSM_CHANNELS];
-static double range_up[RC_MAX_DSM_CHANNELS];
-static double range_down[RC_MAX_DSM_CHANNELS];
-static int num_channels; // actual number of channels being sent
-static int resolution; // 10 or 11
-static int new_dsm_flag;
-static int dsm_frame_rate;
-static uint64_t last_time;
+static volatile int running;
+static volatile int channels[RC_MAX_DSM_CHANNELS];
+static volatile int maxes[RC_MAX_DSM_CHANNELS];
+static volatile int mins[RC_MAX_DSM_CHANNELS];
+static volatile int centers[RC_MAX_DSM_CHANNELS];
+static volatile double range_up[RC_MAX_DSM_CHANNELS];
+static volatile double range_down[RC_MAX_DSM_CHANNELS];
+static volatile int num_channels; // actual number of channels being sent
+static volatile int resolution; // 10 or 11
+static volatile int new_dsm_flag;
+static volatile int dsm_frame_rate;
+static volatile uint64_t last_time;
+static volatile int listening; // for calibration routine only
+static volatile int active_flag=0;
+static volatile int init_flag=0;
+
+static volatile void (*new_data_callback)();
+static volatile void (*disconnect_callback)();
+
 static pthread_t parse_thread;
-static int listening; // for calibration routine only
-static void (*new_data_callback)();
-static void (*disconnect_callback)();
-static int active_flag=0;
-static int init_flag=0;
 
 
 /**
