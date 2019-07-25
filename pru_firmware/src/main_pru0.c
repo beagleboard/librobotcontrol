@@ -46,6 +46,7 @@ extern void start(void);
 
 void main(void)
 {
+	return; // Until we update for AM5
 	/* Clear SYSCFG[STANDBY_INIT] to enable OCP master port */
 	CT_CFG.SYSCFG_bit.STANDBY_INIT = 0;
 	

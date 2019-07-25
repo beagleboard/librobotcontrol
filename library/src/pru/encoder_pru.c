@@ -22,6 +22,7 @@ static int init_flag=0;
 
 int rc_encoder_pru_init(void)
 {
+	return 0; // until we fix for AM5
 	int i;
 	// map memory
 	shared_mem_32bit_ptr = rc_pru_shared_mem_ptr();
@@ -58,6 +59,7 @@ int rc_encoder_pru_init(void)
 
 void rc_encoder_pru_cleanup(void)
 {
+	return; // until we fix for AM5
 	// zero out shared memory
 	if(shared_mem_32bit_ptr != NULL){
 		shared_mem_32bit_ptr[ENCODER_MEM_OFFSET]=0;
@@ -71,6 +73,7 @@ void rc_encoder_pru_cleanup(void)
 
 int rc_encoder_pru_read(void)
 {
+	return 0; // until we fix for AM5
 	if(shared_mem_32bit_ptr==NULL || init_flag==0){
 		fprintf(stderr, "ERROR in rc_encoder_pru_read, call rc_encoder_pru_init first\n");
 		return -1;
@@ -81,6 +84,7 @@ int rc_encoder_pru_read(void)
 
 int rc_encoder_pru_write(int pos)
 {
+	return 0; // until we fix for AM5
 	if(shared_mem_32bit_ptr==NULL || init_flag==0){
 		fprintf(stderr, "ERROR in rc_encoder_pru_write, call rc_encoder_pru_init first\n");
 		return -1;
