@@ -63,46 +63,28 @@ all: $(TARGETS)
 	@echo "Generated: $^"
 
 
-$(TARGET0): $(BUILD_DIR)/main_pru0.object $(LINK_PRU0_FW)
+$(TARGET0): $(BUILD_DIR)/main_pru.object $(LINK_PRU0_FW)
 	@echo 'LD	$^'
 	@mkdir -p $(BIN_DIR)
 	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
 
-$(TARGET1): $(BUILD_DIR)/main_pru1.object $(LINK_PRU1_FW)
+$(TARGET1): $(BUILD_DIR)/main_pru.object $(LINK_PRU1_FW)
 	@echo 'LD	$^'
 	@mkdir -p $(BIN_DIR)
 	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
 
-$(TARGET2): $(BUILD_DIR)/main_pru1_1.object $(LINK_PRU1_1_FW)
+$(TARGET2): $(BUILD_DIR)/main_pru.object $(LINK_PRU1_1_FW)
 	@echo 'LD	$^'
 	@mkdir -p $(BIN_DIR)
 	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
 
-$(TARGET3): $(BUILD_DIR)/main_pru2_0.object $(LINK_PRU2_0_FW)
+$(TARGET3): $(BUILD_DIR)/main_pru.object $(LINK_PRU2_0_FW)
 	@echo 'LD	$^'
 	@mkdir -p $(BIN_DIR)
 	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
 
 
-$(BUILD_DIR)/main_pru0.object: $(SRC_DIR)/main_pru0.c
-	@mkdir -p $(BUILD_DIR)
-	@echo 'CC	$<'
-	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
-
-
-$(BUILD_DIR)/main_pru1.object: $(SRC_DIR)/main_pru1.c
-	@mkdir -p $(BUILD_DIR)
-	@echo 'CC	$<'
-	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
-
-
-$(BUILD_DIR)/main_pru2_0.object: $(SRC_DIR)/main_pru2_0.c
-	@mkdir -p $(BUILD_DIR)
-	@echo 'CC	$<'
-	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
-
-
-$(BUILD_DIR)/main_pru1_1.object: $(SRC_DIR)/main_pru1_1.c
+$(BUILD_DIR)/main_pru.object: $(SRC_DIR)/main_pru.c
 	@mkdir -p $(BUILD_DIR)
 	@echo 'CC	$<'
 	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<

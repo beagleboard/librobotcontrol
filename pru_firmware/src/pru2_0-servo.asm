@@ -15,7 +15,7 @@
 ;* published by the Free Software Foundation.
 
 
-	.cdecls "main_pru2_0.c"
+	.cdecls "main_pru.c"
 
 DELAY	.macro time, reg
 	LDI32	reg, time
