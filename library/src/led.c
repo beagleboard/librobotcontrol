@@ -16,7 +16,7 @@
 #define unlikely(x)	__builtin_expect (!!(x), 0)
 
 
-#define SYSFS_LED_DIR "/sys/devices/platform/leds/leds/"
+#define SYSFS_LED_DIR "/sys/class/leds/"
 #define BRIGHTNESS_FILE	"/brightness"
 #define MAX_BUF 128
 #define NUM_LEDS 11
