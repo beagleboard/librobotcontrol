@@ -13,16 +13,30 @@
  * follows:
  *
  * - 1 - Ground
- * - 2 - VDD_ADC (1.8V)
- * - 3 - AIN0
- * - 4 - AIN1
- * - 5 - AIN2
- * - 6 - AIN3
+ * - 2 - VDD_ADC (1.8V) (optional 3.3V on BeagleBone AI)
+ * - 3 - AIN0 (4 on BeagleBone AI)
+ * - 4 - AIN1 (6 on BeagleBone AI)
+ * - 5 - AIN2 (7 on BeagleBone AI)
+ * - 6 - AIN3 (5 on BeagleBone AI)
  *
  * All 8 ADC channels on the Sitara including the 4 listed above can be read
  * with rc_adc_read_raw(int ch) which returns the raw integer output of the
  * 12-bit ADC. rc_adc_read_volt(int ch) additionally converts this raw value to
  * a voltage.
+ *
+ * On BeagleBone AI, the on-board ADC is replaced with an SMTPE811. The pin
+ * mapping was done in a way to support touch screens and the channels are
+ * all swiveled around. The ADC2AI() macro will swivel using this table:
+ *
+ * AM3358 - AI
+ *      0 - 4
+ *      1 - 6
+ *      2 - 7
+ *      3 - 5
+ *      4 - 3
+ *      5 - 2
+ *      6 - 0
+ *      7 - -1 (not available on BeagleBone AI)
  *
  * See the rc_test_adc example for sample use case.
  *
@@ -33,6 +47,8 @@
 
 #ifndef RC_ADC_H
 #define RC_ADC_H
+
+#define ADC2AI(x) (x==0?4:(x==1?6:(x==2?7:(x==3?5:(x==4?3:(x==5?2:(x==6?0:-1)))))))
 
 #ifdef __cplusplus
 extern "C" {

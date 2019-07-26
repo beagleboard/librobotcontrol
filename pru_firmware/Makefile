@@ -11,8 +11,8 @@ BUILD_DIR	:= build
 
 PRU0_FW		:= am335x-pru0-rc-encoder-fw
 PRU1_FW		:= am335x-pru1-rc-servo-fw
-PRU1_0_FW	:= am57xx-pru1_0-rc-encoder-fw
-PRU1_1_FW	:= am57xx-pru1_1-rc-servo-fw
+PRU1_1_FW	:= am57xx-pru1_1-rc-encoder-fw
+PRU2_0_FW	:= am57xx-pru2_0-rc-servo-fw
 
 TARGET0		:= $(BIN_DIR)/$(PRU0_FW)
 TARGET1		:= $(BIN_DIR)/$(PRU1_FW)
