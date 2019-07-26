@@ -45,9 +45,6 @@ extern void start(void);
 
 void main(void)
 {
-    /* Clear SYSCFG[STANDBY_INIT] to enable OCP master port */
-	CT_CFG.SYSCFG_bit.STANDBY_INIT = 0;
-
 	start();
 }
 
