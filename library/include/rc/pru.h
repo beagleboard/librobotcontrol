@@ -28,7 +28,7 @@ extern "C" {
  * and "am335x-pru1-fw", please don't overwrite these if they exist. Name your
  * firmware image something like "am335x-pru0-mycustom-fw".
  *
- * @param[in]  ch       pru core to start (0 or 1)
+ * @param[in]  ch       pru core to start (0 or 1 on AM3, 2-5 on AM5)
  * @param[in]  fw_name  The firmware image name, e.g. "am335x-pru0-fw", do not
  * include '/lib/firmware' in the path, only the file name.
  *
@@ -42,15 +42,17 @@ int rc_pru_start(int ch, const char* fw_name);
  * This is done by mapping to /dev/mem and therefore requires root privileges
  * but provides extremely low-latency memory access to communicate with the PRU.
  *
+ * @param[in]  ch       pru core to reference (0 or 1 on AM3, 2-5 on AM5)
+ *
  * @return     memory pointer on success, NULL on failure
  */
-volatile uint32_t* rc_pru_shared_mem_ptr(void);
+volatile uint32_t* rc_pru_shared_mem_ptr(int ch);
 
 
 /**
  * Unloads pru binaries
  *
- * @param[in]  ch    pru core to stop (0 or 1)
+ * @param[in]  ch    pru core to stop (0 or 1 on AM3, 2-5 on AM5)
  *
  * @return     0 on success, -1 on failure.
  */
