@@ -50,6 +50,36 @@
 
 static volatile unsigned int* shared_mem_32bit_ptr = NULL;
 
+static int __open_pru_ch(int ch, int state, int flags)
+{
+	int fd;
+
+	switch(ch) {
+	case 0:
+		fd=open(state?PRU0_STATE:PRU0_FW, flags);
+		break;
+	case 1:
+		fd=open(state?PRU1_STATE:PRU1_FW, flags);
+		break;
+	case 2:
+		fd=open(state?PRU1_0_STATE:PRU1_0_FW, flags);
+		break;
+	case 3:
+		fd=open(state?PRU1_1_STATE:PRU1_1_FW, flags);
+		break;
+	case 4:
+		fd=open(state?PRU2_0_STATE:PRU2_0_FW, flags);
+		break;
+	case 5:
+		fd=open(state?PRU2_1_STATE:PRU2_1_FW, flags);
+		break;
+	default:
+		fd = -1;
+		break;
+	}
+	return fd;
+}
+
 int rc_pru_start(int ch, const char* fw_name)
 {
 	int fd, ret;
@@ -75,29 +105,7 @@ int rc_pru_start(int ch, const char* fw_name)
 	if(rc_pru_stop(ch)) return -1;
 
 	// write firmware title
-	switch(ch) {
-	case 0:
-		fd=open(PRU0_FW, O_WRONLY);
-		break;
-	case 1:
-		fd=open(PRU1_FW, O_WRONLY);
-		break;
-	case 2:
-		fd=open(PRU1_0_FW, O_WRONLY);
-		break;
-	case 3:
-		fd=open(PRU1_1_FW, O_WRONLY);
-		break;
-	case 4:
-		fd=open(PRU2_0_FW, O_WRONLY);
-		break;
-	case 5:
-		fd=open(PRU2_1_FW, O_WRONLY);
-		break;
-	default:
-		fd = -1;
-		break;
-	}
+	fd=__open_pru_ch(ch, 0, O_WRONLY);
 	if(fd==-1){
 		perror("ERROR in rc_pru_start opening remoteproc driver");
 		fprintf(stderr,"need to be root to use the pru\n");
@@ -112,29 +120,7 @@ int rc_pru_start(int ch, const char* fw_name)
 
 
 	// open state fd to start pru
-	switch(ch) {
-	case 0:
-		fd=open(PRU0_STATE, O_WRONLY);
-		break;
-	case 1:
-		fd=open(PRU1_STATE, O_WRONLY);
-		break;
-	case 2:
-		fd=open(PRU1_0_STATE, O_WRONLY);
-		break;
-	case 3:
-		fd=open(PRU1_1_STATE, O_WRONLY);
-		break;
-	case 4:
-		fd=open(PRU2_0_STATE, O_WRONLY);
-		break;
-	case 5:
-		fd=open(PRU2_1_STATE, O_WRONLY);
-		break;
-	default:
-		fd=-1;
-		break;
-	}
+	fd=__open_pru_ch(ch, 1, O_WRONLY);
 	if(fd==-1){
 		perror("ERROR in rc_pru_start opening remoteproc driver");
 		fprintf(stderr,"PRU probably not enabled in device tree\n");
@@ -149,29 +135,7 @@ int rc_pru_start(int ch, const char* fw_name)
 
 	// wait for it to start and make sure it's running
 	rc_usleep(250000);
-	switch(ch) {
-	case 0:
-		fd=open(PRU0_STATE, O_WRONLY);
-		break;
-	case 1:
-		fd=open(PRU1_STATE, O_WRONLY);
-		break;
-	case 2:
-		fd=open(PRU1_0_STATE, O_WRONLY);
-		break;
-	case 3:
-		fd=open(PRU1_1_STATE, O_WRONLY);
-		break;
-	case 4:
-		fd=open(PRU2_0_STATE, O_WRONLY);
-		break;
-	case 5:
-		fd=open(PRU2_1_STATE, O_WRONLY);
-		break;
-	default:
-		fd=-1;
-		break;
-	}
+	fd=__open_pru_ch(ch, 1, O_RDONLY);
 	if(fd==-1){
 		perror("ERROR in rc_pru_start opening remoteproc driver");
 		fprintf(stderr,"PRU probably not enabled in device tree\n");
@@ -251,19 +215,17 @@ volatile uint32_t* rc_pru_shared_mem_ptr(int ch)
 
 int rc_pru_stop(int ch)
 {
-	return 0; // until we update for AM5
 	int fd, ret;
 	char buf[64];
 
 	// sanity checks
-	if(ch!=0 && ch!=1){
-		fprintf(stderr, "ERROR in rc_pru_stop, PRU channel must be 0 or 1\n");
-		return -1;
-	}
+	//if(ch!=0 && ch!=1){
+		//fprintf(stderr, "ERROR in rc_pru_stop, PRU channel must be 0 or 1\n");
+		//return -1;
+	//}
 
 	// check state
-	if(ch==0)	fd=open(PRU0_STATE, O_RDONLY);
-	else		fd=open(PRU1_STATE, O_RDONLY);
+	fd=__open_pru_ch(ch, 1, O_RDONLY);
 	if(fd==-1){
 		perror("ERROR in rc_pru_stop opening remoteproc driver");
 		fprintf(stderr,"PRU probably not enabled in device tree\n");
@@ -301,8 +263,7 @@ int rc_pru_stop(int ch)
 
 	// wait for PRU to stop and check it stopped
 	//rc_usleep(1000000);
-	if(ch==0) fd=open(PRU0_STATE, O_RDONLY);
-	else fd=open(PRU1_STATE, O_RDONLY);
+	fd=__open_pru_ch(ch, 1, O_RDONLY);
 	memset(buf,0,sizeof(buf));
 	ret=read(fd, buf, sizeof(buf));
 	close(fd);
