@@ -13,6 +13,7 @@
 #include <fcntl.h> // for open
 #include <unistd.h> // for close
 #include <rc/adc.h>
+#include <rc/model.h>
 
 // preposessor macros
 #define unlikely(x)	__builtin_expect (!!(x), 0)
@@ -24,6 +25,7 @@
 #define V_DIV_RATIO	11.0
 #define BATT_DEADZONE	1.0
 
+#define ADC2AI(x) (x==0?0:(x==1?1:(x==2?3:(x==3?2:(x==4?7:(x==5?6:(x==6?4:(x==7?5:-1))))))))
 
 #define CHANNELS 8
 #define IIO_DIR "/sys/bus/iio/devices/iio:device0"
@@ -42,7 +44,10 @@ int rc_adc_init(void)
 	if(init_flag) return 0;
 
 	for(i=0;i<CHANNELS;i++){
-		snprintf(buf, sizeof(buf), IIO_DIR "/in_voltage%d_raw", i);
+		if(rc_model()==MODEL_BB_AI || rc_model()==MODEL_BB_AI_RC)
+			snprintf(buf, sizeof(buf), IIO_DIR "/in_voltage%d_raw", ADC2AI(i));
+		else
+			snprintf(buf, sizeof(buf), IIO_DIR "/in_voltage%d_raw", i);
 		temp_fd = open(buf, O_RDONLY);
 		if(temp_fd<0){
 			perror("ERROR in rc_adc_init, failed to open iio adc interface\n");
@@ -100,7 +105,10 @@ double rc_adc_read_volt(int ch)
 {
 	int raw = rc_adc_read_raw(ch);
 	if(raw<0) return -1;
-	return raw * 1.8 / 4095.0;
+	if(rc_model()==MODEL_BB_AI || rc_model()==MODEL_BB_AI_RC)
+		return raw * 0.805664062 / 1000.0; // * in_voltage_scale = mV
+	else
+		return raw * 1.8 / 4095.0;
 }
 
 

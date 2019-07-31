@@ -52,7 +52,6 @@ static volatile unsigned int* shared_mem_32bit_ptr = NULL;
 
 int rc_pru_start(int ch, const char* fw_name)
 {
-	return 0; // until we fix for AM5
 	int fd, ret;
 	char buf[64];
 

@@ -29,14 +29,14 @@
  * all swiveled around. The ADC2AI() macro will swivel using this table:
  *
  * AM3358 - AI
- *      0 - 4
- *      1 - 6
- *      2 - 7
- *      3 - 5
- *      4 - 3
- *      5 - 2
- *      6 - 0
- *      7 - -1 (not available on BeagleBone AI)
+ *      0 - 0 (X+)
+ *      1 - 1 (X-)
+ *      2 - 3 (Y-)
+ *      3 - 2 (Y+)
+ *      4 - 7 (IN3)
+ *      5 - 6 (IN2)
+ *      6 - 4 (IN0)
+ *      7 - 5 (IN1 - grounded on BeagleBone AI)
  *
  * See the rc_test_adc example for sample use case.
  *
@@ -47,8 +47,6 @@
 
 #ifndef RC_ADC_H
 #define RC_ADC_H
-
-#define ADC2AI(x) (x==0?4:(x==1?6:(x==2?7:(x==3?5:(x==4?3:(x==5?2:(x==6?0:-1)))))))
 
 #ifdef __cplusplus
 extern "C" {

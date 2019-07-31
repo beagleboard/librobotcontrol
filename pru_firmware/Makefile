@@ -116,6 +116,8 @@ install:
 	@$(INSTALLDIR) $(DESTDIR)/lib/firmware
 	@$(INSTALLNONEXEC) $(TARGET0) $(DESTDIR)/lib/firmware/
 	@$(INSTALLNONEXEC) $(TARGET1) $(DESTDIR)/lib/firmware/
+	@$(INSTALLNONEXEC) $(TARGET2) $(DESTDIR)/lib/firmware/
+	@$(INSTALLNONEXEC) $(TARGET3) $(DESTDIR)/lib/firmware/
 	@echo 'PRU Firmware Install Complete'
 
 

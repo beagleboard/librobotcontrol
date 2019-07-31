@@ -19,7 +19,7 @@
 #define AM335X_GPIO_POWER_PIN	2,16	//gpio2.16 P8.36
 #define AM335X_SERVO_PRU_CH	1	// PRU1
 #define AM335X_SERVO_PRU_FW	"am335x-pru1-rc-servo-fw"
-#define AM57XX_GPIO_POWER_PIN	8,10	//gpio8.10 P8.36
+#define AM57XX_GPIO_POWER_PIN	7,10	//gpio8.10 P8.36
 #define AM57XX_SERVO_PRU_CH	4	// PRU2_0
 #define AM57XX_SERVO_PRU_FW	"am57xx-pru2_0-rc-servo-fw"
 #define PRU_SERVO_LOOP_INSTRUCTIONS 48 // instructions per PRU servo timer loop
@@ -33,7 +33,6 @@ static int esc_min_us =  RC_ESC_DEFAULT_MIN_US;
 
 int rc_servo_init(void)
 {
-	return 0; // until we update for AM5
 	int i;
 	// start gpio power rail pin
 	if(rc_model()==MODEL_BB_AI || rc_model()==MODEL_BB_AI_RC){
