@@ -49,7 +49,7 @@ int rc_servo_init(void)
 		}
 	}
 	// map memory
-	if(rc_gpio_init(AM57XX_GPIO_POWER_PIN, GPIOHANDLE_REQUEST_OUTPUT)==-1)
+	if(rc_model()==MODEL_BB_AI || rc_model()==MODEL_BB_AI_RC)
 		shared_mem_32bit_ptr = rc_pru_shared_mem_ptr(AM57XX_SERVO_PRU_CH);
 	else
 		shared_mem_32bit_ptr = rc_pru_shared_mem_ptr(AM335X_SERVO_PRU_CH);

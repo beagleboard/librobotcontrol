@@ -170,22 +170,22 @@ volatile uint32_t* rc_pru_shared_mem_ptr(int ch)
 	}
 
 	// map shared memory
-	// TODO: Will use /dev/uioX in the future
+	// TODO: use symlinks for repeatability
 	switch(ch) {
 	case 0:
 	case 1:
 		offset=AM335X_PRU_ADDR;
-		fd=open("/dev/mem", O_RDWR | O_SYNC);
+		fd=open("/dev/uio0", O_RDWR | O_SYNC);
 		break;
 	case 2:
 	case 3:
 		offset=AM57XX_PRUSS1_ADDR;
-		fd=open("/dev/mem", O_RDWR | O_SYNC);
+		fd=open("/dev/uio0", O_RDWR | O_SYNC);
 		break;
 	case 4:
 	case 5:
 		offset=AM57XX_PRUSS2_ADDR;
-		fd=open("/dev/mem", O_RDWR | O_SYNC);
+		fd=open("/dev/uio1", O_RDWR | O_SYNC);
 		break;
 	default:
 		fd=-1;
@@ -197,7 +197,7 @@ volatile uint32_t* rc_pru_shared_mem_ptr(int ch)
 		return NULL;
 	}
 
-	map = mmap(0, PRU_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
+	map = mmap(0, PRU_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if(map==MAP_FAILED){
 		perror("ERROR in rc_pru_shared_mem_ptr failed to map memory");
 		close(fd);
@@ -246,8 +246,7 @@ int rc_pru_stop(int ch)
 	}
 	// if running, stop it
 	else if(strcmp(buf,"running\n")==0){
-		if(ch==0) fd=open(PRU0_STATE, O_WRONLY);
-		else fd=open(PRU1_STATE, O_WRONLY);
+		fd=__open_pru_ch(ch, 1, O_WRONLY);
 		ret=write(fd,"stop",4);
 		close(fd);
 		if(ret==-1){
