@@ -18,7 +18,7 @@
 #include <rc/time.h>
 #include <rc/model.h>
 
-#define BATTPIDFILE	"/run/rc_battery_monitor.pid"
+#define BATTPIDFILE	"/run/librobotcontrol/rc_battery_monitor.pid"
 #define START_BLINK_US	100000	// 0.1 second
 
 // Critical Max voltages of packs used to detect number of cells in pack
@@ -69,10 +69,10 @@ int main(int argc, char *argv[])
 	rc_filter_t filterJ = rc_filter_empty(); // battery and jack filters
 
 	// ensure root privaleges until we sort out udev rules
-	if(geteuid()!=0){
-		fprintf(stderr,"ERROR: rc_battery_monitor must be run as root\n");
-		return -1;
-	}
+	//if(geteuid()!=0){
+		//fprintf(stderr,"ERROR: rc_battery_monitor must be run as root\n");
+		//return -1;
+	//}
 
 	// parse arguments to check for kill mode
 	opterr = 0;

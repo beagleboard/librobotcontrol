@@ -41,14 +41,14 @@
 #define AM57XX_PRUSS1_ADDR	0x4B200000	// Start of PRUSS1 memory for AM57xx - See spruhz6
 #define AM57XX_PRUSS2_ADDR	0x4B280000	// Start of PRUSS2 memory for AM57xx
 /*
- * Use /dev/bone/pru/X aliases in the future in case other uio drivers are loaded
+ * TODO: Use /dev/bone/pru/X aliases in the future in case other uio drivers are loaded
  *
- * Use /dev/uioX to isolate permissions as well as abstract the offset
+ * TODO: Use /dev/uioX to isolate permissions as well as abstract the offset
  */
 #define PRU_LEN		0x20000		// Length of PRU memory (don't reach into registers)
 #define PRU_SHAREDMEM	0x10000		// Offset to shared memory
 
-static volatile unsigned int* shared_mem_32bit_ptr = NULL;
+static volatile unsigned int* shared_mem_32bit_ptr[6];
 
 static int __open_pru_ch(int ch, int state, int flags)
 {
@@ -165,8 +165,8 @@ volatile uint32_t* rc_pru_shared_mem_ptr(int ch)
 	off_t offset = 0;
 
 	// if already set, just return the pointer
-	if(shared_mem_32bit_ptr!=NULL){
-		return shared_mem_32bit_ptr;
+	if(shared_mem_32bit_ptr[ch]!=NULL){
+		return shared_mem_32bit_ptr[ch];
 	}
 
 	// map shared memory
@@ -174,18 +174,19 @@ volatile uint32_t* rc_pru_shared_mem_ptr(int ch)
 	switch(ch) {
 	case 0:
 	case 1:
-		offset=AM335X_PRU_ADDR;
+		//offset=AM335X_PRU_ADDR;
 		fd=open("/dev/uio0", O_RDWR | O_SYNC);
 		break;
 	case 2:
 	case 3:
-		offset=AM57XX_PRUSS1_ADDR;
+		//offset=AM57XX_PRUSS1_ADDR;
 		fd=open("/dev/uio0", O_RDWR | O_SYNC);
 		break;
 	case 4:
 	case 5:
-		offset=AM57XX_PRUSS2_ADDR;
+		//offset=AM57XX_PRUSS2_ADDR;
 		fd=open("/dev/uio1", O_RDWR | O_SYNC);
+		//fd=open("/dev/mem", O_RDWR | O_SYNC);
 		break;
 	default:
 		fd=-1;
@@ -197,7 +198,7 @@ volatile uint32_t* rc_pru_shared_mem_ptr(int ch)
 		return NULL;
 	}
 
-	map = mmap(0, PRU_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	map = mmap(0, PRU_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
 	if(map==MAP_FAILED){
 		perror("ERROR in rc_pru_shared_mem_ptr failed to map memory");
 		close(fd);
@@ -207,9 +208,10 @@ volatile uint32_t* rc_pru_shared_mem_ptr(int ch)
 
 	// set global shared memory pointer
 	// Points to start of shared memory
-	shared_mem_32bit_ptr = map + PRU_SHAREDMEM/4;
+	shared_mem_32bit_ptr[ch] = map + PRU_SHAREDMEM/4;
+	printf("%p %p\n", map, shared_mem_32bit_ptr[ch]);
 
-	return shared_mem_32bit_ptr;
+	return shared_mem_32bit_ptr[ch];
 }
 
 

@@ -258,10 +258,12 @@ int main(int argc, char *argv[])
 		switch(mode){
 
 		case NORM:
+			//printf("calling pulse_normalized %d -> %f\n", ch, servo_pos);
 			if(rc_servo_send_pulse_normalized(ch,servo_pos)==-1) return -1;
 			break;
 
 		case MICROSECONDS:
+			//printf("calling pulse_us %d -> %d\n", ch, width_us);
 			if(rc_servo_send_pulse_us(ch, width_us)==-1) return -1;
 			break;
 

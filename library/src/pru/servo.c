@@ -128,7 +128,6 @@ void rc_servo_cleanup(void)
 
 int rc_servo_power_rail_en(int en)
 {
-	return 0; // until we update for AM5
 	if(init_flag==0){
 		fprintf(stderr, "ERROR in rc_servo_power_rail_en, call rc_servo_init first\n");
 		return -1;
@@ -149,7 +148,6 @@ int rc_servo_power_rail_en(int en)
 
 int rc_servo_set_esc_range(int min, int max)
 {
-	return 0; // until we update for AM5
 	if(min<1 || max<2){
 		fprintf(stderr, "ERROR in rc_servo_set_esc_range, in and max values must be positive\n");
 		return -1;
@@ -166,7 +164,6 @@ int rc_servo_set_esc_range(int min, int max)
 
 int rc_servo_send_pulse_us(int ch, int us)
 {
-	return 0; // until we update for AM5
 	int i, ret;
 	uint32_t num_loops;
 	// Sanity Checks
@@ -178,7 +175,6 @@ int rc_servo_send_pulse_us(int ch, int us)
 		fprintf(stderr,"ERROR: in rc_servo_send_pulse_us, call rc_servo_init first\n");
 		return -1;
 	}
-
 
 	// calculate what to write to pru shared memory to set pulse width
 	num_loops = ((us*200.0)/PRU_SERVO_LOOP_INSTRUCTIONS);
@@ -216,7 +212,6 @@ int rc_servo_send_pulse_us(int ch, int us)
 
 int rc_servo_send_pulse_normalized(int ch, double input)
 {
-	return 0; // until we update for AM5
 	int us;
 	if(input<(-1.5-TOL) || input>(1.5+TOL)){
 		fprintf(stderr,"ERROR in rc_servo_send_pulse_normalized, normalized input must be between -1.5 & 1.5\n");
@@ -231,7 +226,6 @@ int rc_servo_send_pulse_normalized(int ch, double input)
 
 int rc_servo_send_esc_pulse_normalized(int ch, double input)
 {
-	return 0; // until we update for AM5
 	int us;
 	if(input<(-0.1-TOL) || input>(1.0+TOL)){
 		fprintf(stderr,"ERROR in rc_servo_send_esc_pulse_normalized, normalized input must be between -0.1 & 1.0\n");
@@ -245,7 +239,6 @@ int rc_servo_send_esc_pulse_normalized(int ch, double input)
 
 int rc_servo_send_oneshot_pulse_normalized(int ch, double input)
 {
-	return 0; // until we update for AM5
 	int us;
 	if(input<(-0.1-TOL) || input>(1.0+TOL)){
 		fprintf(stderr,"ERROR in rc_servo_send_oneshot_pulse_normalized, normalized input must be between -0.1 & 1.0\n");
