@@ -289,7 +289,7 @@ int main(int argc, char *argv[])
 	// if it was started as a background process then don't bother
 	if(isatty(fileno(stdout)) && (quiet == false)){
 		if(rc_pthread_create(&printf_thread, __printf_loop, (void*) NULL, SCHED_OTHER, 0)){
-			fprintf(stderr, "failed to start battery thread\n");
+			fprintf(stderr, "failed to start printf thread\n");
 			return -1;
 		}
 	}
@@ -303,7 +303,7 @@ int main(int argc, char *argv[])
 
 	// start balance stack to control setpoints
 	if(rc_pthread_create(&setpoint_thread, __setpoint_manager, (void*) NULL, SCHED_OTHER, 0)){
-		fprintf(stderr, "failed to start battery thread\n");
+		fprintf(stderr, "failed to start setpoint thread\n");
 		return -1;
 	}
 
