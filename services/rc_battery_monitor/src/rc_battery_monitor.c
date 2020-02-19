@@ -42,9 +42,6 @@ static int kill_existing_instance();
 static void shutdown_signal_handler(int signo);
 static int startup_blink();
 
-// gpio designation for led 2 is a global variable
-// the rest are #defines but since led 2 is different on the blue
-// we must make it variable
 static int running;
 
 
