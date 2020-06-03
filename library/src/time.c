@@ -17,8 +17,10 @@
 
 #include <rc/time.h>
 
+#include <stdio.h>
 
 void rc_nanosleep(uint64_t ns){
+	//printf("sleeping %llx\n", ns);
 	struct timespec req,rem;
 	req.tv_sec = ns/1000000000;
 	req.tv_nsec = ns%1000000000;

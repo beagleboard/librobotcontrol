@@ -36,6 +36,7 @@
 
 #include <stdint.h>
 #include <pru_cfg.h>
+#include <pru_ctrl.h>
 #include "resource_table_pru1.h"
 
 // The function is defined in pru1_asm_blinky.asm in same dir
@@ -45,8 +46,12 @@ extern void start(void);
 
 void main(void)
 {
-    /* Clear SYSCFG[STANDBY_INIT] to enable OCP master port */
+	/* Clear SYSCFG[STANDBY_INIT] to enable OCP master port */
 	CT_CFG.SYSCFG_bit.STANDBY_INIT = 0;
+	
+	// Access PRU Shared RAM using Constant Table 
+	// C28 defaults to 0x00000000, we need to set bits 23:8 to 0x0100 in order to have it point to 0x00010000
+	PRU0_CTRL.CTPPR0_bit.C28_BLK_POINTER = 0x0100;
 
 	start();
 }

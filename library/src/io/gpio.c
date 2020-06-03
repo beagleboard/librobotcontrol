@@ -28,7 +28,7 @@
 #define likely(x)	__builtin_expect (!!(x), 1)
 
 #define DEVICE_BASE "/dev/gpiochip"
-#define CHIPS_MAX	6 // up to 6 chip chips, make larger if you want
+#define CHIPS_MAX	10 // up to 10 chip chips, make larger if you want
 #define MAX_BUF		64
 
 

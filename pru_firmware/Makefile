@@ -11,12 +11,18 @@ BUILD_DIR	:= build
 
 PRU0_FW		:= am335x-pru0-rc-encoder-fw
 PRU1_FW		:= am335x-pru1-rc-servo-fw
+PRU1_1_FW	:= am57xx-pru1_1-rc-encoder-fw
+PRU2_0_FW	:= am57xx-pru2_0-rc-servo-fw
 
 TARGET0		:= $(BIN_DIR)/$(PRU0_FW)
 TARGET1		:= $(BIN_DIR)/$(PRU1_FW)
-TARGETS		:= $(TARGET0) $(TARGET1)
+TARGET2		:= $(BIN_DIR)/$(PRU1_1_FW)
+TARGET3		:= $(BIN_DIR)/$(PRU2_0_FW)
+TARGETS		:= $(TARGET0) $(TARGET1) $(TARGET2) $(TARGET3)
 LINK_PRU1_FW	:= $(BUILD_DIR)/pru1-servo.object
 LINK_PRU0_FW	:= $(BUILD_DIR)/pru0-encoder.object
+LINK_PRU2_0_FW	:= $(BUILD_DIR)/pru2_0-servo.object
+LINK_PRU1_1_FW	:= $(BUILD_DIR)/pru1_1-encoder.object
 
 RM		:= rm -f -r
 INSTALL		:= install -m 755
@@ -57,24 +63,28 @@ all: $(TARGETS)
 	@echo "Generated: $^"
 
 
-$(TARGET0): $(BUILD_DIR)/main_pru0.object $(LINK_PRU0_FW)
+$(TARGET0): $(BUILD_DIR)/main_pru.object $(LINK_PRU0_FW)
 	@echo 'LD	$^'
 	@mkdir -p $(BIN_DIR)
 	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
 
-$(TARGET1): $(BUILD_DIR)/main_pru1.object $(LINK_PRU1_FW)
+$(TARGET1): $(BUILD_DIR)/main_pru.object $(LINK_PRU1_FW)
+	@echo 'LD	$^'
+	@mkdir -p $(BIN_DIR)
+	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
+
+$(TARGET2): $(BUILD_DIR)/main_pru.object $(LINK_PRU1_1_FW)
+	@echo 'LD	$^'
+	@mkdir -p $(BIN_DIR)
+	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
+
+$(TARGET3): $(BUILD_DIR)/main_pru.object $(LINK_PRU2_0_FW)
 	@echo 'LD	$^'
 	@mkdir -p $(BIN_DIR)
 	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
 
 
-$(BUILD_DIR)/main_pru0.object: $(SRC_DIR)/main_pru0.c
-	@mkdir -p $(BUILD_DIR)
-	@echo 'CC	$<'
-	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
-
-
-$(BUILD_DIR)/main_pru1.object: $(SRC_DIR)/main_pru1.c
+$(BUILD_DIR)/main_pru.object: $(SRC_DIR)/main_pru.c
 	@mkdir -p $(BUILD_DIR)
 	@echo 'CC	$<'
 	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
@@ -90,12 +100,24 @@ $(BUILD_DIR)/pru0-encoder.object: $(SRC_DIR)/pru0-encoder.asm
 	@echo 'CC	$<'
 	@$(CLPRU) $(INCLUDE) $(CFLAGS) -fe $@ $<
 
+$(BUILD_DIR)/pru2_0-servo.object: $(SRC_DIR)/pru2_0-servo.asm
+	@mkdir -p $(BUILD_DIR)
+	@echo 'CC	$<'
+	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
+
+$(BUILD_DIR)/pru1_1-encoder.object: $(SRC_DIR)/pru1_1-encoder.asm
+	@mkdir -p $(BUILD_DIR)
+	@echo 'CC	$<'
+	@$(CLPRU) $(INCLUDE) $(CFLAGS) -fe $@ $<
+
 
 
 install:
 	@$(INSTALLDIR) $(DESTDIR)/lib/firmware
 	@$(INSTALLNONEXEC) $(TARGET0) $(DESTDIR)/lib/firmware/
 	@$(INSTALLNONEXEC) $(TARGET1) $(DESTDIR)/lib/firmware/
+	@$(INSTALLNONEXEC) $(TARGET2) $(DESTDIR)/lib/firmware/
+	@$(INSTALLNONEXEC) $(TARGET3) $(DESTDIR)/lib/firmware/
 	@echo 'PRU Firmware Install Complete'
 
 

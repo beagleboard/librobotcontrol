@@ -4,6 +4,12 @@
 ;* This file is as an example to show how to develope
 ;* and compile inline assembly code for PRUs
 ;*
+;* From Jason: note, this is not "inline" assembly. This is just calling
+;* assembly from a C function. Also, does it make any sense to hold a
+;* copyright over a program by simply providing an example that is really
+;* very much known to those practiced in the art? How about a thanks in
+;* the comments rather than a copyright?
+;*
 ;* This program is free software; you can redistribute it and/or modify
 ;* it under the terms of the GNU General Public License version 2 as
 ;* published by the Free Software Foundation.
@@ -33,14 +39,14 @@ start:
 
 
 ; these pin definitions are specific to SD-101C Robotics Cape
-    .asg    r30.t8,     CH1BIT  ; P8_27
-	.asg    r30.t10,    CH2BIT	; P8_28
-	.asg    r30.t9,     CH3BIT	; P8_29
-	.asg	r30.t11,	CH4BIT	; P8_30
-	.asg	r30.t6,		CH5BIT	; P8_39
-	.asg	r30.t7,		CH6BIT	; P8_40
-	.asg	r30.t4,		CH7BIT	; P8_41
-	.asg	r30.t5,		CH8BIT	; P8_42
+    .asg    r30.t16,     CH1BIT  ; P8_27
+	.asg    r30.t17,    CH2BIT	; P8_28
+	.asg    r30.t18,     CH3BIT	; P8_29
+	.asg	r30.t19,	CH4BIT	; P8_30
+	.asg	r30.t3,		CH5BIT	; P8_39
+	.asg	r30.t4,		CH6BIT	; P8_40
+	.asg	r30.t1,		CH7BIT	; P8_41
+	.asg	r30.t2,		CH8BIT	; P8_42
 
 	.asg    C4,     CONST_SYSCFG
 	.asg    C28,    CONST_PRUSHAREDRAM

@@ -13,11 +13,15 @@
 #include <rc/gpio.h>
 #include <rc/servo.h>
 #include <rc/time.h>
+#include <rc/model.h>
 
 #define TOL		0.01	// acceptable tolerance on doubleing point bounds
-#define GPIO_POWER_PIN	2,16	//gpio2.16 P8.36
-#define SERVO_PRU_CH	1	// PRU1
-#define SERVO_PRU_FW	"am335x-pru1-rc-servo-fw"
+#define AM335X_GPIO_POWER_PIN	2,16	//gpio2.16 P8.36
+#define AM335X_SERVO_PRU_CH	1	// PRU1
+#define AM335X_SERVO_PRU_FW	"am335x-pru1-rc-servo-fw"
+#define AM57XX_GPIO_POWER_PIN	7,10	//gpio8.10 P8.36
+#define AM57XX_SERVO_PRU_CH	4	// PRU2_0
+#define AM57XX_SERVO_PRU_FW	"am57xx-pru2_0-rc-servo-fw"
 #define PRU_SERVO_LOOP_INSTRUCTIONS 48 // instructions per PRU servo timer loop
 
 // pru shared memory pointer
@@ -31,13 +35,24 @@ int rc_servo_init(void)
 {
 	int i;
 	// start gpio power rail pin
-	if(rc_gpio_init(GPIO_POWER_PIN, GPIOHANDLE_REQUEST_OUTPUT)==-1){
-		fprintf(stderr, "ERROR in rc_servo_init, failed to set up power rail GPIO pin\n");
-		init_flag=0;
-		return -1;
+	if(rc_model()==MODEL_BB_AI || rc_model()==MODEL_BB_AI_RC){
+		if(rc_gpio_init(AM57XX_GPIO_POWER_PIN, GPIOHANDLE_REQUEST_OUTPUT)==-1){
+			fprintf(stderr, "ERROR in rc_servo_init, failed to set up power rail GPIO pin\n");
+			init_flag=0;
+			return -1;
+		}
+	} else {
+		if(rc_gpio_init(AM335X_GPIO_POWER_PIN, GPIOHANDLE_REQUEST_OUTPUT)==-1){
+			fprintf(stderr, "ERROR in rc_servo_init, failed to set up power rail GPIO pin\n");
+			init_flag=0;
+			return -1;
+		}
 	}
 	// map memory
-	shared_mem_32bit_ptr = rc_pru_shared_mem_ptr();
+	if(rc_model()==MODEL_BB_AI || rc_model()==MODEL_BB_AI_RC)
+		shared_mem_32bit_ptr = rc_pru_shared_mem_ptr(AM57XX_SERVO_PRU_CH);
+	else
+		shared_mem_32bit_ptr = rc_pru_shared_mem_ptr(AM335X_SERVO_PRU_CH);
 	if(shared_mem_32bit_ptr == NULL){
 		fprintf(stderr, "ERROR in rc_servo_init, failed to map shared memory pointer\n");
 		init_flag=0;
@@ -50,9 +65,16 @@ int rc_servo_init(void)
 	}
 
 	// start pru
-	if(rc_pru_start(SERVO_PRU_CH, SERVO_PRU_FW)){
-		fprintf(stderr,"ERROR in rc_servo_init, failed to start PRU%d\n", SERVO_PRU_CH);
-		return -1;
+	if(rc_model()==MODEL_BB_AI || rc_model()==MODEL_BB_AI_RC){
+		if(rc_pru_start(AM57XX_SERVO_PRU_CH, AM57XX_SERVO_PRU_FW)){
+			fprintf(stderr,"ERROR in rc_servo_init, failed to start PRU%d\n", AM57XX_SERVO_PRU_CH);
+			return -1;
+		}
+	} else {
+		if(rc_pru_start(AM335X_SERVO_PRU_CH, AM335X_SERVO_PRU_FW)){
+			fprintf(stderr,"ERROR in rc_servo_init, failed to start PRU%d\n", AM335X_SERVO_PRU_CH);
+			return -1;
+		}
 	}
 
 	// make sure memory actually got zero'd out
@@ -64,9 +86,15 @@ int rc_servo_init(void)
 		rc_usleep(100000);
 	}
 
-	fprintf(stderr, "ERROR in rc_servo_init, %s failed to load\n", SERVO_PRU_FW);
-	fprintf(stderr, "attempting to stop PRU1\n");
-	rc_pru_stop(SERVO_PRU_CH);
+	if(rc_model()==MODEL_BB_AI || rc_model()==MODEL_BB_AI_RC){
+		fprintf(stderr, "ERROR in rc_servo_init, %s failed to load\n", AM57XX_SERVO_PRU_FW);
+		fprintf(stderr, "attempting to stop PRU2_0\n");
+		rc_pru_stop(AM57XX_SERVO_PRU_CH);
+	} else {
+		fprintf(stderr, "ERROR in rc_servo_init, %s failed to load\n", AM335X_SERVO_PRU_FW);
+		fprintf(stderr, "attempting to stop PRU1\n");
+		rc_pru_stop(AM335X_SERVO_PRU_CH);
+	}
 	init_flag=0;
 	return -1;
 }
@@ -80,10 +108,18 @@ void rc_servo_cleanup(void)
 		for(i=0;i<RC_SERVO_CH_MAX;i++) shared_mem_32bit_ptr[i]=0;
 	}
 	if(init_flag!=0){
-		rc_gpio_set_value(GPIO_POWER_PIN,0);
-		rc_gpio_cleanup(GPIO_POWER_PIN);
+		if(rc_model()==MODEL_BB_AI || rc_model()==MODEL_BB_AI_RC){
+			rc_gpio_set_value(AM57XX_GPIO_POWER_PIN,0);
+			rc_gpio_cleanup(AM57XX_GPIO_POWER_PIN);
+		} else {
+			rc_gpio_set_value(AM335X_GPIO_POWER_PIN,0);
+			rc_gpio_cleanup(AM335X_GPIO_POWER_PIN);
+		}
 	}
-	rc_pru_stop(SERVO_PRU_CH);
+	if(rc_model()==MODEL_BB_AI || rc_model()==MODEL_BB_AI_RC)
+		rc_pru_stop(AM57XX_SERVO_PRU_CH);
+	else
+		rc_pru_stop(AM335X_SERVO_PRU_CH);
 	shared_mem_32bit_ptr = NULL;
 	init_flag=0;
 	return;
@@ -96,9 +132,16 @@ int rc_servo_power_rail_en(int en)
 		fprintf(stderr, "ERROR in rc_servo_power_rail_en, call rc_servo_init first\n");
 		return -1;
 	}
-	if(rc_gpio_set_value(GPIO_POWER_PIN,en)==-1){
-		fprintf(stderr, "ERROR in rc_servo_power_rail_en, failed to write to GPIO pin\n");
-		return -1;
+	if(rc_model()==MODEL_BB_AI || rc_model()==MODEL_BB_AI_RC){
+		if(rc_gpio_set_value(AM57XX_GPIO_POWER_PIN,en)==-1){
+			fprintf(stderr, "ERROR in rc_servo_power_rail_en, failed to write to GPIO pin\n");
+			return -1;
+		}
+	} else {
+		if(rc_gpio_set_value(AM335X_GPIO_POWER_PIN,en)==-1){
+			fprintf(stderr, "ERROR in rc_servo_power_rail_en, failed to write to GPIO pin\n");
+			return -1;
+		}
 	}
 	return 0;
 }
@@ -132,7 +175,6 @@ int rc_servo_send_pulse_us(int ch, int us)
 		fprintf(stderr,"ERROR: in rc_servo_send_pulse_us, call rc_servo_init first\n");
 		return -1;
 	}
-
 
 	// calculate what to write to pru shared memory to set pulse width
 	num_loops = ((us*200.0)/PRU_SERVO_LOOP_INSTRUCTIONS);
