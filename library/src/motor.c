@@ -14,6 +14,9 @@
 #define unlikely(x)	__builtin_expect (!!(x), 0)
 
 // motor pin definitions
+#define MDIR0A_CHIP		0	//gpio0.26	P1.34
+#define MDIR0A_PIN		26	//gpio0.26	P1.34
+
 #define MDIR1A_CHIP		1	//gpio1.28	P9.12
 #define MDIR1A_PIN		28	//gpio1.28	P9.12
 #define MDIR1A_CHIP_BLUE	2	//gpio2.0	pin T13
@@ -94,8 +97,16 @@ int rc_motor_init_freq(int pwm_frequency_hz)
 		dirB_chip[1] = MDIR2B_CHIP;
 		dirB_pin[1] = MDIR2B_PIN;
 	}
-	pwmss[1]=1;
-	pwmch[1]='B';
+	if(rc_model()==MODEL_BB_POCKET) {
+		printf("Found Pocket\n");
+		dirA_chip[1]=MDIR0A_CHIP;
+		dirA_pin[1]=MDIR0A_PIN;
+		pwmss[1]=0;
+		pwmch[1]='A';
+	} else {
+		pwmss[1]=1;
+		pwmch[1]='B';
+	}
 
 	// motor 3
 	dirA_chip[2]=MDIR3A_CHIP;
@@ -114,6 +125,10 @@ int rc_motor_init_freq(int pwm_frequency_hz)
 	pwmch[3]='B';
 
 	// set up pwm channels
+	if(unlikely(rc_pwm_init(0,pwm_frequency_hz))){
+		fprintf(stderr,"ERROR in rc_motor_init, failed to initialize pwm subsystem 1\n");
+		return -1;
+	}
 	if(unlikely(rc_pwm_init(1,pwm_frequency_hz))){
 		fprintf(stderr,"ERROR in rc_motor_init, failed to initialize pwm subsystem 1\n");
 		return -1;
@@ -165,6 +180,7 @@ int rc_motor_cleanup(void)
 	int i;
 	if(!init_flag) return 0;
 	rc_motor_free_spin(0);
+	rc_pwm_cleanup(0);
 	rc_pwm_cleanup(1);
 	rc_pwm_cleanup(2);
 	rc_gpio_cleanup(MOT_STBY);
