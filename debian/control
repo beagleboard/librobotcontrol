@@ -8,7 +8,7 @@ Homepage: http://beagleboard.org/librobotcontrol
 
 Package: librobotcontrol
 Architecture: any
-Depends: debconf, bb-customizations (>= 1.20200522.1-0), ${shlibs:Depends}, ${misc:Depends}
+Depends: debconf, bb-customizations (>= 1.20200522), ${shlibs:Depends}, ${misc:Depends}
 Replaces: roboticscape
 Conflicts: roboticscape
 Provides: roboticscape
