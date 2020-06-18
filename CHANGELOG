@@ -1,3 +1,6 @@
+1.0.5
+    * use latest aliases for PRU indexes
+
 1.0.4
     * fix missing stddef.h include in i2c.h
     * add kmartin36's PRU encoder robustness improvement
