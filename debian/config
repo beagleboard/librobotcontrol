@@ -33,7 +33,7 @@ if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ]; then
 
 	# first, for Black and Black wireless we need to ask to modify uEnv.txt
 	if [ "$ISBLACK" = "true" ]; then
-		db_input critical librobotcontrol/q_enable_dt || true
+		db_input medium librobotcontrol/q_enable_dt || true
 		db_go || true
 	fi
 
@@ -44,7 +44,7 @@ if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ]; then
 	if [ "$RET" = "true" ]; then ISCAPE=true; fi
 
 	# ask for what should run on boot
-	db_input critical librobotcontrol/q_runonboot || true
+	db_input medium librobotcontrol/q_runonboot || true
 	db_go || true
 
 fi
