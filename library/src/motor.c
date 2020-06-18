@@ -111,6 +111,7 @@ int rc_motor_init_freq(int pwm_frequency_hz)
 	else if(rc_model()==MODEL_BB_POCKET) {
 		dirB_chip[1]=MDIR2B_CHIP_POCKET;
 		dirB_pin[1]=MDIR2B_PIN_POCKET;
+	}
 	else{
 		dirB_chip[1] = MDIR2B_CHIP;
 		dirB_pin[1] = MDIR2B_PIN;
