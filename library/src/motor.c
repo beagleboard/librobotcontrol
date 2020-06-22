@@ -254,7 +254,7 @@ int rc_motor_set(int motor, double duty)
 	else if	(duty <-1.0)	duty =-1.0;
 
 	if(motor==0){
-		for(i=1;i<channels;i++){
+		for(i=1;i<=channels;i++){
 			if(rc_motor_set(i,duty)==-1) return -1;
 		}
 		return 0;
@@ -298,7 +298,7 @@ int rc_motor_free_spin(int motor)
 
 	// case for all channels
 	if(motor==0){
-		for(i=1;i<channels;i++){
+		for(i=1;i<=channels;i++){
 			if(rc_motor_free_spin(i)==-1) return -1;
 		}
 		return 0;
@@ -337,7 +337,7 @@ int rc_motor_brake(int motor)
 
 	// case for all channels
 	if(motor==0){
-		for(i=1;i<channels;i++){
+		for(i=1;i<=channels;i++){
 			if(rc_motor_brake(i)==-1) return -1;
 		}
 		return 0;
