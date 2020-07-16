@@ -4,7 +4,7 @@
 /*! \page flashing Updating BeagleBone Image
 
 
-We recommend BeagleBone Black and Black Wireless users run a Debian Stretch IOT image from 2018-7-15 or newer. Newer stable images are available in this page below. When updating your BeagleBone image, you have the choice of booting from an SD card or flashing the built-in eMMC memory on the BeagleBone.
+We recommend BeagleBone Black and Black Wireless users run a Debian Buster IoT image from 2020-04-06 or newer. Stable images are available in this page below. When updating your BeagleBone image, you have the choice of booting from an SD card or flashing the built-in eMMC memory on the BeagleBone.
 
 We highly recommend flashing the internal memory as the eMMC will generally provide better performance than booting from an SD card. Furthermore, flashing the eMMC will also update the bootloader which is necessary if the BeagleBone was shipped from the factory with an outdated bootloader which is usually the case.
 
@@ -16,9 +16,7 @@ Here are the flasher images we recommend using for BeagleBone Black and BeagleBo
 
 For BeagleBone Black + Robotics Cape, you'll still need to manually install the device tree overlay as the cape was designed without an identification EEPROM.
 
-These links are .xz compressed archives (like a .zip file). You must un-archive (extract) them before writing to a microSD card. The extracted .img file should be about 4GB in size. Do not just write the .xz archive to an SD card, it will not work.
-
-You will need a microSD card with at least 4GB of space. We suggest using [Etcher](https://etcher.io/) to write the image to the microSD card. Feel free to use other tools like dd if you prefer.
+You will need a microSD card with at least 4GB of space. We suggest using [Etcher](https://etcher.io/) to write the image to the microSD card. Feel free to use other tools like dd if you prefer, but don't just copy the image to a microSD card as that won't work.
 
 When you are done writing the image to the SD card, make sure your BeagleBone is powered off completely and insert the SD card. Now apply power through either USB or the DC power jack and watch the Blue USR LEDs. After a few seconds the USR LEDs should start blinking in a regular pattern, bouncing back and forth like a game of pong. When flashing is complete all 4 USR LEDs will stay on for a minute before turning off completely.
 
@@ -33,11 +31,9 @@ At this point flashing is complete and you must remove the microSD card before a
 
 You can boot a BeagleBone Blue or Black from an SD card without flashing over the eMMC memory in the BeagleBone by writing this non-flashing bootable image to an SD card:
 
-[2018-10-07 BeagleBone SD image](http://strawsondesign.com/docs/images/bone-debian-9.5-iot-armhf-2018-10-07-4gb.img.xz) ([checksum](http://strawsondesign.com/docs/images/bone-debian-9.5-iot-armhf-2018-10-07-4gb.img.xz.sha256sum))
+[2020-04-06 BeagleBone SD Image](https://debian.beagleboard.org/images/bone-debian-10.3-iot-armhf-2020-04-06-4gb.img.xz) ([checksum](https://debian.beagleboard.org/images/bone-debian-10.3-iot-armhf-2020-04-06-4gb.img.xz.sha256sum))
 
-This link is a .xz compressed archive (like a .zip file). You must un-archive (extract) it before writing to a microSD card. The extracted .img file should be about 4GB in size. Do not just write the .xz archive to an SD card, it will not work.
-
-You will need a microSD card with at least 4GB of space. We suggest using [Etcher](https://etcher.io/) to write the image to the microSD card. Feel free to use other tools like dd if you prefer.
+You will need a microSD card with at least 4GB of space. We suggest using [Etcher](https://etcher.io/) to write the image to the microSD card. Feel free to use other tools like dd if you prefer, but don't just copy the image to a microSD card as that won't work.
 
 This does NOT update the BeagleBone Bootloader which may result in non-functioning PRU and ADC modules. It is safer to just flash the BeagleBone as described in the previous section.
 
