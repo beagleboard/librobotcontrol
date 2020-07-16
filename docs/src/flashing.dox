@@ -10,11 +10,11 @@ We highly recommend flashing the internal memory as the eMMC will generally prov
 
 \section flashing_s1 Flashing the Built-In eMMC Storage (recommended)
 
-The [BeagleBoard.org latest-images page](http://beagleboard.org/latest-images) is currently up to date with the 2018-10-07 stable image, but does not provide a version which will flash the built-in emmc memory. Here are the flasher images we recommend using for BeagleBone Black and BeagleBone Blue along with checksums you can optionally use to check the download integrity:
+Here are the flasher images we recommend using for BeagleBone Black and BeagleBone Blue along with checksums you can optionally use to check the download integrity:
 
-[2018-10-07 BeagleBone Black Flasher Image](http://strawsondesign.com/docs/images/BBB-blank-debian-9.5-iot-armhf-2018-10-07-4gb.img.xz) ([checksum](http://strawsondesign.com/docs/images/BBB-blank-debian-9.5-iot-armhf-2018-10-07-4gb.img.xz.sha256sum))
+[2020-04-06 BeagleBone Flasher Image](https://debian.beagleboard.org/images/bone-eMMC-flasher-debian-10.3-iot-armhf-2020-04-06-4gb.img.xz) ([checksum](https://debian.beagleboard.org/images/bone-eMMC-flasher-debian-10.3-iot-armhf-2020-04-06-4gb.img.xz.sha256sum))
 
-[2018-10-07 BeagleBone Blue Flasher Image](http://strawsondesign.com/docs/images/BBBL-blank-debian-9.5-iot-armhf-2018-10-07-4gb.img.xz) ([checksum](http://strawsondesign.com/docs/images/BBBL-blank-debian-9.5-iot-armhf-2018-10-07-4gb.img.xz.sha256sum))
+For BeagleBone Black + Robotics Cape, you'll still need to manually install the device tree overlay as the cape was designed without an identification EEPROM.
 
 These links are .xz compressed archives (like a .zip file). You must un-archive (extract) them before writing to a microSD card. The extracted .img file should be about 4GB in size. Do not just write the .xz archive to an SD card, it will not work.
 

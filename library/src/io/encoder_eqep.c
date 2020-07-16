@@ -12,6 +12,7 @@
 #include <fcntl.h> // for open
 #include <unistd.h> // for close
 
+#include <rc/model.h>
 #include <rc/encoder_eqep.h>
 
 // preposessor macros
@@ -60,26 +61,28 @@ int rc_encoder_eqep_init(void)
 	fd[0]=temp_fd;
 
 	// subsystem 1
-	temp_fd = open(EQEP_BASE1 "/enabled", O_WRONLY);
-	if(temp_fd<0){
-		perror("ERROR in rc_encoder_eqep_init, failed to open device driver");
-		fprintf(stderr,"Perhaps kernel or device tree is too old\n");
-		return -1;
-	}
-	if(write(temp_fd,"1",2)==-1){
-		perror("ERROR in rc_encoder_eqep_init, failed to enable device driver");
-		return -1;
-	}
-	close(temp_fd);
-	temp_fd = open(EQEP_BASE1 "/position", O_RDWR);
-	if(temp_fd<0){
-		perror("ERROR in rc_encoder_eqep_init, failed to open device driver");
-		fprintf(stderr,"Perhaps kernel or device tree is too old\n");
-		return -1;
-	}
-	if(write(temp_fd,"0",2)==-1){
-		perror("ERROR in rc_encoder_eqep_init, failed to zero out position");
-		return -1;
+	if(rc_model()!=MODEL_BB_POCKET) { // Skip since not enabled on Pocket
+		temp_fd = open(EQEP_BASE1 "/enabled", O_WRONLY);
+		if(temp_fd<0){
+			perror("ERROR in rc_encoder_eqep_init, failed to open device driver");
+			fprintf(stderr,"Perhaps kernel or device tree is too old\n");
+			return -1;
+		}
+		if(write(temp_fd,"1",2)==-1){
+			perror("ERROR in rc_encoder_eqep_init, failed to enable device driver");
+			return -1;
+		}
+		close(temp_fd);
+		temp_fd = open(EQEP_BASE1 "/position", O_RDWR);
+		if(temp_fd<0){
+			perror("ERROR in rc_encoder_eqep_init, failed to open device driver");
+			fprintf(stderr,"Perhaps kernel or device tree is too old\n");
+			return -1;
+		}
+		if(write(temp_fd,"0",2)==-1){
+			perror("ERROR in rc_encoder_eqep_init, failed to zero out position");
+			return -1;
+		}
 	}
 	fd[1]=temp_fd;
 

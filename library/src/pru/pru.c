@@ -22,10 +22,10 @@
 #include <rc/pru.h>
 
 // remoteproc driver
-#define PRU0_STATE	"/sys/class/remoteproc/remoteproc1/state"
-#define PRU1_STATE	"/sys/class/remoteproc/remoteproc2/state"
-#define PRU0_FW		"/sys/class/remoteproc/remoteproc1/firmware"
-#define PRU1_FW		"/sys/class/remoteproc/remoteproc2/firmware"
+#define PRU0_STATE	"/dev/remoteproc/pruss-core0/state"
+#define PRU1_STATE	"/dev/remoteproc/pruss-core1/state"
+#define PRU0_FW		"/dev/remoteproc/pruss-core0/firmware"
+#define PRU1_FW		"/dev/remoteproc/pruss-core1/firmware"
 
 // share memory pointer location
 #define PRU_ADDR	0x4A300000	// Start of PRU memory Page 184 am335x TRM

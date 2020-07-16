@@ -224,7 +224,7 @@ int check_eqep()
  */
 int check_pru()
 {
-	if(access("/sys/class/remoteproc/remoteproc1/state", F_OK)){
+	if(access("/dev/remoteproc/pruss-core0", F_OK)){
 		return -1;
 	}
 	return 0;

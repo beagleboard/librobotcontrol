@@ -65,7 +65,7 @@ int main()
 	} else printf("PASSED: eqep2\n");
 
 	// rproc
-	if(access("/sys/class/remoteproc/remoteproc1/state", F_OK ) != 0){
+	if(access("/dev/remoteproc/pruss-core0/state", F_OK ) != 0){
 		printf("ERROR:  pru-rproc driver not loaded\n");
 	} else printf("PASSED: pru-rproc\n");
 

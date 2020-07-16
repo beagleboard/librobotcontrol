@@ -3,14 +3,14 @@ Section: utils
 Priority: optional
 Build-Depends: debhelper (>= 9), devscripts, debconf (>= 0.2.26)
 Standards-Version: 3.9.8
-Maintainer: James Strawson <james@strawsondesign.com>
-Homepage: http://www.strawsondesign.com/
+Maintainer: Jason Kridner <jkridner@beagleboard.org>
+Homepage: http://beagleboard.org/librobotcontrol
 
 Package: librobotcontrol
 Architecture: any
-Depends: debconf, ${shlibs:Depends}, ${misc:Depends}
+Depends: debconf, bb-customizations (>= 1.20200522), ${shlibs:Depends}, ${misc:Depends}
 Replaces: roboticscape
 Conflicts: roboticscape
 Provides: roboticscape
 Description: Robot Control Library and Examples
- Hardware support for the Robotics Cape and BeagleBone Blue.
+ Hardware support for BeagleBoard.org Robotics Cape and BeagleBoard.org BeagleBone Blue.
