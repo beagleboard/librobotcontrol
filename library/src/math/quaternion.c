@@ -63,7 +63,7 @@ int rc_normalize_quaternion_array(double q[4])
 	double len;
 	double sum=0.0;
 	for(i=0;i<4;i++) sum+=q[i]*q[i];
-	len = sqrtf(sum);
+	len = sqrt(sum);
 
 	// can't check if length is below a constant value as q may be filled
 	// with extremely small but valid doubles

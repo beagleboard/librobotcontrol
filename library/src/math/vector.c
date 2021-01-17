@@ -106,7 +106,7 @@ int rc_vector_ones(rc_vector_t* v, int length)
 		fprintf(stderr,"ERROR in rc_vector_ones, failed to allocate vector\n");
 		return -1;
 	}
-	for(i=0;i<length;i++) v->d[i] = 1.0f;
+	for(i=0;i<length;i++) v->d[i] = 1.0;
 	return 0;
 }
 
@@ -129,8 +129,8 @@ int rc_vector_fibonnaci(rc_vector_t* v, int length)
 		fprintf(stderr,"ERROR rc_vector_fibonnaci, failed to allocate vector\n");
 		return -1;
 	}
-	v->d[0]=1.0f;
-	if(length>1) v->d[1]=1.0f;
+	v->d[0]=1.0;
+	if(length>1) v->d[1]=1.0;
 	for(i=2;i<length;i++) v->d[i]=v->d[i-1]+v->d[i-2];
 	return 0;
 }
@@ -221,7 +221,7 @@ int rc_vector_times_scalar(rc_vector_t* v, double s)
 
 double rc_vector_norm(rc_vector_t v, double p)
 {
-	double norm = 0.0f;
+	double norm = 0.0;
 	int i;
 	if(unlikely(!v.initialized)){
 		fprintf(stderr,"ERROR in rc_vector_norm, vector not initialized yet\n");
@@ -292,16 +292,16 @@ double rc_vector_std_dev(rc_vector_t v)
 	double mean, mean_sqr, diff;
 	if(unlikely(!v.initialized)){
 		fprintf(stderr,"ERROR in rc_vector_std_dev, vector not initialized yet\n");
-		return -1.0f;
+		return -1.0;
 	}
 	// shortcut for length 1
-	if(v.len == 1) return 0.0f;
+	if(v.len == 1) return 0.0;
 	// calculate mean
-	mean = 0.0f;
+	mean = 0.0;
 	for(i=0;i<v.len;i++) mean+=v.d[i];
 	mean = mean/(double)v.len;
 	// calculate mean square
-	mean_sqr = 0.0f;
+	mean_sqr = 0.0;
 	for(i=0;i<v.len;i++){
 		diff = v.d[i]-mean;
 		mean_sqr += diff*diff;
@@ -313,10 +313,10 @@ double rc_vector_std_dev(rc_vector_t v)
 double rc_vector_mean(rc_vector_t v)
 {
 	int i;
-	double sum = 0.0f;
+	double sum = 0.0;
 	if(unlikely(!v.initialized)){
 		fprintf(stderr,"ERROR in rc_vector_mean, vector not initialized yet\n");
-		return -1.0f;
+		return -1.0;
 	}
 	// calculate mean
 	for(i=0;i<v.len;i++) sum+=v.d[i];
@@ -351,11 +351,11 @@ double rc_vector_dot_product(rc_vector_t v1, rc_vector_t v2)
 {
 	if(unlikely(!v1.initialized || !v2.initialized)){
 		fprintf(stderr,"ERROR in rc_vector_dot_product, vector uninitialized\n");
-		return -1.0f;
+		return -1.0;
 	}
 	if(unlikely(v1.len != v2.len)){
 		fprintf(stderr,"ERROR in rc_vector_dot_product, dimension mismatch\n");
-		return -1.0f;
+		return -1.0;
 	}
 	return __vectorized_mult_accumulate(v1.d,v2.d,v1.len);
 }
