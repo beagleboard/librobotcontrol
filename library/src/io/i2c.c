@@ -11,13 +11,14 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h> //for IOCTL defs
+#include <rc/model.h>	//for checking BBAI
 
 #include <rc/i2c.h>
 
 // preposessor macros
 #define unlikely(x)	__builtin_expect (!!(x), 0)
 #define likely(x)	__builtin_expect (!!(x), 1)
-
+#define I2C2AI(x) (x=1?5:(x=2?4:-1))	
 
 /**
  * contains the current state of a bus. you don't need to create your own
@@ -61,7 +62,13 @@ int rc_i2c_init(int bus, uint8_t devAddr)
 
 	// open file descriptor
 	char str[16];
-	sprintf(str,"/dev/i2c-%d",bus);
+
+	if(rc_model()==MODEL_BB_AI || rc_model()==MODEL_BB_AI_RC){
+		sprintf(str,"/dev/i2c-%d",I2C2AI(bus));
+	}
+	else{
+		sprintf(str,"/dev/i2c-%d",bus);
+	}
 	i2c[bus].fd = open(str, O_RDWR);
 	if(i2c[bus].fd==-1){
 		fprintf(stderr,"ERROR: in rc_i2c_init, failed to open /dev/i2c\n");
