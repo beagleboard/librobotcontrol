@@ -18,7 +18,7 @@
 // preposessor macros
 #define unlikely(x)	__builtin_expect (!!(x), 0)
 #define likely(x)	__builtin_expect (!!(x), 1)
-#define I2C2AI(x) (x=1?5:(x=2?4:-1))	
+#define I2C2AI(x) (x=1?5:(x=2?4:-1) )	
 
 /**
  * contains the current state of a bus. you don't need to create your own
