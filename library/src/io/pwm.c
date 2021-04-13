@@ -28,6 +28,7 @@
 
 // preposessor macros
 #define unlikely(x)	__builtin_expect (!!(x), 0)
+#define PWM2AI(x) (x=1?3:(x=2?2:-1))
 
 // variables
 static int dutyA_fd[3];			// pointers to duty cycle file descriptor
