@@ -23,20 +23,15 @@ int main()
 	fflush(stdout);
 	system("cat /etc/debian_version");
 	printf("\n");
-
+	char str[16];	//string will be used for storing path strings
+	
 	// gpio
-	if(access("/dev/gpiochip0", F_OK ) != 0){
-		printf("ERROR:  gpio 0 driver not loaded\n");
-	} else printf("PASSED: gpio 0\n");
-	if(access("/dev/gpiochip1", F_OK ) != 0){
-		printf("ERROR:  gpio 1 driver not loaded\n");
-	} else printf("PASSED: gpio 1\n");
-	if(access("/dev/gpiochip2", F_OK ) != 0){
-		printf("ERROR:  gpio 2 driver not loaded\n");
-	} else printf("PASSED: gpio 2\n");
-	if(access("/dev/gpiochip3", F_OK ) != 0){
-		printf("ERROR:  gpio 3 driver not loaded\n");
-	} else printf("PASSED: gpio 3\n");
+	for (int i = 0; i <= 3; i++){
+		sprintf(str,"/dev/gpiochip%d",i);
+		if(access(str, F_OK ) != 0){
+			printf("ERROR:  gpio %d driver not loaded\n",i);
+		} else printf("PASSED: gpio %d\n",i);
+	}
 
 	// pwm 0, 1, 2
 	if(access("/sys/devices/platform/ocp/48300000.epwmss/48300200.pwm/pwm/", F_OK ) != 0){
@@ -70,13 +65,12 @@ int main()
 	} else printf("PASSED: pru-rproc\n");
 
 	// uart
-	char uart_str[16];
 	for (int i = 1; i <= 5; i++)
 	{		
 		if (i!=3)
 		{
-			sprintf(uart_str,"/dev/ttyO%d",i);
-			if(access(uart_str, F_OK ) != 0){
+			sprintf(str,"/dev/ttyO%d",i);
+			if(access(str, F_OK ) != 0){
 				printf("ERROR:  uart%d driver not loaded\n",i);
 			} else printf("PASSED: uart%d\n",i);
 		}
