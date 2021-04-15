@@ -70,18 +70,17 @@ int main()
 	} else printf("PASSED: pru-rproc\n");
 
 	// uart
-	if(access("/dev/ttyO1", F_OK ) != 0){
-		printf("ERROR:  uart1 driver not loaded\n");
-	} else printf("PASSED: uart1\n");
-	if(access("/dev/ttyO2", F_OK ) != 0){
-		printf("ERROR:  uart2 driver not loaded\n");
-	} else printf("PASSED: uart2\n");
-	if(access("/dev/ttyO4", F_OK ) != 0){
-		printf("ERROR:  uart4 driver not loaded\n");
-	} else printf("PASSED: uart4\n");
-	if(access("/dev/ttyO5", F_OK ) != 0){
-		printf("ERROR:  uart5 driver not loaded\n");
-	} else printf("PASSED: uart5\n");
+	char uart_str[16];
+	for (int i = 1; i <= 5; i++)
+	{		
+		if (i!=3)
+		{
+			sprintf(uart_str,"/dev/ttyO%d",i);
+			if(access(uart_str, F_OK ) != 0){
+				printf("ERROR:  uart%d driver not loaded\n",i);
+			} else printf("PASSED: uart%d\n",i);
+		}
+	}
 
 	// i2c
 	if(access("/dev/i2c-1", F_OK ) != 0){
