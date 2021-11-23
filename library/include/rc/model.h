@@ -53,7 +53,9 @@ typedef enum rc_model_t{
 	MODEL_RPI_CM3,
 	MODEL_PC,
 	MODEL_BB_AI,
-	MODEL_BB_AI_RC
+	MODEL_BB_AI_RC,
+	MODEL_BB_AI64,
+	MODEL_BB_AI64_RC,
 } rc_model_t;
 
 

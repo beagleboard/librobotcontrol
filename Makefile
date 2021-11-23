@@ -16,7 +16,7 @@ install:
 	@cp -r -f  rc_project_template $(DESTDIR)$(prefix)/share/robotcontrol/
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/bin
 	@$(INSTALL) device_tree/configure_robotics_dt.sh $(DESTDIR)$(prefix)/bin/configure_robotics_dt
-	@make -C pru_firmware -s install
+	#@make -C pru_firmware -s install
 	@make -C library -s install
 	@make -C examples -s install
 	@make -C services/rc_battery_monitor -s install
