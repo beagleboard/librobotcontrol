@@ -22,7 +22,7 @@ struct motorcfg {
 	const struct rc_pwmdesc pwm;
 };
 
-static enum configs {
+enum configs {
 	BLACK = 0,
 	BLUE = 1,
 	AI64 = 2,
@@ -31,11 +31,11 @@ static enum configs {
 
 struct sys_motorcfg {
 	const char * desc;
-	const struct motorpins m[MOTOR_CHANNELS];
+	const struct motorcfg m[MOTOR_CHANNELS];
 	const double polarity[MOTOR_CHANNELS];
-	const struct gpiodesc standby;
+	const struct rc_gpiodesc standby;
 	const int pwms[PWM_SUBSYSTEMS];
-} [NUM_CONFIGS] = 
+} cfgs[NUM_CONFIGS] = 
 {
   [BLACK] = {
 	.desc = "Black+RC-A",
@@ -145,21 +145,22 @@ int rc_motor_init_freq(int pwm_frequency_hz)
 	int i;
 
 	if(rc_model()==MODEL_BB_BLUE){
-		cfg = &sys_motorconfig[BLUE];
+		cfg = &cfgs[BLUE];
 	}
 	else if(rc_model()==MODEL_BB_AI64){
-		cfg = &sys_motorconfig[AI64];
+		cfg = &cfgs[AI64];
 	}
 	else{
-		cfg = &sys_motorconfig[BLACK];
+		cfg = &cfgs[BLACK];
 	}
 
 	// setup pwm channels
 	for(i=0;i<PWM_SUBSYSTEMS;i++){
 		if(cfg->pwms[i] >= 0){
-			if(unlikely(rc_pwm_init_avail(cfg->pwms[i],pwm_frequency_hz))){
+			if(unlikely(rc_pwm_init(cfg->pwms[i],pwm_frequency_hz))){
 				fprintf(stderr,
-		"ERROR in rc_motor_init, failed to initialize pwm subsystem %d\n");
+		"ERROR in rc_motor_init, failed to initialize pwm subsystem %d\n",
+				cfg->pwms[i]);
 				return -1;
 			}
 		}
@@ -272,17 +273,17 @@ int rc_motor_set(int motor, double duty)
 	}
 
 	// determine the direction pins to H-bridge
-	duty=duty*polarity[motor-1];
+	duty=duty*cfg->polarity[motor-1];
 	if(duty>=0.0){	a=1; b=0;}
 	else{		a=0; b=1; duty=-duty;}
 
 	// set gpio and pwm for that motor
 	if(unlikely(rc_gpio_set_value(INA(motor-1), a))){
-		fprintf(stderr,"ERROR in rc_motor_set, failed to write to gpio pin %d,%d\n",dirA_chip[motor-1],dirA_pin[motor-1]);
+		fprintf(stderr,"ERROR in rc_motor_set, failed to write to gpio pin %d,%d\n",INA(motor-1));
 		return -1;
 	}
 	if(unlikely(rc_gpio_set_value(INB(motor-1), b))){
-		fprintf(stderr,"ERROR in rc_motor_set, failed to write to gpio pin %d,%d\n",dirB_chip[motor-1],dirB_pin[motor-1]);
+		fprintf(stderr,"ERROR in rc_motor_set, failed to write to gpio pin %d,%d\n",INB(motor-1));
 		return -1;
 	}
 	if(unlikely(rc_pwm_set_duty(PWM(motor-1), duty))){
