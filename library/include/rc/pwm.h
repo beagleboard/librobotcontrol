@@ -10,6 +10,8 @@
  * 0 channels A and B can be accessed on the GPS header if set up with the
  * Pinmux API to do so. The user may have exclusive use of that subsystem.
  *
+ * TODO: Update documentation to reflect status of other capes and SoCs
+ *
  *
  * @author     James Strawson
  * @date       1/31/2018
@@ -80,6 +82,17 @@ int rc_pwm_set_duty(int ss, char ch, double duty);
  */
 int rc_pwm_set_duty_ns(int ss, char ch, unsigned int duty_ns);
 
+
+/**
+ * @brief   What we need to reference a PWM subsystem and channel
+ *
+ * TODO: Abstract to other subsystem options, including PRUs
+ * TODO: Map non-abstract calls to more abstract ones for legacy software
+ */
+struct rc_pwmdesc {
+	const int ss;		/**< subsystem 0,1,2 */
+	const char chan;	/**< channel 'A' or 'B' */
+};
 
 #ifdef __cplusplus
 }

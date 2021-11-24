@@ -41,6 +41,7 @@ static int init_flag[3] = {0,0,0};
 // in 4.9:            /sys/class/pwm/pwmchip4/pwm0/
 // in 4.14.54-ti-r63: /sys/class/pwm/pwm-4:0/
 // in 4.14.61-ti-r68: /sys/class/pwm/pwm-7:0/
+// with "bone bus":   /dev/bone/pwm/2
 // depending on kernel, mode is set to 0 or 1 on export, index is used for 4.14
 static int mode; // 0 for "pwmx", 1 for "pwm-x:y" versions of driver
 static int ssindex[3]; // index given by the kernel to each pwm chip when in mode 1
@@ -202,6 +203,10 @@ int rc_pwm_init(int ss, int frequency)
 	int polarityB_fd;
 	char buf[MAXBUF];
 	int len;
+
+	if(ss == 100){
+		return rc_pwm_pru_init(ss, frequency);
+	}
 
 	// sanity checks
 	if(ss<0 || ss>2){
