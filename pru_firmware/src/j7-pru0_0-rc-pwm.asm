@@ -97,7 +97,7 @@ CH4:
 SET4:
 	SET	r30, CH4BIT			; set the channel
 DUTY:
-	QBEQ	CH1, r0, 0			; if done, jump to reload
+	QBEQ	RELOAD, r0, 0			; if done, jump to reload
 	SUB	r0, r0, 1			; decrement timer
 	QBA	CH1				; return to beginning of loop
 RELOAD:
