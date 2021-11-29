@@ -35,7 +35,7 @@ struct sys_motorcfg {
 	const double polarity[MOTOR_CHANNELS];
 	const struct rc_gpiodesc standby;
 	const int pwms[PWM_SUBSYSTEMS];
-} cfgs[NUM_CONFIGS] = 
+} cfgs[NUM_CONFIGS] =
 {
   [BLACK] = {
 	.desc = "Black+RC-A",
