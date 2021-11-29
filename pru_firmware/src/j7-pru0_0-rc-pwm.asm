@@ -56,7 +56,7 @@ start:
 	.asg    0x100,	SHARED_RAM       ; This is so prudebug can find it.
 
 	LBCO	&r0, CONST_SYSCFG, 4, 4		; Enable OCP master port
-	CLR 	r0, r0, 4					; Clear SYSCFG[STANDBY_INIT] to enable OCP master port
+	CLR 	r0, r0, 4			; Clear SYSCFG[STANDBY_INIT] to enable OCP master port
 	SBCO	&r0, CONST_SYSCFG, 4, 4
 
 ; Configure the programmable pointer register for PRU0 by setting c28_pointer[15:0]
