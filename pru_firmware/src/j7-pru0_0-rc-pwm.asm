@@ -29,20 +29,13 @@ $E?:
 	.clink
 	.global start
 start:
-	LDI 	R30, 0xFFFF
-	DELAY 	10000000, r11
-	LDI		R30, 0x0000
-	DELAY 	10000000, r11
-; 	JMP	start
-
-; 	HALT
-
 
 ; these pin definitions are specific to Robotics Cape rev B and BB AI-64
-	.asg    r30.t5,		CH1BIT	; P8_04, AC29
-	.asg    r30.t13,	CH2BIT	; P9_36B, AH29
-	.asg    r30.t16,	CH3BIT	; P8_12, AH28
-	.asg	r30.t17,	CH4BIT	; P8_11, AB24
+; HACK: TODO: grabbing values from R29 to set them in R30 all at once
+	.asg    r29.t5,		CH1BIT	; P8_04, AC29
+	.asg    r29.t13,	CH2BIT	; P9_36B, AH29
+	.asg    r29.t16,	CH3BIT	; P8_12, AH28
+	.asg	r29.t17,	CH4BIT	; P8_11, AB24
 
 	.asg    C4,     CONST_SYSCFG
 	.asg    C28,    CONST_PRUSHAREDRAM
@@ -69,38 +62,49 @@ start:
 	LDI 	r2, 0x0
 	LDI 	r3, 0x0
 	LDI 	r4, 0x0
-	LDI 	r30, 0x0			; turn off GPIO outputs
 
-; Beginning of loop, should always take 27??? instructions to complete, plus reload time between starts
-CH1:
-	QBLT	SET1, r1, r0			; if timer (r0) < CH1 (r1) pulse duration, jump to set
-	CLR	r30, CH1BIT			; clear the channel
-	QBA	CH2				; test next channel
-SET1:
-	SET	r30, CH1BIT			; set the channel
-CH2:
-	QBLT	SET2, r2, r0			; if timer (r0) < CH2 (r2) pulse duration, jump to set
-	CLR	r30, CH2BIT			; clear the channel
-	QBA	CH3				; test next channel
-SET2:
-	SET	r30, CH2BIT			; set the channel
-CH3:
-	QBLT	SET3, r3, r0			; if timer (r0) < CH3 (r3) pulse duration, jump to set
-	CLR	r30, CH3BIT			; clear the channel
-	QBA	CH4				; test next channel
-SET3:
-	SET	r30, CH3BIT			; set the channel
-CH4:
-	QBLT	SET4, r4, r0			; if timer (r0) < CH4 (r4) pulse duration, jump to set
-	CLR	r30, CH4BIT			; clear the channel
-	QBA	DUTY				; test next channel
-SET4:
-	SET	r30, CH4BIT			; set the channel
-DUTY:
-	QBEQ	RELOAD, r0, 0			; if done, jump to reload
-	SUB	r0, r0, 1			; decrement timer
-	QBA	CH1				; return to beginning of loop
+; Beginning of loop
+; PWM frequency is approximately 1/((mem[0]+1)*72ns), mem[0] must be > 0
+; Duty cycle is roughly m[CH]/(m[0]+1) for a sufficiently large m[0]
+
+; TODO: Does TDA4VM PRU have 4ns cycles?
 RELOAD:
-	LBCO	&r0, CONST_PRUSHAREDRAM, 0, 20	; load r0-r5 with values from shared memory
-	QBA	CH1				; return to beginning of loop
+	LDI	r29, 0				; set new value (r29) to 0
+	LBCO	&r0, CONST_PRUSHAREDRAM, 0, 20	; load r0-r4 with values from shared memory (7 cycles?)
+CH1:
+	QBGE	CLRCH1, r1, r0			; if timer (r0) > CH1 (r1) pulse duration, skip setting
+	SET	r29, CH1BIT			; set channel 1 bit
+CH2:
+	QBGE	CLRCH2, r2, r0			; if timer (r0) > CH2 (r2) pulse duration, skip setting
+	SET	r29, CH2BIT			; set channel 2 bit
+CH3:
+	QBGE	CLRCH3, r3, r0			; if timer (r0) > CH3 (r3) pulse duration, skip setting
+	SET	r29, CH3BIT			; set channel 3 bit
+CH4:
+	QBGE	CLRCH4, r4, r0			; if timer (r0) > CH4 (r4) pulse duration, skip setting
+	SET	r29, CH4BIT			; set channel 4 bit
+UPDATE:
+	MOV	r30, r29			; copy new value (r29) to output (r30)
+	QBEQ	RELOAD, r0, 0			; reload when timer reaches 0
+	SUB	r0, r0, 1			; decrement timer (r0)
+	QBA	NEXT				; test channel pulse durations again
+ENDLOOP:
 
+; Extra cycles to balance out SET operation
+CLRCH1:
+	QBA	CH2
+CLRCH2:
+	QBA	CH3
+CLRCH3:
+	QBA	CH4
+CLRCH4:
+	QBA	UPDATE
+
+; Extra cycles to balance out RELOAD operation
+NEXT:
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	QBA	CH1
