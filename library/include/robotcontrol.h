@@ -26,8 +26,10 @@
 #include <rc/deprecated.h>
 #ifdef RC_AUTOPILOT_EXT
 #include "rc/dsm.h"
+#include "rc/sbus.h"
 #else
 #include <rc/dsm.h>
+#include <rc/sbus.h>
 #endif
 #include <rc/encoder_eqep.h>
 #include <rc/encoder_pru.h>
