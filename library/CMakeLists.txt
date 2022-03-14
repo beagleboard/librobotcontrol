@@ -31,6 +31,7 @@ if(DEFINED __RC_V0_3)
 		other/rc_bb_model.c
 		other/rc_cpu_freq.c
 		other/rc_dsm.c
+		other/rc_sbus.c
 		other/rc_other.c
 		other/rc_pinmux.c
 		other/rc_pru.c
@@ -52,6 +53,7 @@ else()
 		src/button.c
 		src/cpu.c
 		src/dsm.c
+		src/sbus.c
 		src/led.c
 		src/mavlink_udp.c
 		src/model.c
