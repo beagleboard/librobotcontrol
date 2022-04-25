@@ -6,6 +6,6 @@ This package contains the C library and example/testing programs for the Robot C
 
 Full API documentation, instruction manual, and examples at <http://beagleboard.org/librobotcontrol/>.
 
-We encourage questions and discussion in the [Slack Workspace](https://join.slack.com/t/librobotcontrol/shared_invite/enQtNDIxNTAzNjMxMzYzLWU1OTI5MWFhOWY5ZTM4N2FiMDdlYTY5ZmU0YjYzNzJmZjk4MmU0ZGIzNmFiNmQ5MzI3NWZkOTFiYzMxMDkwZWU).
+We encourage questions and discussion in the [Slack Workspace](https://join.slack.com/t/beagleboard/shared_invite/zt-450hc9ya-YkbxSESD0KGEv0whe79p_A).
 
 For use with the BeagleBoard.org Robotics Cape available here: https://www.newark.com/element14/bb-cape-robotics/robotics-cape-9-18-vdc/dp/95Y0637
