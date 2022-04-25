@@ -4,6 +4,12 @@ librobotcontrol: statically-linked-binary lib/firmware/am335x-pru0-rc-encoder-fw
 librobotcontrol: binary-from-other-architecture lib/firmware/am335x-pru1-rc-servo-fw
 librobotcontrol: unstripped-binary-or-object lib/firmware/am335x-pru1-rc-servo-fw
 librobotcontrol: statically-linked-binary lib/firmware/am335x-pru1-rc-servo-fw
+librobotcontrol: binary-from-other-architecture lib/firmware/am57xx-pru1_1-rc-encoder-fw
+librobotcontrol: unstripped-binary-or-object lib/firmware/am57xx-pru1_1-rc-encoder-fw
+librobotcontrol: statically-linked-binary lib/firmware/am57xx-pru1_1-rc-encoder-fw
+librobotcontrol: binary-from-other-architecture lib/firmware/am57xx-pru2_0-rc-servo-fw
+librobotcontrol: unstripped-binary-or-object lib/firmware/am57xx-pru2_0-rc-servo-fw
+librobotcontrol: statically-linked-binary lib/firmware/am57xx-pru2_0-rc-servo-fw
 librobotcontrol: maintainer-script-calls-systemctl *
 librobotcontrol: maintainer-script-ignores-errors *
 librobotcontrol: binary-without-manpage *
