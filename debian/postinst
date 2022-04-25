@@ -6,9 +6,9 @@ set -e	# exit on error
 . /usr/share/debconf/confmodule # Source debconf library.
 
 # enable services, but don't start yet
-systemctl daemon-reload
-systemctl enable robotcontrol
-systemctl enable rc_battery_monitor
+systemctl daemon-reload || true
+systemctl enable robotcontrol || true
+systemctl enable rc_battery_monitor || true
 
 # in interactive mode, ask for configuration options
 if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
@@ -43,8 +43,8 @@ if [ ! "$DEBIAN_FRONTEND" = "noninteractive" ] ; then
 
 
 	# try to start services, but ignore errors as this may not work
-	systemctl start rc_battery_monitor
-	systemctl start robotcontrol
+	systemctl start rc_battery_monitor || true
+	systemctl start robotcontrol || true
 
 	# leave error checking off when setting up device tree too
 	if [ "$ENABLE_DT" = "true" ]; then
