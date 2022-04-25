@@ -40,6 +40,9 @@ clean:
 	@$(RM) docs/html
 	@echo "All Directories Cleaned"
 
+distclean:
+	@git clean -f -d
+	@echo "Restored to distribution state"
 
 uninstall:
 	@make -C pru_firmware -s uninstall
