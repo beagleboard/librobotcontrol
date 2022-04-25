@@ -54,7 +54,7 @@ uninstall:
 	@echo "Robotics Cape Uninstalled"
 
 package:
-	debuild -us -uc
+	debuild --no-tgz-check -us -uc
 
 # no compile option for package
 packagenc:

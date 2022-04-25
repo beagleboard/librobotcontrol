@@ -1,3 +1,10 @@
+librobotcontrol (1.1.0) unstable; urgency=low
+    * this is a pre-release
+    * add support for BeagleBone AI-64 and Robotics Cape rev B (TDA4VM)
+    * add support for BeagleBone AI (AM5729)
+ -- Jason Kridner <jkridner@beagleboard.org>  Mon, 25 Apr 2022 03:19:43 -0400
+
+
 librobotcontrol (1.0.5) stable; urgency=low
     * use latest aliases for PRU indexes
     * add support for PocketBeagle
