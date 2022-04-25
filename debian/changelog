@@ -1,3 +1,15 @@
+librobotcontrol (1.0.5) stable; urgency=low
+    * use latest aliases for PRU indexes
+    * add support for PocketBeagle
+    * integrate PX4 build handling
+    * clean-up some messages from rc_balance
+    * fix rc_startup_routine start delay
+    * fix rc_filter_duplicate initialization check
+    * fix stdin control mode for rc_balance
+    * add PRU to startup routine checks and required kernel modules
+ -- Jason Kridner <jkridner@beagleboard.org>  Thu, 18 Jun 2020 00:17:41 -0400
+
+
 librobotcontrol (1.0.4) stable; urgency=low
     * fix missing stddef.h include in i2c.h
     * add kmartin36's PRU encoder robustness improvement

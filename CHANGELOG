@@ -1,5 +1,16 @@
 1.1.0
-   * add support for hamster
+    * add support for BeagleBone AI-64 and Robotics Cape rev B (TDA4VM)
+    * add support for BeagleBone AI (AM5729)
+
+1.0.5
+    * use latest aliases for PRU indexes
+    * add support for PocketBeagle
+    * integrate PX4 build handling
+    * clean-up some messages from rc_balance
+    * fix rc_startup_routine start delay
+    * fix rc_filter_duplicate initialization check
+    * fix stdin control mode for rc_balance
+    * add PRU to startup routine checks and required kernel modules
 
 1.0.4
     * fix missing stddef.h include in i2c.h
