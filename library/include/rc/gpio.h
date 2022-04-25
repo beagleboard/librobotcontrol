@@ -152,7 +152,16 @@ int rc_gpio_poll(int chip, int pin, int timeout_ms, uint64_t* event_time_ns);
 void rc_gpio_cleanup(int chip, int pin);
 
 
-
+/**
+ * @brief   Information we need to access a pin
+ *
+ * TODO: put any dynamic pinmux information needed here
+ * TODO: make an association to more descriptive terms at a higher level
+ */
+struct rc_gpiodesc {
+	int chip;	/**< The chip number, ie., /dev/gpiochipX */
+	int pin;	/**< The pin ID */
+};
 
 #ifdef __cplusplus
 }

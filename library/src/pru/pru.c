@@ -22,19 +22,27 @@
 #include <rc/pru.h>
 
 // remoteproc driver
+// TODO: These all need to be against aliases as different numbers of remoteprocX can potentially be loaded
 #define PRU0_STATE	"/dev/remoteproc/pruss-core0/state"
-#define PRU1_STATE	"/dev/remoteproc/pruss-core1/state"
 #define PRU0_FW		"/dev/remoteproc/pruss-core0/firmware"
+#define PRU1_STATE	"/dev/remoteproc/pruss-core1/state"
 #define PRU1_FW		"/dev/remoteproc/pruss-core1/firmware"
-// TODO: These need to be against aliases as different numbers of remoteprocX can potentially be loaded
 #define PRU1_0_STATE	"/sys/class/remoteproc/remoteproc0/state"
-#define PRU1_1_STATE	"/sys/class/remoteproc/remoteproc1/state"
-#define PRU2_0_STATE	"/sys/class/remoteproc/remoteproc2/state"
-#define PRU2_1_STATE	"/sys/class/remoteproc/remoteproc3/state"
 #define PRU1_0_FW	"/sys/class/remoteproc/remoteproc0/firmware"
+#define PRU1_1_STATE	"/sys/class/remoteproc/remoteproc1/state"
 #define PRU1_1_FW	"/sys/class/remoteproc/remoteproc1/firmware"
+#define PRU2_0_STATE	"/sys/class/remoteproc/remoteproc2/state"
 #define PRU2_0_FW	"/sys/class/remoteproc/remoteproc2/firmware"
+#define PRU2_1_STATE	"/sys/class/remoteproc/remoteproc3/state"
 #define PRU2_1_FW	"/sys/class/remoteproc/remoteproc3/firmware"
+#define J7_PRU0_0_STATE "/dev/remoteproc/j7-pru0_0/state"
+#define J7_PRU0_0_STATE "/dev/remoteproc/j7-pru0_0/firmware"
+#define J7_PRU0_1_STATE "/dev/remoteproc/j7-pru0_1/state"
+#define J7_PRU0_1_STATE "/dev/remoteproc/j7-pru0_1/firmware"
+#define J7_PRU1_0_STATE "/dev/remoteproc/j7-pru1_0/state"
+#define J7_PRU1_0_STATE "/dev/remoteproc/j7-pru1_0/firmware"
+#define J7_PRU1_1_STATE "/dev/remoteproc/j7-pru1_1/state"
+#define J7_PRU1_1_STATE "/dev/remoteproc/j7-pru1_1/firmware"
 
 // share memory pointer location
 #define AM335X_PRU_ADDR		0x4A300000	// Start of PRU memory Page 184 am335x TRM

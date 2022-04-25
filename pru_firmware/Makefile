@@ -4,25 +4,22 @@
 # much thanks to Zubeen Tolani and Mark Yoder for porting this pru code
 # to remoteproc.
 
+# /sys/bus/platform/devices/b034000.pru/remoteproc/remoteproc0
+# j7-pru0_0-fw
+
 
 BIN_DIR		:= fw
 SRC_DIR		:= src
 BUILD_DIR	:= build
 
-PRU0_FW		:= am335x-pru0-rc-encoder-fw
-PRU1_FW		:= am335x-pru1-rc-servo-fw
-PRU1_1_FW	:= am57xx-pru1_1-rc-encoder-fw
-PRU2_0_FW	:= am57xx-pru2_0-rc-servo-fw
+TARGETS		:= j7-pru0_0-rc-pwm \
+		   am335x-pru0-rc-encoder \
+		   am335x-pru1-rc-servo \
+		   am57xx-pru1_1-rc-encoder \
+		   am57xx-pru2_0-rc-servo
 
-TARGET0		:= $(BIN_DIR)/$(PRU0_FW)
-TARGET1		:= $(BIN_DIR)/$(PRU1_FW)
-TARGET2		:= $(BIN_DIR)/$(PRU1_1_FW)
-TARGET3		:= $(BIN_DIR)/$(PRU2_0_FW)
-TARGETS		:= $(TARGET0) $(TARGET1) $(TARGET2) $(TARGET3)
-LINK_PRU1_FW	:= $(BUILD_DIR)/pru1-servo.object
-LINK_PRU0_FW	:= $(BUILD_DIR)/pru0-encoder.object
-LINK_PRU2_0_FW	:= $(BUILD_DIR)/pru2_0-servo.object
-LINK_PRU1_1_FW	:= $(BUILD_DIR)/pru1_1-encoder.object
+FW		:= $(addprefix $(BIN_DIR)/, $(addsuffix -fw, $(TARGETS)))
+OBJS		:= $(addprefix $(BUILD_DIR)/, $(addsuffix .o, $(TARGETS)))
 
 RM		:= rm -f -r
 INSTALL		:= install -m 755
@@ -55,78 +52,41 @@ HEAP_SIZE=0x100
 
 
 CFLAGS=-v3 -O2 --display_error_number --endian=little --hardware_mac=on --obj_directory=$(BUILD_DIR) --pp_directory=$(BUILD_DIR) -ppd -ppa --asm_listing --c_src_interlist # --absolute_listing
-LFLAGS=--reread_libs --warn_sections --stack_size=$(STACK_SIZE) --heap_size=$(HEAP_SIZE) -m file.map
+LFLAGS=--reread_libs --warn_sections --stack_size=$(STACK_SIZE) --heap_size=$(HEAP_SIZE) -m $(BUILD_DIR)/file.map
 
 
 
-all: $(TARGETS)
+all: $(FW)
 	@echo "Generated: $^"
 
-
-$(TARGET0): $(BUILD_DIR)/main_pru.object $(LINK_PRU0_FW)
+$(FW): $(BIN_DIR)/%-fw: $(BUILD_DIR)/%.o $(BUILD_DIR)/main_pru.o
 	@echo 'LD	$^'
 	@mkdir -p $(BIN_DIR)
 	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
 
-$(TARGET1): $(BUILD_DIR)/main_pru.object $(LINK_PRU1_FW)
-	@echo 'LD	$^'
-	@mkdir -p $(BIN_DIR)
-	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
-
-$(TARGET2): $(BUILD_DIR)/main_pru.object $(LINK_PRU1_1_FW)
-	@echo 'LD	$^'
-	@mkdir -p $(BIN_DIR)
-	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
-
-$(TARGET3): $(BUILD_DIR)/main_pru.object $(LINK_PRU2_0_FW)
-	@echo 'LD	$^'
-	@mkdir -p $(BIN_DIR)
-	@$(LNKPRU) -i$(PRU_CGT)/lib -i$(PRU_CGT)/include $(LFLAGS) -o $@ $^  $(LINKER_COMMAND_FILE) --library=libc.a $(LIBS) $^
-
-
-$(BUILD_DIR)/main_pru.object: $(SRC_DIR)/main_pru.c
+$(OBJS): $(BUILD_DIR)/%.o: $(SRC_DIR)/%.asm
 	@mkdir -p $(BUILD_DIR)
 	@echo 'CC	$<'
 	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
 
-
-$(BUILD_DIR)/pru1-servo.object: $(SRC_DIR)/pru1-servo.asm
+$(BUILD_DIR)/main_pru.o: $(SRC_DIR)/main_pru.c
 	@mkdir -p $(BUILD_DIR)
 	@echo 'CC	$<'
 	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
 
-$(BUILD_DIR)/pru0-encoder.object: $(SRC_DIR)/pru0-encoder.asm
-	@mkdir -p $(BUILD_DIR)
-	@echo 'CC	$<'
-	@$(CLPRU) $(INCLUDE) $(CFLAGS) -fe $@ $<
-
-$(BUILD_DIR)/pru2_0-servo.object: $(SRC_DIR)/pru2_0-servo.asm
-	@mkdir -p $(BUILD_DIR)
-	@echo 'CC	$<'
-	@$(CLPRU)  $(INCLUDE) $(CFLAGS) -fe $@ $<
-
-$(BUILD_DIR)/pru1_1-encoder.object: $(SRC_DIR)/pru1_1-encoder.asm
-	@mkdir -p $(BUILD_DIR)
-	@echo 'CC	$<'
-	@$(CLPRU) $(INCLUDE) $(CFLAGS) -fe $@ $<
-
-
-
-install: $(TARGETS)
-	@$(INSTALLDIR) $(DESTDIR)/lib/firmware
-	@$(INSTALLNONEXEC) $(TARGET0) $(DESTDIR)/lib/firmware/
-	@$(INSTALLNONEXEC) $(TARGET1) $(DESTDIR)/lib/firmware/
-	@$(INSTALLNONEXEC) $(TARGET2) $(DESTDIR)/lib/firmware/
-	@$(INSTALLNONEXEC) $(TARGET3) $(DESTDIR)/lib/firmware/
+install:
+	# TODO
+	$(INSTALLDIR) $(DESTDIR)/lib/firmware
+	$(INSTALLNONEXEC) $(FW) $(DESTDIR)/lib/firmware/
 	@echo 'PRU Firmware Install Complete'
 
-
 clean:
+	@$(RM) $(BIN_DIR)
 	@$(RM) $(BUILD_DIR)
-	@$(RM) main_pru1.asm main_pru0.asm file.map
+	@$(RM) main_pru.asm
 	@echo 'PRU Firmware Cleanup Complete'
 
 uninstall:
-	@$(RM) $(DESTDIR)/lib/firmware/$(PRU0_FW)
-	@$(RM) $(DESTDIR)$(DESTDIR)/lib/firmware/$(PRU1_FW)
+	# TODO
+	@$(RM) $(DESTDIR)/lib/firmware/{$(TARGETS)}
 	@echo "PRU Firmware Uninstall Complete"

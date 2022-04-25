@@ -67,6 +67,10 @@ static void __check_model(void)
 			current_model = MODEL_BB_AI64;
 			return;
 		}
+		if(strcmp(c, "BeagleBoard.org BeagleBone AI-64 RoboticsCape")==0){
+			current_model = MODEL_BB_AI64_RC;
+			return;
+		}
 		if(strcmp(c, "BeagleBoard.org BeagleBone AI")==0){
 			current_model = MODEL_BB_AI;
 			return;
@@ -195,6 +199,7 @@ void rc_model_print(void)
 
 	caseprint(MODEL_UNKNOWN)
 	caseprint(MODEL_BB_AI64)
+	caseprint(MODEL_BB_AI64_RC)
 	caseprint(MODEL_BB_AI)
 	caseprint(MODEL_BB_AI_RC)
 	caseprint(MODEL_BB_BLACK)
