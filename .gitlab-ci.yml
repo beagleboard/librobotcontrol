@@ -6,7 +6,7 @@ build:
     - apt update && apt -y install gnupg
     - apt-key adv --batch --keyserver keyserver.ubuntu.com --recv-key D284E608A4C46402
     - echo "deb [arch=arm64] http://debian.beagleboard.org/arm64/ bullseye main" >> /etc/apt/sources.list
-    - apt update && apt -y install make build-essential ti-pru-cgt-v2.3 devscripts debhelper debconf
+    - apt update && apt -y install gcc make build-essential ti-pru-cgt-v2.3 devscripts debhelper debconf
   script:
     - make package
   artifacts:
