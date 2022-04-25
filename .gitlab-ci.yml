@@ -22,7 +22,7 @@ test:
     - apt update && apt -y install gnupg ca-certificates
     - apt-key adv --batch --keyserver keyserver.ubuntu.com --recv-key D284E608A4C46402
     - echo "deb [arch=arm64] http://debian.beagle.cc/arm64/ bullseye main" >> /etc/apt/sources.list
-    - apt update && apt -y install make
+    - apt update && apt -y install make bb-customizations
   script:
     - dpkg -i build/librobotcontrol_*_arm64.deb
     - make test
