@@ -7,7 +7,7 @@ This package contains the C library and example/testing programs for the Robot C
 
 This package ships with official BeagleBone images and is focused on, but not excludive to, the BeagleBoard platform. The library and example programs are primarily written in C, however there also exists the RCPY python interface to this package available at <https://github.com/mcdeoliveira/rcpy>.
 
-The master branch is always the most current but not necessarily stable. See [releases](https://github.com/StrawsonDesign/Robotics_Cape_Installer/releases) page for older stable versions or install from BeagleBoard.org repositories.
+The master branch is always the most current but not necessarily stable. See [releases](https://git.beagleboard.org/beagleboard/librobotcontrol/-/releases) page for older stable versions or install from BeagleBoard.org repositories.
 
 To get started, visit the [user manual](manual.html)
 
