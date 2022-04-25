@@ -63,6 +63,10 @@ static void __check_model(void)
 
 		current_category = CATEGORY_BEAGLEBONE;
 
+		if(strcmp(c, "BeagleBoard.org BeagleBone AI-64")==0){
+			current_model = MODEL_BB_AI64;
+			return;
+		}
 		if(strcmp(c, "BeagleBoard.org BeagleBone AI")==0){
 			current_model = MODEL_BB_AI;
 			return;
@@ -97,14 +101,6 @@ static void __check_model(void)
 		}
 		if(strcmp(c, "TI AM335x BeagleBone Blue")==0){
 			current_model = MODEL_BB_BLUE;
-			return;
-		}
-		if(strcmp(c, "TI AM57xx BeagleBone")==0){
-			current_model = MODEL_BB_AM57;
-			return;
-		}
-		if(strcmp(c, "TI AM57xx BeagleBone RoboticsCape")==0){
-			current_model = MODEL_BB_AM57_RC;
 			return;
 		}
 		if(strcmp(c, "TI AM335x PocketBeagle")==0) {
@@ -198,6 +194,7 @@ void rc_model_print(void)
 	switch(model){
 
 	caseprint(MODEL_UNKNOWN)
+	caseprint(MODEL_BB_AI64)
 	caseprint(MODEL_BB_AI)
 	caseprint(MODEL_BB_AI_RC)
 	caseprint(MODEL_BB_BLACK)
