@@ -8,6 +8,7 @@ INSTALLNONEXEC	:= install -m 644
 all:
 	@make -C library --no-print-directory
 	@make -C examples --no-print-directory
+	@make -C pru_firmware -no-print-directory
 	@make -C services/rc_battery_monitor --no-print-directory
 	@make -C services/robotcontrol --no-print-directory
 
