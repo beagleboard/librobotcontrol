@@ -9,9 +9,11 @@ build:
     - apt update && apt -y install gcc make build-essential ti-pru-cgt-v2.3 ti-pru-software devscripts debhelper debconf
   script:
     - make package
+    - mkdir -p build
+    - mv ../librobotcontrol_* build/
   artifacts:
     paths:
-      - "../librobotcontrol_*"
+      - build/*
 
 # run tests using the binary built before
 test:
