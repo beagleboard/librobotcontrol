@@ -112,7 +112,7 @@ $(BUILD_DIR)/pru1_1-encoder.object: $(SRC_DIR)/pru1_1-encoder.asm
 
 
 
-install:
+install: $(TARGETS)
 	@$(INSTALLDIR) $(DESTDIR)/lib/firmware
 	@$(INSTALLNONEXEC) $(TARGET0) $(DESTDIR)/lib/firmware/
 	@$(INSTALLNONEXEC) $(TARGET1) $(DESTDIR)/lib/firmware/
