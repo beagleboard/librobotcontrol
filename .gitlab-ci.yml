@@ -1,0 +1,19 @@
+image: gcc:bullseye
+
+build:
+  stage: build
+  before_script:
+    - echo "deb [arch=arm64] http://debian.beagleboard.org/arm64/ bullseye main" >> /etc/apt/sources
+    - apt update && apt -y install make ti-pru-cgt-v2.3 devscripts debhelper debconf
+  script:
+    - make package
+  artifacts:
+    paths:
+      - "../*.deb"
+
+# run tests using the binary built before
+test:
+  stage: test
+  script:
+    - make test
+

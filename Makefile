@@ -59,3 +59,6 @@ package:
 # no compile option for package
 packagenc:
 	debuild -us -uc -nc
+
+test:
+	@echo Testing placeholder
