@@ -17,7 +17,7 @@
 #include <rc/time.h>
 #include <rc/model.h>
 
-#define AM335X_SERVO_PRU_CH	1	// PRU1
+#define 5X_SERVO_PRU_CH	1	// PRU1
 #define AM335X_SERVO_PRU_FW	"am335x-pru1-rc-servo-fw"
 #define AM57XX_GPIO_POWER_PIN	7,10	//gpio8.10 P8.36
 #define AM57XX_SERVO_PRU_CH	4	// PRU2_0
