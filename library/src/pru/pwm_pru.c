@@ -17,15 +17,11 @@
 #include <rc/time.h>
 #include <rc/model.h>
 
-#define 5X_SERVO_PRU_CH	1	// PRU1
-#define AM335X_SERVO_PRU_FW	"am335x-pru1-rc-servo-fw"
-#define AM57XX_GPIO_POWER_PIN	7,10	//gpio8.10 P8.36
-#define AM57XX_SERVO_PRU_CH	4	// PRU2_0
-#define AM57XX_SERVO_PRU_FW	"am57xx-pru2_0-rc-servo-fw"
-#define PRU_SERVO_LOOP_INSTRUCTIONS 48 // instructions per PRU servo timer loop
+#define TDA4VM_PWM_PRU_CH 2
+#define PRU_SERVO_LOOP_INSTRUCTIONS 48 // instructions per PRU timer loop
 
 // pru shared memory pointer
-static volatile unsigned int* shared_mem_32bit_ptr = NULL;
+static volatile unsigned int* shared_mem_ptr = NULL;
 static int init_flag=0;
 
 static int esc_max_us =  RC_ESC_DEFAULT_MAX_US;
@@ -36,11 +32,14 @@ int rc_pwm_pru_init(int ss, int frequency)
 	int i;
 
 	// sanity tests
-	if(unlikely(ss != 100)) return -1;
+	if(unlikely(ss != 100)) {
+		fprintf(stderr, "ERROR in rc_pwm_pru_init, failed to map shared memory pointer\n");
+		return -1;
+	}
 
 	// map memory
 	if(rc_model()==MODEL_BB_AI64 || rc_model()==MODEL_BB_AI64_RC)
-		shared_mem_32bit_ptr = rc_pru_shared_mem_ptr(TDA4VM_SERVO_PRU_CH);
+		shared_mem_32bit_ptr = rc_pru_shared_mem_ptr(TDA4VM_PWM_PRU_CH);
 	else
 		return -1;
 

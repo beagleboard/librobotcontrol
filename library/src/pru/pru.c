@@ -27,12 +27,12 @@ struct prucfg {
 	const char * firmware;
 	const char * shared_mem;
 } pru_configs[NUM_PRU_CONFIGS] = {
-	{ "/dev/remoteproc/pru0/state", "/dev/remoteproc/pru0/firmware", "/dev/uio/pruss/shared" },
-	{ "/dev/remoteproc/pru1/state", "/dev/remoteproc/pru1/firmware", "/dev/uio/pruss/shared" },
-	{ "/dev/remoteproc/pruss0/pru0/state", "/dev/remoteproc/pruss0/pru0/firmware", "/dev/uio/pruss0/pruss/shared" },
-	{ "/dev/remoteproc/pruss0/pru1/state", "/dev/remoteproc/pruss0/pru1/firmware", "/dev/uio/pruss0/pruss/shared" },
-	{ "/dev/remoteproc/pruss1/pru0/state", "/dev/remoteproc/pruss1/pru0/firmware", "/dev/uio/pruss1/pruss/shared" },
-	{ "/dev/remoteproc/pruss1/pru1/state", "/dev/remoteproc/pruss1/pru1/firmware", "/dev/uio/pruss1/pruss/shared" },
+	{ "/dev/remoteproc/pruss-core0/state", "/dev/remoteproc/pruss-core0/firmware", "/dev/uio/pruss/shared" },
+	{ "/dev/remoteproc/pruss-core1/state", "/dev/remoteproc/pruss-core1/firmware", "/dev/uio/pruss/shared" },
+	{ "/dev/remoteproc/pruss1-core0/state", "/dev/remoteproc/pruss1-core0/firmware", "/dev/uio/pruss1/pruss/shared" },
+	{ "/dev/remoteproc/pruss1-core1/state", "/dev/remoteproc/pruss1-core1/firmware", "/dev/uio/pruss1/pruss/shared" },
+	{ "/dev/remoteproc/pruss2-core0/state", "/dev/remoteproc/pruss2-core0/firmware", "/dev/uio/pruss2/pruss/shared" },
+	{ "/dev/remoteproc/pruss2-core1/state", "/dev/remoteproc/pruss2-core1/firmware", "/dev/uio/pruss2/pruss/shared" },
 };
 
 static volatile unsigned int* shared_mem_ptr[6];

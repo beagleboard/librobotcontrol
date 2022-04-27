@@ -54,8 +54,8 @@ start:
 
 ; Configure the programmable pointer register for PRU0 by setting c28_pointer[15:0]
 	LDI     r0, SHARED_RAM			; Set C28 to point to shared RAM
-	LDI32   r1, PRU1_CTRL + CTPPR0		; Note we use beginning of shared ram unlike example which
-	SBBO    &r0, r1, 0, 4			;  page 25
+	LDI32   r1, PRU1_CTRL + CTPPR0		; Note we use beginning of shared ram
+	SBBO    &r0, r1, 0, 4
 
 	LDI 	r0, 0x0				; clear internal counters
 	LDI 	r1, 0x0
