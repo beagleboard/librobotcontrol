@@ -21,7 +21,10 @@
 #include <rc/time.h>
 #include <rc/pru.h>
 
-#define NUM_PRU_CONFIGS 6
+#define unlikely(x)	__builtin_expect (!!(x), 0)
+#define PRU_LEN		0x3000         // Length of PRU shared memory
+#define NUM_PRU_CONFIGS	6
+
 struct prucfg {
 	const char * state;
 	const char * firmware;
@@ -154,7 +157,7 @@ volatile uint32_t* rc_pru_shared_mem_ptr(int ch)
 		return NULL;
 	}
 
-	map = mmap(0, PRU_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
+	map = mmap(0, PRU_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if(map==MAP_FAILED){
 		perror("ERROR in rc_pru_shared_mem_ptr failed to map memory");
 		close(fd);

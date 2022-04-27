@@ -18,7 +18,10 @@
 #include <rc/model.h>
 
 #define TDA4VM_PWM_PRU_CH 2
-#define PRU_SERVO_LOOP_INSTRUCTIONS 48 // instructions per PRU timer loop
+#define TDA4VM_PWM_PRU_FW "j7-pru0_0-rc-pwm-fw"
+#define PRU_PWM_LOOP_INSTRUCTIONS 48 // instructions per PRU timer loop
+#define RC_PWM_PRU_CH_MIN 1
+#define RC_PWM_PRU_CH_MAX 4
 
 // pru shared memory pointer
 static volatile unsigned int* shared_mem_ptr = NULL;
@@ -27,114 +30,77 @@ static int init_flag=0;
 static int esc_max_us =  RC_ESC_DEFAULT_MAX_US;
 static int esc_min_us =  RC_ESC_DEFAULT_MIN_US;
 
-int rc_pwm_pru_init(int ss, int frequency)
+int rc_pwm_pru_init(int frequency)
 {
 	int i;
 
-	// sanity tests
-	if(unlikely(ss != 100)) {
-		fprintf(stderr, "ERROR in rc_pwm_pru_init, failed to map shared memory pointer\n");
+	// map memory
+	if(rc_model()==MODEL_BB_AI64 || rc_model()==MODEL_BB_AI64_RC)
+		shared_mem_ptr = rc_pru_shared_mem_ptr(TDA4VM_PWM_PRU_CH);
+	else {
+		fprintf(stderr, "ERROR in rc_pwm_pru_init, unsupported device\n");
 		return -1;
 	}
 
-	// map memory
-	if(rc_model()==MODEL_BB_AI64 || rc_model()==MODEL_BB_AI64_RC)
-		shared_mem_32bit_ptr = rc_pru_shared_mem_ptr(TDA4VM_PWM_PRU_CH);
-	else
-		return -1;
-
-	if(shared_mem_32bit_ptr == NULL){
+	if(shared_mem_ptr == NULL){
 		fprintf(stderr, "ERROR in rc_pwm_pru_init, failed to map shared memory pointer\n");
 		init_flag=0;
 		return -1;
 	}
 	// set channels to be nonzero, PRU binary will zero this out later
-	for(i=RC_SERVO_CH_MIN;i<=RC_SERVO_CH_MAX;i++){
+	for(i=RC_PWM_PRU_CH_MIN;i<=RC_PWM_PRU_CH_MAX;i++){
 		// write to PRU shared memory
-		shared_mem_32bit_ptr[i-1] = 42;
+		shared_mem_ptr[i-1] = 42;
 	}
 
 	// start pru
-	if(rc_model()==MODEL_BB_AI || rc_model()==MODEL_BB_AI_RC){
-		if(rc_pru_start(AM57XX_SERVO_PRU_CH, AM57XX_SERVO_PRU_FW)){
-			fprintf(stderr,"ERROR in rc_servo_init, failed to start PRU%d\n", AM57XX_SERVO_PRU_CH);
+	if(rc_model()==MODEL_BB_AI64 || rc_model()==MODEL_BB_AI64_RC){
+		if(rc_pru_start(TDA4VM_PWM_PRU_CH, TDA4VM_PWM_PRU_FW)){
+			fprintf(stderr,"ERROR in rc_pwm_pru_init, failed to start PRU%d\n", TDA4VM_PWM_PRU_CH);
 			return -1;
 		}
 	} else {
-		if(rc_pru_start(AM335X_SERVO_PRU_CH, AM335X_SERVO_PRU_FW)){
-			fprintf(stderr,"ERROR in rc_servo_init, failed to start PRU%d\n", AM335X_SERVO_PRU_CH);
+			fprintf(stderr,"ERROR in rc_pwm_pru_init, not supported on device\n");
 			return -1;
 		}
 	}
 
 	// make sure memory actually got zero'd out
 	for(i=0;i<40;i++){
-		if(shared_mem_32bit_ptr[0]==0){
+		if(shared_mem_ptr[0]==0){
 			init_flag=1;
 			return 0;
 		}
 		rc_usleep(100000);
 	}
 
-	if(rc_model()==MODEL_BB_AI || rc_model()==MODEL_BB_AI_RC){
-		fprintf(stderr, "ERROR in rc_servo_init, %s failed to load\n", AM57XX_SERVO_PRU_FW);
-		fprintf(stderr, "attempting to stop PRU2_0\n");
-		rc_pru_stop(AM57XX_SERVO_PRU_CH);
-	} else {
-		fprintf(stderr, "ERROR in rc_servo_init, %s failed to load\n", AM335X_SERVO_PRU_FW);
-		fprintf(stderr, "attempting to stop PRU1\n");
-		rc_pru_stop(AM335X_SERVO_PRU_CH);
+	if(rc_model()==MODEL_BB_AI64 || rc_model()==MODEL_BB_AI64_RC){
+		fprintf(stderr, "ERROR in rc_pwm_pru_init, %s failed to load\n", TDA4VM_PWM_PRU_FW);
+		fprintf(stderr, "attempting to stop PRU0_0\n");
+		rc_pru_stop(TDA4VM_PWM_PRU_CH);
 	}
 	init_flag=0;
 	return -1;
 }
 
 
-void rc_servo_cleanup(void)
+void rc_servo_cleanup()
 {
 	int i;
 	// zero out shared memory
-	if(shared_mem_32bit_ptr != NULL){
-		for(i=0;i<RC_SERVO_CH_MAX;i++) shared_mem_32bit_ptr[i]=0;
+	if(shared_mem_ptr != NULL){
+		for(i=0;i<RC_PWM_PRU_CH_MAX;i++) shared_mem_ptr[i]=0;
 	}
-	if(init_flag!=0){
-		if(rc_model()==MODEL_BB_AI || rc_model()==MODEL_BB_AI_RC){
-			rc_gpio_set_value(AM57XX_GPIO_POWER_PIN,0);
-			rc_gpio_cleanup(AM57XX_GPIO_POWER_PIN);
-		} else {
-			rc_gpio_set_value(AM335X_GPIO_POWER_PIN,0);
-			rc_gpio_cleanup(AM335X_GPIO_POWER_PIN);
-		}
-	}
-	if(rc_model()==MODEL_BB_AI || rc_model()==MODEL_BB_AI_RC)
-		rc_pru_stop(AM57XX_SERVO_PRU_CH);
-	else
-		rc_pru_stop(AM335X_SERVO_PRU_CH);
-	shared_mem_32bit_ptr = NULL;
+
+	// if there is an output enable, disable it here
+
+	if(rc_model()==MODEL_BB_AI64 || rc_model()==MODEL_BB_AI64_RC)
+		rc_pru_stop(TDA4VM_PWM_PRU_CH);
+	shared_mem_ptr = NULL;
 	init_flag=0;
 	return;
 }
 
-
-int rc_servo_power_rail_en(int en)
-{
-	if(init_flag==0){
-		fprintf(stderr, "ERROR in rc_servo_power_rail_en, call rc_servo_init first\n");
-		return -1;
-	}
-	if(rc_model()==MODEL_BB_AI || rc_model()==MODEL_BB_AI_RC){
-		if(rc_gpio_set_value(AM57XX_GPIO_POWER_PIN,en)==-1){
-			fprintf(stderr, "ERROR in rc_servo_power_rail_en, failed to write to GPIO pin\n");
-			return -1;
-		}
-	} else {
-		if(rc_gpio_set_value(AM335X_GPIO_POWER_PIN,en)==-1){
-			fprintf(stderr, "ERROR in rc_servo_power_rail_en, failed to write to GPIO pin\n");
-			return -1;
-		}
-	}
-	return 0;
-}
 
 int rc_servo_set_esc_range(int min, int max)
 {
