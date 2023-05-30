@@ -137,7 +137,7 @@ static int __continue_or_quit(void)
  */
 static void* __parser_func(__attribute__ ((unused)) void* ptr){
 	uint8_t buf[DSM_PACKET_SIZE];
-	int i, ret;
+	int i, j, ret;
 	int new_values[RC_MAX_DSM_CHANNELS]; // hold new values before committing
 	int detection_packets_left; // use first 4 packets just for detection
 	unsigned char ch_id;
@@ -396,8 +396,8 @@ START_NORMAL_LOOP:
 					#ifdef DEBUG
 					fprintf(stderr,"missing channel data in packet\n");
 					#endif
-					for(i=0;i<num_channels;i++){
-						new_values[i]=0;// put local values array back to 0
+					for(j=0;j<num_channels;j++){
+						new_values[j]=0;// put local values array back to 0
 					}
 				}
 			}
