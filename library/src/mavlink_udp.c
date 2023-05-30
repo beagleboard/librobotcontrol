@@ -160,7 +160,7 @@ int __address_init(struct sockaddr_in* address, const char* dest_ip, uint16_t po
 		fprintf(stderr, "ERROR: in __address_init: received NULL address struct\n");
 		return -1;
 	}
-	memset((char*) address, 0, sizeof address);
+	memset((char*) address, 0, sizeof *address);
 	address->sin_family = AF_INET;
 	// convert port from host to network byte order
 	address->sin_port = htons(port);
