@@ -46,8 +46,8 @@
 
 //I2C bus and address definitions for Robotics Cape & bealgebone blue
 #define RC_IMU_BUS		2
-#define RC_IMU_INTERRUPT_PIN_CHIP_FIRE 2
-#define RC_IMU_INTERRUPT_PIN_PIN_FIRE  0 // gpio3.21 P9.25
+#define RC_IMU_INTERRUPT_PIN_CHIP_FIRE 3
+#define RC_IMU_INTERRUPT_PIN_PIN_FIRE  3 // gpio3.21 P9.25
 #define RC_IMU_INTERRUPT_PIN_CHIP 3
 #define RC_IMU_INTERRUPT_PIN_PIN  21 // gpio3.21 P9.25
 
