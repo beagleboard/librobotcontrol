@@ -89,8 +89,8 @@ int rc_adc_read_raw(int ch)
 	}
 	i=atoi(buf);
 	if(i>RAW_MAX || i< RAW_MIN){
-		fprintf(stderr, "ERROR: in rc_adc_read_raw, value out of bounds: %d\n", i);
-		return -1;
+		// fprintf(stderr, "ERROR: in rc_adc_read_raw, value out of bounds: %d\n", i);
+		return i;
 	}
 	return i;
 }

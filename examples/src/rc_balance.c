@@ -188,13 +188,13 @@ int main(int argc, char *argv[])
 	}
 	rc_motor_standby(1); // start with motors in standby
 
-	// start dsm listener
-	if(m_input_mode == DSM){
-		if(rc_dsm_init()==-1){
-			fprintf(stderr,"failed to start initialize DSM\n");
-			return -1;
-		}
-	}
+	// // start dsm listener
+	// if(m_input_mode == DSM){
+	// 	if(rc_dsm_init()==-1){
+	// 		fprintf(stderr,"failed to start initialize DSM\n");
+	// 		return -1;
+	// 	}
+	// }
 
 	// initialize adc
 	if(rc_adc_init()==-1){
@@ -212,14 +212,14 @@ int main(int argc, char *argv[])
 	printf("Press and release PAUSE button to pause/start the motors\n");
 	printf("hold pause button down for 2 seconds to exit\n");
 
-	if(rc_led_set(RC_LED_GREEN, 0)==-1){
-		fprintf(stderr, "ERROR in rc_balance, failed to set RC_LED_GREEN\n");
-		return -1;
-	}
-	if(rc_led_set(RC_LED_RED, 1)==-1){
-		fprintf(stderr, "ERROR in rc_balance, failed to set RC_LED_RED\n");
-		return -1;
-	}
+	// if(rc_led_set(RC_LED_GREEN, 0)==-1){
+	// 	fprintf(stderr, "ERROR in rc_balance, failed to set RC_LED_GREEN\n");
+	// 	return -1;
+	// }
+	// if(rc_led_set(RC_LED_RED, 1)==-1){
+	// 	fprintf(stderr, "ERROR in rc_balance, failed to set RC_LED_RED\n");
+	// 	return -1;
+	// }
 
 	// set up mpu configuration
 	rc_mpu_config_t mpu_config = rc_mpu_default_config();
@@ -332,11 +332,11 @@ int main(int argc, char *argv[])
 	rc_filter_free(&D2);
 	rc_filter_free(&D3);
 	rc_mpu_power_off();
-	rc_led_set(RC_LED_GREEN, 0);
-	rc_led_set(RC_LED_RED, 0);
-	rc_led_cleanup();
-	rc_encoder_eqep_cleanup();
-	rc_button_cleanup();	// stop button handlers
+	// rc_led_set(RC_LED_GREEN, 0);
+	// rc_led_set(RC_LED_RED, 0);
+	// rc_led_cleanup();
+	// rc_encoder_eqep_cleanup();
+	// rc_button_cleanup();	// stop button handlers
 	rc_remove_pid_file();	// remove pid file LAST
 	return 0;
 }
@@ -389,6 +389,7 @@ void* __setpoint_manager(__attribute__ ((unused)) void* ptr)
 		case NONE:
 			continue;
 		case DSM:
+			continue;
 			if(rc_dsm_is_new_data()){
 				// Read normalized (+-1) inputs from RC radio stick and multiply by
 				// polarity setting so positive stick means positive setpoint

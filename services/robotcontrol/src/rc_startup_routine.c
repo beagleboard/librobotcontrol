@@ -54,7 +54,7 @@ int main()
 
 	// whitelist blue, black, and black wireless only when RC device tree is in use
 	model = rc_model();
-	if(model!=MODEL_BB_BLACK_RC && model!=MODEL_BB_BLACK_W_RC && model!=MODEL_BB_BLUE){
+	if(model!=MODEL_BB_BLACK_RC && model!=MODEL_BB_BLACK_W_RC && model!=MODEL_BB_BLUE && model!=MODEL_BB_FIRE){
 		if(system("grep -q robotcontrol /boot/uEnv.txt")!=0){
 			fprintf(stderr,"robotcontrol service can only run on BB Blue, Black, and Black wireless when the robotcontrol device tree is in use.\n");
 			return 0;

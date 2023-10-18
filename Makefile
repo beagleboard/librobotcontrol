@@ -19,7 +19,7 @@ install:
 	@make -C pru_firmware -s install
 	@make -C library -s install
 	@make -C examples -s install
-	@make -C services/rc_battery_monitor -s install
+	# @make -C services/rc_battery_monitor -s install
 	@make -C services/robotcontrol -s install
 
 

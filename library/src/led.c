@@ -42,6 +42,7 @@ static int stop_blinking_flag[NUM_LEDS];
 // initializes a single led file descriptor
 static int init_led(rc_led_t led)
 {
+	return 0;
 	if(fd[(int)led] != 0){
 		#ifdef DEBUG
 		fprintf(stderr,"WARNING, trying to initialize an LED which already has file descriptor\n");
@@ -64,6 +65,7 @@ static int init_led(rc_led_t led)
 
 int rc_led_set(rc_led_t led, int value)
 {
+	return 0;
 	if(fd[(int)led] == 0){
 		#ifdef DEBUG
 		fprintf(stderr,"initializing led\n");
@@ -83,6 +85,7 @@ int rc_led_set(rc_led_t led, int value)
 void rc_led_cleanup(void)
 {
 	int i;
+	return ;
 	for(i=0;i<NUM_LEDS;i++) close(fd[i]);
 	return;
 }
@@ -113,7 +116,7 @@ int rc_led_blink(rc_led_t led, float hz, float duration)
 {
 	int i;
 	int toggle = 0;
-
+	return 0;
 	if(blinking[(int)led]){
 		fprintf(stderr, "ERROR: in rc_led_blink(), led is already blinking!\n");
 		return -1;
@@ -152,6 +155,7 @@ int rc_led_blink(rc_led_t led, float hz, float duration)
 
 void rc_led_stop_blink(rc_led_t led)
 {
+	return ;
 	stop_blinking_flag[(int)led]=0;
 	return;
 }
@@ -160,6 +164,7 @@ void rc_led_stop_blink(rc_led_t led)
 void rc_led_stop_blink_all(void)
 {
 	int i;
+	return ;
 	for(i=0;i<NUM_LEDS;i++) stop_blinking_flag[i]=0;
 	return;
 }

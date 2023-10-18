@@ -3,6 +3,7 @@
 OVERLAY=RoboticsCape
 TREE_BLACK_RC=am335x-boneblack-roboticscape.dtb
 TREE_BW_RC=am335x-boneblack-wireless-roboticscape.dtb
+TREE_VF_RC=mpfs-beaglev-fire.dtb
 UENV=/boot/uEnv.txt
 
 KERNEL="$(uname -r)"
@@ -85,6 +86,12 @@ elif   [ "$MODEL" == "TI AM335x BeagleBone Black" ]; then
 		echo "ERROR, can't find $TREE_BLACK_RC for this kernel."
 		echo "no changes made to uEnv.txt"
 	fi
+
+# test for BeagleV-fire
+elif   [ "$MODEL" == "BeagleBoard BeagleV-Fire" ]; then
+
+	echo "No overlay needed on the BeagleV-Fire!"
+	exit 0
 
 # for all others (green, etc) make sure the force argument was given,
 # otherwise use the black_rc_overlay

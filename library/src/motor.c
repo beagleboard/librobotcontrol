@@ -13,6 +13,24 @@
 // preposessor macros
 #define unlikely(x)	__builtin_expect (!!(x), 0)
 
+#define MDIR1A_CHIP_FIRE		3	//gpio3.0	P9.12/P2.08
+#define MDIR1A_PIN_FIRE		0	//gpio3.0	P9.12/P2.08
+#define MDIR1B_CHIP_FIRE		3	//gpio0.31	P9.13/P2.07
+#define MDIR1B_PIN_FIRE		7	//gpio0.31	P9.13/P2.07
+#define MDIR2A_CHIP_FIRE		3	//gpio1.16	P9.15
+#define MDIR2A_PIN_FIRE		1	//gpio1.16	P9.15
+#define MDIR2B_CHIP_FIRE		4	//gpio2.17	P8.34
+#define MDIR2B_PIN_FIRE		3	//gpio2.17	P8.34
+#define MDIR3B_CHIP_FIRE		4	//gpio2.8	P8.43
+#define MDIR3B_PIN_FIRE		12	//gpio2.8	P8.43
+#define MDIR3A_CHIP_FIRE		4	//gpio2.9	P8.44
+#define MDIR3A_PIN_FIRE		13	//gpio2.9	P8.44
+#define MDIR4A_CHIP_FIRE		4	//gpio2.6	P8.45
+#define MDIR4A_PIN_FIRE		14	//gpio2.6	P8.45
+#define MDIR4B_CHIP_FIRE		4	//gpio2.7	P8.46
+#define MDIR4B_PIN_FIRE		15	//gpio2.7	P8.46
+
+#define MOT_STBY_FIRE		3,6	//gpio3.5	P9.41/P1.20
 // motor pin definitions
 #define MDIR1A_CHIP		1	//gpio1.28	P9.12/P2.08
 #define MDIR1A_PIN		28	//gpio1.28	P9.12/P2.08
@@ -82,63 +100,86 @@ int rc_motor_init_freq(int pwm_frequency_hz)
 
 	// set pins for motor 1
 	// assign gpio pins for blue/black/pocket
-	if(rc_model()==MODEL_BB_BLUE){
-		dirA_chip[0]=MDIR1A_CHIP_BLUE;
-		dirA_pin[0]=MDIR1A_PIN_BLUE;
-	}
-	else{
-		dirA_chip[0] = MDIR1A_CHIP;
-		dirA_pin[0] = MDIR1A_PIN;
-	}
+	dirA_chip[0] = MDIR1A_CHIP;
+	dirA_pin[0] = MDIR1A_PIN;
 	dirB_chip[0]=MDIR1B_CHIP;
 	dirB_pin[0]=MDIR1B_PIN;
 	pwmss[0]=1;
 	pwmch[0]='A';
-
+	if(rc_model()==MODEL_BB_BLUE){
+		dirA_chip[0]=MDIR1A_CHIP_BLUE;
+		dirA_pin[0]=MDIR1A_PIN_BLUE;
+	}
+	else if(rc_model()==MODEL_BB_FIRE) {
+		dirA_chip[0]=MDIR1A_CHIP_FIRE;
+		dirA_pin[0]=MDIR1A_PIN_FIRE;
+		dirB_chip[0]=MDIR1B_CHIP_FIRE;
+		dirB_pin[0]=MDIR1B_PIN_FIRE;
+		pwmss[0]=0;
+		pwmch[0]='A';
+	}
 	// motor 2
+	dirA_chip[1]=MDIR2A_CHIP;
+	dirA_pin[1]=MDIR2A_PIN;
+	dirB_chip[1] = MDIR2B_CHIP;
+	dirB_pin[1] = MDIR2B_PIN;
+	pwmss[1]=1;
+	pwmch[1]='B';
 	if(rc_model()==MODEL_BB_POCKET) {
 		dirA_chip[1]=MDIR2A_CHIP_POCKET;
 		dirA_pin[1]=MDIR2A_PIN_POCKET;
+		dirB_chip[1]=MDIR2B_CHIP_POCKET;
+		dirB_pin[1]=MDIR2B_PIN_POCKET;
+		pwmss[1]=0;
+		pwmch[1]='A';
 	}
-	else{
-		dirA_chip[1]=MDIR2A_CHIP;
-		dirA_pin[1]=MDIR2A_PIN;
-	}
-	if(rc_model()==MODEL_BB_BLUE){
+	else if(rc_model()==MODEL_BB_BLUE){
 		dirB_chip[1]=MDIR2B_CHIP_BLUE;
 		dirB_pin[1]=MDIR2B_PIN_BLUE;
 	}
-	else if(rc_model()==MODEL_BB_POCKET) {
-		dirB_chip[1]=MDIR2B_CHIP_POCKET;
-		dirB_pin[1]=MDIR2B_PIN_POCKET;
-	}
-	else{
-		dirB_chip[1] = MDIR2B_CHIP;
-		dirB_pin[1] = MDIR2B_PIN;
-	}
-	if(rc_model()==MODEL_BB_POCKET) {
+	else if(rc_model()==MODEL_BB_FIRE){
+		dirA_chip[1]=MDIR2A_CHIP_FIRE;
+		dirA_pin[1]=MDIR2A_PIN_FIRE;
+		dirB_chip[1]=MDIR2B_CHIP_FIRE;
+		dirB_pin[1]=MDIR2B_PIN_FIRE;
 		pwmss[1]=0;
-		pwmch[1]='A';
-	} else {
-		pwmss[1]=1;
 		pwmch[1]='B';
 	}
 
 	// motor 3
-	dirA_chip[2]=MDIR3A_CHIP;
-	dirA_pin[2]=MDIR3A_PIN;
-	dirB_chip[2]=MDIR3B_CHIP;
-	dirB_pin[2]=MDIR3B_PIN;
-	pwmss[2]=2;
-	pwmch[2]='A';
-
+	if(rc_model()==MODEL_BB_FIRE) {
+		dirA_chip[2]=MDIR3A_CHIP_FIRE;
+		dirA_pin[2]=MDIR3A_PIN_FIRE;
+		dirB_chip[2]=MDIR3B_CHIP_FIRE;
+		dirB_pin[2]=MDIR3B_PIN_FIRE;
+		pwmss[2]=1;
+		pwmch[2]='A';
+	}
+	else{
+		dirA_chip[2]=MDIR3A_CHIP;
+		dirA_pin[2]=MDIR3A_PIN;
+		dirB_chip[2]=MDIR3B_CHIP;
+		dirB_pin[2]=MDIR3B_PIN;
+		pwmss[2]=2;
+		pwmch[2]='A';
+	}
 	// motor 4
-	dirA_chip[3]=MDIR4A_CHIP;
-	dirA_pin[3]=MDIR4A_PIN;
-	dirB_chip[3]=MDIR4B_CHIP;
-	dirB_pin[3]=MDIR4B_PIN;
-	pwmss[3]=2;
-	pwmch[3]='B';
+	if(rc_model()==MODEL_BB_FIRE) {
+		dirA_chip[3]=MDIR4A_CHIP_FIRE;
+		dirA_pin[3]=MDIR4A_PIN_FIRE;
+		dirB_chip[3]=MDIR4B_CHIP_FIRE;
+		dirB_pin[3]=MDIR4B_PIN_FIRE;
+		pwmss[3]=1;
+		pwmch[3]='B';
+	}
+	else{
+		dirA_chip[3]=MDIR4A_CHIP;
+		dirA_pin[3]=MDIR4A_PIN;
+		dirB_chip[3]=MDIR4B_CHIP;
+		dirB_pin[3]=MDIR4B_PIN;
+		pwmss[3]=2;
+		pwmch[3]='B';
+	}
 
 	// set up pwm channels
 	if(unlikely(rc_pwm_init(0,pwm_frequency_hz))){
@@ -149,15 +190,24 @@ int rc_motor_init_freq(int pwm_frequency_hz)
 		fprintf(stderr,"ERROR in rc_motor_init, failed to initialize pwm subsystem 1\n");
 		return -1;
 	}
-	if(unlikely(rc_pwm_init(2,pwm_frequency_hz))){
-		fprintf(stderr,"ERROR in rc_motor_init, failed to initialize pwm subsystem 2\n");
-		return -1;
+	if(rc_model()!=MODEL_BB_FIRE) {
+		if(unlikely(rc_pwm_init(2,pwm_frequency_hz))){
+			fprintf(stderr,"ERROR in rc_motor_init, failed to initialize pwm subsystem 2\n");
+			return -1;
+		}
 	}
-
 	// set up gpio pins
-	if(unlikely(rc_gpio_init(MOT_STBY, GPIOHANDLE_REQUEST_OUTPUT))){
-		fprintf(stderr,"ERROR in rc_motor_init, failed to set up gpio %d,%d\n", MOT_STBY);
-		return -1;
+	if(rc_model()==MODEL_BB_FIRE) {
+		if(unlikely(rc_gpio_init(MOT_STBY_FIRE, GPIOHANDLE_REQUEST_OUTPUT))){
+			fprintf(stderr,"ERROR in rc_motor_init, failed to set up gpio %d,%d\n", MOT_STBY_FIRE);
+			return -1;
+		}	
+	}
+	else{
+		if(unlikely(rc_gpio_init(MOT_STBY, GPIOHANDLE_REQUEST_OUTPUT))){
+			fprintf(stderr,"ERROR in rc_motor_init, failed to set up gpio %d,%d\n", MOT_STBY);
+			return -1;
+		}
 	}
 	for(i=0;i<channels;i++){
 		if(unlikely(rc_gpio_init(dirA_chip[i],dirA_pin[i], GPIOHANDLE_REQUEST_OUTPUT))){
@@ -180,9 +230,17 @@ int rc_motor_init_freq(int pwm_frequency_hz)
 	}
 
 	// make sure standby is off since most users won't use it
-	if(unlikely(rc_gpio_set_value(MOT_STBY,1))){
-		fprintf(stderr,"ERROR in rc_motor_init, can't write to gpio %d,%d\n",MOT_STBY);
-		return -1;
+	if(rc_model()==MODEL_BB_FIRE) {
+		if(unlikely(rc_gpio_set_value(MOT_STBY_FIRE,1))){
+			fprintf(stderr,"ERROR in rc_motor_init, can't write to gpio %d,%d\n",MOT_STBY_FIRE);
+			return -1;
+		}
+	}
+	else{
+		if(unlikely(rc_gpio_set_value(MOT_STBY,0))){
+			fprintf(stderr,"ERROR in rc_motor_init, can't write to gpio %d,%d\n",MOT_STBY);
+			return -1;
+		}
 	}
 	stby_state = 0;
 	init_flag = 1;
@@ -199,7 +257,12 @@ int rc_motor_cleanup(void)
 	rc_pwm_cleanup(0);
 	rc_pwm_cleanup(1);
 	rc_pwm_cleanup(2);
-	rc_gpio_cleanup(MOT_STBY);
+	if(rc_model()==MODEL_BB_FIRE) {
+		rc_gpio_cleanup(MOT_STBY_FIRE);
+	}
+	else{
+		rc_gpio_cleanup(MOT_STBY);
+	}
 	for(i=0;i<channels;i++){
 		rc_gpio_cleanup(dirA_chip[i],dirA_pin[i]);
 		rc_gpio_cleanup(dirB_chip[i],dirB_pin[i]);
@@ -226,9 +289,17 @@ int rc_motor_standby(int standby_en)
 		if(!stby_state) return 0;
 		val=1;
 	}
-	if(unlikely(rc_gpio_set_value(MOT_STBY,val))){
-		fprintf(stderr,"ERROR in rc_motor_standby, unable to write to gpio %d,%d\n", MOT_STBY);
-		return -1;
+	if(rc_model()==MODEL_BB_FIRE) {
+		if(unlikely(rc_gpio_set_value(MOT_STBY_FIRE,val))){
+			fprintf(stderr,"ERROR in rc_motor_standby, unable to write to gpio %d,%d\n", MOT_STBY_FIRE);
+			return -1;
+		}
+	}
+	else{
+		if(unlikely(rc_gpio_set_value(MOT_STBY,val))){
+			fprintf(stderr,"ERROR in rc_motor_standby, unable to write to gpio %d,%d\n", MOT_STBY);
+			return -1;
+		}
 	}
 	stby_state = standby_en;
 	return 0;

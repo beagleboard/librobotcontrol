@@ -23,8 +23,8 @@ extern "C" {
 #endif
 
 
-#define RC_BTN_PIN_PAUSE		2,5	//gpio2.5 P8.9
-#define RC_BTN_PIN_MODE			2,4	//gpio2.4 P8.10
+#define RC_BTN_PIN_PAUSE		2,6	//gpio2.5 P8.9
+#define RC_BTN_PIN_MODE			2,7	//gpio2.4 P8.10
 
 #define RC_BTN_STATE_PRESSED		1
 #define RC_BTN_STATE_RELEASED		0

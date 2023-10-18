@@ -22,6 +22,7 @@
 #include <sys/types.h>	// for mkdir and chmod
 
 #include <rc/mpu.h>
+#include <rc/model.h>
 #include <rc/math/vector.h>
 #include <rc/math/matrix.h>
 #include <rc/math/quaternion.h>
@@ -45,6 +46,8 @@
 
 //I2C bus and address definitions for Robotics Cape & bealgebone blue
 #define RC_IMU_BUS		2
+#define RC_IMU_INTERRUPT_PIN_CHIP_FIRE 2
+#define RC_IMU_INTERRUPT_PIN_PIN_FIRE  0 // gpio3.21 P9.25
 #define RC_IMU_INTERRUPT_PIN_CHIP 3
 #define RC_IMU_INTERRUPT_PIN_PIN  21 // gpio3.21 P9.25
 
@@ -157,8 +160,14 @@ rc_mpu_config_t rc_mpu_default_config(void)
 	rc_mpu_config_t conf;
 
 	// connectivity
-	conf.gpio_interrupt_pin_chip = RC_IMU_INTERRUPT_PIN_CHIP;
-	conf.gpio_interrupt_pin = RC_IMU_INTERRUPT_PIN_PIN;
+	if(rc_model()==MODEL_BB_FIRE) {
+		conf.gpio_interrupt_pin_chip = RC_IMU_INTERRUPT_PIN_CHIP_FIRE;
+		conf.gpio_interrupt_pin = RC_IMU_INTERRUPT_PIN_PIN_FIRE;
+	}
+	else {
+		conf.gpio_interrupt_pin_chip = RC_IMU_INTERRUPT_PIN_CHIP;
+		conf.gpio_interrupt_pin = RC_IMU_INTERRUPT_PIN_PIN;
+	}
 	conf.i2c_bus = RC_IMU_BUS;
 	conf.i2c_addr = RC_MPU_DEFAULT_I2C_ADDR;
 	conf.show_warnings = 0;
