@@ -44,12 +44,12 @@
 #define STEERING_INPUT_MAX	0.5
 
 // electrical hookups
-#define MOTOR_CHANNEL_L		3
+#define MOTOR_CHANNEL_L		1
 #define MOTOR_CHANNEL_R		2
-#define MOTOR_POLARITY_L	-1
-#define MOTOR_POLARITY_R	1
-#define ENCODER_CHANNEL_L	2
-#define ENCODER_CHANNEL_R	1
+#define MOTOR_POLARITY_L	1
+#define MOTOR_POLARITY_R	-1
+#define ENCODER_CHANNEL_L	1
+#define ENCODER_CHANNEL_R	2
 #define ENCODER_POLARITY_L	1
 #define ENCODER_POLARITY_R	-1
 
