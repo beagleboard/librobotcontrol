@@ -31,7 +31,8 @@
 
 static int fd[3]; //store file descriptors for 3 position files
 static int init_flag = 0; // boolean to check if mem mapped
-static unsigned int *map_base[2];
+static int *map_base[2];
+static int init_date[2] = {0,0};
 
 
 
@@ -41,14 +42,14 @@ int rc_encoder_eqep_init(void)
 	if(init_flag) return 0;
 	// if borad is beagleV-fire
 	if(rc_model()==MODEL_BB_FIRE){
-		temp_fd = open("/dev/mem", O_RDWR | O_SYNC);
+		temp_fd = open("/dev/mem", O_RDWR);
 		if(temp_fd<0){
 			perror("ERROR in rc_encoder_eqep_init, failed to open /dev/mem");
 			fprintf(stderr,"Perhaps kernel or device tree is too old\n");
 			return -1;
 		}
 		fd[0]=temp_fd;
-		map_base[0] = mmap(NULL, sizeof(unsigned int), PROT_READ | PROT_WRITE, MAP_SHARED, temp_fd, EQEP_BASE_REG0);
+		map_base[0] = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED, temp_fd, EQEP_BASE_REG0);
 		if(map_base[0] == MAP_FAILED) {
 			perror("ERROR in rc_encoder_eqep_init, failed to mmap");
 			return -1;
@@ -145,7 +146,7 @@ int rc_encoder_eqep_cleanup(void)
 		close(fd[i]);
 	}
 	if(rc_model()==MODEL_BB_FIRE){
-		munmap(map_base[0], sizeof(unsigned int));
+		munmap(map_base[0], sizeof(int));
 	}
 	init_flag = 0;
 	return 0;
@@ -171,7 +172,7 @@ int rc_encoder_eqep_read(int ch)
 	}
 	if(rc_model()==MODEL_BB_FIRE){
 		// read from mmaped memory
-		return map_base[ch-1][0];
+		return map_base[ch-1][0] - init_date[ch-1];
 	}
 	else{
 		// seek to beginning of file and read
@@ -207,7 +208,7 @@ int rc_encoder_eqep_write(int ch, int pos)
 	}
 	if(rc_model()==MODEL_BB_FIRE){
 		// read from mmaped memory
-		map_base[ch-1][0] = pos;
+		init_date[ch-1] = map_base[ch-1][0] - pos;
 		return 0;
 	}
 	if(unlikely(lseek(fd[ch-1],0,SEEK_SET)<0)){
