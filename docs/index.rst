@@ -1,3 +1,7 @@
 .. _librobotcontrol:
 
-.. doxygenindex::
+Robotics Control Library
+########################
+
+.. doxygenpage:: indexpage
+
