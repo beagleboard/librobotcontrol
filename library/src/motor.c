@@ -13,22 +13,22 @@
 // preposessor macros
 #define unlikely(x)	__builtin_expect (!!(x), 0)
 
-#define MDIR1A_CHIP_FIRE		3	//gpio3.0	P9.12/P2.08
-#define MDIR1A_PIN_FIRE		0	//gpio3.0	P9.12/P2.08
-#define MDIR1B_CHIP_FIRE		3	//gpio0.31	P9.13/P2.07
-#define MDIR1B_PIN_FIRE		7	//gpio0.31	P9.13/P2.07
-#define MDIR2A_CHIP_FIRE		3	//gpio1.16	P9.15
-#define MDIR2A_PIN_FIRE		1	//gpio1.16	P9.15
-#define MDIR2B_CHIP_FIRE		4	//gpio2.17	P8.34
-#define MDIR2B_PIN_FIRE		3	//gpio2.17	P8.34
-#define MDIR3B_CHIP_FIRE		4	//gpio2.8	P8.43
-#define MDIR3B_PIN_FIRE		12	//gpio2.8	P8.43
-#define MDIR3A_CHIP_FIRE		4	//gpio2.9	P8.44
-#define MDIR3A_PIN_FIRE		13	//gpio2.9	P8.44
-#define MDIR4A_CHIP_FIRE		4	//gpio2.6	P8.45
-#define MDIR4A_PIN_FIRE		14	//gpio2.6	P8.45
-#define MDIR4B_CHIP_FIRE		4	//gpio2.7	P8.46
-#define MDIR4B_PIN_FIRE		15	//gpio2.7	P8.46
+#define MDIR1A_CHIP_FIRE	3	//P9.12
+#define MDIR1A_PIN_FIRE		0
+#define MDIR1B_CHIP_FIRE	3	//P9.13
+#define MDIR1B_PIN_FIRE		6
+#define MDIR2A_CHIP_FIRE	3	//P9.15
+#define MDIR2A_PIN_FIRE		1
+#define MDIR2B_CHIP_FIRE	4	//P8.34
+#define MDIR2B_PIN_FIRE		3
+#define MDIR3B_CHIP_FIRE	4	//P8.43
+#define MDIR3B_PIN_FIRE		12
+#define MDIR3A_CHIP_FIRE	4	//P8.44
+#define MDIR3A_PIN_FIRE		13
+#define MDIR4A_CHIP_FIRE	4	//P8.45
+#define MDIR4A_PIN_FIRE		14
+#define MDIR4B_CHIP_FIRE	4	//P8.46
+#define MDIR4B_PIN_FIRE		15
 
 #define MOT_STBY_FIRE		3,6	//gpio3.5	P9.41/P1.20
 // motor pin definitions
