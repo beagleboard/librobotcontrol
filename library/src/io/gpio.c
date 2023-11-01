@@ -59,6 +59,7 @@ int rc_gpio_init(int chip, int pin, int handle_flags)
 {
 	int ret;
 	struct gpiohandle_request req;
+	fprintf(stderr,"DEBUG: rc_gpio_init(%d,%d,0x%02x)\n", chip, pin, handle_flags);
 
 	// sanity checks
 	if(chip<0 || chip>=CHIPS_MAX){

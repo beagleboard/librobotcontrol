@@ -21,7 +21,7 @@
 #define LIPO_OFFSET	-0.10
 #define LIPO_ADC_CH	6
 #define DC_JACK_ADC_CH	5
-#define V_DIV_RATIO	11.0
+#define V_DIV_RATIO	1.8
 #define BATT_DEADZONE	1.0
 
 
