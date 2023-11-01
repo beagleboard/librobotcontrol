@@ -90,7 +90,7 @@ gpiochip4 - 16 lines:
 #define MDIR4B_CHIP_FIRE	4	//P8.46
 #define MDIR4B_PIN_FIRE		15
 
-#define MOT_STBY_FIRE		4,10	//P9.41/P1.20
+#define MOT_STBY_FIRE		3,5	//P9.41/P1.20
 // motor pin definitions
 #define MDIR1A_CHIP		1	//gpio1.28	P9.12/P2.08
 #define MDIR1A_PIN		28	//gpio1.28	P9.12/P2.08

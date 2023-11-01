@@ -237,10 +237,11 @@ int main(int argc, char *argv[])
 	int show_something = 0; // set to 1 when any show data option is given.
 
 	// start with default config and modify based on options
-	rc_mpu_config_t conf = rc_mpu_default_config();
-	conf.i2c_bus = I2C_BUS;
-	conf.gpio_interrupt_pin_chip = GPIO_INT_PIN_CHIP;
-	conf.gpio_interrupt_pin = GPIO_INT_PIN_PIN;
+	rc_mpu_config_t conf;
+	rc_mpu_set_config_to_default(&conf);
+	//conf.i2c_bus = I2C_BUS;
+	//conf.gpio_interrupt_pin_chip = GPIO_INT_PIN_CHIP;
+	//conf.gpio_interrupt_pin = GPIO_INT_PIN_PIN;
 
 	// parse arguments
 	opterr = 0;

@@ -222,7 +222,8 @@ int main(int argc, char *argv[])
 	// }
 
 	// set up mpu configuration
-	rc_mpu_config_t mpu_config = rc_mpu_default_config();
+	rc_mpu_config_t mpu_config;
+	rc_mpu_set_config_to_default(&mpu_config);
 	mpu_config.dmp_sample_rate = SAMPLE_RATE_HZ;
 	mpu_config.orient = ORIENTATION_Y_UP;
 

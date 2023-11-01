@@ -158,7 +158,7 @@ int main(void)
 
 	// init DMP
 	printf("initializing DMP\n");
-	mpu_conf = rc_mpu_default_config();
+	rc_mpu_set_config_to_default(&mpu_conf);
 	mpu_conf.dmp_sample_rate = SAMPLE_RATE;
 	mpu_conf.dmp_fetch_accel_gyro = 1;
 	if(rc_mpu_initialize_dmp(&mpu_data, mpu_conf)) return -1;

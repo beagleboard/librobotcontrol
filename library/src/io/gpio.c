@@ -101,6 +101,7 @@ int rc_gpio_set_value(int chip, int pin, int value)
 	int ret;
 	struct gpiohandle_data data;
 
+	fprintf(stderr,"DEBUG: rc_gpio_set_value(%d,%d,%d)\n", chip, pin, value);
 	// sanity checks
 	// sanity checks
 	if(chip<0 || chip>=CHIPS_MAX){
@@ -164,6 +165,7 @@ int rc_gpio_init_event(int chip, int pin, int handle_flags, int event_flags)
 	int ret;
 	struct gpioevent_request req;
 
+	fprintf(stderr,"DEBUG: rc_gpio_init_event(%d,%d,0x%02x,0x%02x)\n", chip, pin, handle_flags, event_flags);
 	// sanity checks
 	if(chip<0 || chip>=CHIPS_MAX){
 		fprintf(stderr,"ERROR in rc_gpio_init_event, chip out of bounds\n");
