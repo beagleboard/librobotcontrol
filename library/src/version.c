@@ -26,6 +26,6 @@ const char* rc_version_string(void)
 
 void rc_version_print(void)
 {
-	printf(RC_LIB_VERSION_STRING);
+	printf(RC_LIB_VERSION_STRING "-fire");
 	return;
 }
