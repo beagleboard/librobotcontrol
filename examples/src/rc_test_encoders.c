@@ -11,6 +11,7 @@
 #include <signal.h>
 #include <rc/encoder.h>
 #include <rc/time.h>
+#include <rc/model.h>
 
 static int running = 0;
 
@@ -38,13 +39,16 @@ int main()
 	printf("\nRaw encoder positions\n");
 	printf("      E1   |");
 	printf("      E2   |");
-	printf("      E3   |");
-	printf("      E4   |");
+	if(rc_model()!=MODEL_BB_FIRE){
+		printf("      E3   |");
+		printf("      E4   |");
+	}
 	printf(" \n");
 
 	while(running){
 		printf("\r");
 		for(i=1;i<=4;i++){
+			if(rc_model()==MODEL_BB_FIRE && i>=3) break;
 			printf("%10d |", rc_encoder_read(i));
 		}
 		fflush(stdout);

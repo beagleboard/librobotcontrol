@@ -171,6 +171,10 @@ int rc_encoder_eqep_read(int ch)
 		return -1;
 	}
 	if(rc_model()==MODEL_BB_FIRE){
+		if(ch<1 || ch>2){
+			fprintf(stderr,"ERROR: in rc_encoder_eqep_read, BeagleV-Fire currently only supports channels 1 & 2\n");
+			return -1;
+		}
 		// read from mmaped memory
 		return map_base[ch-1][0] - init_date[ch-1];
 	}
