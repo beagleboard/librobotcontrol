@@ -15,68 +15,66 @@
 
 
 /*
-$ cat /proc/device-tree/chosen/overlays/ROBOTICS-CAPE-GATEWARE
-BVF-0.3.0-7-gfd28a2c
-$ gpioinfo | grep -E '"P|chip'
+beagle@BeagleV:~/librobotcontrol$ cat /proc/device-tree/chosen/overlays/ROBOTICS-CAPE-GATEWARE && echo "" && gpioinfo | grep -E '"P|chip'
+BVF-0.4.0-2-g067d28b
 gpiochip0 - 14 lines:
 gpiochip1 - 24 lines:
 gpiochip2 - 32 lines:
-	line   0: "P8_PIN3_USER_LED_0" unused output active-high
-	line   1: "P8_PIN4_USER_LED_1" unused input active-high
-	line   2: "P8_PIN5_USER_LED_2" unused output active-high
-	line   3: "P8_PIN6_USER_LED_3" unused output active-high
-	line   4: "P8_PIN7_USER_LED_4" unused output active-high
-	line   5: "P8_PIN8_USER_LED_5" unused output active-high
-	line   6: "P8_PIN9_USER_LED_6" unused input active-high
-	line   7: "P8_PIN10_USER_LED_7" unused input active-high
-	line   8: "P8_PIN11_USER_LED_8" unused output active-high
-	line   9: "P8_PIN12_USER_LED_9" unused output active-high
-	line  10: "P8_PIN13_USER_LED_10" unused output active-high
-	line  11: "P8_PIN14_USER_LED_11" unused output active-high
-	line  12:   "P8_PIN15"       unused  output  active-high
-	line  13:   "P8_PIN16"       unused  output  active-high
-	line  14:   "P8_PIN17"       unused  output  active-high
-	line  15:   "P8_PIN18"       unused  output  active-high
-	line  16:   "P8_PIN19"       unused  output  active-high
-	line  17:   "P8_PIN20"       unused  output  active-high
-	line  18:   "P8_PIN21"       unused  output  active-high
-	line  19:   "P8_PIN22"       unused  output  active-high
-	line  20:   "P8_PIN23"       unused  output  active-high
-	line  21:   "P8_PIN24"       unused  output  active-high
-	line  22:   "P8_PIN25"       unused  output  active-high
-	line  23:   "P8_PIN26"       unused  output  active-high
-	line  24:   "P8_PIN27"       unused  output  active-high
-	line  25:   "P8_PIN28"       unused  output  active-high
-	line  26:   "P8_PIN29"       unused  output  active-high
-	line  27:   "P8_PIN30"       unused  output  active-high
-gpiochip3 - 21 lines:
-	line   0:      "P9_12"       unused  output  active-high
-	line   1:      "P9_15"       unused  output  active-high
-	line   2:      "P9_23"       unused  output  active-high
-	line   3:      "P9_25"       unused  output  active-high
-	line   4:      "P9_30"       unused  output  active-high
-	line   5:      "P9_41"       unused  output  active-high
-	line   6:      "P9_13"       unused  output  active-high
+	line   0: "P8_PIN3_USER_LED_0" unused output active-high 
+	line   2: "P8_PIN5_USER_LED_2" unused output active-high 
+	line   3: "P8_PIN6_USER_LED_3" unused output active-high 
+	line   4: "P8_PIN7_USER_LED_4" unused output active-high 
+	line   5: "P8_PIN8_USER_LED_5" unused output active-high 
+	line   6: "P8_PIN9_USER_LED_6" "?" input active-high [used]
+	line   7: "P8_PIN10_USER_LED_7" "?" input active-high [used]
+	line   8: "P8_PIN11_USER_LED_8" unused output active-high 
+	line   9: "P8_PIN12_USER_LED_9" unused output active-high 
+	line  10: "P8_PIN13_USER_LED_10" unused output active-high 
+	line  11: "P8_PIN14_USER_LED_11" unused output active-high 
+	line  12:   "P8_PIN15"       unused  output  active-high 
+	line  13:   "P8_PIN16"       unused  output  active-high 
+	line  14:   "P8_PIN17"       unused  output  active-high 
+	line  15:   "P8_PIN18"       unused  output  active-high 
+	line  16:   "P8_PIN19"       unused  output  active-high 
+	line  17:   "P8_PIN20"       unused  output  active-high 
+	line  18:   "P8_PIN21"       unused  output  active-high 
+	line  19:   "P8_PIN22"       unused  output  active-high 
+	line  20:   "P8_PIN23"       unused  output  active-high 
+	line  21:   "P8_PIN24"       unused  output  active-high 
+	line  22:   "P8_PIN25"       unused  output  active-high 
+	line  23:   "P8_PIN26"       unused  output  active-high 
+	line  24:   "P8_PIN27"       unused  output  active-high 
+	line  25:   "P8_PIN28"       unused  output  active-high 
+	line  26:   "P8_PIN29"       unused  output  active-high 
+	line  27:   "P8_PIN30"       unused  output  active-high 
+gpiochip3 - 8 lines:
+	line   0:      "P9_12"          "?"  output  active-high [used]
+	line   1:      "P9_15"          "?"  output  active-high [used]
+	line   2:      "P9_23"       unused  output  active-high 
+	line   3:      "P9_25"       unused  output  active-high 
+	line   5:      "P9_30"          "?"  output  active-high [used]
+	line   6:      "P9_41"          "?"  output  active-high [used]
+	line   7:      "P9_13"       unused  output  active-high 
 gpiochip4 - 16 lines:
-	line   0:      "P8_31"       unused  output  active-high
-	line   1:      "P8_32"       unused  output  active-high
-	line   3:      "P8_34"       unused  output  active-high
-	line   5:      "P8_36"       unused  output  active-high
-	line   6:      "P8_37"       unused  output  active-high
-	line   7:      "P8_38"       unused  output  active-high
-	line   8:      "P8_39"       unused  output  active-high
-	line   9:      "P8_40"       unused  output  active-high
-	line  10:      "P8_41"       unused  output  active-high
-	line  11:      "P8_42"       unused  output  active-high
-	line  12:      "P8_43"       unused  output  active-high
-	line  13:      "P8_44"       unused  output  active-high
-	line  14:      "P8_45"       unused  output  active-high
-	line  15:      "P8_46"       unused  output  active-high
+	line   0:      "P8_31"       unused  output  active-high 
+	line   1:      "P8_32"       unused  output  active-high 
+	line   3:      "P8_34"          "?"  output  active-high [used]
+	line   5:      "P8_36"       unused  output  active-high 
+	line   6:      "P8_37"       unused  output  active-high 
+	line   7:      "P8_38"       unused  output  active-high 
+	line   8:      "P8_39"       unused  output  active-high 
+	line   9:      "P8_40"       unused  output  active-high 
+	line  10:      "P8_41"       unused  output  active-high 
+	line  11:      "P8_42"       unused  output  active-high 
+	line  12:      "P8_43"          "?"  output  active-high [used]
+	line  13:      "P8_44"          "?"  output  active-high [used]
+	line  14:      "P8_45"          "?"  output  active-high [used]
+	line  15:      "P8_46"          "?"  output  active-high [used]
 */
 #define MDIR1A_CHIP_FIRE	3	//P9.12
 #define MDIR1A_PIN_FIRE		0
 #define MDIR1B_CHIP_FIRE	3	//P9.13
-#define MDIR1B_PIN_FIRE		6
+#define MDIR1B_PIN_FIRE		7
 #define MDIR2A_CHIP_FIRE	3	//P9.15
 #define MDIR2A_PIN_FIRE		1
 #define MDIR2B_CHIP_FIRE	4	//P8.34
@@ -89,8 +87,8 @@ gpiochip4 - 16 lines:
 #define MDIR4A_PIN_FIRE		14
 #define MDIR4B_CHIP_FIRE	4	//P8.46
 #define MDIR4B_PIN_FIRE		15
+#define MOT_STBY_FIRE		3,6	//P9.41/P1.20
 
-#define MOT_STBY_FIRE		3,5	//P9.41/P1.20
 // motor pin definitions
 #define MDIR1A_CHIP		1	//gpio1.28	P9.12/P2.08
 #define MDIR1A_PIN		28	//gpio1.28	P9.12/P2.08
