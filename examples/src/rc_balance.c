@@ -577,8 +577,8 @@ static void __balance_controller(void)
 	* add D1 balance control u and D3 steering control also
 	* multiply by polarity to make sure direction is correct.
 	***********************************************************/
-	dutyL = cstate.d1_u - cstate.d3_u;
-	dutyR = cstate.d1_u + cstate.d3_u;
+	dutyL = cstate.d1_u;// - cstate.d3_u;
+	dutyR = cstate.d1_u;// + cstate.d3_u;
 	rc_motor_set(MOTOR_CHANNEL_L, MOTOR_POLARITY_L * dutyL);
 	rc_motor_set(MOTOR_CHANNEL_R, MOTOR_POLARITY_R * dutyR);
 
