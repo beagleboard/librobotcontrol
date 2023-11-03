@@ -1,0 +1,12 @@
+image: debian:bullseye
+
+build:
+  stage: build
+  before_script:
+    - apt-get update
+    - apt-get -o APT::Install-Suggests="true" install devscripts
+  script:
+    - make package
+  artifacts:
+    paths:
+      - ../librobotcontrol_*.deb
