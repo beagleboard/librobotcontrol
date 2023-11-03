@@ -1,0 +1,52 @@
+default:
+  image: beagle/debian-build
+
+build-on-amd64:
+  stage: build
+  tags:
+    - docker-amd64
+  script:
+    - make package
+    - mkdir public
+    - cp ../librobotcontrol_*.deb public/
+  artifacts:
+    paths:
+      - public
+
+build-on-aarch64:
+  stage: build
+  tags:
+    - aarch64
+  script:
+    - make package
+    - mkdir public
+    - cp ../librobotcontrol_*.deb public/
+  artifacts:
+    paths:
+      - public
+
+build-on-riscv64:
+  image: beagle/ubuntu-build
+  stage: build
+  tags:
+    - riscv64
+  script:
+    - make package
+    - mkdir public
+    - cp ../librobotcontrol_*.deb public/
+  artifacts:
+    paths:
+      - public
+
+build-on-armv7:
+  image: beagle/ubuntu-build
+  stage: build
+  tags:
+    - armv7
+  script:
+    - make package
+    - mkdir public
+    - cp ../librobotcontrol_*.deb public/
+  artifacts:
+    paths:
+      - public
