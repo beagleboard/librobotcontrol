@@ -1,4 +1,4 @@
-image: beagle/debian-builds
+image: beagle/debian-build
 
 build-on-amd64:
   stage: build
