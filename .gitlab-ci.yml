@@ -16,6 +16,8 @@ build-on-aarch64:
     - docker-aarch64
   script:
     - make package
+    - mkdir public
+    - cp ../librobotcontrol_*.deb public/
   artifacts:
     paths:
-      - ../librobotcontrol_*.deb
+      - public
