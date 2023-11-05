@@ -4,9 +4,6 @@ build-on-amd64:
   stage: build
   tags:
     - docker-amd64
-  before_script:
-    - apt-get update
-    - apt-get -o APT::Install-Suggests="true" install -y devscripts
   script:
     - make package
   artifacts:
@@ -17,9 +14,6 @@ build-on-aarch64:
   stage: build
   tags:
     - docker-aarch64
-  before_script:
-    - apt-get update
-    - apt-get -o APT::Install-Suggests="true" install -y devscripts
   script:
     - make package
   artifacts:
