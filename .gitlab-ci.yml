@@ -1,4 +1,4 @@
-image: debian:bullseye
+image: beagle/debian-builds
 
 build-on-amd64:
   stage: build
