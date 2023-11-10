@@ -37,3 +37,16 @@ build-on-riscv64:
   artifacts:
     paths:
       - public
+
+build-on-armv7:
+  image: beagle/ubuntu-build
+  stage: build
+  tags:
+    - armv7
+  script:
+    - make package
+    - mkdir public
+    - cp ../librobotcontrol_*.deb public/
+  artifacts:
+    paths:
+      - public
