@@ -4,7 +4,7 @@ default:
 build-on-amd64:
   stage: build
   tags:
-    - docker-amd64-ci
+    - docker-amd64
   script:
     - make package
     - mkdir public
