@@ -4,7 +4,7 @@ default:
 build-on-amd64:
   stage: build
   tags:
-    - docker-amd64
+    - docker-amd64-ci
   script:
     - make package
     - mkdir public
@@ -16,7 +16,7 @@ build-on-amd64:
 build-on-aarch64:
   stage: build
   tags:
-    - aarch64
+    - docker-aarch64-ci
   script:
     - make package
     - mkdir public
@@ -29,7 +29,7 @@ build-on-riscv64:
   image: beagle/ubuntu-build
   stage: build
   tags:
-    - riscv64
+    - docker-riscv64-ci
   script:
     - make package
     - mkdir public
@@ -42,7 +42,7 @@ build-on-armv7:
   image: beagle/ubuntu-build
   stage: build
   tags:
-    - armv7
+    - docker-armhf-ci
   script:
     - make package
     - mkdir public
