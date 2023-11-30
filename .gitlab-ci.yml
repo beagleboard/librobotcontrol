@@ -11,11 +11,13 @@ build:
     - ${TAG}
   script:
     - make package
-    - mkdir public
-    - cp ../librobotcontrol_*.deb public/$(dpkg --print-architecture)
+    - dpkg --print-architecture | xargs -n 1 mkdir
+    - dpkg --print-architecture | xargs -n 1 cp ../librobotcontrol_*.deb
+    - mkdir -p public
+    - dpkg --print-architecture | xargs -n 1 -i mv {} public
   artifacts:
     paths:
-      - public/$(dpkg --print-architecture)
+      - public
 
 deploy:
   image: beagle/debian-build
