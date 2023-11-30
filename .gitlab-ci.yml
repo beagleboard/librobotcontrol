@@ -12,7 +12,7 @@ build:
   script:
     - make package
     - mkdir -p public
-    - dpkg --print-architecture | xargs -n 1 cp ../librobotcontrol_{}.deb public
+    - cp ../librobotcontrol_*.deb public/
   artifacts:
     paths:
       - public
