@@ -12,7 +12,22 @@ build:
   script:
     - make package
     - mkdir public
-    - cp ../librobotcontrol_*.deb public/
+    - cp ../librobotcontrol_*.deb public/$(dpkg --print-architecture)
+  artifacts:
+    paths:
+      - public/$(dpkg --print-architecture)
+
+deploy:
+  image: beagle/debian-build
+  stage: deploy
+  dependencies:
+    - "build: [debian-build, docker-amd64]"
+    - "build: [debian-build, docker-aarch64-ci]"
+    - "build: [debian-build, docker-armhf]"
+    - "build: [ubuntu-build, docker-riscv64-ci]"
+  script:
+    - apindex public
   artifacts:
     paths:
       - public
+
