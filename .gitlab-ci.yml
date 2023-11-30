@@ -1,12 +1,9 @@
-image: debian:bullseye
+image: beagle/debian-build
 
 build-on-amd64:
   stage: build
   tags:
     - docker-amd64
-  before_script:
-    - apt-get update
-    - apt-get -o APT::Install-Suggests="true" install -y devscripts
   script:
     - make package
   artifacts:
@@ -17,11 +14,10 @@ build-on-aarch64:
   stage: build
   tags:
     - docker-aarch64
-  before_script:
-    - apt-get update
-    - apt-get -o APT::Install-Suggests="true" install -y devscripts
   script:
     - make package
+    - mkdir public
+    - cp ../librobotcontrol_*.deb public/
   artifacts:
     paths:
-      - ../librobotcontrol_*.deb
+      - public
