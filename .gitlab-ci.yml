@@ -1,48 +1,14 @@
-default:
-  image: beagle/debian-build
-
-build-on-amd64:
+build:
   stage: build
+  parallel:
+    matrix:
+      - IMAGE: debian-build
+        TAG: [docker-amd64, docker-aarch64-ci, docker-armhf]
+      - IMAGE: ubuntu-build
+        TAG: [docker-riscv64-ci]
+  image: beagle/${IMAGE}
   tags:
-    - docker-amd64
-  script:
-    - make package
-    - mkdir public
-    - cp ../librobotcontrol_*.deb public/
-  artifacts:
-    paths:
-      - public
-
-build-on-aarch64:
-  stage: build
-  tags:
-    - docker-aarch64-ci
-  script:
-    - make package
-    - mkdir public
-    - cp ../librobotcontrol_*.deb public/
-  artifacts:
-    paths:
-      - public
-
-build-on-riscv64:
-  image: beagle/ubuntu-build
-  stage: build
-  tags:
-    - docker-riscv64-ci
-  script:
-    - make package
-    - mkdir public
-    - cp ../librobotcontrol_*.deb public/
-  artifacts:
-    paths:
-      - public
-
-build-on-armv7:
-  image: beagle/ubuntu-build
-  stage: build
-  tags:
-    - docker-armhf-ci
+    - ${TAG}
   script:
     - make package
     - mkdir public
