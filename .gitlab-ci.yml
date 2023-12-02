@@ -1,0 +1,33 @@
+build:
+  stage: build
+  parallel:
+    matrix:
+      - IMAGE: debian-build
+        TAG: [docker-amd64, docker-aarch64-ci, docker-armhf]
+      - IMAGE: ubuntu-build
+        TAG: [docker-riscv64-ci]
+  image: beagle/${IMAGE}
+  tags:
+    - ${TAG}
+  script:
+    - make package
+    - mkdir -p public
+    - cp ../librobotcontrol_*.deb public/
+  artifacts:
+    paths:
+      - public
+
+pages:
+  image: beagle/debian-build
+  stage: deploy
+  dependencies:
+    - "build: [debian-build, docker-amd64]"
+    - "build: [debian-build, docker-aarch64-ci]"
+    - "build: [debian-build, docker-armhf]"
+    - "build: [ubuntu-build, docker-riscv64-ci]"
+  script:
+    - apindex public
+  artifacts:
+    paths:
+      - public
+
