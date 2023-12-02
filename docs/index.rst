@@ -3,5 +3,6 @@
 Robotics Control Library
 ########################
 
-.. doxygenpage:: indexpage
+.. doxygenpage:: index
+    :project: librobotcontrol
 
