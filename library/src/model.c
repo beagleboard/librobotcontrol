@@ -168,8 +168,8 @@ rc_model_category_t rc_model_category(void)
 	if(has_checked) return current_category;
 
 	__check_model();
-	has_checked = 1;
-	return current_model;
+
+	return current_category;
 }
 
 

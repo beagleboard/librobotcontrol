@@ -85,7 +85,7 @@ int rc_poly_power(rc_vector_t a, int n, rc_vector_t* b)
 			fprintf(stderr,"ERROR in rc_poly_power, failed to alloc vector\n");
 			return -1;
 		}
-		b->d[0] = 1.0f;
+		b->d[0] = 1.0;
 		return 0;
 	}
 	// for power 1 and above we start with duplicate

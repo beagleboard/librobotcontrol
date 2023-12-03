@@ -124,15 +124,15 @@ double rc_ringbuf_get_value(rc_ringbuf_t* buf, int pos)
 	// sanity checks
 	if(unlikely(buf==NULL)){
 		fprintf(stderr,"ERROR in rc_ringbuf_get_value, received NULL pointer\n");
-		return -1.0f;
+		return -1.0;
 	}
 	if(unlikely(pos<0 || pos>buf->size-1)){
 		fprintf(stderr,"ERROR in rc_ringbuf_get_value, position out of bounds\n");
-		return -1.0f;
+		return -1.0;
 	}
 	if(unlikely(!buf->initialized)){
 		fprintf(stderr,"ERROR in rc_ringbuf_get_value, ringbuf uninitialized\n");
-		return -1.0f;
+		return -1.0;
 	}
 	// check for looparound
 	return_index=buf->index-pos;
@@ -148,16 +148,16 @@ double rc_ringbuf_std_dev(rc_ringbuf_t buf)
 	// sanity checks
 	if(unlikely(!buf.initialized)){
 		fprintf(stderr,"ERROR in rc_ringbuf_std_dev, ringbuf not initialized yet\n");
-		return -1.0f;
+		return -1.0;
 	}
 	// shortcut if buffer is of length 1
-	if(buf.size == 1) return 0.0f;
+	if(buf.size == 1) return 0.0;
 	// calculate mean
-	mean = 0.0f;
+	mean = 0.0;
 	for(i=0;i<buf.size;i++) mean+=buf.d[i];
 	mean = mean/(double)buf.size;
 	// calculate mean square
-	mean_sqr = 0.0f;
+	mean_sqr = 0.0;
 	for(i=0;i<buf.size;i++){
 		diff = buf.d[i]-mean;
 		mean_sqr += diff*diff;
