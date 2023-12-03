@@ -297,7 +297,7 @@ void shutdown_signal_handler(int signo)
 int kill_existing_instance()
 {
 	FILE* fd;
-	int old_pid, i;
+	int old_pid, r, i;
 
 	// attempt to open PID file
 	fd = fopen(BATTPIDFILE, "r");
@@ -308,12 +308,12 @@ int kill_existing_instance()
 	}
 
 	// otherwise try to read the current process ID
-	fscanf(fd,"%d", &old_pid);
+	r = fscanf(fd,"%d", &old_pid);
 	fclose(fd);
 
 	// if the file didn't contain a PID number, remove it and
 	// return -1 indicating weird behavior
-	if(old_pid == 0){
+	if(r != 1){
 		remove(BATTPIDFILE);
 		return 1;
 	}
