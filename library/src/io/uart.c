@@ -116,7 +116,7 @@ int rc_uart_init(int bus, int baudrate, float timeout_s, int canonical_en, int s
 	rc_uart_close(bus);
 
 	// open file descriptor for blocking reads
-	snprintf(buf,sizeof(buf),"/dev/ttyO%d",bus);
+	snprintf(buf,sizeof(buf),"/dev/ttyS%d",bus);
 	tmpfd = open(buf, O_RDWR | O_NOCTTY | O_NDELAY);
 	if(tmpfd==-1){
 		perror("ERROR: int rc_uart_init while opening file descriptor");

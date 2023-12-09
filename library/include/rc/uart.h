@@ -4,7 +4,7 @@
  * @brief      C interface for the Linux UART driver
  *
  * This is a general-purpose C interface to the linux UART driver device
- * (/dev/ttyO*). This is developed and tested on the BeagleBone platform but
+ * (/dev/ttyS*). This is developed and tested on the BeagleBone platform but
  * should work on other linux systems too.
  *
  * @author     James Strawson
@@ -25,7 +25,7 @@ extern "C" {
 #include <stdint.h>
 
 /**
- * @brief      Initializes a UART bus /dev/ttyO{bus} at specified baudrate and
+ * @brief      Initializes a UART bus /dev/ttyS{bus} at specified baudrate and
  * timeout.
  *
  * This is a very generalized function that configures the bus for 8-bit
@@ -35,7 +35,7 @@ extern "C" {
  * probably doing something fancy with the bus and you will probably want to do
  * your own reading/writing with standard linux methods.
  *
- * @param[in]  bus           The bus number /dev/ttyO{bus}
+ * @param[in]  bus           The bus number /dev/ttyS{bus}
  * @param[in]  baudrate      must be one of the standard speeds in the UART
  * spec. 115200 and 57600 are most common.
  * @param[in]  timeout       timeout is in seconds and must be >=0.1
@@ -54,7 +54,7 @@ int rc_uart_init(int bus, int baudrate, float timeout, int canonical_en, int sto
 /**
  * @brief      closes a UART bus
  *
- * @param[in]  bus   The bus number /dev/ttyO{bus}
+ * @param[in]  bus   The bus number /dev/ttyS{bus}
  *
  * @return     returns 0 on success, -1 on error.
  */
@@ -67,9 +67,9 @@ int rc_uart_close(int bus);
  * This is so the user can optionally do additional configuration or IO
  * operations on the bus.
  *
- * @param[in]  bus   The bus number /dev/ttyO{bus}
+ * @param[in]  bus   The bus number /dev/ttyS{bus}
  *
- * @return     the file descriptor to /dev/ttyO{bus} or -1 on error
+ * @return     the file descriptor to /dev/ttyS{bus} or -1 on error
  */
 int rc_uart_get_fd(int bus);
 
@@ -77,7 +77,7 @@ int rc_uart_get_fd(int bus);
  * @brief      flushes (discards) any data received but not read, or data
  * written but not sent.
  *
- * @param[in]  bus   The bus number /dev/ttyO{bus}
+ * @param[in]  bus   The bus number /dev/ttyS{bus}
  *
  * @return     0 on success or -1 on failure
  */
@@ -86,7 +86,7 @@ int rc_uart_flush(int bus);
 /**
  * @brief      Sends data out the uart port
  *
- * @param[in]  bus    The bus number /dev/ttyO{bus}
+ * @param[in]  bus    The bus number /dev/ttyS{bus}
  * @param[in]  data   data pointer
  * @param[in]  bytes  number of bytes to send
  *
@@ -103,7 +103,7 @@ int rc_uart_write(int bus, uint8_t* data, size_t bytes);
  * that can be read with a single call to read(). For reads larger than
  * 128bytes, we run a loop instead.
  *
- * @param[in]  bus    The bus number /dev/ttyO{bus}
+ * @param[in]  bus    The bus number /dev/ttyS{bus}
  * @param[out] buf    data pointer
  * @param[in]  bytes  number of bytes to read
  *
@@ -121,7 +121,7 @@ int rc_uart_read_bytes(int bus, uint8_t* buf, size_t bytes);
  * - timeout declared in rc_uart_init() is reached
  * - shutdown flag is set by rc_uart_close
  *
- * @param[in]  bus        The bus number /dev/ttyO{bus}
+ * @param[in]  bus        The bus number /dev/ttyS{bus}
  * @param[out] buf        data pointer
  * @param[in]  max_bytes  max bytes to read in case newline character not found
  *
