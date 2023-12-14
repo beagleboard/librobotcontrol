@@ -34,7 +34,8 @@ int main()
 	// wait for the user to actually start
 	rc_usleep(2000000);
 
-	rc_mpu_config_t config = rc_mpu_default_config();
+	rc_mpu_config_t config;
+	rc_mpu_set_config_to_default(&config);
 	config.i2c_bus = I2C_BUS;
 
 	if(rc_mpu_calibrate_mag_routine(config)<0){

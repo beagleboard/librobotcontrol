@@ -59,7 +59,7 @@ static void __check_model(void)
 	fclose(fd);
 
 	// now do the checks for known BB models
-	if(strstr(c, "BeagleBone")!=NULL || strstr(c, "PocketBeagle")!=NULL){
+	if(strstr(c, "BeagleBone")!=NULL || strstr(c, "PocketBeagle")!=NULL || strstr(c, "BeagleBoard")!=NULL ){
 
 		current_category = CATEGORY_BEAGLEBONE;
 
@@ -109,6 +109,10 @@ static void __check_model(void)
 		}
 		if(strcmp(c, "TI AM335x PocketBeagle")==0) {
 			current_model = MODEL_BB_POCKET;
+			return;
+		}
+		if(strcmp(c, "BeagleBoard BeagleV-Fire")==0) {
+			current_model = MODEL_BB_FIRE;
 			return;
 		}
 		return;
@@ -210,6 +214,7 @@ void rc_model_print(void)
 	caseprint(MODEL_BB_GREEN_W)
 	caseprint(MODEL_BB_BLUE)
 	caseprint(MODEL_BB_POCKET)
+	caseprint(MODEL_BB_FIRE)
 	caseprint(MODEL_RPI_B)
 	caseprint(MODEL_RPI_B_PLUS)
 	caseprint(MODEL_RPI2_B)

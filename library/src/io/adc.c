@@ -23,6 +23,7 @@
 #define LIPO_ADC_CH	6
 #define DC_JACK_ADC_CH	5
 #define V_DIV_RATIO	11.0
+#define V_DIV_RATIO_FIRE	1.8
 #define BATT_DEADZONE	1.0
 
 #define ADC2AI(x) (x==0?0:(x==1?1:(x==2?3:(x==3?2:(x==4?7:(x==5?6:(x==6?4:(x==7?5:-1))))))))
@@ -94,8 +95,8 @@ int rc_adc_read_raw(int ch)
 	}
 	i=atoi(buf);
 	if(i>RAW_MAX || i< RAW_MIN){
-		fprintf(stderr, "ERROR: in rc_adc_read_raw, value out of bounds: %d\n", i);
-		return -1;
+		// fprintf(stderr, "ERROR: in rc_adc_read_raw, value out of bounds: %d\n", i);
+		return i;
 	}
 	return i;
 }
@@ -114,7 +115,12 @@ double rc_adc_read_volt(int ch)
 
 double rc_adc_batt(void)
 {
-	double v = (rc_adc_read_volt(LIPO_ADC_CH)*V_DIV_RATIO)+LIPO_OFFSET;
+	double v;
+	if(rc_model()==MODEL_BB_FIRE){
+		v = (rc_adc_read_volt(LIPO_ADC_CH)*V_DIV_RATIO)+LIPO_OFFSET;
+	} else {
+		v = (rc_adc_read_volt(LIPO_ADC_CH)*V_DIV_RATIO_FIRE)+LIPO_OFFSET;
+	}
 	// add in a little dead zone to make disconnected battery easier to detect
 	if(v<BATT_DEADZONE) v = 0.0;
 	return v;
@@ -123,7 +129,12 @@ double rc_adc_batt(void)
 
 double rc_adc_dc_jack(void)
 {
-	double v = (rc_adc_read_volt(DC_JACK_ADC_CH)*V_DIV_RATIO)+DC_JACK_OFFSET;
+	double v;
+	if(rc_model()==MODEL_BB_FIRE){
+		v = (rc_adc_read_volt(DC_JACK_ADC_CH)*V_DIV_RATIO_FIRE)+DC_JACK_OFFSET;
+	} else {
+		v = (rc_adc_read_volt(DC_JACK_ADC_CH)*V_DIV_RATIO)+DC_JACK_OFFSET;
+	}
 	if(v<BATT_DEADZONE) v = 0.0;
 	return v;
 }

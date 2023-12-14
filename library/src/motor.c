@@ -16,6 +16,64 @@
 #define MOTOR_CHANNELS		4
 #define PWM_SUBSYSTEMS		3
 
+/*
+beagle@BeagleV:~/librobotcontrol$ cat /proc/device-tree/chosen/overlays/ROBOTICS-CAPE-GATEWARE && echo "" && gpioinfo | grep -E '"P|chip'
+BVF-0.4.0-2-g067d28b
+gpiochip0 - 14 lines:
+gpiochip1 - 24 lines:
+gpiochip2 - 32 lines:
+	line   0: "P8_PIN3_USER_LED_0" unused output active-high 
+	line   2: "P8_PIN5_USER_LED_2" unused output active-high 
+	line   3: "P8_PIN6_USER_LED_3" unused output active-high 
+	line   4: "P8_PIN7_USER_LED_4" unused output active-high 
+	line   5: "P8_PIN8_USER_LED_5" unused output active-high 
+	line   6: "P8_PIN9_USER_LED_6" "?" input active-high [used]
+	line   7: "P8_PIN10_USER_LED_7" "?" input active-high [used]
+	line   8: "P8_PIN11_USER_LED_8" unused output active-high 
+	line   9: "P8_PIN12_USER_LED_9" unused output active-high 
+	line  10: "P8_PIN13_USER_LED_10" unused output active-high 
+	line  11: "P8_PIN14_USER_LED_11" unused output active-high 
+	line  12:   "P8_PIN15"       unused  output  active-high 
+	line  13:   "P8_PIN16"       unused  output  active-high 
+	line  14:   "P8_PIN17"       unused  output  active-high 
+	line  15:   "P8_PIN18"       unused  output  active-high 
+	line  16:   "P8_PIN19"       unused  output  active-high 
+	line  17:   "P8_PIN20"       unused  output  active-high 
+	line  18:   "P8_PIN21"       unused  output  active-high 
+	line  19:   "P8_PIN22"       unused  output  active-high 
+	line  20:   "P8_PIN23"       unused  output  active-high 
+	line  21:   "P8_PIN24"       unused  output  active-high 
+	line  22:   "P8_PIN25"       unused  output  active-high 
+	line  23:   "P8_PIN26"       unused  output  active-high 
+	line  24:   "P8_PIN27"       unused  output  active-high 
+	line  25:   "P8_PIN28"       unused  output  active-high 
+	line  26:   "P8_PIN29"       unused  output  active-high 
+	line  27:   "P8_PIN30"       unused  output  active-high 
+gpiochip3 - 8 lines:
+	line   0:      "P9_12"          "?"  output  active-high [used]
+	line   1:      "P9_15"          "?"  output  active-high [used]
+	line   2:      "P9_23"       unused  output  active-high 
+	line   3:      "P9_25"       unused  output  active-high 
+	line   5:      "P9_30"          "?"  output  active-high [used]
+	line   6:      "P9_41"          "?"  output  active-high [used]
+	line   7:      "P9_13"       unused  output  active-high 
+gpiochip4 - 16 lines:
+	line   0:      "P8_31"       unused  output  active-high 
+	line   1:      "P8_32"       unused  output  active-high 
+	line   3:      "P8_34"          "?"  output  active-high [used]
+	line   5:      "P8_36"       unused  output  active-high 
+	line   6:      "P8_37"       unused  output  active-high 
+	line   7:      "P8_38"       unused  output  active-high 
+	line   8:      "P8_39"       unused  output  active-high 
+	line   9:      "P8_40"       unused  output  active-high 
+	line  10:      "P8_41"       unused  output  active-high 
+	line  11:      "P8_42"       unused  output  active-high 
+	line  12:      "P8_43"          "?"  output  active-high [used]
+	line  13:      "P8_44"          "?"  output  active-high [used]
+	line  14:      "P8_45"          "?"  output  active-high [used]
+	line  15:      "P8_46"          "?"  output  active-high [used]
+*/
+
 struct motorcfg {
 	const struct rc_gpiodesc inA;
 	const struct rc_gpiodesc inB;
@@ -27,9 +85,11 @@ enum configs {
 	BLUE = 1,
 	AI64 = 2,
 	POCKET = 3,
+	FIRE = 4,
 	NUM_CONFIGS
 };
 
+// TODO: in the future, we should try to use the gpio line names to identify pins
 struct sys_motorcfg {
 	const char * desc;
 	const struct motorcfg m[MOTOR_CHANNELS];
@@ -102,7 +162,7 @@ struct sys_motorcfg {
 	.m = {
 		/* PWM subsystem 100 is software emulation on a PRU */
 		{
-			.inA = { .chip = 2, .pin = 0 }, /* T13 */
+			.inA = { .chip = 2, .pin = 0 }, /* TODO: there's some cut-and-paste here */
 			.inB = { .chip = 0, .pin = 31 },
 			.pwm = { .ss = 100, .chan = 'A' },
 		},
@@ -146,6 +206,35 @@ struct sys_motorcfg {
 	.pwms = { 0, 1, -1 },
 	.channels = 2,
   },
+  [FIRE] = {
+	.desc = "Fire+RC-A",
+	.m = {
+		{
+			.inA = { .chip = 3, .pin = 0 }, /* P9_12 */
+			.inB = { .chip = 3, .pin = 7 }, /* P9_13 */
+			.pwm = { .ss = 0, .chan = 'A' },
+		},
+		{
+			.inA = { .chip = 3, .pin = 1 }, /* P9_15 */
+			.inB = { .chip = 4, .pin = 3 }, /* P8_34 */
+			.pwm = { .ss = 0, .chan = 'B' },
+		},
+		{
+			.inA = { .chip = 4, .pin = 13 }, /* P8_44 */
+			.inB = { .chip = 4, .pin = 12 }, /* P8_43 */
+			.pwm = { .ss = 1, .chan = 'A' },
+		},
+		{
+			.inA = { .chip = 4, .pin = 14 }, /* P8_45 */
+			.inB = { .chip = 4, .pin = 15 }, /* P8_46 */
+			.pwm = { .ss = 1, .chan = 'B' },
+		},
+	},
+	.polarity = { 1.0, -1.0, -1.0, 1.0 },
+	.standby = { .chip = 3, .pin = 6 }, /* P9_41 */
+	.pwms = { 0, 1, -1 },
+	.channels = 4,
+  },
 };
 
 static int init_flag = 0;
@@ -176,6 +265,9 @@ int rc_motor_init_freq(int pwm_frequency_hz)
 	}
 	else if(rc_model()==MODEL_BB_POCKET) {
 		cfg = &cfgs[POCKET];
+	}
+	else if(rc_model()==MODEL_BB_FIRE) {
+		cfg = &cfgs[FIRE];
 	}
 	else{
 		cfg = &cfgs[BLACK];

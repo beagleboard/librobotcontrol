@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h> // for atoi
+#include <stdbool.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -15,6 +16,7 @@
 #include <glob.h>
 #include <rc/pwm.h>
 #include <rc/time.h>
+#include <rc/model.h>
 
 #define MIN_HZ 1
 #define MAX_HZ 1000000000
@@ -25,6 +27,9 @@
 // to allow for shorter strings and neater code.
 #define OCP_DIR "/sys/devices/platform/ocp/4830%d000.epwmss/4830%d200.pwm/pwm"
 #define OCP_OFFSET	66
+
+#define FABRIC_DIR "/sys/devices/platform/fabric-bus@40000000/41%d00000.pwm/pwm"
+#define FABRIC_OFFSET	66
 
 // preposessor macros
 #define unlikely(x)	__builtin_expect (!!(x), 0)
@@ -46,6 +51,7 @@ static int init_flag[3] = {0,0,0};
 static int mode; // 0 for "pwmx", 1 for "pwm-x:y" versions of driver
 static int ssindex[3]; // index given by the kernel to each pwm chip when in mode 1
 
+#define PWMCHIPNUM ((rc_model()==MODEL_BB_FIRE) ? ss+4 : ss*2)
 
 /**
  * @brief      exports A and B pwm channels
@@ -60,9 +66,11 @@ static int __export_channels(int ss)
 	char buf[MAXBUF];
 	int len;
 	glob_t globbuf; // for finding wildcard directories
-
 	// construct glob pattern to search
-	len = snprintf(buf, sizeof(buf), OCP_DIR "/pwmchip*/export", ss*2, ss*2);
+	if(rc_model()==MODEL_BB_FIRE)
+		len = snprintf(buf, sizeof(buf), FABRIC_DIR "/pwmchip*/export", PWMCHIPNUM);
+	else
+		len = snprintf(buf, sizeof(buf), OCP_DIR "/pwmchip*/export", PWMCHIPNUM, PWMCHIPNUM);
 	glob(buf, 0, NULL, &globbuf);
 
 	// no pwmchipx directory found
@@ -70,6 +78,7 @@ static int __export_channels(int ss)
 		perror("ERROR in rc_pwm_init, can't find pwm export file");
 		fprintf(stderr,"Probably not running on BeagleBone or device tree not configured\n");
 		globfree(&globbuf);
+		// TODO: do we need to edit this for Fire?
 		return -1;
 	}
 	// should never be more than 1, something really weird happening
@@ -107,7 +116,7 @@ static int __export_channels(int ss)
 
 	// determine mode
 	// start with channel A and also check both versions of driver
-	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/enable", ss*2); // mode 0
+	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/enable", ssindex[ss]); // mode 0
 	// if it exists, mode is 0
 	if(access(buf,F_OK)==0) mode=0;
 	else{
@@ -122,7 +131,7 @@ static int __export_channels(int ss)
 	}
 
 	// check channel B
-	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/enable", ss*2); // mode 0
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/enable", ssindex[ss]); // mode 0
 	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:1/enable",ssindex[ss]); // mode 1
 	// if it exists, mode is 0
 	if(access(buf,F_OK)!=0){
@@ -149,9 +158,11 @@ static int __unexport_channels(int ss)
 	char buf[MAXBUF];
 	int len;
 	glob_t globbuf; // for finding wildcard directories
-
 	// construct glob pattern to search
-	len = snprintf(buf, sizeof(buf), OCP_DIR "/pwmchip*/unexport", ss*2, ss*2);
+	if(rc_model()==MODEL_BB_FIRE)
+		len = snprintf(buf, sizeof(buf), FABRIC_DIR "/pwmchip*/unexport", PWMCHIPNUM);
+	else
+		len = snprintf(buf, sizeof(buf), OCP_DIR "/pwmchip*/unexport", PWMCHIPNUM, PWMCHIPNUM);
 	glob(buf, 0, NULL, &globbuf);
 
 	// no pwmchipx directory found
@@ -234,7 +245,7 @@ int rc_pwm_init(int ss, int frequency)
 	#endif
 
 	// open file descriptors for duty cycles
-	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/duty_cycle", ss*2); // mode 0
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/duty_cycle", ssindex[ss]); // mode 0
 	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:0/duty_cycle", ssindex[ss]); // mode 1
 	dutyA_fd[ss] = open(buf,O_WRONLY);
 
@@ -249,7 +260,7 @@ int rc_pwm_init(int ss, int frequency)
 		}
 	}
 
-	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/duty_cycle", ss*2); // mode 0
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/duty_cycle", ssindex[ss]); // mode 0
 	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:1/duty_cycle", ssindex[ss]); // mode 1
 	dutyB_fd[ss] = open(buf,O_WRONLY);
 	if(unlikely(dutyB_fd[ss]==-1)){
@@ -259,7 +270,7 @@ int rc_pwm_init(int ss, int frequency)
 	}
 
 	// now open enable, polarity, and period FDs for setup
-	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/enable", ss*2); // mode 0
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/enable", ssindex[ss]); // mode 0
 	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:0/enable", ssindex[ss]); // mode 1
 	enableA_fd = open(buf,O_WRONLY);
 	if(unlikely(enableA_fd==-1)){
@@ -267,7 +278,7 @@ int rc_pwm_init(int ss, int frequency)
 		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
-	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/enable", ss*2); // mode 0
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/enable", ssindex[ss]); // mode 0
 	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:1/enable", ssindex[ss]); // mode 1
 	enableB_fd = open(buf,O_WRONLY);
 	if(unlikely(enableB_fd==-1)){
@@ -275,7 +286,7 @@ int rc_pwm_init(int ss, int frequency)
 		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
-	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/period", ss*2); // mode 0
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/period", ssindex[ss]); // mode 0
 	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:0/period", ssindex[ss]); // mode 1
 	periodA_fd = open(buf,O_WRONLY);
 	if(unlikely(periodA_fd==-1)){
@@ -283,7 +294,7 @@ int rc_pwm_init(int ss, int frequency)
 		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
-	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/period", ss*2); // mode 0
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/period", ssindex[ss]); // mode 0
 	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:1/period", ssindex[ss]); // mode 1
 	periodB_fd = open(buf,O_WRONLY);
 	if(unlikely(periodB_fd==-1)){
@@ -291,7 +302,7 @@ int rc_pwm_init(int ss, int frequency)
 		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
-	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/polarity", ss*2); // mode 0
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/polarity", ssindex[ss]); // mode 0
 	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:0/polarity", ssindex[ss]); // mode 1
 	polarityA_fd = open(buf,O_WRONLY);
 	if(unlikely(polarityA_fd==-1)){
@@ -299,7 +310,7 @@ int rc_pwm_init(int ss, int frequency)
 		fprintf(stderr,"tried accessing: %s\n", buf);
 		return -1;
 	}
-	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/polarity", ss*2); // mode 0
+	if(mode==0)	len = snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/polarity", ssindex[ss]); // mode 0
 	else		len = snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:1/polarity", ssindex[ss]); // mode 1
 	polarityB_fd = open(buf,O_WRONLY);
 	if(unlikely(polarityB_fd==-1)){
@@ -379,14 +390,14 @@ int rc_pwm_cleanup(int ss)
 	}
 
 	// now open enable FDs
-	if(mode==0)	snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/enable", ss*2); // mode 0
+	if(mode==0)	snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm0/enable", ssindex[ss]); // mode 0
 	else		snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:0/enable", ssindex[ss]); // mode 1
 	enableA_fd = open(buf,O_WRONLY);
 	if(unlikely(enableA_fd==-1)){
 		perror("ERROR in rc_pwm_cleanup, failed to open pwm A enable fd");
 		return -1;
 	}
-	if(mode==0)	snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/enable", ss*2); // mode 0
+	if(mode==0)	snprintf(buf, sizeof(buf), SYS_DIR "/pwmchip%d/pwm1/enable", ssindex[ss]); // mode 0
 	else		snprintf(buf, sizeof(buf), SYS_DIR "/pwm-%d:1/enable", ssindex[ss]); // mode 1
 	enableB_fd = open(buf,O_WRONLY);
 	if(unlikely(enableB_fd==-1)){

@@ -66,7 +66,8 @@ int main()
 	running = 1;
 
 	// use defaults for now, except also enable magnetometer.
-	rc_mpu_config_t conf = rc_mpu_default_config();
+	rc_mpu_config_t conf;
+	rc_mpu_set_config_to_default(&conf);
 	conf.i2c_bus = I2C_BUS;
 
 	if(rc_mpu_initialize_dmp(&data, conf)){

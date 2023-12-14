@@ -28,7 +28,8 @@ int main()
 	getchar();
 	printf("Starting calibration routine\n");
 
-	rc_mpu_config_t config = rc_mpu_default_config();
+	rc_mpu_config_t config;
+	rc_mpu_set_config_to_default(&config);
 	config.i2c_bus = I2C_BUS;
 
 	if(rc_mpu_calibrate_accel_routine(config)<0){

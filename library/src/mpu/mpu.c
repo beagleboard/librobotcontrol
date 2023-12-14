@@ -22,6 +22,7 @@
 #include <sys/types.h>	// for mkdir and chmod
 
 #include <rc/mpu.h>
+#include <rc/model.h>
 #include <rc/math/vector.h>
 #include <rc/math/matrix.h>
 #include <rc/math/quaternion.h>
@@ -45,6 +46,8 @@
 
 //I2C bus and address definitions for Robotics Cape & bealgebone blue
 #define RC_IMU_BUS		2
+#define RC_IMU_INTERRUPT_PIN_CHIP_FIRE 2
+#define RC_IMU_INTERRUPT_PIN_PIN_FIRE  1 // gpio2.1 P8.4
 #define RC_IMU_INTERRUPT_PIN_CHIP 3
 #define RC_IMU_INTERRUPT_PIN_PIN  21 // gpio3.21 P9.25
 
@@ -154,11 +157,21 @@ static int __mag_correct_orientation(double mag_vec[3]);
 
 rc_mpu_config_t rc_mpu_default_config(void)
 {
+	// Allocating an object like this on the stack is nuts -- do not use this function!!!
 	rc_mpu_config_t conf;
 
+	fprintf(stderr,"Friends don't let friends return structures on the stack\n");
+	exit(-1);
+
 	// connectivity
-	conf.gpio_interrupt_pin_chip = RC_IMU_INTERRUPT_PIN_CHIP;
-	conf.gpio_interrupt_pin = RC_IMU_INTERRUPT_PIN_PIN;
+	if(rc_model()==MODEL_BB_FIRE) {
+		conf.gpio_interrupt_pin_chip = RC_IMU_INTERRUPT_PIN_CHIP_FIRE;
+		conf.gpio_interrupt_pin = RC_IMU_INTERRUPT_PIN_PIN_FIRE;
+	}
+	else {
+		conf.gpio_interrupt_pin_chip = RC_IMU_INTERRUPT_PIN_CHIP;
+		conf.gpio_interrupt_pin = RC_IMU_INTERRUPT_PIN_PIN;
+	}
 	conf.i2c_bus = RC_IMU_BUS;
 	conf.i2c_addr = RC_MPU_DEFAULT_I2C_ADDR;
 	conf.show_warnings = 0;
@@ -188,7 +201,38 @@ rc_mpu_config_t rc_mpu_default_config(void)
 
 int rc_mpu_set_config_to_default(rc_mpu_config_t *conf)
 {
-	*conf = rc_mpu_default_config();
+	// connectivity
+	if(rc_model()==MODEL_BB_FIRE) {
+		conf->gpio_interrupt_pin_chip = RC_IMU_INTERRUPT_PIN_CHIP_FIRE;
+		conf->gpio_interrupt_pin = RC_IMU_INTERRUPT_PIN_PIN_FIRE;
+	}
+	else {
+		conf->gpio_interrupt_pin_chip = RC_IMU_INTERRUPT_PIN_CHIP;
+		conf->gpio_interrupt_pin = RC_IMU_INTERRUPT_PIN_PIN;
+	}
+	conf->i2c_bus = RC_IMU_BUS;
+	conf->i2c_addr = RC_MPU_DEFAULT_I2C_ADDR;
+	conf->show_warnings = 0;
+
+	// general stuff
+	conf->accel_fsr	= ACCEL_FSR_8G;
+	conf->gyro_fsr	= GYRO_FSR_2000DPS;
+	conf->accel_dlpf	= ACCEL_DLPF_184;
+	conf->gyro_dlpf	= GYRO_DLPF_184;
+	conf->enable_magnetometer = 0;
+
+	// DMP stuff
+	conf->dmp_sample_rate = 100;
+	conf->dmp_fetch_accel_gyro = 0;
+	conf->dmp_auto_calibrate_gyro = 0;
+	conf->orient = ORIENTATION_Z_UP;
+	conf->compass_time_constant = 20.0;
+	conf->dmp_interrupt_sched_policy = SCHED_OTHER;
+	conf->dmp_interrupt_priority = 0;
+	conf->read_mag_after_callback = 1;
+	conf->mag_sample_rate_div = 4;
+	conf->tap_threshold=210;
+
 	return 0;
 }
 
@@ -2792,7 +2836,7 @@ int rc_mpu_calibrate_mag_routine(rc_mpu_config_t conf)
 	rc_vector_t lengths = rc_vector_empty();
 	rc_mpu_data_t imu_data; // to collect magnetometer data
 	// wipe it with defaults to avoid problems
-	config = rc_mpu_default_config();
+	rc_mpu_set_config_to_default(&config);
 	// configure with user's i2c bus info
 	config.enable_magnetometer = 1;
 	config.i2c_bus = conf.i2c_bus;

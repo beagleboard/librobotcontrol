@@ -106,7 +106,8 @@ int main(int argc, char *argv[])
 	running = 1;
 
 	// use defaults for now, except also enable magnetometer.
-	rc_mpu_config_t conf = rc_mpu_default_config();
+	rc_mpu_config_t conf;
+	rc_mpu_set_config_to_default(&conf);
 	conf.i2c_bus = I2C_BUS;
 	conf.enable_magnetometer = enable_magnetometer;
 	conf.show_warnings = enable_warnings;

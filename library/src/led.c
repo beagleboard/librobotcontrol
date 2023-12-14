@@ -11,12 +11,14 @@
 
 #include <rc/led.h>
 #include <rc/time.h>
+#include <rc/gpio.h>
+#include <rc/model.h>
 
 // preposessor macros
 #define unlikely(x)	__builtin_expect (!!(x), 0)
 
 
-#define SYSFS_LED_DIR "/sys/class/leds/"
+#define SYSFS_LED_DIR "/sys/devices/platform/leds/leds/"
 #define BRIGHTNESS_FILE	"/brightness"
 #define MAX_BUF 128
 #define NUM_LEDS 11
@@ -35,6 +37,9 @@ static const char* paths[] = {
 	"wifi"
 };
 
+static const int* gpios[] = {
+	[
+
 static int fd[NUM_LEDS];
 static int blinking[NUM_LEDS];
 static int stop_blinking_flag[NUM_LEDS];
@@ -42,6 +47,7 @@ static int stop_blinking_flag[NUM_LEDS];
 // initializes a single led file descriptor
 static int init_led(rc_led_t led)
 {
+	if(rc_model()==MODEL_BB_FIRE) return 0;
 	if(fd[(int)led] != 0){
 		#ifdef DEBUG
 		fprintf(stderr,"WARNING, trying to initialize an LED which already has file descriptor\n");
@@ -64,6 +70,7 @@ static int init_led(rc_led_t led)
 
 int rc_led_set(rc_led_t led, int value)
 {
+	return 0;
 	if(fd[(int)led] == 0){
 		#ifdef DEBUG
 		fprintf(stderr,"initializing led\n");
@@ -83,6 +90,7 @@ int rc_led_set(rc_led_t led, int value)
 void rc_led_cleanup(void)
 {
 	int i;
+	if(rc_model()==MODEL_BB_FIRE) return;
 	for(i=0;i<NUM_LEDS;i++) close(fd[i]);
 	return;
 }
@@ -113,7 +121,7 @@ int rc_led_blink(rc_led_t led, float hz, float duration)
 {
 	int i;
 	int toggle = 0;
-
+	if(rc_model()==MODEL_BB_FIRE) return 0;
 	if(blinking[(int)led]){
 		fprintf(stderr, "ERROR: in rc_led_blink(), led is already blinking!\n");
 		return -1;
@@ -152,6 +160,7 @@ int rc_led_blink(rc_led_t led, float hz, float duration)
 
 void rc_led_stop_blink(rc_led_t led)
 {
+	if(rc_model()==MODEL_BB_FIRE) return;
 	stop_blinking_flag[(int)led]=0;
 	return;
 }
@@ -160,6 +169,7 @@ void rc_led_stop_blink(rc_led_t led)
 void rc_led_stop_blink_all(void)
 {
 	int i;
+	return ;
 	for(i=0;i<NUM_LEDS;i++) stop_blinking_flag[i]=0;
 	return;
 }

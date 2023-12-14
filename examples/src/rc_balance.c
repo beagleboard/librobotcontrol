@@ -9,6 +9,7 @@
 #include <stdlib.h> // for strtof()
 #include <math.h> // for M_PI
 #include <robotcontrol.h>
+#include <rc/model.h>
 
 #include "rc_balance_defs.h"
 
@@ -189,10 +190,12 @@ int main(int argc, char *argv[])
 	rc_motor_standby(1); // start with motors in standby
 
 	// start dsm listener
-	if(m_input_mode == DSM){
-		if(rc_dsm_init()==-1){
-			fprintf(stderr,"failed to start initialize DSM\n");
-			return -1;
+	if(rc_model()!=MODEL_BB_FIRE) {
+		if(m_input_mode == DSM){
+			if(rc_dsm_init()==-1){
+				fprintf(stderr,"failed to start initialize DSM\n");
+				return -1;
+			}
 		}
 	}
 
@@ -212,17 +215,20 @@ int main(int argc, char *argv[])
 	printf("Press and release PAUSE button to pause/start the motors\n");
 	printf("hold pause button down for 2 seconds to exit\n");
 
-	if(rc_led_set(RC_LED_GREEN, 0)==-1){
-		fprintf(stderr, "ERROR in rc_balance, failed to set RC_LED_GREEN\n");
-		return -1;
-	}
-	if(rc_led_set(RC_LED_RED, 1)==-1){
-		fprintf(stderr, "ERROR in rc_balance, failed to set RC_LED_RED\n");
-		return -1;
+	if(rc_model()!=MODEL_BB_FIRE) {
+		if(rc_led_set(RC_LED_GREEN, 0)==-1){
+			fprintf(stderr, "ERROR in rc_balance, failed to set RC_LED_GREEN\n");
+			return -1;
+		}
+		if(rc_led_set(RC_LED_RED, 1)==-1){
+			fprintf(stderr, "ERROR in rc_balance, failed to set RC_LED_RED\n");
+			return -1;
+		}
 	}
 
 	// set up mpu configuration
-	rc_mpu_config_t mpu_config = rc_mpu_default_config();
+	rc_mpu_config_t mpu_config;
+	rc_mpu_set_config_to_default(&mpu_config);
 	mpu_config.dmp_sample_rate = SAMPLE_RATE_HZ;
 	mpu_config.orient = ORIENTATION_Y_UP;
 
@@ -332,11 +338,13 @@ int main(int argc, char *argv[])
 	rc_filter_free(&D2);
 	rc_filter_free(&D3);
 	rc_mpu_power_off();
-	rc_led_set(RC_LED_GREEN, 0);
-	rc_led_set(RC_LED_RED, 0);
-	rc_led_cleanup();
-	rc_encoder_eqep_cleanup();
-	rc_button_cleanup();	// stop button handlers
+	if(rc_model()!=MODEL_BB_FIRE) {
+		rc_led_set(RC_LED_GREEN, 0);
+		rc_led_set(RC_LED_RED, 0);
+		rc_led_cleanup();
+		rc_encoder_eqep_cleanup();
+		rc_button_cleanup();	// stop button handlers
+	}
 	rc_remove_pid_file();	// remove pid file LAST
 	return 0;
 }
@@ -389,6 +397,7 @@ void* __setpoint_manager(__attribute__ ((unused)) void* ptr)
 		case NONE:
 			continue;
 		case DSM:
+			if(rc_model()==MODEL_BB_FIRE) continue;
 			if(rc_dsm_is_new_data()){
 				// Read normalized (+-1) inputs from RC radio stick and multiply by
 				// polarity setting so positive stick means positive setpoint
@@ -494,8 +503,13 @@ static void __balance_controller(void)
 	// collect encoder positions, right wheel is reversed
 	cstate.wheelAngleR = (rc_encoder_eqep_read(ENCODER_CHANNEL_R) * 2.0 * M_PI) \
 				/(ENCODER_POLARITY_R * GEARBOX * ENCODER_RES);
-	cstate.wheelAngleL = (rc_encoder_eqep_read(ENCODER_CHANNEL_L) * 2.0 * M_PI) \
+	if(rc_model()==MODEL_BB_FIRE) {
+		cstate.wheelAngleL = (rc_encoder_eqep_read(ENCODER_CHANNEL_L_FIRE) * 2.0 * M_PI) \
 				/(ENCODER_POLARITY_L * GEARBOX * ENCODER_RES);
+	} else {
+		cstate.wheelAngleL = (rc_encoder_eqep_read(ENCODER_CHANNEL_L) * 2.0 * M_PI) \
+				/(ENCODER_POLARITY_L * GEARBOX * ENCODER_RES);
+	}
 
 	// Phi is average wheel rotation also add theta body angle to get absolute
 	// wheel position in global frame since encoders are attached to the body
@@ -575,9 +589,18 @@ static void __balance_controller(void)
 	* add D1 balance control u and D3 steering control also
 	* multiply by polarity to make sure direction is correct.
 	***********************************************************/
-	dutyL = cstate.d1_u - cstate.d3_u;
-	dutyR = cstate.d1_u + cstate.d3_u;
-	rc_motor_set(MOTOR_CHANNEL_L, MOTOR_POLARITY_L * dutyL);
+	if(rc_model()==MODEL_BB_FIRE) {
+		dutyL = cstate.d1_u;
+		dutyR = cstate.d1_u;
+	} else {
+		dutyL = cstate.d1_u - cstate.d3_u;
+		dutyR = cstate.d1_u + cstate.d3_u;
+	}
+	if(rc_model()==MODEL_BB_FIRE) {
+		rc_motor_set(MOTOR_CHANNEL_L_FIRE, MOTOR_POLARITY_L * dutyL);
+	} else {
+		rc_motor_set(MOTOR_CHANNEL_L, MOTOR_POLARITY_L * dutyL);
+	}
 	rc_motor_set(MOTOR_CHANNEL_R, MOTOR_POLARITY_R * dutyR);
 
 	return;
@@ -621,7 +644,11 @@ static int __disarm_controller(void)
 static int __arm_controller(void)
 {
 	__zero_out_controller();
-	rc_encoder_eqep_write(ENCODER_CHANNEL_L,0);
+	if(rc_model()==MODEL_BB_FIRE) {
+		rc_encoder_eqep_write(ENCODER_CHANNEL_L_FIRE,0);
+	} else {
+		rc_encoder_eqep_write(ENCODER_CHANNEL_L,0);
+	}
 	rc_encoder_eqep_write(ENCODER_CHANNEL_R,0);
 	// prefill_filter_inputs(&D1,cstate.theta);
 	rc_motor_standby(0);

@@ -13,6 +13,7 @@
 #include <linux/i2c-dev.h> //for IOCTL defs
 
 #include <rc/i2c.h>
+#include <rc/model.h>
 
 // preposessor macros
 #define unlikely(x)	__builtin_expect (!!(x), 0)
@@ -61,10 +62,15 @@ int rc_i2c_init(int bus, uint8_t devAddr)
 
 	// open file descriptor
 	char str[16];
-	sprintf(str,"/dev/i2c-%d",bus);
+	if(rc_model()==MODEL_BB_FIRE) {
+		sprintf(str,"/dev/bone/i2c/%d",bus);
+	}
+	else {
+		sprintf(str,"/dev/i2c-%d",bus);
+	}
 	i2c[bus].fd = open(str, O_RDWR);
 	if(i2c[bus].fd==-1){
-		fprintf(stderr,"ERROR: in rc_i2c_init, failed to open /dev/i2c\n");
+		fprintf(stderr,"ERROR: in rc_i2c_init, failed to open /dev/bone/i2c/%d or /dev/i2c-%d \n", bus, bus);
 		return -1;
 	}
 
